@@ -9,9 +9,20 @@ aenum==3.1.15
 aiohappyeyeballs==2.4.3
     # via aiohttp
 aiohttp==3.10.10
-    # via gremlinpython
+    # via
+    #   -r requirements-dev.in
+    #   -r requirements.in
+    #   gremlinpython
 aiosignal==1.3.1
     # via aiohttp
+appnope==0.1.4
+    # via ipykernel
+asttokens==2.4.1
+    # via stack-data
+async-timeout==4.0.3
+    # via
+    #   -r requirements-dev.in
+    #   -r requirements.in
 attrs==24.2.0
     # via aiohttp
 black==24.10.0
@@ -22,6 +33,20 @@ click==8.1.7
     # via
     #   black
     #   pip-tools
+comm==0.2.2
+    # via ipykernel
+contourpy==1.3.0
+    # via matplotlib
+cycler==0.12.1
+    # via matplotlib
+debugpy==1.8.7
+    # via ipykernel
+decorator==5.1.1
+    # via ipython
+executing==2.1.0
+    # via stack-data
+fonttools==4.54.1
+    # via matplotlib
 frozenlist==1.4.1
     # via
     #   aiohttp
@@ -30,8 +55,30 @@ gremlinpython==3.7.2
     # via -r requirements.in
 idna==3.10
     # via yarl
+ipykernel==6.29.5
+    # via
+    #   -r requirements-dev.in
+    #   -r requirements.in
+ipython==8.28.0
+    # via ipykernel
 isodate==0.7.2
     # via gremlinpython
+jedi==0.19.1
+    # via ipython
+jupyter-client==8.6.3
+    # via ipykernel
+jupyter-core==5.7.2
+    # via
+    #   ipykernel
+    #   jupyter-client
+kiwisolver==1.4.7
+    # via matplotlib
+matplotlib==3.9.2
+    # via -r requirements-dev.in
+matplotlib-inline==0.1.7
+    # via
+    #   ipykernel
+    #   ipython
 multidict==6.1.0
     # via
     #   aiohttp
@@ -39,25 +86,85 @@ multidict==6.1.0
 mypy-extensions==1.0.0
     # via black
 nest-asyncio==1.6.0
-    # via gremlinpython
+    # via
+    #   -r requirements-dev.in
+    #   gremlinpython
+    #   ipykernel
+networkx==3.4.1
+    # via -r requirements-dev.in
+numpy==2.1.2
+    # via
+    #   contourpy
+    #   matplotlib
 packaging==24.1
     # via
     #   black
     #   build
+    #   ipykernel
+    #   matplotlib
+parso==0.8.4
+    # via jedi
 pathspec==0.12.1
     # via black
+pexpect==4.9.0
+    # via ipython
+pillow==11.0.0
+    # via matplotlib
 pip-tools==7.4.1
     # via -r requirements-dev.in
 platformdirs==4.3.6
-    # via black
+    # via
+    #   black
+    #   jupyter-core
+prompt-toolkit==3.0.48
+    # via ipython
 propcache==0.2.0
     # via yarl
+psutil==6.1.0
+    # via ipykernel
+ptyprocess==0.7.0
+    # via pexpect
+pure-eval==0.2.3
+    # via stack-data
+pygments==2.18.0
+    # via ipython
+pygraphviz==1.14
+    # via -r requirements-dev.in
+pyparsing==3.2.0
+    # via matplotlib
 pyproject-hooks==1.2.0
     # via
     #   build
     #   pip-tools
+python-dateutil==2.9.0.post0
+    # via
+    #   jupyter-client
+    #   matplotlib
+pyzmq==26.2.0
+    # via
+    #   ipykernel
+    #   jupyter-client
 six==1.16.0
-    # via gremlinpython
+    # via
+    #   asttokens
+    #   gremlinpython
+    #   python-dateutil
+stack-data==0.6.3
+    # via ipython
+tornado==6.4.1
+    # via
+    #   ipykernel
+    #   jupyter-client
+traitlets==5.14.3
+    # via
+    #   comm
+    #   ipykernel
+    #   ipython
+    #   jupyter-client
+    #   jupyter-core
+    #   matplotlib-inline
+wcwidth==0.2.13
+    # via prompt-toolkit
 wheel==0.44.0
     # via pip-tools
 yarl==1.15.4

@@ -1,3 +1,17 @@
--r requirements.in
+# basic software development tools
 black
 pip-tools
+
+# main reqs
+-r requirements.in
+
+# maybe just for jupyter notebook?
+ipykernel
+aiohttp
+async_timeout
+nest_asyncio
+
+# vis
+networkx
+matplotlib
+pygraphviz

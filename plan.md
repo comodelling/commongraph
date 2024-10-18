@@ -52,7 +52,7 @@ This document outlines a dynamic plan for developing a piece of software current
 - **UI Framework**: Use React.js for its flexibility, component-based architecture, and extensive community support. Alternatively, consider Vue.js for its simplicity and ease of integration with other libraries.
 
 **Wishnet Accessible Language**
-- Create a simpler language for editing entities, (inspired by MediaWiki, which has simplified HTML and specific syntax for links, and powers Wikipeia). 
+- Create a simpler language for editing entities, (inspired by MediaWiki, which has simplified HTML and specific syntax for links, and powers Wikipeia).
 - The simpler and more effective, the better.
 
 

@@ -1,6 +1,7 @@
 # basic software development tools
 black
 pip-tools
+pre-commit
 
 # main reqs
 -r requirements.in

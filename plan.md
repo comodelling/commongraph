@@ -44,12 +44,15 @@ This document outlines a dynamic plan for developing a piece of software current
 **Graph Query Language**
 - Gremlin if using Apache TinkerPop (so compatible with JanuGraph and also python through `gremlinpython` library)
 
+
 **Back-end App Language**
 - Stick with Python for its ease of use, extensive libraries, and good integration with Neo4j via the Neo4j Python driver.
 - Alternatively, consider Java for its robustness and performance, especially for large-scale applications.
 
 **Front-end**
-- **UI Framework**: Use React.js for its flexibility, component-based architecture, and extensive community support. Alternatively, consider Vue.js for its simplicity and ease of integration with other libraries.
+- what open source library/API/language for the graph interface? Citoscape.js (alternatives: D3.js, Vis.js)
+- what UI for semantically searching through entities, with tags etc...?  ElasticSearch
+- front-end framework: React  is likely the best choice for integrating with Cytoscape.js and interacting with a JanusGraph database via Python's Gremlin API. React's component-based architecture, large ecosystem, and flexibility make it well-suited for building complex, interactive applications like Wishnet. The `react-cytoscapejs` library simplifies the integration with Cytoscape.js, and React's strong support for API interactions ensures smooth communication with the back-end.
 
 **Wishnet Accessible Language**
 - Create a simpler language for editing entities, (inspired by MediaWiki, which has simplified HTML and specific syntax for links, and powers Wikipeia).

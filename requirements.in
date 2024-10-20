@@ -1,2 +1,3 @@
 gremlinpython
 fastapi[standard]
+plotly

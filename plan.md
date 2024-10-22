@@ -1,21 +1,21 @@
-**Wishnet Development Plan**
+# Wishnet Development Plan
 
 This document outlines a dynamic plan for developing a piece of software currently known as *Wishnet*. Broadly, the programme enables creating, editing, and sharing *entities* related together through a *causal network*. These entities could represent various things, but the primary purpose is currently to use it for sharing *wishes*, *proposals*, and *objectives* at different scales, allowing individuals and non-profit organisations to collaborate towards their common goals.
 
-**Features**
+## Features
 
-**Basic/Core Features**
+### Basic/Core Features
 - Some standard types of entities are available: e.g., wishes, proposals, objectives, changes-in-the-world, each with their respective attributes.
 - Two main types of links are available: requirements and implications. Their core attributes are conditional probabilities (p(requirement|entity) and p(implication|entity)) with causal interpretation. They can also include a list of sources/references.
 - Initially, all elements are public, and anyone can add or edit any element in the network.
 
-**Important Features**
+### Important Features
 - User roles are introduced later, including basic and admin, with default permissions that can be customised.
 - Only logged-in users can add, edit, or delete entities and links.
 - Admins can alter the configuration of Wishnet's implementation.
 - Entities and links can be "gradable" (on a fixed qualitative scale) or "quantifiable" (on a fixed quantitative scale). If activated for a given element, any user can change the element's grade. Each type of element has a fixed associated scale, but this can differ for each type of element.
 
-**Extended Features**
+### Extended Features
 - Database user interface, useful especially for searching through proposals using semantic search, tags, attributes, etc. Can be connected to the graph user interface.
 - Graph user interface:
   - An accessible and intuitive interface allowing users to edit entities' attributes and relate them to other entities via two types of links: requirements and implications.
@@ -27,13 +27,13 @@ This document outlines a dynamic plan for developing a piece of software current
 - Groups of users not only facilitate sharing private elements but can also own an entity. A user within a group can decide for the group to own a newly created element, or to transfer it later.
 - Different methods can be configured to grade an element, going beyond simple editing. For instance, the grade may be determined as the median grade among all users who've graded it.
 
-**Future Features**
+### Future Features
 - Some user data is collected privately, with high privacy standards and policies.
 - Entities' scopes can be directly linked with some user characteristics such as residence location (which can be broad), age, etc., to determine who can grade/what importance to give to the weight for a given element.
 
-**Technology**
+## Technology
 
-**Back-end**
+### Back-end
 
 **Database**
 - As we're building an arbitrarily large graph of entities with connections between them, it makes sense to use a graph database.
@@ -49,17 +49,22 @@ This document outlines a dynamic plan for developing a piece of software current
 - Stick with Python for its ease of use, extensive libraries, and good integration with Neo4j via the Neo4j Python driver.
 - Alternatively, consider Java for its robustness and performance, especially for large-scale applications.
 
-**Front-end**
-- what open source library/API/language for the graph interface? Citoscape.js (alternatives: D3.js, Vis.js)
-- what UI for semantically searching through entities, with tags etc...?  ElasticSearch
+**Front-end Framework**
+
 - front-end framework: React  is likely the best choice for integrating with Cytoscape.js and interacting with a JanusGraph database via Python's Gremlin API. React's component-based architecture, large ecosystem, and flexibility make it well-suited for building complex, interactive applications like Wishnet. The `react-cytoscapejs` library simplifies the integration with Cytoscape.js, and React's strong support for API interactions ensures smooth communication with the back-end.
+
+**Front-end Graph interface**
+- what open source library/API/language for the graph interface? Citoscape.js/dash_cytoscape (alternatives: D3.js, Vis.js)
+
+**Front-end table interface**
+- what UI for semantically searching through entities, with tags etc...?  ElasticSearch
 
 **Wishnet Accessible Language**
 - Create a simpler language for editing entities, (inspired by MediaWiki, which has simplified HTML and specific syntax for links, and powers Wikipeia).
 - The simpler and more effective, the better.
 
 
-**Development Strategy**
+## Development Strategy
 
 - Aim to prototype the idea and keep refining/adapting this current plan.
   - Keep things light, modular, and flexible, so as to be able to adapt things later.
@@ -67,17 +72,17 @@ This document outlines a dynamic plan for developing a piece of software current
 - Aim to be able to test and experiment with the software throughout the development. Facilitating testing and experiments will therefore be useful.
 - Aim to open-source the software later on, once important questions have been decided: licensing, usability risks, governance (me or an organisation), etc.
 
-**Security Considerations**
+## Security Considerations
 - Implement role-based access control to ensure data integrity.
 - Use encryption and secure authentication methods to protect user data.
 - Establish clear privacy policies for user data collection.
 
-**Testing Strategy**
+## Testing Strategy
 - Employ unit testing, integration testing, and user acceptance testing.
 - Incorporate user feedback into the development process through beta testing.
 - Utilise automated testing tools to ensure consistent quality.
 
-**Documentation**
+# Documentation
 - Provide comprehensive documentation for developers and users to ensure ease of use and development.
 - Include API documentation for external developers.
 - Create user guides and tutorials for end-users.

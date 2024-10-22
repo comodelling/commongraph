@@ -16,3 +16,4 @@ nest_asyncio
 networkx
 matplotlib
 pygraphviz
+dash-cytoscape

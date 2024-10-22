@@ -45,9 +45,35 @@ This document outlines a dynamic plan for developing a piece of software current
 - Gremlin if using Apache TinkerPop (so compatible with JanuGraph and also python through `gremlinpython` library)
 
 
-**Back-end App Language**
-- Stick with Python for its ease of use, extensive libraries, and good integration with Neo4j via the Neo4j Python driver.
-- Alternatively, consider Java for its robustness and performance, especially for large-scale applications.
+**Back-end App**
+
+- Stick with Python for its ease of use, extensive libraries and good integration with other elements (graph databases etc...)
+- - Alternatively, consider Java for its robustness and performance, especially for large-scale applications.
+- FastAPI for a simple but fast API framework
+
+**Back-end classes**
+
+Nodes (id, type, summary, description)
+  - Wish
+  - Proposal
+  - ChangeInTheWorld
+
+Edges:
+  - Requirement
+  - Implication
+
+Network (list of nodes and edges...)
+
+
+**Back-end APIs python backend APIs**
+  - add an entity (graph vertex)
+  - add a connection
+  - retrieve list of entities with filters (tag, type)
+  - search through entities
+  - represent whole network
+  - represent network containing one object (entity or link)
+  - represent network containing several objects
+
 
 **Front-end Framework**
 

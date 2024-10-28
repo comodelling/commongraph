@@ -14,15 +14,6 @@ NodeId = Annotated[
     ),
 ]
 
-EdgeId = Annotated[
-    int,
-    Path(
-        title="the edge ID",
-        # alias="edge-id",
-        ge=0,
-    ),
-]
-
 
 class NodeType(str, Enum):
     undefined = "undefined"
@@ -36,19 +27,19 @@ class EdgeType(str, Enum):
     implication = "implication"
 
 
-class Node(BaseModel):
+class NodeBase(BaseModel):
     node_type: NodeType = NodeType.undefined
     summary: str
     description: str = None
     node_id: NodeId = None  # TODO: check whether this could lead to issues if argument passed in create for example
+    # TODO: add history
 
 
-class Edge(BaseModel):
+class EdgeBase(BaseModel):
     edge_type: EdgeType
     source: NodeId
     target: NodeId
-    # TODO: check whether this could lead to issues if argument passed in create for example
-    edge_id: EdgeId = None
+    # TODO: add proba
 
 
 class NodeSearch(BaseModel):

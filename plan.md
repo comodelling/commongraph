@@ -77,7 +77,9 @@ Network (list of nodes and edges...)
 
 **Front-end Framework**
 
-- front-end framework: React  is likely the best choice for integrating with Cytoscape.js and interacting with a JanusGraph database via Python's Gremlin API. React's component-based architecture, large ecosystem, and flexibility make it well-suited for building complex, interactive applications like Wishnet. The `react-cytoscapejs` library simplifies the integration with Cytoscape.js, and React's strong support for API interactions ensures smooth communication with the back-end.
+- front-end framework: React  is likely the best choice for integrating with Cytoscape.js and interacting with a JanusGraph database via Python's Gremlin API. React's component-based architecture, large ecosystem, and flexibility make it well-suited for building complex, interactive applications like Wishnet.
+The `react-cytoscapejs` library simplifies the integration with Cytoscape.js, and React's strong support for API interactions ensures smooth communication with the back-end.
+React Flow
 
 **Front-end Graph interface**
 - what open source library/API/language for the graph interface? Citoscape.js/dash_cytoscape (alternatives: D3.js, Vis.js)

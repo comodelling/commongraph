@@ -82,7 +82,9 @@ plotly==5.24.1
 propcache==0.2.0
     # via yarl
 pydantic==2.9.2
-    # via fastapi
+    # via
+    #   -r requirements.in
+    #   fastapi
 pydantic-core==2.23.4
     # via pydantic
 pygments==2.18.0

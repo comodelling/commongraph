@@ -104,7 +104,9 @@ httpcore==1.0.6
 httptools==0.6.4
     # via uvicorn
 httpx==0.27.2
-    # via fastapi
+    # via
+    #   -r requirements-dev.in
+    #   fastapi
 identify==2.6.1
     # via pre-commit
 idna==3.10
@@ -116,6 +118,8 @@ idna==3.10
     #   yarl
 importlib-metadata==8.5.0
     # via dash
+iniconfig==2.0.0
+    # via pytest
 ipykernel==6.29.5
     # via -r requirements-dev.in
 ipython==8.28.0
@@ -179,6 +183,7 @@ packaging==24.1
     #   ipykernel
     #   matplotlib
     #   plotly
+    #   pytest
 parso==0.8.4
     # via jedi
 pathspec==0.12.1
@@ -198,6 +203,8 @@ plotly==5.24.1
     # via
     #   -r requirements.in
     #   dash
+pluggy==1.5.0
+    # via pytest
 pre-commit==4.0.1
     # via -r requirements-dev.in
 prompt-toolkit==3.0.48
@@ -211,7 +218,9 @@ ptyprocess==0.7.0
 pure-eval==0.2.3
     # via stack-data
 pydantic==2.9.2
-    # via fastapi
+    # via
+    #   -r requirements.in
+    #   fastapi
 pydantic-core==2.23.4
     # via pydantic
 pygments==2.18.0
@@ -226,6 +235,8 @@ pyproject-hooks==1.2.0
     # via
     #   build
     #   pip-tools
+pytest==8.3.3
+    # via -r requirements-dev.in
 python-dateutil==2.9.0.post0
     # via
     #   jupyter-client

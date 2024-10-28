@@ -1,29 +1,56 @@
-from fastapi import FastAPI, HTTPException
-from starlette.responses import HTMLResponse
+from fastapi import FastAPI, HTTPException, status
+from contextlib import asynccontextmanager
 from gremlin_python.process.graph_traversal import __
 from gremlin_python.driver.driver_remote_connection import DriverRemoteConnection
 from gremlin_python.driver.serializer import GraphSONSerializersV3d0
 from gremlin_python.process.anonymous_traversal import traversal
-from gremlin_python.process.traversal import T
-from gremlin_python.process.traversal import Cardinality
 
-from data_models import Node, Edge, NodeSearch
-from graph_utils import plot_graph
+# from gremlin_python.process.traversal import T
+# from gremlin_python.process.traversal import Cardinality
+
+from models import *
+
+# TODO: optimise gremlin python for fastapi
+
+g = None
 
 
-id = T.id
-single = Cardinality.single
+def convert_vertex_to_node(vertex):
+    d = {p.key: p.value for p in vertex.properties if p.key in Node.model_fields}
+    if "node_id" not in d:
+        d["node_id"] = vertex.id
+    return Node(**d)
 
-app = FastAPI()
 
-connection = DriverRemoteConnection(
-    "ws://localhost:8182/gremlin",
-    "g",
-    message_serializer=GraphSONSerializersV3d0(),
-    # transport_factory=lambda:AiohttpTransport(call_from_event_loop=True)
+# TODO: is contrast vertex / node helpful? What equivalent for edge?
+
+
+def setup_db_connection():
+    connection = DriverRemoteConnection(
+        "ws://localhost:8182/gremlin",  # TODO: abstract in config
+        "g",
+        message_serializer=GraphSONSerializersV3d0(),
+    )
+    global g
+    g = traversal().with_remote(connection)
+    return connection
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    connection = setup_db_connection()
+    yield
+    connection.close()
+
+
+app = FastAPI(
+    lifespan=lifespan,
+    title="Wishnet",
+    description="API for Wishnet's backend",
+    contact={"name": "Mario", "email": "mario.morvan@ucl.ac.uk"},
 )
 
-g = traversal().withRemote(connection)
+### root ###
 
 
 @app.get("/")
@@ -31,104 +58,83 @@ async def root():
     return {"message": "Welcome to Wishnet!"}
 
 
-@app.post("/network/reset/")
-def resetting_network():
-    print("resetting network")
-    vertex_count = g.V().count().next()
-
-    if vertex_count:
-        g.V().drop().iterate()
-
-    # Create vertices
-    # v1 = g.addV("wish").property("summary", "Wish 1").next()
-    # v2 = g.addV("wish").property("summary", "Wish 2").next()
-    # v3 = g.addV("wish").property("summary", "Wish 3").next()
-    # v4 = g.addV("wish").property("summary", "Wish 4").next()
-    # v5 = g.addV().property("summary", "Wish 5").next()
-    # v6 = g.addV("proposal").property("summary", "Proposal 1").next()
-
-    # # Create edges
-    # g.V(v1.id).addE("requirement").to(v2).next()
-    # g.V(v1.id).addE("requirement").to(v3).next()
-    # g.V(v1.id).addE("implication").to(v4).next()
-    # g.V(v1.id).addE("implication").to(v5).next()
-    #####
+# /network/* ###  TODO: reorganise code in submodules
 
 
-@app.get("/network/viz/")
-def visualise_network():
-    fig = plot_graph(g)
-    return HTMLResponse(fig.to_html(full_html=False))
-
-
-@app.get("/network/summary/")
-def get_network_summary():
+@app.get("/network/summary")
+def get_network_summary() -> dict[str, int]:
+    """Return total number of nodes and edges."""
     vertex_count = g.V().count().next()
     edge_count = g.E().count().next()
     return {"vertices": vertex_count, "edges": edge_count}
 
 
-@app.get("/nodes/")
-def get_node_list(node_type: str = None):
+@app.post("/network/reset", status_code=status.HTTP_205_RESET_CONTENT)
+def resetting_network() -> None:
+    """Reset the whole network."""
+    vertex_count = g.V().count().next()
+
+    if vertex_count:
+        g.V().drop().iterate()
+
+
+# @app.get("/network/{node_id}/connected", status_code=status.HTTP_205_RESET_CONTENT)
+# def get_network_from_node(node_id: NodeIdAnnotation, max_connections: Annotated[int, Query(get=0)] = None):
+#     """Return the network containing a particular element with an optional limit number of connections."""
+#     raise NotImplementedError
+
+
+### /nodes/* ###
+
+
+@app.get("/nodes")
+def get_node_list(node_type: NodeType | None = None) -> list[Node]:
+    """Return all vertices, optionally of a certain node type."""
     if node_type is not None:
-        return g.V().has_label(node_type).toList()
-    return g.V().toList()
-
-
-@app.get("/edges/")
-def get_edge_list():
-    return g.E().toList()
+        return g.V().has_label(node_type).to_list()
+    return [convert_vertex_to_node(vertex) for vertex in g.V().to_list()]
 
 
 @app.get("/nodes/{node_id}")
-def get_node(node_id: int):
-    return g.V(node_id).next()
+def get_node(node_id: NodeId) -> Node:
+    """Return the node associated with the provided ID."""
+    try:
+        vertex = g.V(node_id).next()
+    except StopIteration:
+        raise HTTPException(status_code=404, detail="Node not found")
+    return convert_vertex_to_node(vertex)
 
 
-@app.get("/edge/{edge_id}")
-def get_edge(edge_id: int):
-    return g.E(edge_id).next()
-
-
-@app.post("/nodes/add/")
-def add_node(node: Node):
+@app.post("/nodes", status_code=status.HTTP_201_CREATED)
+def create_node(node: Node) -> Node:
+    """Create a node."""
     # TODO: Check for possible duplicates
-    g.addV(node.node_type).property("summary", node.summary).property(
-        "description", node.description
-    ).next()
-    return node
-
-
-@app.post("/edges/add/")
-def add_edge(edge: Edge):
-    # TODO: Check for possible duplicates
-    g.V(edge.source_node).addE(edge.edge_type).to(__.V(edge.target_node)).next()
-    return edge
+    created_node = (
+        g.add_v(node.node_type)
+        .property("summary", node.summary)
+        .property("description", node.description)
+        .next()
+    )
+    return convert_vertex_to_node(created_node)
 
 
 @app.delete("/nodes/{node_id}")
-def delete_node(node_id: int):
-    node = g.V(node_id).next()
-    if node is None:
+def delete_node(node_id: NodeId):
+    """Delete the node with provided ID."""
+    try:
+        g.V(node_id).both_e().drop().next()
+        g.V(node_id).drop().next()
+        return {"message": "Node deleted successfully"}
+    except StopIteration:
         raise HTTPException(status_code=404, detail="Node not found")
-    g.V(node_id).bothE().drop().iterate()
-    g.V(node_id).drop().iterate()
-    return {"message": "Node deleted successfully"}
-
-
-@app.delete("/edges/{edge_id}")
-def delete_edge(edge_id: str):
-    edge = g.E(edge_id).next()
-    if edge is None:
-        raise HTTPException(status_code=404, detail="Edge not found")
-    g.E(edge_id).drop().iterate()
-    return {"message": "Edge deleted successfully"}
 
 
 @app.put("/nodes/{node_id}")
-def update_node(node_id: str, node: Node):
-    node = g.V(node_id).nest()
-    if node is None:
+def update_node(node_id: NodeId, node: Node):
+    """Update the node with provided ID."""
+    try:
+        g.V(node_id).next()
+    except StopIteration:
         raise HTTPException(status_code=404, detail="Node not found")
     if node.summary is not None:
         g.V(node_id).property("summary", node.summary).iterate()
@@ -137,8 +143,9 @@ def update_node(node_id: str, node: Node):
     return {"message": "Node updated successfully"}
 
 
-@app.get("/nodes/search")
+@app.post("/nodes/search")
 def search_nodes(node_search: NodeSearch):
+    """Search in nodes."""
     traversal = g.V()
     if node_search.node_type is not None:
         traversal = traversal.has_label(node_search.node_type)
@@ -146,7 +153,57 @@ def search_nodes(node_search: NodeSearch):
         traversal = traversal.has("summary", node_search.summary)
     if node_search.description is not None:
         traversal = traversal.has("description", node_search.description)
-    return traversal.toList()
+    return traversal.to_list()
 
 
-# TODO: update the viz API
+### /edges/* ###
+
+
+@app.get("/edges")
+def get_edge_list():
+    """Return all edges."""
+    return g.E().to_list()
+
+
+@app.get("/edges/{edge_id}")
+def get_edge(edge_id: EdgeId):
+    """Return the edge associated with the provided ID."""
+    try:
+        return g.E(edge_id).next()
+    except StopIteration:
+        raise HTTPException(status_code=404, detail="Edge not found")
+
+
+@app.post("/edges", status_code=201)
+def create_edge(edge: Edge):
+    """Create an edge."""
+    # TODO: Check for possible duplicates
+    try:
+        created_edge = (
+            g.V(edge.source).add_e(edge.edge_type).to(__.V(edge.target)).next()
+        )
+        return created_edge
+    except StopIteration:
+        raise HTTPException(status_code=404, detail="Node or edge not found")
+
+
+@app.delete("/edges/{edge_id}")
+def delete_edge(edge_id: EdgeId):
+    """Delete the edge associated with provided ID."""
+    try:
+        g.E(edge_id).drop().next()
+        return {"message": "Edge deleted successfully"}
+    except StopIteration:
+        raise HTTPException(status_code=404, detail="Edge not found")
+
+
+@app.put("/edges/{edge_id}")
+def update_node(edge_id: NodeId, edge: Edge):
+    """Update the edge with provided ID."""
+    raise NotImplementedError
+    try:
+        g.E(edge_id).next()
+    except StopIteration:
+        raise HTTPException(status_code=404, detail="Edge not found")
+
+    return {"message": "Edge updated successfully"}

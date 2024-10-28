@@ -1,3 +1,4 @@
 gremlinpython
 fastapi[standard]
 plotly
+pydantic >= 2

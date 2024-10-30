@@ -2,7 +2,7 @@ import pytest
 import json
 from fastapi.testclient import TestClient
 
-from main import app, setup_db_connection
+from main import app, get_db_connection
 
 
 # TODO: ensure we're handling a test database, e.g. https://jointhegraph.github.io/articles/hosting-multiple-graphs-on-janusgraph/
@@ -13,7 +13,7 @@ client = TestClient(app)
 
 @pytest.fixture(scope="module")
 def fixtures():
-    connection = setup_db_connection()
+    next(get_db_connection())
 
     result = client.post(
         "/nodes",
@@ -25,34 +25,21 @@ def fixtures():
 
     client.post("/network/reset")
 
-    connection.close()
-
-
-# @pytest.fixture(scope="session")
-# def fixture_edge():
-#     result = client.post(
-#         "/edge",
-#         json={"summary": "test", "description": "test"},
-#     ).content
-#     node_dict = json.loads(result.decode('utf-8'))
-#     yield node_dict
-#     client.delete(f"/nodes/{node_dict['node_id']}")
-
 
 def test_read_main():
     response = client.get("/")
     assert response.status_code == 200
 
 
-### /network/*
+# /network/*
 
 
-def test_network_summary(fixtures):
+def test_network_summary():
     response = client.get("/network/summary")
     assert response.status_code == 200
 
 
-### /nodes/*
+# /nodes/*
 
 
 def test_get_nodes_list():
@@ -60,7 +47,7 @@ def test_get_nodes_list():
     assert response.status_code == 200
 
 
-def test_create_and_delete_node(fixtures):
+def test_create_and_delete_node():
     n_nodes = json.loads(client.get("/network/summary").content.decode("utf-8"))[
         "nodes"
     ]

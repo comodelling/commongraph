@@ -40,9 +40,3 @@ class EdgeBase(BaseModel):
     source: NodeId
     target: NodeId
     # TODO: add proba
-
-
-class NodeSearch(BaseModel):
-    node_type: str = None
-    summary: Optional[str] = None
-    description: Optional[str] = None

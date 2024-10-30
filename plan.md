@@ -1,6 +1,6 @@
-# Wishnet Development Plan
+# Development Plan
 
-This document outlines a dynamic plan for developing a piece of software currently known as *Wishnet*. Broadly, the programme enables creating, editing, and sharing *entities* related together through a *causal network*. These entities could represent various things, but the primary purpose is currently to use it for sharing *wishes*, *proposals*, and *objectives* at different scales, allowing individuals and non-profit organisations to collaborate towards their common goals.
+This document outlines a dynamic plan for developing a piece of software currently known as *ObjectiveNet*. Broadly, the programme enables creating, editing, and sharing *entities* related together through a *causal network*. These entities could represent various things, but the primary purpose is currently to use it for sharing *wishes*, *proposals*, and *objectives* at different scales, allowing individuals and non-profit organisations to collaborate towards their common goals.
 
 ## Features
 
@@ -12,7 +12,7 @@ This document outlines a dynamic plan for developing a piece of software current
 ### Important Features
 - User roles are introduced later, including basic and admin, with default permissions that can be customised.
 - Only logged-in users can add, edit, or delete entities and links.
-- Admins can alter the configuration of Wishnet's implementation.
+- Admins can alter the configuration.
 - Entities and links can be "gradable" (on a fixed qualitative scale) or "quantifiable" (on a fixed quantitative scale). If activated for a given element, any user can change the element's grade. Each type of element has a fixed associated scale, but this can differ for each type of element.
 
 ### Extended Features
@@ -77,7 +77,7 @@ Network (list of nodes and edges...)
 
 **Front-end Framework**
 
-- front-end framework: React  is likely the best choice for integrating with Cytoscape.js and interacting with a JanusGraph database via Python's Gremlin API. React's component-based architecture, large ecosystem, and flexibility make it well-suited for building complex, interactive applications like Wishnet.
+- front-end framework: React  is likely the best choice for integrating with Cytoscape.js and interacting with a JanusGraph database via Python's Gremlin API. React's component-based architecture, large ecosystem, and flexibility make it well-suited for building complex, interactive applications.
 The `react-cytoscapejs` library simplifies the integration with Cytoscape.js, and React's strong support for API interactions ensures smooth communication with the back-end.
 React Flow
 
@@ -87,7 +87,7 @@ React Flow
 **Front-end table interface**
 - what UI for semantically searching through entities, with tags etc...?  ElasticSearch
 
-**Wishnet Accessible Language**
+**Accessible Language**
 - Create a simpler language for editing entities, (inspired by MediaWiki, which has simplified HTML and specific syntax for links, and powers Wikipeia).
 - The simpler and more effective, the better.
 

@@ -62,8 +62,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     lifespan=lifespan,
-    title="Wishnet",
-    description="API for Wishnet's backend",
+    title="ObjectiveNet API",
     contact={"name": "Mario", "email": "mario.morvan@ucl.ac.uk"},
 )
 
@@ -72,7 +71,7 @@ app = FastAPI(
 
 @app.get("/")
 async def root():
-    return {"message": "Welcome to Wishnet!"}
+    return {"message": "Welcome to ObjectiveNet!"}
 
 
 # /network/* ###  TODO: reorganise code in submodules
@@ -168,16 +167,18 @@ def update_node(node_id: NodeId, node: NodeBase):
 
 @app.post("/nodes/search")
 def search_nodes(
-    node_search: NodeSearch,
-) -> list[NodeBase]:  # TODO: pros and cons of using a model here
+    node_type: str = None,
+    summary: Optional[str] = None,
+    description: Optional[str] = None,
+) -> list[NodeBase]:
     """Search in nodes."""
     traversal = g.V()
-    if node_search.node_type is not None:
-        traversal = traversal.has_label(node_search.node_type)
-    if node_search.summary is not None:
-        traversal = traversal.has("summary", node_search.summary)
-    if node_search.description is not None:
-        traversal = traversal.has("description", node_search.description)
+    if node_type is not None:
+        traversal = traversal.has_label(node_type)
+    if summary is not None:
+        traversal = traversal.has("summary", summary)
+    if description is not None:
+        traversal = traversal.has("description", description)
     return [convert_gremlin_vertex(node) for node in traversal.to_list()]
 
 

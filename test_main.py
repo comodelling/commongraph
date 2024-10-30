@@ -11,7 +11,7 @@ from main import app, setup_db_connection
 client = TestClient(app)
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def fixtures():
     connection = setup_db_connection()
 
@@ -22,10 +22,9 @@ def fixtures():
     node_dict = json.loads(result.decode("utf-8"))
 
     yield node_dict
-    try:
-        client.delete(f"/nodes/{node_dict['node_id']}")
-    except Exception as e:
-        print(e)
+
+    client.post("/network/reset")
+
     connection.close()
 
 
@@ -45,14 +44,10 @@ def test_read_main():
     assert response.status_code == 200
 
 
-def test_fixtures(fixtures):
-    ...
-
-
 ### /network/*
 
 
-def test_network_summary():
+def test_network_summary(fixtures):
     response = client.get("/network/summary")
     assert response.status_code == 200
 
@@ -65,7 +60,7 @@ def test_get_nodes_list():
     assert response.status_code == 200
 
 
-def test_create_and_delete_node():
+def test_create_and_delete_node(fixtures):
     n_nodes = json.loads(client.get("/network/summary").content.decode("utf-8"))[
         "nodes"
     ]
@@ -133,6 +128,11 @@ def test_search_nodes():
     assert response.status_code == 200
 
 
+def test_delete_node_wrong_id():
+    response = client.delete("/nodes/999999999")
+    assert response.status_code == 404
+
+
 ### /edges/* ###
 
 
@@ -160,11 +160,9 @@ def test_create_and_delete_edge(fixtures):
     ), "Edge count did not increase by 1"
 
 
-def test_delete_node_wrong_id():
-    response = client.delete("/nodes/999999999")
-    assert response.status_code == 404
-
-
-def test_reset_network():
-    response = client.post("/network/reset")
-    assert response.status_code == 205
+def test_find_edges():
+    response = client.post(
+        "/edges/find",
+        json={"edge_type": "implication"},
+    )
+    assert response.status_code == 200

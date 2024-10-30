@@ -1,3 +1,5 @@
+import warnings
+
 from fastapi import FastAPI, HTTPException, status, Query
 from contextlib import asynccontextmanager
 from gremlin_python.process.graph_traversal import __
@@ -80,6 +82,9 @@ async def root():
 @app.get("/network/summary")
 def get_network_summary() -> dict[str, int]:
     """Return total number of nodes and edges."""
+    if g is None:
+        warnings.warn("No connection to database, g: ", g)
+        return {"nodes": 0, "edges": 0}
     vertex_count = g.V().count().next()
     edge_count = g.E().count().next()
     return {"nodes": vertex_count, "edges": edge_count}
@@ -191,7 +196,7 @@ def get_edge_list() -> list[EdgeBase]:
     return [convert_gremlin_edge(edge) for edge in g.E().to_list() if edge is not None]
 
 
-@app.get("/edges/find")
+@app.post("/edges/find")
 def find_edges(
     source_id: NodeId = None, target_id: NodeId = None, edge_type: EdgeType = None
 ) -> list[EdgeBase]:

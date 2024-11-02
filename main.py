@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException, status, Query, Depends
+from fastapi.middleware.cors import CORSMiddleware
 from gremlin_python.process.graph_traversal import __
 from gremlin_python.driver.driver_remote_connection import DriverRemoteConnection
 from gremlin_python.driver.serializer import GraphSONSerializersV3d0
@@ -9,6 +10,27 @@ from gremlin_python.structure.graph import Vertex as GremlinVertex
 from models import *
 
 # TODO: optimise gremlin python for fastapi
+
+app = FastAPI(
+    title="ObjectiveNet API",
+    contact={"name": "Mario", "email": "mario.morvan@ucl.ac.uk"},
+)
+origins = [
+    "http://127.0.0.1:5173",
+    "http://localhost:5173",
+    "https://127.0.0.1:5173",
+    "https://localhost:5173",
+    "https://localhost",
+    "http://localhost",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 def get_db_connection():
@@ -49,11 +71,6 @@ def convert_gremlin_edge(edge: GremlinEdge) -> EdgeBase:
 # TODO: is contrast vertex / node helpful? What equivalent for edge?
 
 
-app = FastAPI(
-    title="ObjectiveNet API",
-    contact={"name": "Mario", "email": "mario.morvan@ucl.ac.uk"},
-)
-
 ### root ###
 
 
@@ -63,6 +80,22 @@ async def root():
 
 
 # /network/* ###  TODO: reorganise code in submodules
+
+
+@app.get("/network/")
+def get_network(
+    db=Depends(get_db_connection),
+) -> dict[str, list[NodeBase] | list[EdgeBase]]:
+    """Return total number of nodes and edges."""
+    nodes = [
+        convert_gremlin_vertex(vertex)
+        for vertex in db.V().to_list()
+        if vertex is not None
+    ]
+    edges = [
+        convert_gremlin_edge(edge) for edge in db.E().to_list() if edge is not None
+    ]
+    return {"nodes": nodes, "edges": edges}
 
 
 @app.get("/network/summary")

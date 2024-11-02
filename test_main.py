@@ -34,6 +34,11 @@ def test_read_main():
 # /network/*
 
 
+def test_network():
+    response = client.get("/network/")
+    assert response.status_code == 200
+
+
 def test_network_summary():
     response = client.get("/network/summary")
     assert response.status_code == 200

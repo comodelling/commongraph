@@ -59,8 +59,8 @@ Nodes (id, type, summary, description)
   - ChangeInTheWorld
 
 Edges:
-  - Requirement
-  - Implication
+  - require
+  - imply
 
 Network (list of nodes and edges...)
 

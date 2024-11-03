@@ -4,17 +4,17 @@ from pydantic import ValidationError
 from models import NodeBase, EdgeBase
 
 
-correct_node_types = ["undefined", "wish", "proposal", "citw"]
-correct_edge_types = ["condition", "implication"]
+correct_node_types = ["change", "wish", "proposal"]
+correct_edge_types = ["require", "imply"]
 
 
 def test_node_types():
     for node_type in correct_node_types:
-        node = NodeBase(node_type=node_type, summary="test")
+        node = NodeBase(node_type=node_type, title="test")
         assert node.node_type == node_type
 
     with pytest.raises(ValidationError):
-        NodeBase(node_type="wrong_node_type", summary="")
+        NodeBase(node_type="wrong_node_type", title="")
 
 
 def test_edge_types():

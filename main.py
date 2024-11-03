@@ -158,7 +158,8 @@ def create_node(node: NodeBase, db=Depends(get_db_connection)) -> NodeBase:
     # TODO: Check for possible duplicates
     created_node = (
         db.add_v(node.node_type)
-        .property("summary", node.summary)
+        .property("title", node.title)
+        .property("scope", node.scope)
         .property("description", node.description)
         .next()
     )
@@ -183,8 +184,10 @@ def update_node(node_id: NodeId, node: NodeBase, db=Depends(get_db_connection)):
         db.V(node_id).next()
     except StopIteration:
         raise HTTPException(status_code=404, detail="Node not found")
-    if node.summary is not None:
-        db.V(node_id).property("summary", node.summary).iterate()
+    if node.title is not None:
+        db.V(node_id).property("title", node.title).iterate()
+    if node.scope is not None:
+        db.V(node_id).property("scope", node.scope).iterate()
     if node.description is not None:
         db.V(node_id).property("description", node.description).iterate()
     return {"message": "Node updated successfully"}
@@ -193,7 +196,8 @@ def update_node(node_id: NodeId, node: NodeBase, db=Depends(get_db_connection)):
 @app.post("/nodes/search")
 def search_nodes(
     node_type: str = None,
-    summary: Optional[str] = None,
+    title: Optional[str] = None,
+    scope: Optional[str] = None,
     description: Optional[str] = None,
     db=Depends(get_db_connection),
 ) -> list[NodeBase]:
@@ -201,8 +205,10 @@ def search_nodes(
     traversal = db.V()
     if node_type is not None:
         traversal = traversal.has_label(node_type)
-    if summary is not None:
-        traversal = traversal.has("summary", summary)
+    if title is not None:
+        traversal = traversal.has("title", title)
+    if scope is not None:
+        traversal = traversal.has("scope", scope)
     if description is not None:
         traversal = traversal.has("description", description)
     return [convert_gremlin_vertex(node) for node in traversal.to_list()]

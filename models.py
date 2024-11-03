@@ -16,22 +16,23 @@ NodeId = Annotated[
 
 
 class NodeType(str, Enum):
-    undefined = "undefined"
+    change = "change"
     wish = "wish"
     proposal = "proposal"
-    citw = "citw"
 
 
 class EdgeType(str, Enum):
-    condition = "condition"
-    implication = "implication"
+    require = "require"
+    imply = "imply"
 
 
 class NodeBase(BaseModel):
-    node_type: NodeType = NodeType.undefined
-    summary: str
+    node_type: NodeType = NodeType.change
+    title: str
+    scope: str = None
     description: str = None
     node_id: NodeId = None  # TODO: check whether this could lead to issues if argument passed in create for example
+    # TODO: add gradable and grade
     # TODO: add history
 
 
@@ -39,4 +40,5 @@ class EdgeBase(BaseModel):
     edge_type: EdgeType
     source: NodeId
     target: NodeId
-    # TODO: add proba
+    cond_proba: float = None
+    metadata: dict = None

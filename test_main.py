@@ -14,10 +14,11 @@ client = TestClient(app)
 @pytest.fixture(scope="module")
 def fixtures():
     next(get_db_connection())
+    client.post("/network/reset")
 
     result = client.post(
         "/nodes",
-        json={"summary": "test", "description": "test"},
+        json={"title": "test", "description": "test"},
     ).content
     node_dict = json.loads(result.decode("utf-8"))
 
@@ -58,7 +59,7 @@ def test_create_and_delete_node():
     ]
     response = client.post(
         "/nodes",
-        json={"summary": "test", "description": "test"},
+        json={"title": "test", "description": "test"},
     )
     assert (
         response.status_code == 201
@@ -101,13 +102,13 @@ def test_get_node_wrong_id(fixtures):
 def test_update_node(fixtures):
     response = client.put(
         f"/nodes/{fixtures['node_id']}",
-        json={"summary": "test modified", "description": "test modified"},
+        json={"title": "test modified", "description": "test modified"},
     )
     assert response.status_code == 200
 
     # inexistant ID
     response = client.put(
-        "/nodes/999999999", json={"summary": "test", "description": "test"}
+        "/nodes/999999999", json={"title": "test", "description": "test"}
     )
     assert response.status_code == 404
 
@@ -115,7 +116,7 @@ def test_update_node(fixtures):
 def test_search_nodes():
     response = client.post(
         "/nodes/search",
-        json={"summary": "test", "description": "test"},
+        json={"title": "test", "description": "test"},
     )
     assert response.status_code == 200
 
@@ -140,7 +141,7 @@ def test_create_and_delete_edge(fixtures):
     response = client.post(
         "/edges",
         json={
-            "edge_type": "implication",
+            "edge_type": "imply",
             "source": fixtures["node_id"],
             "target": fixtures["node_id"],
         },
@@ -155,6 +156,6 @@ def test_create_and_delete_edge(fixtures):
 def test_find_edges():
     response = client.post(
         "/edges/find",
-        json={"edge_type": "implication"},
+        json={"edge_type": "imply"},
     )
     assert response.status_code == 200

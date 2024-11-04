@@ -40,5 +40,5 @@ class EdgeBase(BaseModel):
     edge_type: EdgeType
     source: NodeId
     target: NodeId
-    cond_proba: float = None
+    cprob: float = None
     metadata: dict = None

@@ -52,6 +52,7 @@ def convert_gremlin_vertex(vertex: GremlinVertex) -> NodeBase:
         d = {
             p.key: p.value for p in vertex.properties if p.key in NodeBase.model_fields
         }
+    print("vertex properties from gremlin", vertex.properties)
     d["node_id"] = vertex.id
     d["node_type"] = vertex.label
     return NodeBase(**d)
@@ -61,7 +62,7 @@ def convert_gremlin_edge(edge: GremlinEdge) -> EdgeBase:
     d = dict()
     if edge.properties is not None:
         d = {p.key: p.value for p in edge.properties if p.key in EdgeBase.model_fields}
-    print("edge ID from gremlin", edge.id)
+    print("edge properties from gremlin", edge.properties)
     d["source"] = edge.inV.id
     d["target"] = edge.outV.id
     d["edge_type"] = edge.label
@@ -266,7 +267,11 @@ def create_edge(edge: EdgeBase, db=Depends(get_db_connection)) -> EdgeBase:
     # TODO: Check for possible duplicates
     try:
         created_edge = (
-            db.V(edge.source).add_e(edge.edge_type).to(__.V(edge.target)).next()
+            db.V(edge.source)
+            .add_e(edge.edge_type)
+            .property("cprob", edge.cprob)
+            .to(__.V(edge.target))
+            .next()
         )
         return convert_gremlin_edge(created_edge)
     except StopIteration:

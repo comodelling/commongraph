@@ -14,7 +14,7 @@ client = TestClient(app)
 @pytest.fixture(scope="module")
 def fixtures():
     next(get_db_connection())
-    client.post("/network/reset")
+    client.delete("/network")
 
     result = client.post(
         "/nodes",
@@ -24,7 +24,7 @@ def fixtures():
 
     yield node_dict
 
-    client.post("/network/reset")
+    client.delete("/network")
 
 
 def test_read_main():

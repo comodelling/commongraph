@@ -107,9 +107,10 @@ def get_network_summary(db=Depends(get_db_connection)) -> dict[str, int]:
     return {"nodes": vertex_count, "edges": edge_count}
 
 
-@app.post("/network/reset", status_code=status.HTTP_205_RESET_CONTENT)
-def reset_network(db=Depends(get_db_connection)) -> None:
+@app.delete("/network", status_code=status.HTTP_205_RESET_CONTENT)
+def reset_whole_network(db=Depends(get_db_connection)) -> None:
     """Reset the whole network."""
+    # TODO: add warning or confirmation
     vertex_count = db.V().count().next()
 
     if vertex_count:
@@ -278,7 +279,7 @@ def create_edge(edge: EdgeBase, db=Depends(get_db_connection)) -> EdgeBase:
         raise HTTPException(status_code=404, detail="Node or edge not found")
 
 
-@app.delete("/edges/delete")
+@app.delete("/edges")
 def delete_edges(edge: EdgeBase, db=Depends(get_db_connection)):
     """Delete the edge associated with provided ID."""
     try:

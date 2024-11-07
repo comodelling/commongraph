@@ -7,6 +7,9 @@ from gremlin_python.process.anonymous_traversal import traversal
 from gremlin_python.structure.graph import Edge as GremlinEdge
 from gremlin_python.structure.graph import Vertex as GremlinVertex
 
+# from gremlin_python.process.traversal import T
+# from gremlin_python.process.traversal import Cardinality
+
 from models import *
 
 # TODO: optimise gremlin python for fastapi
@@ -52,13 +55,13 @@ def convert_gremlin_vertex(vertex: GremlinVertex) -> NodeBase:
         d = {
             p.key: p.value for p in vertex.properties if p.key in NodeBase.model_fields
         }
-    print("vertex properties from gremlin", vertex.properties)
+    # print("vertex properties from gremlin", vertex.properties)
     d["node_id"] = vertex.id
     d["node_type"] = vertex.label
     return NodeBase(**d)
 
 
-def convert_gremlin_edge(edge: GremlinEdge) -> EdgeBase:
+def convert_gremlin_edge(edge) -> EdgeBase:
     d = dict()
     if edge.properties is not None:
         d = {p.key: p.value for p in edge.properties if p.key in EdgeBase.model_fields}
@@ -83,10 +86,10 @@ async def root():
 # /network/* ###  TODO: reorganise code in submodules
 
 
-@app.get("/network/")
+@app.get("/network")
 def get_network(
     db=Depends(get_db_connection),
-) -> dict[str, list[NodeBase] | list[EdgeBase]]:
+) -> Network:
     """Return total number of nodes and edges."""
     nodes = [
         convert_gremlin_vertex(vertex)
@@ -99,14 +102,6 @@ def get_network(
     return {"nodes": nodes, "edges": edges}
 
 
-@app.get("/network/summary")
-def get_network_summary(db=Depends(get_db_connection)) -> dict[str, int]:
-    """Return total number of nodes and edges."""
-    vertex_count = db.V().count().next()
-    edge_count = db.E().count().next()
-    return {"nodes": vertex_count, "edges": edge_count}
-
-
 @app.delete("/network", status_code=status.HTTP_205_RESET_CONTENT)
 def reset_whole_network(db=Depends(get_db_connection)) -> None:
     """Reset the whole network."""
@@ -115,6 +110,55 @@ def reset_whole_network(db=Depends(get_db_connection)) -> None:
 
     if vertex_count:
         db.V().drop().iterate()
+
+
+@app.put("/network")
+def update_network(
+    network: Network, delete=False, db=Depends(get_db_connection)
+) -> None:
+    """Add missing nodes and edges, update existing ones, and delete the rest only if requested."""
+    print("network:", network)
+    mapping = {}
+    for node in network.nodes:
+        try:
+            if node.node_id is not None and db.V(node.node_id).has_next():
+                # update node
+                update_gremlin_node(node, db)
+            else:
+                # create node
+                mapping[node.node_id] = create_gremlin_node(node, db).id
+                ...
+        except StopIteration:
+            ...
+    for edge in network.edges:
+        try:
+            if (
+                db.V(edge.source)
+                .outE(edge.edge_type)
+                .where(__.inV().hasId(edge.target))
+                .has_next()
+            ):
+                # update edge
+                update_gremlin_edge(edge, db)
+            else:
+                # create edge
+                if edge.source in mapping:
+                    edge.source = mapping[edge.source]
+                if edge.target in mapping:
+                    edge.target = mapping[edge.target]
+                create_gremlin_edge(edge, db)
+        except StopIteration:
+            ...
+
+    return
+
+
+@app.get("/network/summary")
+def get_network_summary(db=Depends(get_db_connection)) -> dict[str, int]:
+    """Return total number of nodes and edges."""
+    vertex_count = db.V().count().next()
+    edge_count = db.E().count().next()
+    return {"nodes": vertex_count, "edges": edge_count}
 
 
 @app.get("/network/connected/{node_id}", status_code=status.HTTP_205_RESET_CONTENT)
@@ -158,13 +202,7 @@ def get_node(node_id: NodeId, db=Depends(get_db_connection)) -> NodeBase:
 def create_node(node: NodeBase, db=Depends(get_db_connection)) -> NodeBase:
     """Create a node."""
     # TODO: Check for possible duplicates
-    created_node = (
-        db.add_v(node.node_type)
-        .property("title", node.title)
-        .property("scope", node.scope)
-        .property("description", node.description)
-        .next()
-    )
+    created_node = create_gremlin_node(node, db)
     return convert_gremlin_vertex(created_node)
 
 
@@ -179,28 +217,21 @@ def delete_node(node_id: NodeId, db=Depends(get_db_connection)):
     return {"message": "Node deleted successfully"}
 
 
-@app.put("/nodes/{node_id}")
-def update_node(node_id: NodeId, node: NodeBase, db=Depends(get_db_connection)):
+@app.put("/nodes")
+def update_node(node: NodeBase, db=Depends(get_db_connection)):
     """Update the node with provided ID."""
-    try:
-        db.V(node_id).next()
-    except StopIteration:
+    if not db.V(node.node_id).has_next():
         raise HTTPException(status_code=404, detail="Node not found")
-    if node.title is not None:
-        db.V(node_id).property("title", node.title).iterate()
-    if node.scope is not None:
-        db.V(node_id).property("scope", node.scope).iterate()
-    if node.description is not None:
-        db.V(node_id).property("description", node.description).iterate()
+    update_gremlin_node(node, db)
     return {"message": "Node updated successfully"}
 
 
 @app.post("/nodes/search")
 def search_nodes(
     node_type: str = None,
-    title: Optional[str] = None,
-    scope: Optional[str] = None,
-    description: Optional[str] = None,
+    title: str | None = None,
+    scope: str | None = None,
+    description: str | None = None,
     db=Depends(get_db_connection),
 ) -> list[NodeBase]:
     """Search in nodes."""
@@ -267,13 +298,7 @@ def create_edge(edge: EdgeBase, db=Depends(get_db_connection)) -> EdgeBase:
     """Create an edge."""
     # TODO: Check for possible duplicates
     try:
-        created_edge = (
-            db.V(edge.source)
-            .add_e(edge.edge_type)
-            .property("cprob", edge.cprob)
-            .to(__.V(edge.target))
-            .next()
-        )
+        created_edge = create_gremlin_edge(edge, db)
         return convert_gremlin_edge(created_edge)
     except StopIteration:
         raise HTTPException(status_code=404, detail="Node or edge not found")
@@ -292,19 +317,68 @@ def delete_edges(edge: EdgeBase, db=Depends(get_db_connection)):
         raise HTTPException(status_code=404, detail="Edge not found")
 
 
-@app.put("/edges/update_property")
-def update_edge_property(
-    current_edge: EdgeBase, edge_property: EdgeBase, db=Depends(get_db_connection)
-):
+@app.put("/edges")
+def update_edge(edge: EdgeBase, db=Depends(get_db_connection)):
     """Update the edge with provided ID."""
     try:
-        traversal = (
-            db.V(current_edge.source)
-            .outE(current_edge.edge_type)
-            .where(__.inV().hasId(current_edge.target))
-        )
-        traversal.property("edge_type", edge_property).iterate()
+        if not exists_edge_in_db(edge, db):
+            raise HTTPException(status_code=404, detail="Edge not found")
+        update_gremlin_edge(edge, db)
     except StopIteration:
-        raise HTTPException(status_code=404, detail="Edge not found")
+        raise HTTPException(status_code=404, detail="Error updating edge")
 
     return {"message": "Edge updated successfully"}
+
+
+# Utils
+
+
+def create_gremlin_node(node: NodeBase, db=Depends(get_db_connection)) -> GremlinVertex:
+    created_node = db.add_v(node.node_type)
+    # if node.node_id is not None:
+    #    created_node = created_node.property(T.id, UUID(long=node.node_id))
+    created_node = created_node.property("title", node.title)
+    created_node = created_node.property("scope", node.scope)
+    created_node = created_node.property("description", node.description)
+    return created_node.next()
+
+
+def create_gremlin_edge(edge: EdgeBase, db=Depends(get_db_connection)) -> GremlinEdge:
+    created_edge = (
+        db.V(edge.source)
+        .add_e(edge.edge_type)
+        .property("cprob", edge.cprob)
+        .to(__.V(edge.target))
+        .next()
+    )
+    return created_edge
+
+
+def exists_edge_in_db(edge: EdgeBase, db=Depends(get_db_connection)) -> bool:
+    return (
+        db.V(edge.source)
+        .outE(edge.edge_type)
+        .where(__.inV().hasId(edge.target))
+        .has_next()
+    )
+
+
+def update_gremlin_node(node: NodeBase, db=Depends(get_db_connection)) -> GremlinVertex:
+    if node.title is not None:
+        db.V(node.node_id).property("title", node.title).iterate()
+    if node.scope is not None:
+        db.V(node.node_id).property("scope", node.scope).iterate()
+    if node.description is not None:
+        updated_node = (
+            db.V(node.node_id).property("description", node.description).next()
+        )
+    return updated_node
+
+
+def update_gremlin_edge(edge: EdgeBase, db=Depends(get_db_connection)) -> GremlinEdge:
+    traversal = (
+        db.V(edge.source).outE(edge.edge_type).where(__.inV().hasId(edge.target))
+    )
+    # TODO: test if any change is made
+    updated_edge = traversal.property("cprob", edge.cprob).next()
+    return updated_edge

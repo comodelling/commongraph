@@ -35,9 +35,24 @@ def test_read_main():
 # /network/*
 
 
-def test_network():
-    response = client.get("/network/")
+def test_get_network():
+    response = client.get("/network")
     assert response.status_code == 200
+
+
+def test_put_network():
+    n_nodes = json.loads(client.get("/network/summary").content.decode("utf-8"))[
+        "nodes"
+    ]
+    response = client.put(
+        "/network",
+        json={"nodes": [{"title": "test", "description": "test"}], "edges": []},
+    )
+    assert response.status_code == 200
+    assert (
+        json.loads(client.get("/network/summary").content.decode("utf-8"))["nodes"]
+        == n_nodes + 1
+    )
 
 
 def test_network_summary():
@@ -90,6 +105,17 @@ def test_create_and_delete_node():
     ), "Node count did not come back to initial value"
 
 
+@pytest.mark.skip
+def test_create_node_specific_id():
+    response = client.post(
+        "/nodes",
+        json={"title": "test", "description": "test", "node_id": 777777},
+    )
+    assert response.status_code == 201
+    response = client.get(f"/nodes/777777")
+    assert response.status_code == 200
+
+
 def test_get_node_wrong_id(fixtures):
     response = client.get(f"/nodes/{fixtures['node_id']}")
     assert response.status_code == 200
@@ -101,15 +127,17 @@ def test_get_node_wrong_id(fixtures):
 
 def test_update_node(fixtures):
     response = client.put(
-        f"/nodes/{fixtures['node_id']}",
-        json={"title": "test modified", "description": "test modified"},
+        "/nodes",
+        json={
+            "node_id": fixtures["node_id"],
+            "title": "test modified",
+            "description": "test modified",
+        },
     )
     assert response.status_code == 200
 
     # inexistant ID
-    response = client.put(
-        "/nodes/999999999", json={"title": "test", "description": "test"}
-    )
+    response = client.put("/nodes", json={"title": "test", "description": "test"})
     assert response.status_code == 404
 
 

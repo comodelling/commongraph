@@ -1,7 +1,9 @@
-from typing import Optional, Annotated
+from typing import Annotated
 from enum import Enum
 
-from fastapi import Path
+import numpy as np
+from pydantic import BaseModel, field_validator
+from fastapi import Path, Query
 from pydantic import BaseModel
 
 
@@ -13,6 +15,8 @@ NodeId = Annotated[
         ge=0,
     ),
 ]
+
+Proba = Annotated[float, Query(title="conditional proba", ge=0, le=1)]
 
 
 class NodeType(str, Enum):
@@ -29,9 +33,9 @@ class EdgeType(str, Enum):
 class NodeBase(BaseModel):
     node_type: NodeType = NodeType.change
     title: str
-    scope: str = None
-    description: str = None
-    node_id: NodeId = None  # TODO: check whether this could lead to issues if argument passed in create for example
+    scope: str | None = None
+    description: str | None = None
+    node_id: NodeId | None = None  # TODO: check whether this could lead to issues if argument passed in create for example
     # TODO: add gradable and grade
     # TODO: add history
 
@@ -40,5 +44,16 @@ class EdgeBase(BaseModel):
     edge_type: EdgeType
     source: NodeId
     target: NodeId
-    cprob: float = None
-    metadata: dict = None
+    cprob: Proba | None = None
+    metadata: dict | None = None
+
+    @field_validator("cprob")
+    def convert_nan_to_none(cls, v):
+        if v is None or (isinstance(v, float) and np.isnan(v)):
+            return None
+        return v
+
+
+class Network(BaseModel):
+    nodes: list[NodeBase]
+    edges: list[EdgeBase]

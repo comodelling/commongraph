@@ -1,4 +1,7 @@
 *.ipynb
 .vscode
 dev/*
-scripts/
+data/*
+scripts/*
+
+!.gitkeep

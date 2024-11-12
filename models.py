@@ -36,6 +36,7 @@ class NodeBase(BaseModel):
     scope: str | None = None
     description: str | None = None
     node_id: NodeId | None = None  # TODO: check whether this could lead to issues if argument passed in create for example
+    id_from_ui: int | None = None
     # TODO: add gradable and grade
     # TODO: add history
 
@@ -45,6 +46,8 @@ class EdgeBase(BaseModel):
     source: NodeId
     target: NodeId
     cprob: Proba | None = None
+    source_from_ui: int | None = None
+    target_from_ui: int | None = None
     metadata: dict | None = None
 
     @field_validator("cprob")

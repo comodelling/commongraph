@@ -115,19 +115,27 @@ def reset_whole_network(db=Depends(get_db_connection)) -> None:
 @app.put("/network")
 def update_network(
     network: Network, delete=False, db=Depends(get_db_connection)
-) -> None:
+) -> Network:
     """Add missing nodes and edges, update existing ones, and delete the rest only if requested."""
     print("network:", network)
+    if delete:
+        raise NotImplementedError
     mapping = {}
+    nodes_out = []
+    edges_out = []
     for node in network.nodes:
         try:
-            if node.node_id is not None and db.V(node.node_id).has_next():
+            if (
+                node.node_id is not None and db.V(node.node_id).has_next()
+            ):  # TODO: node_id shouldn't be none!
                 # update node
-                update_gremlin_node(node, db)
+                node_out = convert_gremlin_vertex(update_gremlin_node(node, db))
             else:
                 # create node
-                mapping[node.node_id] = create_gremlin_node(node, db).id
-                ...
+                node_out = convert_gremlin_vertex(create_gremlin_node(node, db))
+                node_out.id_from_ui = node.node_id  # TODO: add to history log instead
+                mapping[node.node_id] = node_out.node_id
+            nodes_out.append(node_out)
         except StopIteration:
             ...
     for edge in network.edges:
@@ -139,18 +147,31 @@ def update_network(
                 .has_next()
             ):
                 # update edge
-                update_gremlin_edge(edge, db)
+                edge_out = convert_gremlin_edge(update_gremlin_edge(edge, db))
             else:
                 # create edge
+                update_edge_source_from = None
+                update_edge_target_from = None
                 if edge.source in mapping:
+                    update_edge_source_from = edge.source
                     edge.source = mapping[edge.source]
+                    print("edge.source", edge.source)
+                    print("mapping[edge.source]", update_edge_source_from)
                 if edge.target in mapping:
+                    update_edge_target_from = edge.target
                     edge.target = mapping[edge.target]
-                create_gremlin_edge(edge, db)
+                    print("edge.target", edge.target)
+                    print("mapping[edge.target]", update_edge_target_from)
+                edge_out = convert_gremlin_edge(create_gremlin_edge(edge, db))
+                edge_out.source_from_ui = (
+                    update_edge_source_from  # TODO: add to history log
+                )
+                edge_out.target_from_ui = update_edge_target_from
+            edges_out.append(edge_out)
         except StopIteration:
             ...
 
-    return
+    return {"nodes": nodes_out, "edges": edges_out}
 
 
 @app.get("/network/summary")

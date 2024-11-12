@@ -360,6 +360,8 @@ def create_gremlin_node(node: NodeBase, db=Depends(get_db_connection)) -> Gremli
     #    created_node = created_node.property(T.id, UUID(long=node.node_id))
     created_node = created_node.property("title", node.title)
     created_node = created_node.property("scope", node.scope)
+    created_node = created_node.property("gradable", node.gradable)
+    created_node = created_node.property("grade", node.grade)
     created_node = created_node.property("description", node.description)
     return created_node.next()
 
@@ -384,15 +386,23 @@ def exists_edge_in_db(edge: EdgeBase, db=Depends(get_db_connection)) -> bool:
     )
 
 
-def update_gremlin_node(node: NodeBase, db=Depends(get_db_connection)) -> GremlinVertex:
+def update_gremlin_node(
+    node: NodeBase, db=Depends(get_db_connection)
+) -> GremlinVertex | None:
+    updated_node = None
     if node.title is not None:
-        db.V(node.node_id).property("title", node.title).iterate()
+        updated_node = db.V(node.node_id).property("title", node.title).next()
     if node.scope is not None:
-        db.V(node.node_id).property("scope", node.scope).iterate()
+        updated_node = db.V(node.node_id).property("scope", node.scope).next()
     if node.description is not None:
         updated_node = (
             db.V(node.node_id).property("description", node.description).next()
         )
+    if node.gradable is not None:
+        updated_node = db.V(node.node_id).property("gradable", node.gradable).next()
+    if node.grade is not None:
+        updated_node = db.V(node.node_id).property("grade", node.grade).next()
+
     return updated_node
 
 

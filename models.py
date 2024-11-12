@@ -30,6 +30,14 @@ class EdgeType(str, Enum):
     imply = "imply"
 
 
+class QualitativeGrade(str, Enum):
+    A = "A"
+    B = "B"
+    C = "C"
+    D = "D"
+    E = "E"
+
+
 class NodeBase(BaseModel):
     node_type: NodeType = NodeType.change
     title: str
@@ -37,7 +45,8 @@ class NodeBase(BaseModel):
     description: str | None = None
     node_id: NodeId | None = None  # TODO: check whether this could lead to issues if argument passed in create for example
     id_from_ui: int | None = None
-    # TODO: add gradable and grade
+    gradable: bool = False
+    grade: QualitativeGrade | None = None
     # TODO: add history
 
 

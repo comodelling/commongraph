@@ -66,8 +66,8 @@ def convert_gremlin_edge(edge) -> EdgeBase:
     if edge.properties is not None:
         d = {p.key: p.value for p in edge.properties if p.key in EdgeBase.model_fields}
     print("edge properties from gremlin", edge.properties)
-    d["source"] = edge.inV.id
-    d["target"] = edge.outV.id
+    d["source"] = edge.outV.id
+    d["target"] = edge.inV.id
     d["edge_type"] = edge.label
     return EdgeBase(**d)
 

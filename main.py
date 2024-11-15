@@ -16,7 +16,6 @@ from models import *
 
 app = FastAPI(
     title="ObjectiveNet API",
-    contact={"name": "Mario", "email": "mario.morvan@ucl.ac.uk"},
 )
 origins = [
     "http://127.0.0.1:5173",

@@ -47,6 +47,8 @@ class NodeBase(BaseModel):
     id_from_ui: int | None = None
     gradable: bool = False
     grade: QualitativeGrade | None = None
+    proponents: list[str] = []
+    references: list[str] = []
     # TODO: add history
 
 
@@ -57,7 +59,7 @@ class EdgeBase(BaseModel):
     cprob: Proba | None = None
     source_from_ui: int | None = None
     target_from_ui: int | None = None
-    metadata: dict | None = None
+    references: list[str] = []
 
     @field_validator("cprob")
     def convert_nan_to_none(cls, v):

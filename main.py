@@ -50,24 +50,46 @@ def get_db_connection():
 
 def convert_gremlin_vertex(vertex: GremlinVertex) -> NodeBase:
     d = dict()
-    if vertex.properties is not None:
-        d = {
-            p.key: p.value for p in vertex.properties if p.key in NodeBase.model_fields
-        }
-    # print("vertex properties from gremlin", vertex.properties)
     d["node_id"] = vertex.id
     d["node_type"] = vertex.label
+    if vertex.properties is not None:
+        for p in vertex.properties:
+            if p.key == "proponent":
+                if "proponents" not in d:
+                    d["proponents"] = [p.value]
+                else:
+                    d["proponents"].append(p.value)
+            elif p.key == "reference":
+                if "references" not in d:
+                    d["references"] = [p.value]
+                else:
+                    d["references"].append(p.value)
+            elif p.key in NodeBase.model_fields:
+                d[p.key] = p.value
+            else:
+                print("property not in model_fields", p.key)
+    # print("vertex properties from gremlin", vertex.properties)
+    # print("converted vertex", d)
     return NodeBase(**d)
 
 
 def convert_gremlin_edge(edge) -> EdgeBase:
     d = dict()
-    if edge.properties is not None:
-        d = {p.key: p.value for p in edge.properties if p.key in EdgeBase.model_fields}
-    print("edge properties from gremlin", edge.properties)
     d["source"] = edge.outV.id
     d["target"] = edge.inV.id
     d["edge_type"] = edge.label
+    if edge.properties is not None:
+        for p in edge.properties:
+            if p.key == "reference":
+                if "references" not in d:
+                    d["references"] = [p.value]
+                else:
+                    d["references"].append(p.value)
+            elif p.key in EdgeBase.model_fields:
+                d[p.key] = p.value
+            else:
+                print("property not in model_fields", p.key)
+    # print("edge properties from gremlin", edge.properties)
     return EdgeBase(**d)
 
 
@@ -213,6 +235,7 @@ def get_node(node_id: NodeId, db=Depends(get_db_connection)) -> NodeBase:
     """Return the node associated with the provided ID."""
     try:
         vertex = db.V(node_id).next()
+        print("vertex", vertex)
     except StopIteration:
         raise HTTPException(status_code=404, detail="Node not found")
     return convert_gremlin_vertex(vertex)
@@ -223,6 +246,7 @@ def create_node(node: NodeBase, db=Depends(get_db_connection)) -> NodeBase:
     """Create a node."""
     # TODO: Check for possible duplicates
     created_node = create_gremlin_node(node, db)
+    print("created_node", created_node)
     return convert_gremlin_vertex(created_node)
 
 
@@ -362,18 +386,20 @@ def create_gremlin_node(node: NodeBase, db=Depends(get_db_connection)) -> Gremli
     created_node = created_node.property("gradable", node.gradable)
     created_node = created_node.property("grade", node.grade)
     created_node = created_node.property("description", node.description)
+    for proponent in node.proponents:
+        created_node = created_node.property("proponent", proponent)
+    for reference in node.references:
+        created_node = created_node.property("reference", reference)
     return created_node.next()
 
 
 def create_gremlin_edge(edge: EdgeBase, db=Depends(get_db_connection)) -> GremlinEdge:
-    created_edge = (
-        db.V(edge.source)
-        .add_e(edge.edge_type)
-        .property("cprob", edge.cprob)
-        .to(__.V(edge.target))
-        .next()
-    )
-    return created_edge
+    created_edge = db.V(edge.source).add_e(edge.edge_type)
+    created_edge = created_edge.property("cprob", edge.cprob)
+    for reference in edge.references:
+        created_edge = created_edge.property("reference", reference)
+    created_edge = created_edge.to(__.V(edge.target))
+    return created_edge.next()
 
 
 def exists_edge_in_db(edge: EdgeBase, db=Depends(get_db_connection)) -> bool:
@@ -401,7 +427,12 @@ def update_gremlin_node(
         updated_node = db.V(node.node_id).property("gradable", node.gradable).next()
     if node.grade is not None:
         updated_node = db.V(node.node_id).property("grade", node.grade).next()
-
+    if node.proponents is not None:
+        for proponent in node.proponents:
+            updated_node = db.V(node.node_id).property("proponent", proponent).next()
+    if node.references is not None:
+        for reference in node.references:
+            updated_node = db.V(node.node_id).property("reference", reference).next()
     return updated_node
 
 
@@ -409,6 +440,8 @@ def update_gremlin_edge(edge: EdgeBase, db=Depends(get_db_connection)) -> Gremli
     traversal = (
         db.V(edge.source).outE(edge.edge_type).where(__.inV().hasId(edge.target))
     )
-    # TODO: test if any change is made
-    updated_edge = traversal.property("cprob", edge.cprob).next()
-    return updated_edge
+    # TODO: test if any change is made and deal with mere additions
+    updated_edge = traversal.property("cprob", edge.cprob)
+    for reference in edge.references:
+        updated_edge = updated_edge.property("reference", reference)
+    return updated_edge.next()

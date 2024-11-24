@@ -6,6 +6,8 @@ from gremlin_python.driver.serializer import GraphSONSerializersV3d0
 from gremlin_python.process.anonymous_traversal import traversal
 from gremlin_python.structure.graph import Edge as GremlinEdge
 from gremlin_python.structure.graph import Vertex as GremlinVertex
+from janusgraph_python.driver.serializer import JanusGraphSONSerializersV3d0
+from janusgraph_python.process.traversal import Text
 
 # from gremlin_python.process.traversal import T
 # from gremlin_python.process.traversal import Cardinality
@@ -39,7 +41,7 @@ def get_db_connection():
     connection = DriverRemoteConnection(
         "ws://localhost:8182/gremlin",  # TODO: abstract in config
         "g",
-        message_serializer=GraphSONSerializersV3d0(),
+        message_serializer=JanusGraphSONSerializersV3d0(),
     )
     g = traversal().with_remote(connection)
     try:
@@ -243,12 +245,12 @@ def search_nodes(
     traversal = db.V()
     if node_type is not None:
         traversal = traversal.has_label(node_type)
-    if title is not None:
-        traversal = traversal.has("title", title)
-    if scope is not None:
-        traversal = traversal.has("scope", scope)
-    if description is not None:
-        traversal = traversal.has("description", description)
+    if title:
+        traversal = traversal.has("title", Text.text_contains_fuzzy(title))
+    if scope:
+        traversal = traversal.has("scope", Text.text_contains_fuzzy(scope))
+    if description:
+        traversal = traversal.has("description", Text.text_contains_fuzzy(description))
     return [convert_gremlin_vertex(node) for node in traversal.to_list()]
 
 

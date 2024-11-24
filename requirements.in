@@ -2,3 +2,4 @@ gremlinpython
 fastapi[standard]
 plotly
 pydantic >= 2
+janusgraphpython

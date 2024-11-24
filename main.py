@@ -216,18 +216,40 @@ def get_network_from_node(
 ### /nodes/* ###
 
 
+# @app.get("/nodes")
+# def get_node_list(
+#     node_type: NodeType | None = None, db=Depends(get_db_connection)
+# ) -> list[NodeBase]:
+#     """Return all vertices, optionally of a certain node type."""
+#     if node_type is not None:
+#         return db.V().has_label(node_type).to_list()
+#     return [
+#         convert_gremlin_vertex(vertex)
+#         for vertex in db.V().to_list()
+#         if vertex is not None
+#     ]
+
+
 @app.get("/nodes")
-def get_node_list(
-    node_type: NodeType | None = None, db=Depends(get_db_connection)
+def search_nodes(
+    node_type: str | None = None,
+    title: str | None = None,
+    scope: str | None = None,
+    description: str | None = None,
+    db=Depends(get_db_connection),
 ) -> list[NodeBase]:
-    """Return all vertices, optionally of a certain node type."""
+    """Search in nodes."""
+    print("search_nodes", node_type, title, scope, description)
+    traversal = db.V()
     if node_type is not None:
-        return db.V().has_label(node_type).to_list()
-    return [
-        convert_gremlin_vertex(vertex)
-        for vertex in db.V().to_list()
-        if vertex is not None
-    ]
+        traversal = traversal.has_label(node_type)
+    if title is not None:
+        traversal = traversal.has("title", title)
+    if scope is not None:
+        traversal = traversal.has("scope", scope)
+    if description is not None:
+        traversal = traversal.has("description", description)
+    return [convert_gremlin_vertex(node) for node in traversal.to_list()]
 
 
 @app.get("/nodes/{node_id}")
@@ -268,27 +290,6 @@ def update_node(node: NodeBase, db=Depends(get_db_connection)):
         raise HTTPException(status_code=404, detail="Node not found")
     update_gremlin_node(node, db)
     return {"message": "Node updated successfully"}
-
-
-@app.post("/nodes/search")
-def search_nodes(
-    node_type: str = None,
-    title: str | None = None,
-    scope: str | None = None,
-    description: str | None = None,
-    db=Depends(get_db_connection),
-) -> list[NodeBase]:
-    """Search in nodes."""
-    traversal = db.V()
-    if node_type is not None:
-        traversal = traversal.has_label(node_type)
-    if title is not None:
-        traversal = traversal.has("title", title)
-    if scope is not None:
-        traversal = traversal.has("scope", scope)
-    if description is not None:
-        traversal = traversal.has("description", description)
-    return [convert_gremlin_vertex(node) for node in traversal.to_list()]
 
 
 ### /edges/* ###

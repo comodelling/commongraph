@@ -125,6 +125,14 @@ def test_get_node_wrong_id(fixtures):
     assert response.status_code == 404
 
 
+def test_search_nodes():
+    response = client.get("/nodes?title=test")
+    assert (
+        response.status_code == 200
+    ), f"Unexpected status code: {response.status_code}, response: {response.json()}"
+    assert len(json.loads(response.content.decode("utf-8"))) == 1
+
+
 def test_update_node(fixtures):
     response = client.put(
         "/nodes",
@@ -139,14 +147,6 @@ def test_update_node(fixtures):
     # inexistant ID
     response = client.put("/nodes", json={"title": "test", "description": "test"})
     assert response.status_code == 404
-
-
-def test_search_nodes():
-    response = client.post(
-        "/nodes/search",
-        json={"title": "test", "description": "test"},
-    )
-    assert response.status_code == 200
 
 
 def test_delete_node_wrong_id():

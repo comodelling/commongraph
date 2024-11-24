@@ -39,7 +39,8 @@ export default {
   margin-top: 20px;
   padding: 20px;                  /* Padding for content */
   border: 1px solid #ccc;         /* Border for content */
-  max-height: 100vh;
+  max-height: 100%;              /* Limit height to viewport height */
+  overflow-y: auto;               /* Enable vertical scrolling */
 }
 
 .full-width {

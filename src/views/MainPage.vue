@@ -85,7 +85,7 @@ export default {
 
 <style scoped>
 .main-page {
-  border: 1px solid #ccc;
+  /* border: 1px solid #ccc; */
   padding: 20px;
   padding-left: 100px;
   display: flex;                  /* Use flexbox for horizontal layout */

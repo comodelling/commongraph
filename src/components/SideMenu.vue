@@ -13,7 +13,8 @@
   <style scoped>
   .side-menu {
     width: 175px;
-    height: 100%;
+    min-width: 150px;
+    height: 90vh;
     border: 1px solid #ccc;
     padding: 10px;
     font-size: 12px;

@@ -20,6 +20,7 @@
 
 <script>
 import axios from 'axios';
+import { useRouter, useRoute } from 'vue-router';
 
 export default {
   data() {
@@ -40,12 +41,26 @@ export default {
       }, {});
     },
   },
+  watch: {
+    '$route.query.title': {
+      immediate: true,
+      handler(newQuery) {
+        this.searchQuery = newQuery || '';
+        if (this.searchQuery) {
+          this.search();
+        }
+      },
+    },
+  },
   methods: {
     //TODO: warn against empty search query
     //TODO: display messages depending on results
     //TODO: look into linked nodes too.
     async search() {
       try {
+        if (this.searchQuery !== this.route.query.title) {
+          this.router.push({ query: { ...this.route.query, title: this.searchQuery } });
+        }
         console.log('Base URL:', import.meta.env.VITE_BACKEND_URL);
         console.log('Search Query:', this.searchQuery);
         const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/nodes`, {
@@ -59,6 +74,11 @@ export default {
         console.error('Error fetching nodes:', error);
       }
     },
+  },
+  setup() {
+    const router = useRouter();
+    const route = useRoute();
+    return { router, route };
   },
 };
 </script>
@@ -82,6 +102,15 @@ export default {
   transition: background-color 0.3s;
   margin-bottom: 5px;
   font-size: 14px;
+}
+
+.node-item a {
+  text-decoration: none;          /* Remove underline from links */
+  /* color: inherit;                 Inherit color from parent */
+}
+
+.node-item a:hover {
+  text-decoration: underline;     /* Underline on hover */
 }
 
 .node-item:hover {

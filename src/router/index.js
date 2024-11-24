@@ -20,7 +20,7 @@ const routes = [
         component: About,
       },
       {
-        path: '/view/:id',
+        path: '/:id',
         name: 'Focus',
         component: Focus,
       },

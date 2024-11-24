@@ -9,7 +9,7 @@
           <h3>{{ scope }}</h3>
           <ul>
             <li v-for="node in nodes" :key="node.id" class="node-item">
-              <a :href="node.url">{{ node.title }}</a>
+              <a :href="`${node.node_id}`">{{ node.title }}</a>
             </li>
           </ul>
         </div>
@@ -46,9 +46,9 @@ export default {
     //TODO: look into linked nodes too.
     async search() {
       try {
-        console.log('Base URL:', import.meta.env.VITE_BACKEND_BASE_URL);
+        console.log('Base URL:', import.meta.env.VITE_BACKEND_URL);
         console.log('Search Query:', this.searchQuery);
-        const response = await axios.get(`${import.meta.env.VITE_BACKEND_BASE_URL}/nodes`, {
+        const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/nodes`, {
           params: {
             title: this.searchQuery,
             node_type: "proposal",

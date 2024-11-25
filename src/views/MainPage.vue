@@ -2,22 +2,21 @@
   <div class="main-page">
     <div class="content">
       <h1>ObjectiveNet</h1>
-      <input v-model="searchQuery" @keyup.enter="goToSearch" placeholder="Search for proposals..." />
-      <button @click="goToSearch">Search</button>
+      <SearchBar @search="goToSearch" />
     </div>
   </div>
 </template>
 
 <script>
+import SearchBar from '../components/SearchBar.vue';
+
 export default {
-  data() {
-    return {
-      searchQuery: '',
-    };
+  components: {
+    SearchBar,
   },
   methods: {
-    goToSearch() {
-      this.$router.push({ name: 'SearchPage', params: { searchQuery: this.searchQuery } });
+    goToSearch(query) {
+      this.$router.push({ name: 'SearchPage', params: { searchQuery: query } });
     },
   },
 };

@@ -2,8 +2,7 @@
     <div class="search-page">
       <div class="content">
         <h1>Search Results</h1>
-        <input v-model="searchQuery" @input="updateSearchQuery" @keyup.enter="search" placeholder="Search for proposals..." />
-        <button @click="search">Search</button>
+        <SearchBar :initialQuery="searchQuery" @search="search" />
         <div v-if="groupedNodes">
           <div v-for="(nodes, scope) in groupedNodes" :key="scope" class="scope-group">
             <h3>{{ scope }}</h3>
@@ -21,8 +20,12 @@
   <script>
   import axios from 'axios';
   import { useRouter, useRoute } from 'vue-router';
+  import SearchBar from '../components/SearchBar.vue';
   
   export default {
+    components: {
+      SearchBar,
+    },
     data() {
       return {
         searchQuery: '',
@@ -51,10 +54,8 @@
       },
     },
     methods: {
-      updateSearchQuery(event) {
-        this.searchQuery = event.target.value;
-      },
-      async search() {
+      async search(query) {
+        this.searchQuery = query;
         if (!this.searchQuery.trim()) {
           this.nodes = [];
           return;

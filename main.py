@@ -205,14 +205,55 @@ def get_network_summary(db=Depends(get_db_connection)) -> dict[str, int]:
     return {"nodes": vertex_count, "edges": edge_count}
 
 
-@app.get("/network/connected/{node_id}", status_code=status.HTTP_205_RESET_CONTENT)
-def get_network_from_node(
+@app.get("/subgraph/{node_id}")
+def get_subgraph_from_node(
     node_id: NodeId,
-    max_connections: Annotated[int, Query(get=0)] = None,
+    levels: Annotated[int, Query(get=0)] = 2,
     db=Depends(get_db_connection),
-):
-    """Return the network containing a particular element with an optional limit number of connections."""
-    raise NotImplementedError
+) -> Network:
+    """Return the subgraph containing a particular element with an optional limit number of connections.
+    If no neighbour is found, a singleton subgraph with a single node is returned from the provided ID.
+    """
+    print("get_subgraph_from_node", node_id, levels)
+    try:
+        # # Start traversal from the given node
+        # trav = db.V(node_id).repeat(__.bothE().subgraph('subGraph').bothV()).times(levels).cap('subGraph')
+        # subgraph = trav.next()
+        # # Extract vertices and edges from the subgraph
+        # vertices = subgraph.V().toList()
+        # edges = subgraph.E().toList()
+
+        # Start traversal from the given node
+        trav = db.V(node_id).repeat(__.bothE().bothV()).times(levels).dedup()
+        vertices = trav.toList()
+
+        if not vertices:
+            vertex = db.V(node_id).next()
+            return {"nodes": [convert_gremlin_vertex(vertex)], "edges": []}
+
+        # Collect edges separately
+        edge_trav = (
+            db.V(node_id)
+            .repeat(__.bothE().bothV())
+            .times(levels)
+            .dedup()
+            .bothE()
+            .dedup()
+        )
+        edges = edge_trav.toList()
+
+        # Convert vertices and edges to the appropriate data models
+        nodes = [convert_gremlin_vertex(vertex) for vertex in vertices]
+        edges = [convert_gremlin_edge(edge) for edge in edges]
+
+        print("nodes", nodes)
+        print("edges", edges)
+
+        return {"nodes": nodes, "edges": edges}
+    except StopIteration:
+        raise HTTPException(status_code=404, detail="Node not found")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 ### /nodes/* ###

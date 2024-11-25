@@ -35,11 +35,35 @@ export default {
         const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/subgraph/${this.elementId}`);
         const nodes = response.data.nodes;
         const edges = response.data.edges;
-        console.log('elementId', this.elementId, 'type', typeof this.elementId);
+        console.log('fetching subgraph for elementId', this.elementId);
         this.element  = nodes.find(node => node.node_id === parseInt(this.elementId));  //TODO: maybe parse incoming data even before this
         console.log('fetched element', this.element);
         console.log('fetched induced subgraph', nodes, edges);
-        this.graphData = { "nodes": nodes, "edges": edges };
+        this.graphData = {
+          nodes: nodes.map(node => ({
+            id: node.node_id.toString(),
+            position: { x: Math.random() * 500, y: Math.random() * 500 }, // Random positions for example
+            label: node.title,
+            data: {
+              title: node.title,
+              scope: node.scope,
+              node_type: node.node_type,
+              gradable: node.gradable !== undefined? node.gradable : node.node_type === "proposal",
+              grade: node.grade,
+            }
+            //   description: node.description,
+            //   proponents: node.proponents,
+            //   references: node.references,
+            // },
+            // type: 'custom-node',
+          })),
+          edges: edges.map(edge => ({
+            id: `e${edge.source}-${edge.target}`,
+            source: edge.source.toString(),
+            target: edge.target.toString(),
+          }))
+        };
+        console.log('graphData', this.graphData);
       } catch (error) {
         console.error('Error fetching induced subgraph:', error);
       }

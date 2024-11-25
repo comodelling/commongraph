@@ -8,6 +8,7 @@
 <script>
 import ElementInfo from '../components/ElementInfo.vue';
 import GraphRenderer from '../components/GraphRenderer.vue';
+import axios from 'axios';
 
 export default {
   components: {
@@ -29,20 +30,16 @@ export default {
     this.fetchProposalData(); // Fetch the proposal data on creation
   },
   methods: {
-    fetchProposalData() {
-      // This would typically involve an API call to fetch proposal data
-      const sampleData = {
-        title: 'Sample Proposal',
-        description: 'This is a sample proposal description.',
-        creator: 'User A',
-        date: '2023-01-01',
-      };
-
-      const sampleGraphData = []; // Replace this with actual graph data
-
-      // Set the fetched data
-      this.element = sampleData;
-      this.graphData = sampleGraphData; // Set the appropriate data structure for the graph
+    async fetchProposalData() {
+      try {
+        const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/nodes/${this.elementId}`);
+        this.element = response.data;
+        console.log('fetched node', this.element);
+        // this.graphData = response.data.graphData;
+        this.graphData = []
+      } catch (error) {
+        console.error('Error fetching proposal data:', error);
+      }
     },
   },
 };

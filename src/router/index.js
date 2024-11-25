@@ -22,7 +22,7 @@ const routes = [
         component: About,
       },
       {
-        path: 'search/:searchQuery',
+        path: 'search/:searchQuery?',
         name: 'SearchPage',
         component: SearchPage,
       },

@@ -46,9 +46,7 @@
         immediate: true,
         handler(newQuery) {
           this.searchQuery = newQuery || '';
-          if (this.searchQuery) {
-            this.search();
-          }
+          this.search();
         },
       },
     },
@@ -57,6 +55,10 @@
         this.searchQuery = event.target.value;
       },
       async search() {
+        if (!this.searchQuery.trim()) {
+          this.nodes = [];
+          return;
+        }
         try {
           if (this.searchQuery !== this.$route.params.searchQuery) {
             this.$router.push({ name: 'SearchPage', params: { searchQuery: this.searchQuery } });

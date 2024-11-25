@@ -9,7 +9,7 @@
             <h3>{{ scope }}</h3>
             <ul>
               <li v-for="node in nodes" :key="node.id" class="node-item">
-                <a :href="`${node.node_id}`">{{ node.title }}</a>
+                <a :href="`/focus/${node.node_id}`">{{ node.title }}</a>
               </li>
             </ul>
           </div>
@@ -42,7 +42,7 @@
       },
     },
     watch: {
-      '$route.query.search': {
+      '$route.params.searchQuery': {
         immediate: true,
         handler(newQuery) {
           this.searchQuery = newQuery || '';
@@ -58,8 +58,8 @@
       },
       async search() {
         try {
-          if (this.searchQuery !== this.$route.query.search) {
-            this.$router.push({ name: 'SearchPage', query: { search: this.searchQuery } });
+          if (this.searchQuery !== this.$route.params.searchQuery) {
+            this.$router.push({ name: 'SearchPage', params: { searchQuery: this.searchQuery } });
           }
           const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/nodes`, {
             params: {

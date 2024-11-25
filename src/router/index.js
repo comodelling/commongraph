@@ -22,12 +22,12 @@ const routes = [
         component: About,
       },
       {
-        path: '',
+        path: 'search/:searchQuery',
         name: 'SearchPage',
         component: SearchPage,
       },
       {
-        path: ':id',
+        path: 'focus/:id',
         name: 'Focus',
         component: Focus,
       },

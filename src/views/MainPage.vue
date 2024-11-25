@@ -18,7 +18,7 @@ export default {
   methods: {
     goToSearch() {
       if (this.searchQuery.trim()) {
-        this.$router.push({ name: 'SearchPage', query: { search: this.searchQuery } });
+        this.$router.push({ name: 'SearchPage', params: { searchQuery: this.searchQuery } });
       } else {
         alert('Please enter a search query.');
       }

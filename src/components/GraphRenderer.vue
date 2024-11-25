@@ -9,7 +9,7 @@
 export default {
   props: {
     data: {
-      type: Array,
+      type: Object,
       required: true,
     },
   },
@@ -18,7 +18,10 @@ export default {
   },
   methods: {
     renderGraph() {
-      console.log('Data for graph:', this.data);
+      const elementId = this.$route.params.id;  // central node id from route
+      console.log('elementId', elementId, 'type', typeof elementId);
+
+      console.log('Data for graph:', this.data.nodes, this.data.edges);
     },
   },
 };

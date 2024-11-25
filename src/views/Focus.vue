@@ -17,28 +17,31 @@ export default {
   },
   data() {
     return {
-      element: {}, // Object to hold proposal data
-      graphData: [], // Array to hold graph data
+      element: {}, // Object to hold element data
+      graphData: {}, // Object to hold graph data
     };
   },
   computed: {
     elementId() {
-      return this.$route.params.id; // Get proposal ID from route
+      return this.$route.params.id; // Get element ID from route
     },
   },
   created() {
-    this.fetchProposalData(); // Fetch the proposal data on creation
+    this.fetchElementAndSubgraphData(); // Fetch the element data on creation
   },
   methods: {
-    async fetchProposalData() {
+    async fetchElementAndSubgraphData() {
       try {
-        const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/nodes/${this.elementId}`);
-        this.element = response.data;
-        console.log('fetched node', this.element);
-        // this.graphData = response.data.graphData;
-        this.graphData = []
+        const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/subgraph/${this.elementId}`);
+        const nodes = response.data.nodes;
+        const edges = response.data.edges;
+        console.log('elementId', this.elementId, 'type', typeof this.elementId);
+        this.element  = nodes.find(node => node.node_id === parseInt(this.elementId));  //TODO: maybe parse incoming data even before this
+        console.log('fetched element', this.element);
+        console.log('fetched induced subgraph', nodes, edges);
+        this.graphData = { "nodes": nodes, "edges": edges };
       } catch (error) {
-        console.error('Error fetching proposal data:', error);
+        console.error('Error fetching induced subgraph:', error);
       }
     },
   },
@@ -48,14 +51,15 @@ export default {
 <style scoped>
 .focus {
   display: flex;                    /* Use flexbox for horizontal layout */
-  flex-grow: 1;                    /* Make the proposal detail take available space */
+  flex-grow: 1;                    /* Make the element detail take available space */
 }
 
 .element-info {
-  width: 400px;                    /* Fixed width for proposal information */
-  border: 1px solid #ccc;          /* Border around the proposal info */
+  width: 400px;                    /* Fixed width for element information */
+  border: 1px solid #ccc;          /* Border around the element info */
   margin: 10px;                    /* Default margin */
   padding: 20px;                   /* Padding for content */
+  font-size: 13px;;
 }
 
 .graph-renderer {

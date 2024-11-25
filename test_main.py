@@ -116,6 +116,11 @@ def test_create_node_specific_id():
     assert response.status_code == 200
 
 
+def test_get_random_node():
+    response = client.get("/nodes/random")
+    assert response.status_code == 200
+
+
 def test_get_node_wrong_id(fixtures):
     response = client.get(f"/nodes/{fixtures['node_id']}")
     assert response.status_code == 200

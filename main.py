@@ -1,9 +1,9 @@
 from fastapi import FastAPI, HTTPException, status, Query, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from gremlin_python.process.graph_traversal import __
-from gremlin_python.driver.driver_remote_connection import DriverRemoteConnection
-from gremlin_python.driver.serializer import GraphSONSerializersV3d0
 from gremlin_python.process.anonymous_traversal import traversal
+from gremlin_python.driver.driver_remote_connection import DriverRemoteConnection
+from gremlin_python.process.graph_traversal import __
+from gremlin_python.process.traversal import Order
 from gremlin_python.structure.graph import Edge as GremlinEdge
 from gremlin_python.structure.graph import Vertex as GremlinVertex
 from janusgraph_python.driver.serializer import JanusGraphSONSerializersV3d0
@@ -252,6 +252,33 @@ def search_nodes(
     if description:
         traversal = traversal.has("description", Text.text_contains_fuzzy(description))
     return [convert_gremlin_vertex(node) for node in traversal.to_list()]
+
+
+@app.get("/nodes/random")
+def get_random_node(
+    node_type: str | None = None, db=Depends(get_db_connection)
+) -> NodeBase:
+    """Return a random node."""
+    print("\nget_random_node")
+    try:
+        # vertex = db.V().sample(1).next()
+        # vertex = db.V().order().to_list()[0]
+        trav = db.V()
+        if node_type is not None:
+            trav = trav.has_label(node_type)
+        vertex = trav.order().by(Order.shuffle).limit(1).next()
+        print("vertex", vertex)
+    except StopIteration:
+        if node_type is not None:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Error fetching a random node of type {node_type}, there may be no node in the database",
+            )
+        raise HTTPException(
+            status_code=404,
+            detail="Error fetching a random node, there may be no node in the database",
+        )
+    return convert_gremlin_vertex(vertex)
 
 
 @app.get("/nodes/{node_id}")

@@ -48,17 +48,17 @@ watch(
 </script>
 
 <template>
-  <VueFlow 
-    :nodes="nodes"
-    :edges="edges"
-    :default-viewport="{ zoom: 1.5 }"
-    :min-zoom="0.2"
-    :max-zoom="4"
+  <div class="graph-renderer">
+    <VueFlow
+      :nodes="nodes"
+      :edges="edges"
+      :default-viewport="{ zoom: 1.5 }"
+      :min-zoom="0.2"
+      :max-zoom="4"
     >
-
-  </VueFlow>
+    </VueFlow>
+  </div>
 </template>
-
 
 <script>
 export default {
@@ -91,4 +91,5 @@ export default {
 
 /* import the default theme, this is optional but generally recommended */
 @import '@vue-flow/core/dist/theme-default.css';
+
 </style>

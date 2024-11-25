@@ -1,11 +1,15 @@
 <template>
   <div class="search-page">
     <div class="content">
-      <h1>Search Results</h1>
+      <!-- <h1>Search Results</h1> -->
       <SearchBar :initialQuery="searchQuery" @search="(query) => search(query)" />
+      <h2>Search Results</h2>
+      <div v-if="!nodes.length && searchQuery">
+        <p>No results found for "{{ searchQuery }}"</p>
+      </div>
       <div v-if="groupedNodes">
         <div v-for="(nodes, scope) in groupedNodes" :key="scope" class="scope-group">
-          <h3>{{ scope }}</h3>
+          <h4>{{ scope }}</h4>
           <ul>
             <li v-for="node in nodes" :key="node.id" class="node-item">
               <a :href="`/focus/${node.node_id}`">{{ node.title }}</a>
@@ -106,7 +110,7 @@ export default {
   cursor: pointer;
   transition: background-color 0.3s;
   margin-bottom: 5px;
-  font-size: 14px;
+  font-size: 12px;
 }
 
 .node-item a {

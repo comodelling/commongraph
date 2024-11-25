@@ -2,7 +2,7 @@
     <div class="search-page">
       <div class="content">
         <h1>Search Results</h1>
-        <input v-model="searchQuery" @input="updateSearchQuery" placeholder="Search for proposals..." />
+        <input v-model="searchQuery" @input="updateSearchQuery" @keyup.enter="search" placeholder="Search for proposals..." />
         <button @click="search">Search</button>
         <div v-if="groupedNodes">
           <div v-for="(nodes, scope) in groupedNodes" :key="scope" class="scope-group">

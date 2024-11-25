@@ -2,7 +2,7 @@
   <div class="main-page">
     <div class="content">
       <h1>ObjectiveNet</h1>
-      <input v-model="searchQuery" placeholder="Search for proposals..." />
+      <input v-model="searchQuery" @keyup.enter="goToSearch" placeholder="Search for proposals..." />
       <button @click="goToSearch">Search</button>
     </div>
   </div>

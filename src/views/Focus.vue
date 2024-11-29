@@ -57,11 +57,26 @@ export default {
             // },
             // type: 'custom-node',
           })),
-          edges: edges.map(edge => ({
-            id: `e${edge.source}-${edge.target}`,
-            source: edge.source.toString(),
-            target: edge.target.toString(),
-          }))
+          
+          edges: edges.map(edge => {
+            const edgeLabel = edge.edge_type.toString();
+            console.log('received edge to import:', edge);
+            let source = edgeLabel === "imply" ? edge.source.toString() : edge.target.toString();
+            let target = edgeLabel === "imply" ? edge.target.toString() : edge.source.toString();
+            return {
+              id: `e${edge.source}-${edge.target}`,
+              source: source,
+              target: target,
+              label: edgeLabel,
+              markerEnd: edgeLabel === 'imply' ? "arrowclosed" : undefined,
+              markerStart: edgeLabel === 'require' ? "arrowclosed" : undefined,
+              data: {
+                type: edge.type,
+                cprob: edge.cprob !== null ? edge.cprob * 100 : null,
+                // references: edge.references, not needed for graph viz
+              },
+            };
+        })
         };
         console.log('graphData', this.graphData);
       } catch (error) {

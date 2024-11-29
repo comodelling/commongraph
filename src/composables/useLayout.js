@@ -21,7 +21,35 @@ export function useLayout() {
 
     dagreGraph.setDefaultEdgeLabel(() => ({}))
 
-    const isHorizontal = direction === 'LR'
+    let isHorizontal
+    let targetPosition
+    let sourcePosition
+    switch (direction) {
+      case 'TB':
+        dagreGraph.setGraph({ rankdir: 'TB' })
+        isHorizontal = false
+        targetPosition = Position.Top
+        sourcePosition = Position.Bottom
+        break
+      case 'BT':
+        dagreGraph.setGraph({ rankdir: 'BT' })
+        isHorizontal = false
+        targetPosition = Position.Bottom
+        sourcePosition = Position.Top
+        break
+      case 'LR':
+        dagreGraph.setGraph({ rankdir: 'LR' })
+        isHorizontal = true
+        targetPosition = Position.Left
+        sourcePosition = Position.Right
+        break
+      case 'RL':
+        dagreGraph.setGraph({ rankdir: 'RL' })
+        isHorizontal = true
+        targetPosition = Position.Right
+        sourcePosition = Position.Left
+        break
+    }
     dagreGraph.setGraph({ rankdir: direction })
 
     previousDirection.value = direction
@@ -45,8 +73,8 @@ export function useLayout() {
 
       return {
         ...node,
-        targetPosition: isHorizontal ? Position.Left : Position.Top,
-        sourcePosition: isHorizontal ? Position.Right : Position.Bottom,
+        targetPosition: targetPosition,
+        sourcePosition: sourcePosition,
         position: { x: nodeWithPosition.x, y: nodeWithPosition.y },
       }
     })

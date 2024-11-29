@@ -139,7 +139,9 @@ async function layoutGraph(direction) {
       :edges="edges"
       :default-viewport="{ zoom: 1.5 }"
       :min-zoom="0.2"
-      :max-zoom="4">
+      :max-zoom="4"
+      @nodes-initialized="layoutGraph('LR')"
+    >  
     <template #node-special="specialNodeProps">
       <SpecialNode v-bind="specialNodeProps" />
     </template>
@@ -148,18 +150,19 @@ async function layoutGraph(direction) {
 
     <MiniMap />
 
-    <Panel class="process-panel" position="top-right">
-        <div class="layout-panel">
-          <button title="set horizontal layout" @click="layoutGraph('LR')">
-            <Icon name="horizontal" />
-            <span>Hor</span>
-          </button>
-
-          <button title="set vertical layout" @click="layoutGraph('TB')">
-            <Icon name="vertical" />
-            <span>Ver</span>
-          </button>
-        </div>
+    <Panel class="compass-panel" position="top-right">
+        <button class="compass-button bottom" title="Top-Bottom" @click="layoutGraph('TB')">
+          <Icon name="vertical" />
+        </button>
+        <button class="compass-button left" title="Right-Left" @click="layoutGraph('RL')">
+          <Icon name="horizontal" />
+        </button>
+        <button class="compass-button top" title="Bottom-Top" @click="layoutGraph('BT')">
+          <Icon name="vertical" />
+        </button>
+        <button class="compass-button right" title="Left-Right" @click="layoutGraph('LR')">
+          <Icon name="horizontal" />
+        </button>
       </Panel>
 
     <Controls position="top-right">
@@ -219,78 +222,58 @@ export default {
   gap: 10px;
 }
 
-.process-panel {
-  background-color: #2d3748;
-  padding: 10px;
-  border-radius: 8px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+.compass-panel {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 100px;
+  height: 100px;
   display: flex;
-  flex-direction: column;
-}
-
-.process-panel button {
-  border: none;
-  cursor: pointer;
-  background-color: #4a5568;
-  border-radius: 8px;
-  color: white;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-}
-
-.process-panel button {
-  font-size: 16px;
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
   justify-content: center;
-}
-
-.checkbox-panel {
-  display: flex;
   align-items: center;
-  gap: 10px;
 }
 
-.process-panel button:hover,
-.layout-panel button:hover {
+.compass-button {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 50%;
+  background-color: #4a5568;
+  color: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+}
+
+.compass-button.top {
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.compass-button.right {
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.compass-button.bottom {
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.compass-button.left {
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.compass-button:hover {
   background-color: #2563eb;
   transition: background-color 0.2s;
-}
-
-.process-panel label {
-  color: white;
-  font-size: 12px;
-}
-
-.stop-btn svg {
-  display: none;
-}
-
-.stop-btn:hover svg {
-  display: block;
-}
-
-.stop-btn:hover .spinner {
-  display: none;
-}
-
-.spinner {
-  border: 3px solid #f3f3f3;
-  border-top: 3px solid #2563eb;
-  border-radius: 50%;
-  width: 10px;
-  height: 10px;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
 }
 
 </style>

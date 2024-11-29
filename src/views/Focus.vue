@@ -1,7 +1,7 @@
 <template>
   <div class="focus">
       <ElementInfo :element="element" />
-      <GraphRenderer :data="graphData" />
+      <GraphRenderer :data="graphData"  @nodeClick="updateElementInfo" />
   </div>
 </template>
 
@@ -107,6 +107,17 @@ export default {
       } catch (error) {
         console.error('Error fetching induced subgraph:', error);
       }
+    },
+    async updateElementInfo(node_id) {
+      //TODO: determine the best strategy here, fetch data or cache it all in the graphData
+      try {
+        const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/nodes/${node_id}`);
+        this.element = response.data;
+      }
+      catch (error) {
+        console.error('Error fetching element:', error);
+      }
+
     },
   },
 };

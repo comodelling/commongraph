@@ -1,5 +1,6 @@
 <script setup>
 import { nextTick, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { Panel, VueFlow, useVueFlow } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import { ControlButton, Controls } from '@vue-flow/controls'
@@ -17,13 +18,28 @@ const props = defineProps({
   },
 })
 
-const { onInit, getNodes, getEdges, setNodes, setEdges, onConnect, addEdges, onNodeDragStop, setViewport, toObject, fitView } = useVueFlow()
+const emit = defineEmits(['nodeClick'])
+
+
+const { onInit, 
+  getNodes, 
+  getEdges, 
+  setNodes, 
+  setEdges, 
+  onConnect, 
+  addEdges, 
+  onNodeDragStop, 
+  setViewport, 
+  toObject, 
+  fitView,
+  onNodeClick } = useVueFlow()
 const { layout } = useLayout()
 
 // refs for nodes and edges
 const nodes = ref([])
 const edges = ref([])
 const dark = ref(false)
+const router = useRouter()
 
 
 
@@ -47,6 +63,21 @@ watch(
   { immediate: true }
 )
 
+/**
+ * onConnect is called when a new connection is created.
+ *
+ * You can add additional properties to your new edge (like a type or label) or block the creation altogether by not calling `addEdges`
+ */
+ onConnect((connection) => {
+  addEdges(connection)
+})
+
+onNodeClick(({ node }) => {
+  console.log('Node Double Click', node.id)
+  // window.location.href = `/focus/${node.node_id}`  full page reload
+  router.push({ name: 'Focus', params: { id: node.id } })
+  emit('nodeClick', node.id)
+})
 
 
 /**
@@ -62,14 +93,6 @@ watch(
   console.log('Node Drag Stop', { event, nodes, node })
 })
 
-/**
- * onConnect is called when a new connection is created.
- *
- * You can add additional properties to your new edge (like a type or label) or block the creation altogether by not calling `addEdges`
- */
-onConnect((connection) => {
-  addEdges(connection)
-})
 
 /**
  * To update a node or multiple nodes, you can

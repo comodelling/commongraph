@@ -20,13 +20,30 @@ export default {
     return {
       element: {}, // Object to hold element data
       graphData: {}, // Object to hold graph data
+      causalDirection: 'LeftToRight', // Direction for positions
     };
   },
   computed: {
     elementId() {
       return this.$route.params.id; // Get element ID from route
     },
+    handlePosition() {
+      console.log('causalDirection', this.causalDirection);
+      switch (this.causalDirection) {
+        case 'LeftToRight':
+          return { target: Position.Left, source: Position.Right };
+        case 'RightToLeft':
+          return { target: Position.Right, source: Position.Left };
+        case 'TopToBottom':
+          return { target: Position.Top, source: Position.Bottom };
+        case 'BottomToTop':
+          return { target: Position.Bottom, source: Position.Top };
+        default:
+          return { target: Position.Left, source: Position.Right };
+      }
+    },
   },
+
   created() {
     this.fetchElementAndSubgraphData(); // Fetch the element data on creation
   },
@@ -40,14 +57,15 @@ export default {
         this.element  = nodes.find(node => node.node_id === parseInt(this.elementId));  //TODO: maybe parse incoming data even before this
         console.log('fetched element', this.element);
         console.log('fetched induced subgraph', nodes, edges);
+        console.log('handlePosition', this.handlePosition);
         this.graphData = {
           nodes: nodes.map(node => ({
             type: 'special',
             id: node.node_id.toString(),
             position: { x: Math.random() * 500, y: Math.random() * 500 }, // Random positions for example
             label: node.title,
-            sourcePosition: Position.Right,
-            targetPosition: Position.Left,
+            sourcePosition: this.handlePosition.source,
+            targetPosition: this.handlePosition.target,
             data: {
               title: node.title,
               scope: node.scope,

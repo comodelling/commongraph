@@ -1,11 +1,12 @@
 <script setup>
-import { ref, watch } from 'vue'
-import { VueFlow, useVueFlow } from '@vue-flow/core'
+import { nextTick, ref, watch } from 'vue'
+import { Panel, VueFlow, useVueFlow } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import { ControlButton, Controls } from '@vue-flow/controls'
 import { MiniMap } from '@vue-flow/minimap'
 import Icon from './Icon.vue' // Update this line
-import SpecialNode from '../components/SpecialNode.vue';
+import SpecialNode from '../components/SpecialNode.vue'
+import { useLayout } from '../composables/useLayout'
 // import SpecialEdge from './SpecialEdge.vue'
 
 // props to receive nodes and edges data
@@ -16,12 +17,12 @@ const props = defineProps({
   },
 })
 
-const { onInit, setNodes, setEdges, onNodeDragStop, onConnect, addEdges, setViewport, toObject } = useVueFlow()
+const { onInit, getNodes, getEdges, setNodes, setEdges, onConnect, addEdges, onNodeDragStop, setViewport, toObject, fitView } = useVueFlow()
+const { layout } = useLayout()
 
 // refs for nodes and edges
 const nodes = ref([])
 const edges = ref([])
-
 const dark = ref(false)
 
 
@@ -112,6 +113,23 @@ function toggleDarkMode() {
   dark.value = !dark.value
 }
 
+async function layoutGraph(direction) {
+
+  const currentNodes = getNodes.value
+  const currentEdges = getEdges.value
+
+  if (currentNodes.length === 0 || currentEdges.length === 0) {
+    console.warn('Nodes or edges are empty, cannot layout graph')
+    return
+  }
+
+  nodes.value = layout(currentNodes, currentEdges, direction)
+
+  nextTick(() => {
+    fitView()
+  })
+}
+
 </script>
 
 <template>
@@ -121,8 +139,7 @@ function toggleDarkMode() {
       :edges="edges"
       :default-viewport="{ zoom: 1.5 }"
       :min-zoom="0.2"
-      :max-zoom="4"
-    >
+      :max-zoom="4">
     <template #node-special="specialNodeProps">
       <SpecialNode v-bind="specialNodeProps" />
     </template>
@@ -130,6 +147,20 @@ function toggleDarkMode() {
     <Background pattern-color="#aaa" :gap="16" />
 
     <MiniMap />
+
+    <Panel class="process-panel" position="top-right">
+        <div class="layout-panel">
+          <button title="set horizontal layout" @click="layoutGraph('LR')">
+            <Icon name="horizontal" />
+            <span>Hor</span>
+          </button>
+
+          <button title="set vertical layout" @click="layoutGraph('TB')">
+            <Icon name="vertical" />
+            <span>Ver</span>
+          </button>
+        </div>
+      </Panel>
 
     <Controls position="top-right">
       <ControlButton title="Reset Transform" @click="resetTransform">
@@ -180,10 +211,86 @@ export default {
 
 
 <style>
-/* import the necessary styles for Vue Flow to work */
-@import '@vue-flow/core/dist/style.css';
 
-/* import the default theme, this is optional but generally recommended */
-@import '@vue-flow/core/dist/theme-default.css';
+
+.process-panel,
+.layout-panel {
+  display: flex;
+  gap: 10px;
+}
+
+.process-panel {
+  background-color: #2d3748;
+  padding: 10px;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+}
+
+.process-panel button {
+  border: none;
+  cursor: pointer;
+  background-color: #4a5568;
+  border-radius: 8px;
+  color: white;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+.process-panel button {
+  font-size: 16px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.checkbox-panel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.process-panel button:hover,
+.layout-panel button:hover {
+  background-color: #2563eb;
+  transition: background-color 0.2s;
+}
+
+.process-panel label {
+  color: white;
+  font-size: 12px;
+}
+
+.stop-btn svg {
+  display: none;
+}
+
+.stop-btn:hover svg {
+  display: block;
+}
+
+.stop-btn:hover .spinner {
+  display: none;
+}
+
+.spinner {
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #2563eb;
+  border-radius: 50%;
+  width: 10px;
+  height: 10px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
 
 </style>

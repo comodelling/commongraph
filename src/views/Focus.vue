@@ -6,10 +6,10 @@
 </template>
 
 <script>
-import ElementInfo from '../components/ElementInfo.vue';
-import GraphRenderer from '../components/GraphRenderer.vue';
 import axios from 'axios';
 import { Position } from '@vue-flow/core'
+import ElementInfo from '../components/ElementInfo.vue';
+import GraphRenderer from '../components/GraphRenderer.vue';
 
 export default {
   components: {
@@ -60,13 +60,14 @@ export default {
         console.log('handlePosition', this.handlePosition);
         this.graphData = {
           nodes: nodes.map(node => ({
-            type: 'special',
+            // type: 'special',
             id: node.node_id.toString(),
             position: { x: Math.random() * 500, y: Math.random() * 500 }, // Random positions for example
-            label: node.title,
-            sourcePosition: this.handlePosition.source,
-            targetPosition: this.handlePosition.target,
+            
+            // sourcePosition: this.handlePosition.source,
+            // targetPosition: this.handlePosition.target,
             data: {
+              label: node.title,
               title: node.title,
               scope: node.scope,
               node_type: node.node_type,

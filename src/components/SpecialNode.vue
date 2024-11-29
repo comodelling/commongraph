@@ -1,25 +1,38 @@
 <script setup>
-import { computed } from 'vue'
-  
-const props = defineProps({
-  position: {
-    type: Object,
-    required: true,
-  }
+import { Handle, Position, useVueFlow } from '@vue-flow/core'
+
+defineProps({
+  id: String,
+  sourcePosition: String,
+  targetPosition: String,
+  data: Object,
+  type: String,
+  events: Object,
+  selected: Boolean,
+  resizing: Boolean,
+  dragging: Boolean,
+  connectable: Boolean,
+  position: Object,
+  dimensions: Object,
+  isValidTargetPos: Boolean,
+  isValidSourcePos: Boolean,
+  parent: Object,
+  parentNodeId: String,
+  zIndex: Number,
+  label: String,
+  dragHandle: String
 })
 
-const x = computed(() => `${Math.round(props.position.x)}px`)
-const y = computed(() => `${Math.round(props.position.y)}px`)
+defineEmits(['updateNodeInternals'])
+
+// console.log('sourcePosition', sourcePosition)
+
 </script>
 
 <template>
-  <div class="vue-flow__node-default">
-    <div>{{ data.label }}</div>
-
-    <div>
-      {x} {y}
-    </div>
-
-    <Handle type="source" :position="Position.Bottom" />
-  </div>
+  <Handle type="source" :position=sourcePosition />
+  
+  <span>{{ label }}</span>
+  
+  <Handle type="target" :position=targetPosition />
 </template>

@@ -5,8 +5,7 @@ import { Background } from '@vue-flow/background'
 import { ControlButton, Controls } from '@vue-flow/controls'
 import { MiniMap } from '@vue-flow/minimap'
 import Icon from './Icon.vue' // Update this line
-
-// import SpecialNode from './SpecialNode.vue'
+import SpecialNode from '../components/SpecialNode.vue';
 // import SpecialEdge from './SpecialEdge.vue'
 
 // props to receive nodes and edges data
@@ -124,6 +123,10 @@ function toggleDarkMode() {
       :min-zoom="0.2"
       :max-zoom="4"
     >
+    <template #node-special="specialNodeProps">
+      <SpecialNode v-bind="specialNodeProps" />
+    </template>
+
     <Background pattern-color="#aaa" :gap="16" />
 
     <MiniMap />

@@ -9,6 +9,7 @@
 import ElementInfo from '../components/ElementInfo.vue';
 import GraphRenderer from '../components/GraphRenderer.vue';
 import axios from 'axios';
+import { Position } from '@vue-flow/core'
 
 export default {
   components: {
@@ -41,9 +42,12 @@ export default {
         console.log('fetched induced subgraph', nodes, edges);
         this.graphData = {
           nodes: nodes.map(node => ({
+            type: 'special',
             id: node.node_id.toString(),
             position: { x: Math.random() * 500, y: Math.random() * 500 }, // Random positions for example
             label: node.title,
+            sourcePosition: Position.Right,
+            targetPosition: Position.Left,
             data: {
               title: node.title,
               scope: node.scope,
@@ -63,10 +67,12 @@ export default {
             console.log('received edge to import:', edge);
             let source = edgeLabel === "imply" ? edge.source.toString() : edge.target.toString();
             let target = edgeLabel === "imply" ? edge.target.toString() : edge.source.toString();
+
             return {
               id: `e${edge.source}-${edge.target}`,
               source: source,
               target: target,
+
               label: edgeLabel,
               markerEnd: edgeLabel === 'imply' ? "arrowclosed" : undefined,
               markerStart: edgeLabel === 'require' ? "arrowclosed" : undefined,

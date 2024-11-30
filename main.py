@@ -371,6 +371,19 @@ def get_edge_list(db=Depends(get_db_connection)) -> list[EdgeBase]:
     return [convert_gremlin_edge(edge) for edge in db.E().to_list() if edge is not None]
 
 
+@app.get("/edges/{source_id}/{target_id}")
+def get_edge(
+    source_id: NodeId, target_id: NodeId, db=Depends(get_db_connection)
+) -> EdgeBase:
+    """Return the edge associated with the provided ID."""
+    try:
+        traversal = db.V(source_id).outE().where(__.inV().hasId(target_id))
+        edge = traversal.next()
+        return convert_gremlin_edge(edge)
+    except StopIteration:
+        raise HTTPException(status_code=404, detail="Edge not found")
+
+
 @app.post("/edges/find")
 def find_edges(
     source_id: NodeId = None,

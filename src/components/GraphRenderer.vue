@@ -18,22 +18,28 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits(['nodeClick'])
+const emit = defineEmits(['nodeClick', 'edgeClick'])
 
 
 const { onInit, 
   getNodes, 
-  getEdges, 
+  getEdges,
+  findNode, 
+  findEdge,
   setNodes, 
   setEdges, 
-  updateNode,
+  updateNodeData,
+  updateEdge,
+  updateEdgeData,
   onConnect, 
   addEdges, 
   onNodeDragStop, 
   setViewport, 
   toObject, 
   fitView,
-  onNodeClick } = useVueFlow()
+  onNodeClick,
+  onEdgeClick,
+ } = useVueFlow()
 const { layout } = useLayout()
 
 // refs for nodes and edges
@@ -52,8 +58,18 @@ onInit((vueFlowInstance) => {
   console.log('onInit', props.data.nodes, props.data.edges)
   setNodes(props.data.nodes || [])
   setEdges(props.data.edges || [])
-  updateNode(route.params.id, { selected: true })
-})
+  if (route.params.targetId) {
+      const edgeId = `${route.params.id}-${route.params.targetId}`;
+      console.log('selecting edgeId', edgeId)
+      const edge = findEdge(edgeId)
+      if (edge) {
+        edge.selected = true;
+      }
+    }
+    else {
+      updateNodeData(route.params.id, { selected: true })
+    }
+  })
 
 
 // watch for changes in props.data and update nodes and edges accordingly
@@ -62,10 +78,35 @@ watch(
   (newData) => {
     setNodes(newData.nodes || [])
     setEdges(newData.edges || [])
-    updateNode(route.params.id, { selected: true })
+    if (route.params.targetId) {
+      const edgeId = `${route.params.id}-${route.params.targetId}`;
+      console.log('selecting edgeId', edgeId)
+      const edge = findEdge(edgeId)
+      if (edge) {
+        edge.selected = true;
+      }
+    }
+    else {
+      updateNodeData(route.params.id, { selected: true })
+    }
   },
   { immediate: true }
 )
+
+onNodeClick(({ node }) => {
+  console.log('Node Click', node.id)
+  // window.location.href = `/focus/${node.node_id}`  full page reload
+  router.push({ name: 'Focus', params: { id: node.id } })
+  emit('nodeClick', node.id)
+})
+
+onEdgeClick(({ edge }) => {
+  console.log('Edge Click', edge.source, edge.target)
+  
+  // window.location.href = `/focus/${node.node_id}`  full page reload
+  router.push({ name: 'Focus', params: { id: edge.data.source, targetId: edge.data.target } })
+  emit('edgeClick', edge.data.source, edge.data.target)
+})
 
 /**
  * onConnect is called when a new connection is created.
@@ -75,14 +116,6 @@ watch(
  onConnect((connection) => {
   addEdges(connection)
 })
-
-onNodeClick(({ node }) => {
-  console.log('Node Double Click', node.id)
-  // window.location.href = `/focus/${node.node_id}`  full page reload
-  router.push({ name: 'Focus', params: { id: node.id } })
-  emit('nodeClick', node.id)
-})
-
 
 /**
  * onNodeDragStop is called when a node is done being dragged

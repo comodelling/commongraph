@@ -27,7 +27,7 @@ const routes = [
         component: SearchPage,
       },
       {
-        path: 'focus/:id',
+        path: 'focus/:id/:targetId?',
         name: 'Focus',
         component: Focus,
       },

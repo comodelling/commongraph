@@ -17,7 +17,7 @@ export default {
 
     const fetchRandomProposal = async () => {
       try {
-        const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/nodes/random`);
+        const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/nodes/random?node_type=proposal`);
         const proposal = response.data;
         console.log('Random proposal:', proposal);
         router.push(`/focus/${proposal.node_id}`);

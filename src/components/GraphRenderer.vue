@@ -1,6 +1,6 @@
 <script setup>
 import { nextTick, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { Panel, VueFlow, useVueFlow } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import { ControlButton, Controls } from '@vue-flow/controls'
@@ -26,6 +26,7 @@ const { onInit,
   getEdges, 
   setNodes, 
   setEdges, 
+  updateNode,
   onConnect, 
   addEdges, 
   onNodeDragStop, 
@@ -40,6 +41,7 @@ const nodes = ref([])
 const edges = ref([])
 const dark = ref(false)
 const router = useRouter()
+const route = useRoute()
 
 
 
@@ -50,6 +52,7 @@ onInit((vueFlowInstance) => {
   console.log('onInit', props.data.nodes, props.data.edges)
   setNodes(props.data.nodes || [])
   setEdges(props.data.edges || [])
+  updateNode(route.params.id, { selected: true })
 })
 
 
@@ -59,6 +62,7 @@ watch(
   (newData) => {
     setNodes(newData.nodes || [])
     setEdges(newData.edges || [])
+    updateNode(route.params.id, { selected: true })
   },
   { immediate: true }
 )

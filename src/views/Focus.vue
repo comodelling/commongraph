@@ -113,7 +113,7 @@ export default {
         const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/nodes/${node_id}`);
         this.node = response.data || undefined;
       } catch (error) {
-        console.error('Error fetching element:', error);
+        console.error('Error fetching node:', error);
         this.node = undefined;
       }
     },
@@ -122,7 +122,7 @@ export default {
         const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/edges/${source_id}/${target_id}`);
         this.edge = response.data || undefined;
       } catch (error) {
-        console.error('Error fetching element:', error);
+        console.error('Error fetching edge:', error);
         this.edge = undefined;
       }
     },

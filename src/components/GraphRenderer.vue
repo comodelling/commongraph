@@ -34,7 +34,8 @@ const { onInit,
   onConnect, 
   addEdges, 
   onNodeDragStop, 
-  setViewport, 
+  setViewport,
+  zoomTo, 
   toObject, 
   fitView,
   onNodeClick,
@@ -67,10 +68,11 @@ const route = useRoute()
 
 onInit((vueFlowInstance) => {
   // instance is the same as the return of `useVueFlow`
-  vueFlowInstance.fitView()
+  // vueFlowInstance.fitView()
   // set nodes and edges from props
   console.log('initiating graph from props')
   updateGraphFromData(props.data)
+  // fitView()
   })
 
 
@@ -80,6 +82,7 @@ watch(
   (newData) => {
     console.log('updating graph data following props change', newData)
     updateGraphFromData(newData)
+    // fitView()
   },
   { immediate: true }
 )
@@ -131,7 +134,7 @@ onEdgeClick(({ edge }) => {
 function updatePos() {
   //TODO: fix this
 
-  console.log('Trying to ypdating Node Positions')
+  console.log('Trying to update Node Positions')
   console.log('Current Nodes:', nodes)
   const outValue =nodes.value.map((node) => {
     return {
@@ -170,7 +173,9 @@ async function layoutGraph(direction) {
   const currentEdges = getEdges.value
 
   if (currentNodes.length === 0 || currentEdges.length === 0) {
-    console.warn('Nodes or edges are empty, cannot layout graph')
+    // console.warn('Nodes or edges are empty, cannot layout graph')
+    fitView()
+    zoomTo(1.2)
     return
   }
 

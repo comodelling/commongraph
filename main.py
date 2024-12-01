@@ -5,7 +5,7 @@ from gremlin_python.driver.driver_remote_connection import DriverRemoteConnectio
 from gremlin_python.process.graph_traversal import __
 from gremlin_python.process.traversal import Order
 from gremlin_python.structure.graph import Edge as GremlinEdge
-from gremlin_python.structure.graph import Vertex as GremlinVertex
+from gremlin_python.structure.graph import Vertex as Gremlin_vertex
 from janusgraph_python.driver.serializer import JanusGraphSONSerializersV3d0
 from janusgraph_python.process.traversal import Text
 
@@ -50,7 +50,7 @@ def get_db_connection():
         connection.close()
 
 
-def convert_gremlin_vertex(vertex: GremlinVertex) -> NodeBase:
+def convert_gremlin_vertex(vertex: Gremlin_vertex) -> NodeBase:
     d = dict()
     d["node_id"] = vertex.id
     d["node_type"] = vertex.label
@@ -165,8 +165,8 @@ def update_network(
         try:
             if (
                 db.V(edge.source)
-                .outE(edge.edge_type)
-                .where(__.inV().hasId(edge.target))
+                .out_e(edge.edge_type)
+                .where(__.inV().has_id(edge.target))
                 .has_next()
             ):
                 # update edge
@@ -377,7 +377,7 @@ def get_edge(
 ) -> EdgeBase:
     """Return the edge associated with the provided ID."""
     try:
-        traversal = db.V(source_id).outE().where(__.inV().hasId(target_id))
+        traversal = db.V(source_id).out_e().where(__.in_v().has_id(target_id))
         edge = traversal.next()
         return convert_gremlin_edge(edge)
     except StopIteration:
@@ -398,11 +398,11 @@ def find_edges(
 
         # Add source condition if provided
         if source_id:
-            traversal = traversal.where(__.out_v().hasId(source_id))
+            traversal = traversal.where(__.out_v().has_id(source_id))
 
         # Add target condition if provided
         if target_id:
-            traversal = traversal.where(__.in_v().hasId(target_id))
+            traversal = traversal.where(__.in_v().has_id(target_id))
 
         # Add edge type condition if provided
         if edge_type:
@@ -437,7 +437,7 @@ def delete_edges(edge: EdgeBase, db=Depends(get_db_connection)):
     """Delete the edge associated with provided ID."""
     try:
         traversal = (
-            db.V(edge.source).outE(edge.edge_type).where(__.inV().hasId(edge.target))
+            db.V(edge.source).out_e(edge.edge_type).where(__.in_v().has_id(edge.target))
         )
         traversal.drop().next()
         return {"message": "Edges deleted successfully"}
@@ -462,7 +462,9 @@ def update_edge(edge: EdgeBase, db=Depends(get_db_connection)) -> EdgeBase:
 # Utils
 
 
-def create_gremlin_node(node: NodeBase, db=Depends(get_db_connection)) -> GremlinVertex:
+def create_gremlin_node(
+    node: NodeBase, db=Depends(get_db_connection)
+) -> Gremlin_vertex:
     created_node = db.add_v(node.node_type)
     # if node.node_id is not None:
     #    created_node = created_node.property(T.id, UUID(long=node.node_id))
@@ -490,15 +492,15 @@ def create_gremlin_edge(edge: EdgeBase, db=Depends(get_db_connection)) -> Gremli
 def exists_edge_in_db(edge: EdgeBase, db=Depends(get_db_connection)) -> bool:
     return (
         db.V(edge.source)
-        .outE(edge.edge_type)
-        .where(__.inV().hasId(edge.target))
+        .out_e(edge.edge_type)
+        .where(__.in_v().has_id(edge.target))
         .has_next()
     )
 
 
 def update_gremlin_node(
     node: NodeBase, db=Depends(get_db_connection)
-) -> GremlinVertex | None:
+) -> Gremlin_vertex | None:
     updated_node = None
     if node.title is not None:
         updated_node = db.V(node.node_id).property("title", node.title).next()
@@ -523,7 +525,7 @@ def update_gremlin_node(
 
 def update_gremlin_edge(edge: EdgeBase, db=Depends(get_db_connection)) -> GremlinEdge:
     traversal = (
-        db.V(edge.source).outE(edge.edge_type).where(__.inV().hasId(edge.target))
+        db.V(edge.source).out_e(edge.edge_type).where(__.in_v().has_id(edge.target))
     )
     # TODO: test if any change is made and deal with mere additions
     updated_edge = traversal.property("cprob", edge.cprob)

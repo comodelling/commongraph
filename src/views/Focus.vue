@@ -130,6 +130,15 @@ export default {
         console.error('Failed to update node:', error);
       }
     },
+    async updateEdge(updatedEdge) {
+      try {
+        this.edge = updatedEdge;
+        // this.updateGraphEdge(response.data);
+      } catch (error) {
+        console.error('Failed to update edge:', error);
+      }
+    },
+
     updateGraphNode(updatedNode) {
       const nodeIndex = this.graphData.nodes.findIndex(node => node.id === updatedNode.id.toString());
       if (nodeIndex !== -1) {
@@ -139,15 +148,7 @@ export default {
         };
       }
     },
-    async updateEdge(updatedEdge) {
-      try {
-        const response = await axios.put(`${import.meta.env.VITE_BACKEND_URL}/edges/${updatedEdge.id}`, updatedEdge);
-        this.edge = response.data;
-        this.updateGraphEdge(response.data);
-      } catch (error) {
-        console.error('Failed to update edge:', error);
-      }
-    },
+
     updateGraphEdge(updatedEdge) {
       const edgeIndex = this.graphData.edges.findIndex(edge => edge.id === `${updatedEdge.source}-${updatedEdge.target}`);
       if (edgeIndex !== -1) {

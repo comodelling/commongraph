@@ -1,3 +1,5 @@
+import warnings
+
 from fastapi import FastAPI, HTTPException, status, Query, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from gremlin_python.process.anonymous_traversal import traversal
@@ -48,51 +50,6 @@ def get_db_connection():
         yield g
     finally:
         connection.close()
-
-
-def convert_gremlin_vertex(vertex: Gremlin_vertex) -> NodeBase:
-    d = dict()
-    d["node_id"] = vertex.id
-    d["node_type"] = vertex.label
-    if vertex.properties is not None:
-        for p in vertex.properties:
-            if p.key == "proponent":
-                if "proponents" not in d:
-                    d["proponents"] = [p.value]
-                else:
-                    d["proponents"].append(p.value)
-            elif p.key == "reference":
-                if "references" not in d:
-                    d["references"] = [p.value]
-                else:
-                    d["references"].append(p.value)
-            elif p.key in NodeBase.model_fields:
-                d[p.key] = p.value
-            else:
-                print("property not in model_fields", p.key)
-    # print("vertex properties from gremlin", vertex.properties)
-    # print("converted vertex", d)
-    return NodeBase(**d)
-
-
-def convert_gremlin_edge(edge) -> EdgeBase:
-    d = dict()
-    d["source"] = edge.outV.id
-    d["target"] = edge.inV.id
-    d["edge_type"] = edge.label
-    if edge.properties is not None:
-        for p in edge.properties:
-            if p.key == "reference":
-                if "references" not in d:
-                    d["references"] = [p.value]
-                else:
-                    d["references"].append(p.value)
-            elif p.key in EdgeBase.model_fields:
-                d[p.key] = p.value
-            else:
-                print("property not in model_fields", p.key)
-    # print("edge properties from gremlin", edge.properties)
-    return EdgeBase(**d)
 
 
 # TODO: is contrast vertex / node helpful? What equivalent for edge?
@@ -462,6 +419,9 @@ def update_edge(edge: EdgeBase, db=Depends(get_db_connection)) -> EdgeBase:
 # Utils
 
 
+### Gremlin ###
+
+
 def create_gremlin_node(
     node: NodeBase, db=Depends(get_db_connection)
 ) -> Gremlin_vertex:
@@ -473,18 +433,15 @@ def create_gremlin_node(
     created_node = created_node.property("gradable", node.gradable)
     created_node = created_node.property("grade", node.grade)
     created_node = created_node.property("description", node.description)
-    for proponent in node.proponents:
-        created_node = created_node.property("proponent", proponent)
-    for reference in node.references:
-        created_node = created_node.property("reference", reference)
+    created_node = created_node.property("proponents", parse_list(node.proponents))
+    created_node = created_node.property("references", parse_list(node.references))
     return created_node.next()
 
 
 def create_gremlin_edge(edge: EdgeBase, db=Depends(get_db_connection)) -> GremlinEdge:
     created_edge = db.V(edge.source).add_e(edge.edge_type)
     created_edge = created_edge.property("cprob", edge.cprob)
-    for reference in edge.references:
-        created_edge = created_edge.property("reference", reference)
+    created_edge = created_edge.property("references", parse_list(edge.references))
     created_edge = created_edge.to(__.V(edge.target))
     return created_edge.next()
 
@@ -501,34 +458,77 @@ def exists_edge_in_db(edge: EdgeBase, db=Depends(get_db_connection)) -> bool:
 def update_gremlin_node(
     node: NodeBase, db=Depends(get_db_connection)
 ) -> Gremlin_vertex | None:
-    updated_node = None
+    updated_node = db.V(node.node_id)
     if node.title is not None:
-        updated_node = db.V(node.node_id).property("title", node.title).next()
+        updated_node = updated_node.property("title", node.title)
     if node.scope is not None:
-        updated_node = db.V(node.node_id).property("scope", node.scope).next()
+        updated_node = updated_node.property("scope", node.scope)
     if node.description is not None:
-        updated_node = (
-            db.V(node.node_id).property("description", node.description).next()
-        )
+        updated_node = updated_node.property("description", node.description)
     if node.gradable is not None:
-        updated_node = db.V(node.node_id).property("gradable", node.gradable).next()
+        updated_node = updated_node.property("gradable", node.gradable)
     if node.grade is not None:
-        updated_node = db.V(node.node_id).property("grade", node.grade).next()
-    if node.proponents is not None:
-        for proponent in node.proponents:
-            updated_node = db.V(node.node_id).property("proponent", proponent).next()
+        updated_node = updated_node.property("grade", node.grade)
     if node.references is not None:
-        for reference in node.references:
-            updated_node = db.V(node.node_id).property("reference", reference).next()
-    return updated_node
+        updated_node = updated_node.property("references", parse_list(node.references))
+    if node.proponents is not None:
+        updated_node = updated_node.property("proponents", parse_list(node.proponents))
+    return updated_node.next()
 
 
 def update_gremlin_edge(edge: EdgeBase, db=Depends(get_db_connection)) -> GremlinEdge:
-    traversal = (
-        db.V(edge.source).out_e(edge.edge_type).where(__.in_v().has_id(edge.target))
-    )
+    trav = db.V(edge.source).out_e(edge.edge_type).where(__.in_v().has_id(edge.target))
     # TODO: test if any change is made and deal with mere additions
-    updated_edge = traversal.property("cprob", edge.cprob)
-    for reference in edge.references:
-        updated_edge = updated_edge.property("reference", reference)
+    updated_edge = trav.property("cprob", edge.cprob)
+    if edge.references is not None:
+        updated_edge = updated_edge.property("references", parse_list(edge.references))
     return updated_edge.next()
+
+
+def parse_list(l: list[str]) -> str:
+    if len(l) > 1:
+        warnings.warn(
+            "list properties are experimental and currently only supported with separator ;"
+        )
+    return ";".join(l)
+
+
+def unparse_stringlist(s: str) -> list[str]:
+    return s.split(";")
+
+
+#### from gremlin to pydantic ####
+
+
+def convert_gremlin_vertex(vertex: Gremlin_vertex) -> NodeBase:
+    d = dict()
+    d["node_id"] = vertex.id
+    d["node_type"] = vertex.label
+    if vertex.properties is not None:
+        for p in vertex.properties:
+            if p.key in ["proponents", "references"]:
+                d[p.key] = unparse_stringlist(p.value)
+            elif p.key in NodeBase.model_fields:
+                d[p.key] = p.value
+            else:
+                print("property not in model_fields", p.key)
+    # print("vertex properties from gremlin", vertex.properties)
+    # print("converted vertex", d)
+    return NodeBase(**d)
+
+
+def convert_gremlin_edge(edge) -> EdgeBase:
+    d = dict()
+    d["source"] = edge.outV.id
+    d["target"] = edge.inV.id
+    d["edge_type"] = edge.label
+    if edge.properties is not None:
+        for p in edge.properties:
+            if p.key == "references":
+                d["references"] = unparse_stringlist(p.value)
+            elif p.key in EdgeBase.model_fields:
+                d[p.key] = p.value
+            else:
+                print("property not in model_fields", p.key)
+    # print("edge properties from gremlin", edge.properties)
+    return EdgeBase(**d)

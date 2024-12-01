@@ -207,3 +207,96 @@ def test_find_edges():
         json={"edge_type": "imply"},
     )
     assert response.status_code == 200
+
+
+def test_create_node_with_references():
+    response = client.post(
+        "/nodes",
+        json={
+            "title": "test node with references",
+            "description": "test description",
+            "references": ["ref1", "ref2", "ref3"],
+        },
+    )
+    assert response.status_code == 201
+    node = json.loads(response.content.decode("utf-8"))
+    assert "references" in node
+    print(node["references"])
+    assert len(node["references"]) == 3
+    assert set(node["references"]) == {"ref1", "ref2", "ref3"}
+
+
+def test_update_node_with_references():
+    response = client.post(
+        "/nodes",
+        json={
+            "title": "test node for update",
+            "description": "test description",
+            "references": ["ref1", "ref2"],
+        },
+    )
+    assert response.status_code == 201
+    node = json.loads(response.content.decode("utf-8"))
+    node_id = node["node_id"]
+
+    response = client.put(
+        "/nodes",
+        json={
+            "node_id": node_id,
+            "title": "updated title",
+            "description": "updated description",
+            "references": ["ref3", "ref4"],
+        },
+    )
+    assert response.status_code == 200
+    updated_node = json.loads(response.content.decode("utf-8"))
+    assert "references" in updated_node
+    print(updated_node["references"])
+    assert len(updated_node["references"]) == 2
+    assert set(updated_node["references"]) == {"ref3", "ref4"}
+
+
+def test_create_edge_with_references(fixtures):
+    response = client.post(
+        "/edges",
+        json={
+            "edge_type": "imply",
+            "source": fixtures["node_id"],
+            "target": fixtures["node_id"],
+            "references": ["ref1", "ref2", "ref3"],
+        },
+    )
+    assert response.status_code == 201
+    edge = json.loads(response.content.decode("utf-8"))
+    assert "references" in edge
+    assert len(edge["references"]) == 3
+    assert set(edge["references"]) == {"ref1", "ref2", "ref3"}
+
+
+def test_update_edge_with_references(fixtures):
+    response = client.post(
+        "/edges",
+        json={
+            "edge_type": "imply",
+            "source": fixtures["node_id"],
+            "target": fixtures["node_id"],
+            "references": ["ref1", "ref2"],
+        },
+    )
+    assert response.status_code == 201
+    edge = json.loads(response.content.decode("utf-8"))
+
+    response = client.put(
+        "/edges",
+        json={
+            "edge_type": "imply",
+            "source": fixtures["node_id"],
+            "target": fixtures["node_id"],
+            "references": ["ref3", "ref4"],
+        },
+    )
+    assert response.status_code == 200
+    updated_edge = json.loads(response.content.decode("utf-8"))
+    assert "references" in updated_edge
+    assert len(updated_edge["references"]) == 2
+    assert set(updated_edge["references"]) == {"ref3", "ref4"}

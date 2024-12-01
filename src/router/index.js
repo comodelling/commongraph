@@ -28,7 +28,12 @@ const routes = [
       },
       {
         path: 'focus/:id/:targetId?',
-        name: 'Focus',
+        name: 'FocusView',
+        component: Focus,
+      },
+      {
+        path: 'focus/:id/:target?/edit',
+        name: 'FocusEdit',
         component: Focus,
       },
     ],

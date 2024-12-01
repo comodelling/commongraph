@@ -1,8 +1,8 @@
 <template>
   <div class="element-info">
     <div class="tabs">
-      <button :class="{ active: currentTab === 'read' }" @click="currentTab = 'read'">Read</button>
-      <button :class="{ active: currentTab === 'edit' }" @click="currentTab = 'edit'">Edit</button>
+      <button :class="{ active: currentTab === 'read' }" @click="switchTab('read')">Read</button>
+      <button :class="{ active: currentTab === 'edit' }" @click="switchTab('edit')">Edit</button>
     </div>
     <h2>Node Information</h2>
     <div v-if="node">
@@ -28,7 +28,7 @@ export default {
   },
   data() {
     return {
-      currentTab: 'read',
+      currentTab: this.$route.path.endsWith('/edit') ? 'edit' : 'read',
     };
   },
   computed: {
@@ -37,10 +37,19 @@ export default {
     },
   },
   methods: {
+    switchTab(tab) {
+      this.currentTab = tab;
+      const path = this.$route.path.split('/edit')[0];
+      if (tab === 'edit') {
+        this.$router.push(`${path}/edit`);
+      } else {
+        this.$router.push(path);
+      }
+    },
     publishNode(updatedNode) {
       this.$emit('update-node', updatedNode);
       console.log('publishNode event emitted');
-      this.currentTab = 'read';
+      this.switchTab('read');
     },
   },
 };

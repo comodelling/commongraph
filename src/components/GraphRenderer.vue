@@ -96,7 +96,7 @@ watch(
 onNodeClick(({ node }) => {
   console.log('Node Click', node.id)
   // window.location.href = `/focus/${node.node_id}`  full page reload
-  router.push({ name: 'Focus', params: { id: node.id } })
+  router.push({ name: 'FocusView', params: { id: node.id } })
   emit('nodeClick', node.id)
 })
 
@@ -104,7 +104,7 @@ onEdgeClick(({ edge }) => {
   console.log('Edge Click', edge.source, edge.target)
   
   // window.location.href = `/focus/${node.node_id}`  full page reload
-  router.push({ name: 'Focus', params: { id: edge.data.source, targetId: edge.data.target } })
+  router.push({ name: 'FocusView', params: { id: edge.data.source, targetId: edge.data.target } })
   emit('edgeClick', edge.data.source, edge.data.target)
 })
 

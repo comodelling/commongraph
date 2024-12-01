@@ -35,6 +35,9 @@ export default {
     targetId() {
       return this.$route.params.targetId;
     },
+    isEditMode() {
+      return this.$route.path.endsWith('/edit');
+    },
     handlePosition() {
       switch (this.causalDirection) {
         case 'LeftToRight':

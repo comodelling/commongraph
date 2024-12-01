@@ -39,6 +39,7 @@ export default {
   methods: {
     publishNode(updatedNode) {
       this.$emit('update-node', updatedNode);
+      console.log('publishNode event emitted');
       this.currentTab = 'read';
     },
   },

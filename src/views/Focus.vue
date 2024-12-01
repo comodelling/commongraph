@@ -2,7 +2,7 @@
   <div class="focus">
     <NodeInfo v-if="!targetId" :node="node" @update-node="updateNode" />
     <EdgeInfo v-if="targetId && edge && Object.keys(edge).length" :edge="edge" @update-edge="updateEdge" />
-    <GraphRenderer :data="graphData" @nodeClick="updateNodeInfo" @edgeClick="updateEdgeInfo" />
+    <GraphRenderer :data="graphData" @nodeClick="updateNodeFromBackend" @edgeClick="updateEdgeFromBackend" />
   </div>
 </template>
 
@@ -105,7 +105,7 @@ export default {
         console.error('Error fetching induced subgraph:', error);
       }
     },
-    async updateNodeInfo(node_id) {
+    async updateNodeFromBackend(node_id) {
       try {
         const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/nodes/${node_id}`);
         this.node = response.data || undefined;
@@ -114,7 +114,7 @@ export default {
         this.node = undefined;
       }
     },
-    async updateEdgeInfo(source_id, target_id) {
+    async updateEdgeFromBackend(source_id, target_id) {
       try {
         const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/edges/${source_id}/${target_id}`);
         this.edge = response.data || undefined;
@@ -125,9 +125,7 @@ export default {
     },
     async updateNode(updatedNode) {
       try {
-        const response = await axios.put(`${import.meta.env.VITE_BACKEND_URL}/nodes/${updatedNode.id}`, updatedNode);
-        this.node = response.data;
-        this.updateGraphNode(response.data);
+        this.node = updatedNode;
       } catch (error) {
         console.error('Failed to update node:', error);
       }

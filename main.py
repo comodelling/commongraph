@@ -354,12 +354,12 @@ def delete_node(node_id: NodeId, db=Depends(get_db_connection)):
 
 
 @app.put("/nodes")
-def update_node(node: NodeBase, db=Depends(get_db_connection)):
+def update_node(node: NodeBase, db=Depends(get_db_connection)) -> NodeBase:
     """Update the node with provided ID."""
     if not db.V(node.node_id).has_next():
         raise HTTPException(status_code=404, detail="Node not found")
-    update_gremlin_node(node, db)
-    return {"message": "Node updated successfully"}
+    gremlin_vertex = update_gremlin_node(node, db)
+    return convert_gremlin_vertex(gremlin_vertex)
 
 
 ### /edges/* ###
@@ -446,16 +446,17 @@ def delete_edges(edge: EdgeBase, db=Depends(get_db_connection)):
 
 
 @app.put("/edges")
-def update_edge(edge: EdgeBase, db=Depends(get_db_connection)):
+def update_edge(edge: EdgeBase, db=Depends(get_db_connection)) -> EdgeBase:
     """Update the edge with provided ID."""
     try:
         if not exists_edge_in_db(edge, db):
             raise HTTPException(status_code=404, detail="Edge not found")
-        update_gremlin_edge(edge, db)
+        print("updating edge", edge)
+        gremlin_edge = update_gremlin_edge(edge, db)
     except StopIteration:
         raise HTTPException(status_code=404, detail="Error updating edge")
 
-    return {"message": "Edge updated successfully"}
+    return convert_gremlin_edge(gremlin_edge)
 
 
 # Utils

@@ -148,6 +148,7 @@ def test_update_node(fixtures):
         },
     )
     assert response.status_code == 200
+    assert json.loads(response.content.decode("utf-8"))["title"] == "test modified"
 
     # inexistant ID
     response = client.put("/nodes", json={"title": "test", "description": "test"})
@@ -167,7 +168,7 @@ def test_get_edge_list():
     assert response.status_code == 200
 
 
-def test_create_and_delete_edge(fixtures):
+def test_create_update_and_delete_edge(fixtures):
     n_edges = json.loads(client.get("/network/summary").content.decode("utf-8"))[
         "edges"
     ]
@@ -184,6 +185,20 @@ def test_create_and_delete_edge(fixtures):
         json.loads(client.get("/network/summary").content.decode("utf-8"))["edges"]
         == n_edges + 1
     ), "Edge count did not increase by 1"
+
+    # edge = response.content.decode("utf-8")
+    print(response.content.decode("utf-8"))
+    response = client.put(
+        "/edges",
+        json={
+            "edge_type": "imply",
+            "source": fixtures["node_id"],
+            "target": fixtures["node_id"],
+            "cprob": 0.5,
+        },
+    )
+    assert response.status_code == 200
+    assert json.loads(response.content.decode("utf-8"))["cprob"] == 0.5
 
 
 def test_find_edges():

@@ -21,11 +21,11 @@
         <input v-else v-model="editedNode.node_type" @blur="stopEditing('node_type')" ref="node_typeInput" />
       </div>
     </div>
-    <div class="field" v-if="editedNode.references.length > 0">
+    <div class="field">
       <strong>References:</strong>
       <ul>
         <li v-for="(reference, index) in editedNode.references" :key="index" :class="{'invalid-reference': !reference.trim()}" class="field-content">
-          <span v-if="editingField !== `reference-${index}`" @click="startEditing(`reference-${index}`)">{{ reference }}</span>
+          <span v-if="editingField !== `reference-${index}`" @click="startEditing(`reference-${index}`)">{{ reference || 'Click to edit' }}</span>
           <input v-else v-model="editedNode.references[index]" @blur="stopEditing(`reference-${index}`)" :ref="`reference-${index}Input`" />
         </li>
       </ul>
@@ -58,48 +58,51 @@ export default {
     };
   },
   methods: {
-    startEditing(field) {
-      this.editingField = field;
-      this.$nextTick(() => {
-        const refName = `${field}Input`;
-        const ref = this.$refs[refName];
-        if (Array.isArray(ref)) {
-          ref[0].focus();
-        } else if (ref) {
-          ref.focus();
-        }
-      });
-    },
-    stopEditing(field) {
-      if (this.editingField === field) {
-        this.editingField = null;
+  startEditing(field) {
+    this.editingField = field;
+    this.$nextTick(() => {
+      const refName = `${field}Input`;
+      const ref = this.$refs[refName];
+      if (Array.isArray(ref)) {
+        ref[0].focus();
+      } else if (ref) {
+        ref.focus();
       }
-    },
-    addReference() {
+    });
+  },
+  stopEditing(field) {
+    if (this.editingField === field) {
+      this.editingField = null;
+    }
+  },
+  addReference() {
+    // Allow adding a new reference even if the last one is empty, but only if it's not currently being edited
+    if (this.editingField === null || !this.editingField.startsWith('reference-')) {
       this.editedNode.references.push('');
       this.$nextTick(() => {
         this.startEditing(`reference-${this.editedNode.references.length - 1}`);
       });
-    },
-    addDescription() {
-      this.editedNode.description = '';
-      this.$nextTick(() => {
-        this.startEditing('description');
-      });
-    },
-    async publish() {
-      // Remove empty references
-      this.editedNode.references = this.editedNode.references.filter(ref => ref.trim() !== '');
-      console.log('publishing ', this.editedNode);
-      try {
-        const response = await axios.put(`${import.meta.env.VITE_BACKEND_URL}/nodes`, this.editedNode);
-        console.log('Updated node returned:', response.data);
-        this.$emit('publish', response.data);
-      } catch (error) {
-        console.error('Failed to update node:', error);
-      }
-    },
+    }
   },
+  addDescription() {
+    this.editedNode.description = '';
+    this.$nextTick(() => {
+      this.startEditing('description');
+    });
+  },
+  async publish() {
+    // Remove empty references
+    this.editedNode.references = this.editedNode.references.filter(ref => ref.trim() !== '');
+    console.log('publishing ', this.editedNode);
+    try {
+      const response = await axios.put(`${import.meta.env.VITE_BACKEND_URL}/nodes`, this.editedNode);
+      console.log('Updated node returned:', response.data);
+      this.$emit('publish', response.data);
+    } catch (error) {
+      console.error('Failed to update node:', error);
+    }
+  },
+},
   watch: {
     node: {
       handler(newNode) {

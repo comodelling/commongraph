@@ -49,26 +49,28 @@ const dark = ref(false)
 const router = useRouter()
 const route = useRoute()
 
-
+ function updateGraphFromData(data) {
+  setNodes(data.nodes || []);
+  setEdges(data.edges || []);
+  
+  if (route.params.targetId) {
+    const edgeId = `${route.params.id}-${route.params.targetId}`;
+    console.log('selecting edgeId', edgeId);
+    const edge = findEdge(edgeId);
+    if (edge) {
+      edge.selected = true;
+    }
+  } else {
+    updateNodeData(route.params.id, { selected: true });
+  }
+}
 
 onInit((vueFlowInstance) => {
   // instance is the same as the return of `useVueFlow`
   vueFlowInstance.fitView()
   // set nodes and edges from props
-  console.log('onInit', props.data.nodes, props.data.edges)
-  setNodes(props.data.nodes || [])
-  setEdges(props.data.edges || [])
-  if (route.params.targetId) {
-      const edgeId = `${route.params.id}-${route.params.targetId}`;
-      console.log('selecting edgeId', edgeId)
-      const edge = findEdge(edgeId)
-      if (edge) {
-        edge.selected = true;
-      }
-    }
-    else {
-      updateNodeData(route.params.id, { selected: true })
-    }
+  console.log('initiating graph from props')
+  updateGraphFromData(props.data)
   })
 
 
@@ -76,19 +78,8 @@ onInit((vueFlowInstance) => {
 watch(
   () => props.data,
   (newData) => {
-    setNodes(newData.nodes || [])
-    setEdges(newData.edges || [])
-    if (route.params.targetId) {
-      const edgeId = `${route.params.id}-${route.params.targetId}`;
-      console.log('selecting edgeId', edgeId)
-      const edge = findEdge(edgeId)
-      if (edge) {
-        edge.selected = true;
-      }
-    }
-    else {
-      updateNodeData(route.params.id, { selected: true })
-    }
+    console.log('updating graph data following props change', newData)
+    updateGraphFromData(newData)
   },
   { immediate: true }
 )

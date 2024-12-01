@@ -1,18 +1,12 @@
 <template>
     <div class="element-info">
-      <h2> Edge Information</h2>
+      <div class="tabs">
+        <button :class="{ active: currentTab === 'read' }" @click="currentTab = 'read'">Read</button>
+        <button :class="{ active: currentTab === 'edit' }" @click="currentTab = 'edit'">Edit</button>
+      </div>
+      <h2>Edge Information</h2>
       <div v-if="edge">
-        <strong>type:</strong>   {{ edge.edge_type }}<br />
-        <strong>gradable:  </strong>   {{ edge.gradable === undefined ? false : edge.gradable}}<br />
-        <strong>proponents:  </strong>   {{ edge.proponents ? edge.proponents.join(', ') : '' }}<br />
-        <strong>references:  </strong><br />
-          <ul class="references-list">
-            <li v-for="reference in edge.references" :key="reference">
-              {{ reference }}
-            </li>
-          </ul>
-        <strong>detailed description:</strong> <br />     
-        <p>{{ edge.description ? edge.description : ''}}</p>
+        <component :is="currentTabComponent" :edge="edge" @publish="publishEdge" />
       </div>
       <div v-else>
         <p>Edge not found</p>
@@ -21,6 +15,9 @@
   </template>
   
   <script>
+  import EdgeInfoRead from './EdgeInfoRead.vue';
+  import EdgeInfoEdit from './EdgeInfoEdit.vue';
+  
   export default {
     props: {
       edge: {
@@ -29,17 +26,21 @@
         default: undefined,
       },
     },
+    data() {
+      return {
+        currentTab: 'read',
+      };
+    },
+    computed: {
+      currentTabComponent() {
+        return this.currentTab === 'read' ? EdgeInfoRead : EdgeInfoEdit;
+      },
+    },
+    methods: {
+      publishEdge(updatedEdge) {
+        this.$emit('update-edge', updatedEdge);
+        this.currentTab = 'read';
+      },
+    },
   };
   </script>
-  
-  <style scoped>
-  .references-list {
-    margin: 0;
-    padding-left: 20px;
-    font-size: 0.9em;
-  }
-  
-  .references-list li {
-    margin: 2px 0;
-  }
-  </style>

@@ -1,20 +1,12 @@
 <template>
   <div class="element-info">
-    <h2> Node Information</h2>
+    <div class="tabs">
+      <button :class="{ active: currentTab === 'read' }" @click="currentTab = 'read'">Read</button>
+      <button :class="{ active: currentTab === 'edit' }" @click="currentTab = 'edit'">Edit</button>
+    </div>
+    <h2>Node Information</h2>
     <div v-if="node">
-      <strong>title:  </strong>   "{{ node.title }}"<br />
-      <strong>scope:  </strong>   {{ node.scope }}<br />
-      <strong>type:</strong>   {{ node.node_type }}<br />
-      <strong>gradable:  </strong>   {{ node.gradable === undefined ? false : node.gradable}}<br />
-      <strong>proponents:  </strong>   {{ node.proponents ? node.proponents.join(', ') : '' }}<br />
-      <strong>references:  </strong><br />
-        <ul class="references-list">
-          <li v-for="reference in node.references" :key="reference">
-            {{ reference }}
-          </li>
-        </ul>
-      <strong>detailed description:</strong> <br />     
-      <p>{{ node.description ? node.description : ''}}</p>
+      <component :is="currentTabComponent" :node="node" @publish="publishNode" />
     </div>
     <div v-else>
       <p>Node not found</p>
@@ -23,6 +15,9 @@
 </template>
 
 <script>
+import NodeInfoRead from './NodeInfoRead.vue';
+import NodeInfoEdit from './NodeInfoEdit.vue';
+
 export default {
   props: {
     node: {
@@ -31,17 +26,21 @@ export default {
       default: undefined,
     },
   },
+  data() {
+    return {
+      currentTab: 'read',
+    };
+  },
+  computed: {
+    currentTabComponent() {
+      return this.currentTab === 'read' ? NodeInfoRead : NodeInfoEdit;
+    },
+  },
+  methods: {
+    publishNode(updatedNode) {
+      this.$emit('update-node', updatedNode);
+      this.currentTab = 'read';
+    },
+  },
 };
 </script>
-
-<style scoped>
-.references-list {
-  margin: 0;
-  padding-left: 20px;
-  font-size: 0.9em;
-}
-
-.references-list li {
-  margin: 2px 0;
-}
-</style>

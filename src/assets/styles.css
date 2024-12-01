@@ -98,23 +98,58 @@
   max-width:250px
 }
 
-
-/* .card {
-    padding: 2em;
-  } */
-  /*   
-  */
-  
-  /* @media (prefers-color-scheme: light) {
-    :root {
-      color: #213547;
-      background-color: #ffffff;
-    }
-    a:hover {
-      color: #747bff;
-    }
-    button {
-      background-color: #f9f9f9;
-    }
+   .element-info {
+    width: 400px;
+    border: 1px solid #ccc;
+    margin: 10px;
+    padding: 20px;
+    font-size: 13px;
+    position: relative;
   }
-   */
+  
+  
+  .tabs {
+    display: flex;
+    position: absolute;
+    top: 0px;
+    left: 0px;
+  }
+  
+  .tabs button {
+    flex: 1;
+    padding: 3px;
+    cursor: pointer;
+    background: none;
+    border-radius: 3px;
+    border-bottom: 1px solid #ccc;
+    font-size: 11px;
+  }
+  
+  .tabs button.active {
+    border-bottom: 2px solid #007bff;
+    font-weight: bold;
+  }
+
+  .references-list {
+    margin: 0;
+    padding-left: 20px;
+    font-size: 0.9em;
+  }
+  
+  .references-list li {
+    margin: 2px 0;
+  }
+
+  .submit-button {
+    margin-top: 20px;
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+  }
+  
+  .submit-button:hover {
+    background-color: #0056b3;
+  }

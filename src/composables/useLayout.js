@@ -12,6 +12,36 @@ export function useLayout() {
   const graph = ref(new dagre.graphlib.Graph())
 
   const previousDirection = ref('LR')
+  let targetPosition
+  let sourcePosition
+  function layoutSingleton(nodes, direction) {
+    switch(direction) {
+      case 'TB':
+          targetPosition = Position.Top
+          sourcePosition = Position.Bottom
+          break
+        case 'BT':
+          targetPosition = Position.Bottom
+          sourcePosition = Position.Top
+          break
+        case 'LR':
+          targetPosition = Position.Left
+          sourcePosition = Position.Right
+          break
+        case 'RL':
+          targetPosition = Position.Right
+          sourcePosition = Position.Left
+          break
+      }
+    return nodes.map((node) => {
+      return {
+        ...node,
+        targetPosition: targetPosition,
+        sourcePosition: sourcePosition,
+      }
+    })
+      
+  }
 
   function layout(nodes, edges, direction) {
     // we create a new graph instance, in case some nodes/edges were removed, otherwise dagre would act as if they were still there
@@ -80,5 +110,5 @@ export function useLayout() {
     })
   }
 
-  return { graph, layout, previousDirection }
+  return { graph, layout, layoutSingleton, previousDirection }
 }

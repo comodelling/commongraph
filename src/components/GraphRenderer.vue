@@ -41,7 +41,7 @@ const { onInit,
   onNodeClick,
   onEdgeClick,
  } = useVueFlow()
-const { layout } = useLayout()
+const { layout, layoutSingleton } = useLayout()
 
 // refs for nodes and edges
 const nodes = ref([])
@@ -172,13 +172,19 @@ async function layoutGraph(direction) {
   const currentNodes = getNodes.value
   const currentEdges = getEdges.value
 
-  if (currentNodes.length === 0 || currentEdges.length === 0) {
+  if (currentNodes.length === 1) {
     // console.warn('Nodes or edges are empty, cannot layout graph')
-    fitView()
-    zoomTo(1.2)
+    nodes.value = layoutSingleton(currentNodes, direction)
+    nextTick(() => {
+      fitView()
+      zoomTo(1.5)
+    })
     return
   }
-
+  else if (currentNodes.length === 0 || currentEdges.length === 0) {
+    console.warn('Nodes or edges are empty, cannot layout graph')
+    return
+  }
   nodes.value = layout(currentNodes, currentEdges, direction)
 
   nextTick(() => {

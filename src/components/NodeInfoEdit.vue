@@ -21,7 +21,7 @@
         <input v-else v-model="editedNode.node_type" @blur="stopEditing('node_type')" ref="node_typeInput" />
       </div>
     </div>
-    <div class="field">
+    <div class="field" v-if="editedNode.references.length > 0">
       <strong>References:</strong>
       <ul>
         <li v-for="(reference, index) in editedNode.references" :key="index" :class="{'invalid-reference': !reference.trim()}" class="field-content">
@@ -29,15 +29,16 @@
           <input v-else v-model="editedNode.references[index]" @blur="stopEditing(`reference-${index}`)" :ref="`reference-${index}Input`" />
         </li>
       </ul>
-      <button class="add-reference-button" @click="addReference">[Add Reference]</button>
     </div>
-    <div class="field">
+    <button class="add-reference-button" @click="addReference">+ Reference</button>
+    <div class="field" v-if="editedNode.description || editingField === 'description'">
       <strong>Description:</strong>
       <div class="field-content">
         <span v-if="editingField !== 'description'" @click="startEditing('description')">{{ editedNode.description }}</span>
         <textarea v-else v-model="editedNode.description" @blur="stopEditing('description')" ref="descriptionInput"></textarea>
       </div>
     </div>
+    <button v-if="!editedNode.description" class="add-description-button" @click="addDescription">+ Description</button>
     <button class="submit-button" @click="publish">Submit</button>
   </div>
 </template>
@@ -78,6 +79,12 @@ export default {
       this.editedNode.references.push('');
       this.$nextTick(() => {
         this.startEditing(`reference-${this.editedNode.references.length - 1}`);
+      });
+    },
+    addDescription() {
+      this.editedNode.description = '';
+      this.$nextTick(() => {
+        this.startEditing('description');
       });
     },
     async publish() {
@@ -167,6 +174,23 @@ button.editing {
   background: #f9f9f9;
   border: 1px solid #ccc;
   cursor: pointer;
+  margin: 0 auto;
+  display: block;
+  width: 30%;
+  text-align: center;
+}
+
+.add-description-button {
+  display: block;
+  margin: 10px auto;
+  padding: 5px 10px;
+  background: #f9f9f9;
+  border: 1px solid #ccc;
+  cursor: pointer;
+  margin: 0 auto;
+  display: block;
+  width: 30%;
+  text-align: center;
 }
 
 .add-reference-button.invalid {
@@ -175,6 +199,10 @@ button.editing {
 
 .submit-button {
   margin-top: 20px;
+  margin: 0 auto;
+  display: block;
+  width: 30%;
+  text-align: center;
   padding: 10px 20px;
   background-color: #007bff;
   color: white;

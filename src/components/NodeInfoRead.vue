@@ -2,7 +2,7 @@
     <div>
       <strong>title:  </strong>   "{{ node.title }}"<br />
       <strong>scope:  </strong>   {{ node.scope }}<br />
-      <strong>type:</strong>   {{ node.node_type }}"<br />
+      <strong>type:</strong>   {{ node.node_type }}<br />
       <strong>gradable:  </strong>   {{ node.gradable === undefined ? false : node.gradable}}<br />
       <strong>proponents:  </strong>   {{ node.proponents ? node.proponents.join(', ') : '' }}<br />
       <strong>references:  </strong><br />

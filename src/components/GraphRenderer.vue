@@ -20,7 +20,6 @@ const props = defineProps({
 
 const emit = defineEmits(['nodeClick', 'edgeClick'])
 
-
 const { onInit, 
   getNodes, 
   getEdges,
@@ -41,7 +40,8 @@ const { onInit,
   onNodeClick,
   onEdgeClick,
  } = useVueFlow()
-const { layout, layoutSingleton } = useLayout()
+
+const { layout, layoutSingleton, previousDirection } = useLayout()
 
 // refs for nodes and edges
 const nodes = ref([])
@@ -202,7 +202,7 @@ async function layoutGraph(direction) {
       :default-viewport="{ zoom: 1.5 }"
       :min-zoom="0.2"
       :max-zoom="4"
-      @nodes-initialized="layoutGraph('LR')"
+      @nodes-initialized="layoutGraph(previousDirection)"
     >  
     <template #node-special="specialNodeProps">
       <SpecialNode v-bind="specialNodeProps" />

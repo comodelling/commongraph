@@ -11,9 +11,15 @@ export function useLayout() {
 
   const graph = ref(new dagre.graphlib.Graph())
 
-  const previousDirection = ref('LR')
+  const previousDirection = ref(localStorage.getItem('previousDirection') || 'LR')
   let targetPosition
   let sourcePosition
+
+  function saveDirection(direction) {
+    previousDirection.value = direction
+    localStorage.setItem('previousDirection', direction)
+  }
+
   function layoutSingleton(nodes, direction) {
     switch(direction) {
       case 'TB':
@@ -33,6 +39,7 @@ export function useLayout() {
           sourcePosition = Position.Left
           break
       }
+    saveDirection(direction)
     return nodes.map((node) => {
       return {
         ...node,
@@ -82,7 +89,7 @@ export function useLayout() {
     }
     dagreGraph.setGraph({ rankdir: direction })
 
-    previousDirection.value = direction
+    saveDirection(direction)
 
     for (const node of nodes) {
       // if you need width+height of nodes for your layout, you can use the dimensions property of the internal node (`GraphNode` type)

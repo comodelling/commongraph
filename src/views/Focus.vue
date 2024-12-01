@@ -38,20 +38,6 @@ export default {
     isEditMode() {
       return this.$route.path.endsWith('/edit');
     },
-    handlePosition() {
-      switch (this.causalDirection) {
-        case 'LeftToRight':
-          return { target: Position.Left, source: Position.Right };
-        case 'RightToLeft':
-          return { target: Position.Right, source: Position.Left };
-        case 'TopToBottom':
-          return { target: Position.Top, source: Position.Bottom };
-        case 'BottomToTop':
-          return { target: Position.Bottom, source: Position.Top };
-        default:
-          return { target: Position.Left, source: Position.Right };
-      }
-    },
   },
   created() {
     this.fetchElementAndSubgraphData();

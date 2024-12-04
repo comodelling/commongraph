@@ -61,13 +61,14 @@ export default {
   },
   methods: {
     async search(query) {
-      if (query === this.searchQuery) {
-        return;
-      }
+      // if (query === this.searchQuery) {
+      //   return;
+      // }
       this.searchQuery = query;
       if (!this.searchQuery.trim()) {
-        this.nodes = [];
-        return;
+      //   this.nodes = [];
+        // return;
+        console.warn('Empty search query, will fetch all proposals');
       }
       try {
         if (this.searchQuery !== this.$route.params.searchQuery) {

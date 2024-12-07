@@ -12,7 +12,7 @@
           <h4>{{ scope }}</h4>
           <ul>
             <li v-for="node in nodes" :key="node.id" class="node-item">
-              <a :href="`/focus/${node.node_id}`">{{ node.title }}</a>
+              <a :href="`/node/${node.node_id}`">{{ node.title }}</a>
             </li>
           </ul>
         </div>

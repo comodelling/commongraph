@@ -122,7 +122,7 @@ export default {
           } catch (error) {
             console.error('Failed to create edge:', error);
         }
-        window.location.href = `/focus/${target}`;
+        window.location.href = `/node/${target}`;
       }
 
       }

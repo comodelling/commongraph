@@ -58,8 +58,8 @@ const route = useRoute()
   setNodes(data.nodes || []);
   setEdges(data.edges || []);
   
-  if (route.params.targetId) {
-    const edgeId = `${route.params.id}-${route.params.targetId}`;
+  if (route.params.source_id && route.params.target_id) {
+    const edgeId = `${route.params.source_id}-${route.params.target_id}`;
     console.log('selecting edgeId', edgeId);
     const edge = findEdge(edgeId);
     if (edge) {
@@ -93,17 +93,17 @@ watch(
 
 onNodeClick(({ node }) => {
   console.log('Node Click', node.id)
-  // window.location.href = `/focus/${node.node_id}`  full page reload
-  router.push({ name: 'FocusView', params: { id: node.id } })
+  // window.location.href = `/node/${node.node_id}`  full page reload
+  router.push({ name: 'NodeView', params: { id: node.id } })
   emit('nodeClick', node.id)
 })
 
 onEdgeClick(({ edge }) => {
   console.log('Edge Click', edge.source, edge.target)
   
-  // window.location.href = `/focus/${node.node_id}`  full page reload
-  router.push({ name: 'FocusView', params: { id: edge.data.source, targetId: edge.data.target } })
-  emit('edgeClick', edge.data.source, edge.data.target)
+  // window.location.href = `/edge/${node.node_id}`  full page reload
+  router.push({ name: 'EdgeView', params: { source_id: edge.data.source, target_id: edge.data.target } })  // uri follows backend convention
+  emit('edgeClick', edge.data.source, edge.data.target)  // emit event to parent component
 })
 
 /**
@@ -171,8 +171,8 @@ function onConnectEnd(event) {
 
   nextTick(() => {
     // router.push({ name: 'NodeInfoEdit', params: { id: newNodeId } });
-    router.push({ name: 'FocusEdit', params: { id: newNodeId } });
-    console.log(`Navigated to /focus/${newNodeId}/edit`);
+    router.push({ name: 'NodeEdit', params: { id: newNodeId } });
+    console.log(`Navigated to /node/${newNodeId}/edit`);
     emit('newNodeCreated', newNodeData);
   });
 

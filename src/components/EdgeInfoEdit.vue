@@ -100,7 +100,6 @@
         });
       },
       async publish() {
-        // this.editedEdge.proponents = this.editedEdge.proponents.filter(p => p.trim() !== '');
         this.editedEdge.references = this.editedEdge.references.filter(ref => ref.trim() !== '');
         console.log('publishing ', this.editedEdge);
         try {

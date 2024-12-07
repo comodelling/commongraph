@@ -27,13 +27,23 @@ const routes = [
         component: SearchPage,
       },
       {
-        path: 'focus/:id/:targetId?',
-        name: 'FocusView',
+        path: '/node/:id',
+        name: 'NodeView',
         component: Focus,
       },
       {
-        path: 'focus/:id/:target?/edit',
-        name: 'FocusEdit',
+        path: '/edge/:source_id/:target_id',
+        name: 'EdgeView',
+        component: Focus,
+      },
+      {
+        path: '/node/:id/edit',
+        name: 'NodeEdit',
+        component: Focus,
+      },
+      {
+        path: '/edge/:source_id/:target_id/edit',
+        name: 'EdgeEdit',
         component: Focus,
       },
     ],

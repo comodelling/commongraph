@@ -33,7 +33,9 @@ export default {
   },
   watch: {
     '$route.path'(newPath) {
-      this.currentTab = newPath.endsWith('/edit') ? 'edit' : 'read';
+      if (newPath.includes('/node')) { // Ensure it only updates for node routes
+        this.currentTab = newPath.endsWith('/edit') ? 'edit' : 'read';
+      }
     },
   },
   computed: {
@@ -44,11 +46,10 @@ export default {
   methods: {
     switchTab(tab) {
       this.currentTab = tab;
-      const path = this.$route.path.split('/edit')[0];
       if (tab === 'edit') {
-        this.$router.push(`${path}/edit`);
+        this.$router.push(`${this.$route.path}/edit`);
       } else {
-        this.$router.push(path);
+        this.$router.push(this.$route.path);
       }
     },
     publishNode(updatedNode) {

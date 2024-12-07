@@ -17,7 +17,7 @@ export default {
   computed: {
     isFocused() {
       // Uses a condition to determine if we're in a focused state
-      return this.$route.name === 'FocusView' || this.$route.name === 'FocusEdit';  // Adjust based on specific route focus
+      return this.$route.name === 'NodeView' || this.$route.name === 'NodeEdit' || this.$route.name === 'EdgeView' || this.$route.name == 'EdgeEdit';  // Adjust based on specific route focus
     },
   },
 };

@@ -2,7 +2,7 @@
   <div class="focus">
     <NodeInfo v-if="!targetId" :node="node" @update-node="updateNode" />
     <EdgeInfo v-if="targetId && edge && Object.keys(edge).length" :edge="edge" @update-edge="updateEdge" />
-    <GraphRenderer :data="graphData" @nodeClick="updateNodeFromBackend" @edgeClick="updateEdgeFromBackend" @newNodeCreated="openNewlyCreatdNode"/>
+    <GraphRenderer :data="graphData" @nodeClick="updateNodeFromBackend" @edgeClick="updateEdgeFromBackend" @newNodeCreated="openNewlyCreatedNode"/>
   </div>
 </template>
 
@@ -32,8 +32,11 @@ export default {
     nodeId() {
       return this.$route.params.id;
     },
+    sourceId() {
+      return this.$route.params.source_id;
+    },
     targetId() {
-      return this.$route.params.targetId;
+      return this.$route.params.target_id;
     },
     isEditMode() {
       return this.$route.path.endsWith('/edit');
@@ -55,8 +58,8 @@ export default {
 
         this.node = fetched_nodes.find(node => node.node_id === parseInt(this.nodeId)) || undefined;
 
-        if (this.targetId !== undefined) {
-          this.edge = fetched_edges.find(edge => edge.source === parseInt(this.nodeId) && edge.target === parseInt(this.targetId)) || undefined;
+        if (this.sourceId !== undefined && this.targetId !== undefined) {
+          this.edge = fetched_edges.find(edge => edge.source === parseInt(this.sourceId) && edge.target === parseInt(this.targetId)) || undefined;
         }
 
         this.graphData = {
@@ -131,7 +134,7 @@ export default {
         console.error('Failed to update edge:', error);
       }
     },
-    openNewlyCreatdNode(newNode) {
+    openNewlyCreatedNode(newNode) {
       this.node = {
         node_id: newNode.id,  // temporary id
         title: newNode.data.title,
@@ -143,9 +146,8 @@ export default {
         // gradable: newNode.data.gradable,
         // grade: newNode.data.grade,
       };
-      this.$router.push({ name: 'FocusEdit', params: { id: newNode.id } });
+      this.$router.push({ name: 'NodeEdit', params: { id: newNode.id } });
     },
-
     updateGraphNode(updatedNode) {
       const nodeIndex = this.graphData.nodes.findIndex(node => node.id === updatedNode.id.toString());
       if (nodeIndex !== -1) {
@@ -155,7 +157,6 @@ export default {
         };
       }
     },
-
     updateGraphEdge(updatedEdge) {
       const edgeIndex = this.graphData.edges.findIndex(edge => edge.id === `${updatedEdge.source}-${updatedEdge.target}`);
       if (edgeIndex !== -1) {

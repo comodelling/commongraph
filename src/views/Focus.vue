@@ -160,6 +160,6 @@ export default {
 .graph-renderer {
   flex-grow: 1;
   border: 1px solid #ccc;
-  margin: 10px;
+  margin: 5px;
 }
 </style>

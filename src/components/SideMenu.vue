@@ -36,7 +36,7 @@ export default {
 
 <style scoped>
 .side-menu {
-  width: 175px;
+  width: 150px;
   min-width: 150px;
   height: 90vh;
   border: 1px solid #ccc;
@@ -45,6 +45,7 @@ export default {
   /* margin-top: 50px; */
   margin-left: 10px;
   margin-top: 20px;
+  padding-top: 50px;
 }
 .side-menu .title {
   font-size: 20px;

@@ -39,7 +39,7 @@
       </div>
     </div>
     <button v-if="!editedNode.description" class="add-description-button" @click="addDescription">+ Description</button>
-    <button class="submit-button" @click="publish">Submit</button>
+    <button class="submit-button" @click="submit">Submit</button>
   </div>
 </template>
 
@@ -90,16 +90,55 @@ export default {
       this.startEditing('description');
     });
   },
-  async publish() {
+  async submit() {
     // Remove empty references
     this.editedNode.references = this.editedNode.references.filter(ref => ref.trim() !== '');
-    console.log('publishing ', this.editedNode);
-    try {
-      const response = await axios.put(`${import.meta.env.VITE_BACKEND_URL}/nodes`, this.editedNode);
-      console.log('Updated node returned:', response.data);
-      this.$emit('publish', response.data);
-    } catch (error) {
-      console.error('Failed to update node:', error);
+    if (this.editedNode.new) {
+      try {
+        const fromConnection = this.editedNode.fromConnection;
+        //delete fromConnection from editedNode;
+        delete this.editedNode.fromConnection;
+        delete this.editedNode.new;
+        delete this.editedNode.node_id;
+        console.log('Submitting node for creation:', this.editedNode);
+        const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/nodes`, this.editedNode);
+        // console.log('Created node returned:', response.data);
+        // this.$emit('publish', response.data);
+        const target = response.data.node_id;
+
+        if (fromConnection) // create edge if node was created from a connection
+        {
+          try {
+            
+            const newEdge = {
+              source: parseInt(fromConnection.id),
+              target: target,
+              edge_type: fromConnection.edge_type,
+            };
+            console.log('Submitting edge for creation:', newEdge);
+            const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/edges`, newEdge);
+            // console.log('Created edge returned:', response.data);
+            // this.$emit('publish', response.data);
+          } catch (error) {
+            console.error('Failed to create edge:', error);
+        }
+        window.location.href = `/focus/${target}`;
+      }
+
+      }
+     catch (error) {
+      console.error('Failed to create node:', error);
+    }}
+    else {
+      try {
+        // if node id starts by 'temp-node', create the node instead
+        console.log('Submitting node for update:', this.editedNode);
+        const response = await axios.put(`${import.meta.env.VITE_BACKEND_URL}/nodes`, this.editedNode);
+        console.log('Updated node returned:', response.data);
+        this.$emit('publish', response.data);
+      } catch (error) {
+        console.error('Failed to update node:', error);
+      }
     }
   },
 },

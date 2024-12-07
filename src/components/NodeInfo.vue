@@ -31,6 +31,11 @@ export default {
       currentTab: this.$route.path.endsWith('/edit') ? 'edit' : 'read',
     };
   },
+  watch: {
+    '$route.path'(newPath) {
+      this.currentTab = newPath.endsWith('/edit') ? 'edit' : 'read';
+    },
+  },
   computed: {
     currentTabComponent() {
       return this.currentTab === 'read' ? NodeInfoRead : NodeInfoEdit;

@@ -18,7 +18,7 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits(['nodeClick', 'edgeClick'])
+const emit = defineEmits(['nodeClick', 'edgeClick', 'newNodeCreated'])
 
 const { onInit, 
   getNodes, 
@@ -30,7 +30,10 @@ const { onInit,
   updateNodeData,
   updateEdge,
   updateEdgeData,
-  onConnect, 
+  // onConnect, 
+  // onConnectStart,
+  // onConnectEnd,
+  addNodes,
   addEdges, 
   onNodeDragStop, 
   setViewport,
@@ -46,6 +49,7 @@ const { layout, layoutSingleton, previousDirection } = useLayout()
 // refs for nodes and edges
 const nodes = ref([])
 const edges = ref([])
+const connectionInfo = ref(null)
 const dark = ref(false)
 const router = useRouter()
 const route = useRoute()
@@ -107,9 +111,74 @@ onEdgeClick(({ edge }) => {
  *
  * You can add additional properties to your new edge (like a type or label) or block the creation altogether by not calling `addEdges`
  */
- onConnect((connection) => {
-  addEdges(connection)
-})
+ function onConnect(connection) {
+  console.log('on connect', connection);
+  addEdges(connection);
+}
+
+function onConnectStart({ nodeId, handleType }) {
+  console.log('on connect start', { nodeId, handleType })
+  connectionInfo.value = { nodeId, handleType }
+}
+
+function onConnectEnd(event) {
+  console.log('on connect end', event);
+
+  if (!connectionInfo.value) {
+    console.error('No connection info available');
+    return;
+  }
+
+  const { nodeId, handleType } = connectionInfo.value;
+
+  //inherit scope from source node
+  const sourceNode = findNode(nodeId);
+  const scope = sourceNode.data.scope;
+
+  const newNodeId = `temp-node`;
+
+  const newEdgeId = `temp-edge`;
+  const edgeType = handleType === 'source' ? 'imply' : 'require';
+
+  const newNodeData = {
+    id: newNodeId,
+    position: { x: event.clientX, y: event.clientY },
+    data: {
+      label: 'New Node',
+      title: 'New Node',
+      scope: scope,  // inherited scope
+      node_type: 'change',
+      fromConnection: {'id': nodeId, 'edge_type': edgeType} // to be used to update edge data
+    },
+  };
+
+  const newEdgeData = {
+    id: newEdgeId,
+    source: handleType === 'source' ? nodeId : newNodeId,
+    target: handleType === 'source' ? newNodeId : nodeId,
+    // type: handleType === 'source' ? 'sourceType' : 'targetType',
+    label: edgeType,
+    data: {}
+  };
+
+  console.log('New Node:', newNodeData);
+  console.log('New Edge:', newEdgeData);
+  addNodes(newNodeData);
+  addEdges(newEdgeData);
+  // nodes.value.push(newNodeData);
+  // edges.value.push(newEdgeData);
+  // newNode.value = newNodeData;
+
+  nextTick(() => {
+    // router.push({ name: 'NodeInfoEdit', params: { id: newNodeId } });
+    router.push({ name: 'FocusEdit', params: { id: newNodeId } });
+    console.log(`Navigated to /focus/${newNodeId}/edit`);
+    emit('newNodeCreated', newNodeData);
+  });
+
+  connectionInfo.value = null;
+}
+
 
 /**
  * onNodeDragStop is called when a node is done being dragged
@@ -203,6 +272,9 @@ async function layoutGraph(direction) {
       :min-zoom="0.2"
       :max-zoom="4"
       @nodes-initialized="layoutGraph(previousDirection)"
+      @connect="onConnect"
+      @connect-start="onConnectStart"
+      @connect-end="onConnectEnd"
     >  
     <template #node-special="specialNodeProps">
       <SpecialNode v-bind="specialNodeProps" />

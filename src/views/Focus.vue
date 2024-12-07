@@ -2,7 +2,7 @@
   <div class="focus">
     <NodeInfo v-if="!targetId" :node="node" @update-node="updateNode" />
     <EdgeInfo v-if="targetId && edge && Object.keys(edge).length" :edge="edge" @update-edge="updateEdge" />
-    <GraphRenderer :data="graphData" @nodeClick="updateNodeFromBackend" @edgeClick="updateEdgeFromBackend" />
+    <GraphRenderer :data="graphData" @nodeClick="updateNodeFromBackend" @edgeClick="updateEdgeFromBackend" @newNodeCreated="openNewlyCreatdNode"/>
   </div>
 </template>
 
@@ -60,7 +60,7 @@ export default {
             id: node.node_id.toString(),
             position: { x: Math.random() * 500, y: Math.random() * 500 },
             data: {
-              label: node.title,
+              label: node.title, // move out of data? 
               title: node.title,
               scope: node.scope,
               node_type: node.node_type,
@@ -126,6 +126,20 @@ export default {
       } catch (error) {
         console.error('Failed to update edge:', error);
       }
+    },
+    openNewlyCreatdNode(newNode) {
+      this.node = {
+        node_id: newNode.id,  // temporary id
+        title: newNode.data.title,
+        scope: newNode.data.scope,
+        node_type: newNode.data.node_type,
+        references: [],
+        new: true,
+        fromConnection: newNode.data.fromConnection,
+        // gradable: newNode.data.gradable,
+        // grade: newNode.data.grade,
+      };
+      this.$router.push({ name: 'FocusEdit', params: { id: newNode.id } });
     },
 
     updateGraphNode(updatedNode) {

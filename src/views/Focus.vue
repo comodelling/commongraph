@@ -45,7 +45,11 @@ export default {
   methods: {
     async fetchElementAndSubgraphData() {
       try {
-        const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/subgraph/${this.nodeId}`);
+        const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/subgraph/${this.nodeId}`, {
+          params: {
+            levels: 5
+          }
+        });
         const fetched_nodes = response.data.nodes;
         const fetched_edges = response.data.edges;
 

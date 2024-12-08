@@ -461,6 +461,8 @@ def update_gremlin_node(
     updated_node = db.V(node.node_id)
     if node.title is not None:
         updated_node = updated_node.property("title", node.title)
+    if node.node_type is not None:
+        updated_node = updated_node.property("node_type", node.node_type)
     if node.scope is not None:
         updated_node = updated_node.property("scope", node.scope)
     if node.description is not None:
@@ -477,9 +479,13 @@ def update_gremlin_node(
 
 
 def update_gremlin_edge(edge: EdgeBase, db=Depends(get_db_connection)) -> GremlinEdge:
-    trav = db.V(edge.source).out_e(edge.edge_type).where(__.in_v().has_id(edge.target))
+    """Update the properties of an edge defined by its source and target nodes."""
+    updated_edge = db.V(edge.source).out_e().where(__.in_v().has_id(edge.target))
     # TODO: test if any change is made and deal with mere additions
-    updated_edge = trav.property("cprob", edge.cprob)
+    if edge.cprob is not None:
+        updated_edge = updated_edge.property("cprob", edge.cprob)
+    if edge.edge_type is not None:
+        updated_edge = updated_edge.property("edge_type", edge.edge_type)
     if edge.references is not None:
         updated_edge = updated_edge.property("references", parse_list(edge.references))
     return updated_edge.next()

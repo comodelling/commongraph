@@ -82,8 +82,9 @@ export default {
           nodes: fetched_nodes.map(node => ({
             id: node.node_id.toString(),
             position: { x: Math.random() * 500, y: Math.random() * 500 },
+            label: node.title, // move out of data? 
             data: {
-              label: node.title, // move out of data? 
+              node_id: node.node_id,
               title: node.title,
               scope: node.scope,
               node_type: node.node_type,

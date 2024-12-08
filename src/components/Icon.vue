@@ -36,6 +36,10 @@ defineProps({
     />
   </svg>
 
+  <svg v-if="name === 'export'" width="16" height="16" viewBox="0 0 24 24">
+    <path d="M12 2L12 14M12 14L8 10M12 14L16 10M4 18H20V22H4V18Z" stroke="black" stroke-width="2" fill="none"/>
+  </svg>
+
   <svg v-else-if="name === 'horizontal'" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
   <path d="M2,12 L22,12" stroke="white" stroke-width="2" />
   <path d="M7,7 L2,12 L7,17" stroke="white" stroke-width="2" fill="none" />

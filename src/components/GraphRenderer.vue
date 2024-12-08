@@ -1,4 +1,5 @@
 <script setup>
+import { saveAs } from 'file-saver'
 import { nextTick, ref, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { Panel, VueFlow, useVueFlow } from '@vue-flow/core'
@@ -143,8 +144,8 @@ function onConnectEnd(event) {
   const newNodeData = {
     id: newNodeId,
     position: { x: event.clientX, y: event.clientY },
+    label: 'New Node',
     data: {
-      label: 'New Node',
       title: 'New Node',
       scope: scope,  // inherited scope
       node_type: 'change',
@@ -261,6 +262,20 @@ async function layoutGraph(direction) {
   })
 }
 
+function exportGraph() {
+  const nodes = getNodes.value.map(node => ({
+    ...node.data
+  }));
+
+  const edges = getEdges.value.map(edge => ({
+    ...edge.data
+  }));
+
+  const graphData = { nodes, edges };
+  const blob = new Blob([JSON.stringify(graphData, null, 2)], { type: 'application/json' });
+  saveAs(blob, 'export.json');
+}
+
 </script>
 
 <template>
@@ -315,6 +330,10 @@ async function layoutGraph(direction) {
 
       <ControlButton title="Log `toObject`" @click="logToObject">
         <Icon name="log" />
+      </ControlButton>
+
+      <ControlButton title="Export Graph" @click="exportGraph">
+        <Icon name="export" />
       </ControlButton>
     </Controls>
   </VueFlow>

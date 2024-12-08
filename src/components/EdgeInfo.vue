@@ -44,10 +44,10 @@ export default {
   methods: {
     switchTab(tab) {
       this.currentTab = tab;
-      const path = this.$route.path.split('/edit')[0];
       if (tab === 'edit') {
-        this.$router.push(`${path}/edit`);
+        this.$router.push(`${this.$route.path}/edit`);
       } else {
+        const path = this.$route.path.split('/edit')[0];
         this.$router.push(path);
       }
     },

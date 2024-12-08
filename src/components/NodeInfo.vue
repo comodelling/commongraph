@@ -49,7 +49,8 @@ export default {
       if (tab === 'edit') {
         this.$router.push(`${this.$route.path}/edit`);
       } else {
-        this.$router.push(this.$route.path);
+        const path = this.$route.path.split('/edit')[0];
+        this.$router.push(path);
       }
     },
     publishNode(updatedNode) {

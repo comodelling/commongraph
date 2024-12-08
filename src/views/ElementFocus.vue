@@ -106,7 +106,7 @@ export default {
               markerStart: edgeLabel === 'require' ? "arrowclosed" : undefined,
               data: {
                 edge_type: edgeLabel,
-                cprob: edge.cprob !== null ? edge.cprob * 100 : null,
+                cprob: edge.cprob,
                 source: edge.source,
                 target: edge.target,
                 references: edge.references,
@@ -130,6 +130,7 @@ export default {
     async updateEdgeFromBackend(source_id, target_id) {
       try {
         const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/edges/${source_id}/${target_id}`);
+        console.log('response from edges/ api call', response.data);
         this.edge = response.data || undefined;
       } catch (error) {
         console.error('Error fetching edge:', error);

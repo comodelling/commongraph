@@ -8,11 +8,19 @@
         </div>
       </div>
       <div class="field">
+        <strong>CProb:</strong>
+        <div class="field-content">
+          <span v-if="editingField !== 'cprob' && editedEdge.cprob" @click="startEditing('cprob')">{{ editedEdge.cprob }}</span>
+          <input v-else-if="editingField === 'cprob'" v-model="editedEdge.cprob" @blur="stopEditing('cprob')" ref="cprobInput" />
+          <button v-if="!editedEdge.cprob && editingField !== 'cprob'" @click="addCprob">Add</button> <!-- Modified button visibility condition -->
+        </div>
+      </div>
+      <!-- <div class="field">
         <strong>Gradable:</strong>
         <div class="field-content">
           <input type="checkbox" v-model="editedEdge.gradable" />
         </div>
-      </div>
+      </div> -->
       <!-- <div class="field">
       <strong>Proponents:</strong>
       <ul>
@@ -106,9 +114,16 @@
           const response = await axios.put(`${import.meta.env.VITE_BACKEND_URL}/edges`, this.editedEdge);
           console.log('Updated edge returned:', response.data);
           this.$emit('publish', response.data);
+          this.edge = response.data; // Update the edge with the response data
+
+          // window.location.href = `/edge/`;
         } catch (error) {
           console.error('Failed to update edge:', error);
         }
+      },
+      addCprob() {
+        this.editedEdge.cprob = '';
+        this.startEditing('cprob'); // Ensure the input field is shown immediately
       },
     },
     watch: {

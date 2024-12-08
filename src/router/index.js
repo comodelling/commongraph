@@ -2,7 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router';
 import Layout from '../components/Layout.vue';
 import MainPage from '../views/MainPage.vue';
 import SearchPage from '../views/SearchPage.vue';
-import Focus from '../views/Focus.vue';
+import Focus from '../views/ElementFocus.vue';
 import About from '../views/About.vue';
 
 const routes = [

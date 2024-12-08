@@ -8,11 +8,9 @@
 
 <script>
 import axios from 'axios';
-import { Position } from '@vue-flow/core';
 import NodeInfo from '../components/NodeInfo.vue';
 import EdgeInfo from '../components/EdgeInfo.vue';
 import GraphRenderer from '../components/GraphRenderer.vue';
-import { ref } from 'vue';
 
 export default {
   components: {
@@ -41,9 +39,27 @@ export default {
     isEditMode() {
       return this.$route.path.endsWith('/edit');
     },
+    isBrandNewNode() {
+      return this.nodeId === "new";  //TODO: distinguish brand new node and one from connection
+    }
   },
   created() {
-    this.fetchElementAndSubgraphData();
+    // console.log('isbrandnewnode', this.isBrandNewNode)
+    if (this.isBrandNewNode) {
+      console.log('opening brand new node in focus');
+      this.node = {
+        node_id: 'new',  // temporary id
+        title: "New Node",
+        scope: "scope",
+        node_type: "proposal",
+        references: [],
+        new: true,
+      };
+      this.$router.push({ name: 'NodeEdit', params: { id: "new" } });
+    }
+    else {
+      this.fetchElementAndSubgraphData();
+    }
   },
   methods: {
     async fetchElementAndSubgraphData() {
@@ -176,9 +192,4 @@ export default {
   flex-grow: 1;
 }
 
-.graph-renderer {
-  flex-grow: 1;
-  border: 1px solid #ccc;
-  margin: 5px;
-}
 </style>

@@ -349,6 +349,11 @@ export default {
 
 <style>
 
+.graph-renderer {
+  flex-grow: 1;
+  border: 1px solid #ccc;
+  margin: 5px;
+}
 
 .process-panel,
 .layout-panel {

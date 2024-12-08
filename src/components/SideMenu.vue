@@ -2,7 +2,7 @@
   <div class="side-menu">
     <div class="title">Menu</div>
     <router-link to="/">Main page</router-link><br />
-    <router-link to="/node/new">New proposal</router-link><br />
+    <a href="#" @click="createNewNode">New proposal</a><br />
     <a href="#" @click="fetchRandomProposal">Random proposal</a><br />
     <router-link to="/about">About ObjectiveNet</router-link>
   </div>
@@ -30,20 +30,13 @@ export default {
     };
 
     const createNewNode = async () => {
-      try {
-        const newNode = {
-          id: 'new',
-          label: 'New Node',
-          data: {
-            title: 'New Node',
-            scope: 'scope',  // inherited scope
-            node_type: 'proposal',
-        },
-      };
-        console.log('Creating new node:', newNode);
-        router.push({ name: 'NodeEdit', params: { id: 'new' } });
-      } catch (error) {
-        console.error('Error creating new node:', error);
+      const path = router.currentRoute.value.path
+      if (path.startsWith("/node") || path.startsWith("/edge")) {
+        window.location.href = `/node/new`;
+
+      }
+      else {
+        router.push(`/node/new`);
       }
     };
     return {

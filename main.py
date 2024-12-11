@@ -491,7 +491,9 @@ def update_gremlin_edge(edge: EdgeBase, db=Depends(get_db_connection)) -> Gremli
     return updated_edge.next()
 
 
-def parse_list(l: list[str]) -> str:
+def parse_list(l: list[str]) -> str | None:
+    if len(l) == 0:
+        return None
     if len(l) > 1:
         warnings.warn(
             "list properties are experimental and currently only supported with separator ;"

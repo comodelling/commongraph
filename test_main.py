@@ -172,6 +172,7 @@ def test_create_update_and_delete_edge(fixtures):
     n_edges = json.loads(client.get("/network/summary").content.decode("utf-8"))[
         "edges"
     ]
+    # POST
     response = client.post(
         "/edges",
         json={
@@ -186,7 +187,7 @@ def test_create_update_and_delete_edge(fixtures):
         == n_edges + 1
     ), "Edge count did not increase by 1"
 
-    # edge = response.content.decode("utf-8")
+    # PUT
     print(response.content.decode("utf-8"))
     response = client.put(
         "/edges",
@@ -199,6 +200,14 @@ def test_create_update_and_delete_edge(fixtures):
     )
     assert response.status_code == 200
     assert json.loads(response.content.decode("utf-8"))["cprob"] == 0.5
+
+    # DELETE
+    response = client.delete(f"/edges/{fixtures['node_id']}/{fixtures['node_id']}")
+    assert response.status_code == 205
+
+    # Verify edge deletion
+    response = client.get(f"/edges/{fixtures['node_id']}/{fixtures['node_id']}")
+    assert response.status_code == 404
 
 
 def test_find_edges():
@@ -300,3 +309,29 @@ def test_update_edge_with_references(fixtures):
     assert "references" in updated_edge
     assert len(updated_edge["references"]) == 2
     assert set(updated_edge["references"]) == {"ref3", "ref4"}
+
+
+# def test_delete_edge(fixtures):
+#     # Create an edge
+#     response = client.post(
+#         "/edges",
+#         json={
+#             "edge_type": "imply",
+#             "source": fixtures["node_id"],
+#             "target": fixtures["node_id"],
+#         },
+#     )
+#     assert response.status_code == 201
+#     edge = json.loads(response.content.decode("utf-8"))
+
+#     # Verify edge creation
+#     response = client.get(f"/edges/{fixtures['node_id']}/{fixtures['node_id']}")
+#     assert response.status_code == 200
+
+#     # Delete the edge
+#     response = client.delete(f"/edges/{fixtures['node_id']}/{fixtures['node_id']}")
+#     assert response.status_code == 205
+
+#     # Verify edge deletion
+#     response = client.get(f"/edges/{fixtures['node_id']}/{fixtures['node_id']}")
+#     assert response.status_code == 404

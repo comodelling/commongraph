@@ -1,4 +1,5 @@
 import warnings
+import logging
 
 from fastapi import FastAPI, HTTPException, status, Query, Depends
 from fastapi.middleware.cors import CORSMiddleware
@@ -351,26 +352,26 @@ def find_edges(
     """Return the edge associated with the provided ID."""
     try:
         # Start with a base traversal
-        traversal = db.E()
+        trav = db.E()
 
         # Add source condition if provided
         if source_id:
-            traversal = traversal.where(__.out_v().has_id(source_id))
+            trav = trav.where(__.out_v().has_id(source_id))
 
         # Add target condition if provided
         if target_id:
-            traversal = traversal.where(__.in_v().has_id(target_id))
+            trav = trav.where(__.in_v().has_id(target_id))
 
         # Add edge type condition if provided
         if edge_type:
-            traversal = traversal.has_label(edge_type)
+            trav = trav.has_label(edge_type)
 
         # Execute the traversal and convert to list
-        edges = traversal.to_list()
+        edges = trav.to_list()
 
         # Check if edges are found
         if not edges:
-            raise HTTPException(status_code=404, detail="No such edge found")
+            return []
 
         return [convert_gremlin_edge(edge) for edge in edges]
 
@@ -389,16 +390,28 @@ def create_edge(edge: EdgeBase, db=Depends(get_db_connection)) -> EdgeBase:
         raise HTTPException(status_code=404, detail="Node or edge not found")
 
 
-@app.delete("/edges")
-def delete_edges(edge: EdgeBase, db=Depends(get_db_connection)):
+@app.delete("/edges/{source_id}/{target_id}", status_code=205)
+def delete_edge(
+    source_id: NodeId,
+    target_id: NodeId,
+    edge_type: EdgeType | None = None,
+    db=Depends(get_db_connection),
+):
     """Delete the edge associated with provided ID."""
+    # logging.info(f"Attempting to delete edge from {source_id} to {target_id} with edge_type {edge_type}")
     try:
-        traversal = (
-            db.V(edge.source).out_e(edge.edge_type).where(__.in_v().has_id(edge.target))
-        )
-        traversal.drop().next()
+        if edge_type is not None:
+            trav = db.V(source_id).out_e(edge_type).where(__.in_v().has_id(target_id))
+        else:
+            warnings.warn(
+                "No edge type provided, deleting all edges from source to target"
+            )
+            trav = db.V(source_id).out_e().where(__.in_v().has_id(target_id))
+        # logging.info(f"Traversal query: {trav}")
+        trav.drop().iterate()
         return {"message": "Edges deleted successfully"}
     except StopIteration:
+        logging.error(f"Edge from {source_id} to {target_id} not found")
         raise HTTPException(status_code=404, detail="Edge not found")
 
 

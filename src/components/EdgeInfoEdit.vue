@@ -49,7 +49,7 @@
         </div>
       </div>
       <button v-if="!editedEdge.description" class="add-description-button" @click="addDescription">+ Description</button>
-      <button class="submit-button" @click="publish">Submit</button>
+      <button class="submit-button" @click="submit">Submit</button>
     </div>
   </template>
   
@@ -107,14 +107,21 @@
           this.startEditing('description');
         });
       },
-      async publish() {
+      async submit() {
         this.editedEdge.references = this.editedEdge.references.filter(ref => ref.trim() !== '');
-        console.log('publishing ', this.editedEdge);
+        console.log('submitting ', this.editedEdge);
+        let response;
         try {
-          const response = await axios.put(`${import.meta.env.VITE_BACKEND_URL}/edges`, this.editedEdge);
-          console.log('Updated edge returned:', response.data);
+          if (this.editedEdge.new) {
+            delete this.edge.new;
+            response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/edges/`, this.editedEdge);
+            console.log('Created edge returned:', response.data);
+          } else {
+            response = await axios.put(`${import.meta.env.VITE_BACKEND_URL}/edges`, this.editedEdge);
+            console.log('Updated edge returned:', response.data);
+          }
           this.$emit('publish', response.data);
-          this.edge = response.data; // Update the edge with the response data
+          this.$emit('update-edge', response.data); // Emit an event to update the parent component's edge prop
 
           // window.location.href = `/edge/`;
         } catch (error) {

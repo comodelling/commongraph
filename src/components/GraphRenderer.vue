@@ -20,7 +20,7 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits(['nodeClick', 'edgeClick', 'newNodeCreated'])
+const emit = defineEmits(['nodeClick', 'edgeClick', 'newNodeCreated', 'newEdgeCreated'])
 
 const { onInit, 
   getNodes, 
@@ -114,18 +114,18 @@ onEdgeClick(({ edge }) => {
 
 const onNodesChange = async (changes) => {
   const nextChanges = []
-  console.log('Changes to perform (onNodesChange):', changes)
+  // console.log('Changes to perform (onNodesChange):', changes)
   for (let change of changes) {
     if (change.type === 'remove') {
       const isConfirmed = await confirm('Are you sure you want to delete this node and all its connections?')
 
       if (isConfirmed) {
         nextChanges.push(change)
-        console.log("change:", change)
+        // console.log("change:", change)
         const node_id = change.id
         try {
           const response = await axios.delete(`${import.meta.env.VITE_BACKEND_URL}/nodes/${node_id}`);
-          console.log('Deleted node from backend returned:', response.data);
+          // console.log('Deleted node from backend returned:', response.data);
         } catch (error) {
           console.error('Failed to delete node:', error);
         }
@@ -138,7 +138,7 @@ const onNodesChange = async (changes) => {
         }
       }
     } else {
-      console.log('other change:', change)
+      // console.log('other change:', change)
       nextChanges.push(change)
     }
   }
@@ -148,7 +148,7 @@ const onNodesChange = async (changes) => {
 
 const onEdgesChange = async (changes) => {
   const nextChanges = []
-  console.log('Changes to perform (onEdgesChange):', changes)
+  // console.log('Changes to perform (onEdgesChange):', changes)
   const { source_id, target_id } = route.params
   const is_edge_selected = source_id && target_id
 
@@ -158,7 +158,7 @@ const onEdgesChange = async (changes) => {
 
       if (isConfirmed) {
         nextChanges.push(change)
-        console.log("change:", change)
+        // console.log("change:", change)
         const edge = findEdge(change.id)
         const source_id = edge.data.source
         const target_id = edge.data.target
@@ -166,13 +166,13 @@ const onEdgesChange = async (changes) => {
         try {
           const response = await axios.delete(`${import.meta.env.VITE_BACKEND_URL}/edges/${source_id}/${target_id}`, 
             { 'edge_type': edge_type });
-          console.log('Deleted edge returned:', response.data);
+          // console.log('Deleted edge returned:', response.data);
         } catch (error) {
           console.error('Failed to delete edge:', error);
         }
       }
     } else {
-      console.log('other change:', change)
+      // console.log('other change:', change)
       nextChanges.push(change)
     }
   }
@@ -205,50 +205,79 @@ function onConnectEnd(event) {
 
   const { nodeId, handleType } = connectionInfo.value;
 
-  //inherit scope from source node
   const sourceNode = findNode(nodeId);
-  const scope = sourceNode.data.scope;
-
-  const newNodeId = `temp-node`;
-
   const newEdgeId = `temp-edge`;
   const edgeType = handleType === 'source' ? 'imply' : 'require';
 
-  const newNodeData = {
-    id: newNodeId,
-    position: { x: event.clientX, y: event.clientY },
-    label: 'New Node',
-    data: {
-      title: 'New Node',
-      scope: scope,  // inherited scope
-      node_type: 'change',
-      fromConnection: {'id': nodeId, 'edge_type': edgeType} // to be used to update edge data
-    },
-  };
+  // Check if the connection is to an existing node handle
+  const targetElement = event.target;
+  let targetId = null;
+  let newNodeData = null;
+
+  if (targetElement && targetElement.classList.contains('vue-flow__handle')) {
+    console.log('Connected to an existing node handle');
+    targetId = targetElement.getAttribute('data-nodeid');
+    console.log('Target Node:', targetId);
+    // connectionInfo.value = null;
+    // return;
+    
+  }
+  else {
+    console.log('Connected to a new node');
+    const scope = sourceNode.data.scope;
+    targetId = `temp-node`;
+    
+    newNodeData = {
+      id: targetId,
+      position: { x: event.clientX, y: event.clientY },
+      label: 'New Node',
+      data: {
+        title: 'New Node',
+        scope: scope,  // inherited scope
+        node_type: 'change',
+        fromConnection: {'id': nodeId, 'edge_type': edgeType} // to be used to update edge data
+      },
+    };
+    console.log('New Node:', newNodeData);
+    addNodes(newNodeData);
+  }  
+
+  //inherit scope from source node
 
   const newEdgeData = {
     id: newEdgeId,
-    source: handleType === 'source' ? nodeId : newNodeId,
-    target: handleType === 'source' ? newNodeId : nodeId,
+    source: handleType === 'source' ? nodeId : targetId,
+    target: handleType === 'source' ? targetId : nodeId,
     // type: handleType === 'source' ? 'sourceType' : 'targetType',
     label: edgeType,
-    data: {}
+    data: {
+      edge_type: handleType === 'source' ? 'imply' : 'require',
+      source: parseInt(nodeId),
+      target: parseInt(targetId),
+    }
   };
 
-  console.log('New Node:', newNodeData);
   console.log('New Edge:', newEdgeData);
-  addNodes(newNodeData);
   addEdges(newEdgeData);
   // nodes.value.push(newNodeData);
   // edges.value.push(newEdgeData);
   // newNode.value = newNodeData;
 
-  nextTick(() => {
-    // router.push({ name: 'NodeInfoEdit', params: { id: newNodeId } });
-    router.push({ name: 'NodeEdit', params: { id: newNodeId } });
-    console.log(`Navigated to /node/${newNodeId}/edit`);
-    emit('newNodeCreated', newNodeData);
-  });
+  if (targetElement && targetElement.classList.contains('vue-flow__handle')) {
+    nextTick(() => {
+      router.push({ name: 'EdgeEdit', params: { source_id: nodeId , target_id: targetId} });
+      console.log(`Navigated to /edge/${nodeId}/${targetId}/edit`);
+      emit('newEdgeCreated', newEdgeData);
+    });
+  }
+  else {
+    nextTick(() => {
+      // router.push({ name: 'NodeInfoEdit', params: { id: newNodeId } });
+      router.push({ name: 'NodeEdit', params: { id: targetId } });
+      console.log(`Navigated to /node/${targetId}/edit`);
+      emit('newNodeCreated', newNodeData);
+    });
+  }
 
   connectionInfo.value = null;
 }

@@ -2,7 +2,7 @@
   <div class="focus">
     <NodeInfo v-if="!targetId" :node="node" @update-node="updateNode" />
     <EdgeInfo v-if="targetId && edge && Object.keys(edge).length" :edge="edge" @update-edge="updateEdge" />
-    <GraphRenderer :data="graphData" @nodeClick="updateNodeFromBackend" @edgeClick="updateEdgeFromBackend" @newNodeCreated="openNewlyCreatedNode"/>
+    <GraphRenderer :data="graphData" @nodeClick="updateNodeFromBackend" @edgeClick="updateEdgeFromBackend" @newNodeCreated="openNewlyCreatedNode" @newEdgeCreated="openNewlyCreatedEdge"/>
   </div>
 </template>
 
@@ -165,6 +165,17 @@ export default {
         // grade: newNode.data.grade,
       };
       this.$router.push({ name: 'NodeEdit', params: { id: newNode.id } });
+    },
+    openNewlyCreatedEdge(newEdge) {
+      this.edge = {
+        source: newEdge.data.source,
+        target: newEdge.data.target,
+        edge_type: newEdge.data.edge_type,
+        cprob: undefined,
+        references: [],
+        new: true,
+      };
+      this.$router.push({ name: 'EdgeEdit', params: { source_id: newEdge.data.source, target_id:  newEdge.data.target} });
     },
     updateGraphNode(updatedNode) {
       const nodeIndex = this.graphData.nodes.findIndex(node => node.id === updatedNode.id.toString());

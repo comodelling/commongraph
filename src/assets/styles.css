@@ -80,9 +80,10 @@
   }
 
   .vue-flow__handle {
-    height:8px;
-    width:8px;
-    border-radius:4px
+    height:10px;
+    width:10px;
+    border-radius:8px;
+    border-color: grey;
 }
 
 .vue-flow__node-special {

@@ -1,4 +1,5 @@
 <script setup>
+import axios from 'axios';
 import { saveAs } from 'file-saver'
 import { nextTick, ref, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
@@ -29,6 +30,9 @@ const { onInit,
   setNodes, 
   setEdges, 
   updateNodeData,
+  applyNodeChanges,
+  applyEdgeChanges,
+  removeEdges,
   updateEdge,
   updateEdgeData,
   // onConnect, 
@@ -107,12 +111,81 @@ onEdgeClick(({ edge }) => {
   emit('edgeClick', edge.data.source, edge.data.target)  // emit event to parent component
 })
 
+
+const onNodesChange = async (changes) => {
+  const nextChanges = []
+  console.log('Changes to perform (onNodesChange):', changes)
+  for (let change of changes) {
+    if (change.type === 'remove') {
+      const isConfirmed = await confirm('Are you sure you want to delete this node and all its connections?')
+
+      if (isConfirmed) {
+        nextChanges.push(change)
+        console.log("change:", change)
+        const node_id = change.id
+        try {
+          const response = await axios.delete(`${import.meta.env.VITE_BACKEND_URL}/nodes/${node_id}`);
+          console.log('Deleted node from backend returned:', response.data);
+        } catch (error) {
+          console.error('Failed to delete node:', error);
+        }
+        
+        //find all edges connected to this node and delete them
+        const connectedEdges = getEdges.value.filter(edge => edge.source === node_id || edge.target === node_id)
+
+        for (const edge of connectedEdges) {
+          removeEdges([edge.id])
+        }
+      }
+    } else {
+      console.log('other change:', change)
+      nextChanges.push(change)
+    }
+  }
+
+  applyNodeChanges(nextChanges)
+}
+
+const onEdgesChange = async (changes) => {
+  const nextChanges = []
+  console.log('Changes to perform (onEdgesChange):', changes)
+  const { source_id, target_id } = route.params
+  const is_edge_selected = source_id && target_id
+
+  for (const change of changes) {
+    if (is_edge_selected && change.type === 'remove') {
+      const isConfirmed = await confirm('Are you sure you want to delete this edge?')
+
+      if (isConfirmed) {
+        nextChanges.push(change)
+        console.log("change:", change)
+        const edge = findEdge(change.id)
+        const source_id = edge.data.source
+        const target_id = edge.data.target
+        const edge_type = edge.data.edge_type
+        try {
+          const response = await axios.delete(`${import.meta.env.VITE_BACKEND_URL}/edges/${source_id}/${target_id}`, 
+            { 'edge_type': edge_type });
+          console.log('Deleted edge returned:', response.data);
+        } catch (error) {
+          console.error('Failed to delete edge:', error);
+        }
+      }
+    } else {
+      console.log('other change:', change)
+      nextChanges.push(change)
+    }
+  }
+
+  applyEdgeChanges(nextChanges)
+}
+
 /**
  * onConnect is called when a new connection is created.
  *
  * You can add additional properties to your new edge (like a type or label) or block the creation altogether by not calling `addEdges`
  */
- function onConnect(connection) {
+function onConnect(connection) {
   console.log('on connect', connection);
   addEdges(connection);
 }
@@ -286,7 +359,10 @@ function exportGraph() {
       :default-viewport="{ zoom: 1.5 }"
       :min-zoom="0.2"
       :max-zoom="4"
+      :apply-default="false"
       @nodes-initialized="layoutGraph(previousDirection)"
+      @nodes-change="onNodesChange"
+      @edges-change="onEdgesChange"
       @connect="onConnect"
       @connect-start="onConnectStart"
       @connect-end="onConnectEnd"

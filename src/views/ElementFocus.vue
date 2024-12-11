@@ -49,9 +49,10 @@ export default {
       console.log('opening brand new node in focus');
       this.node = {
         node_id: 'new',  // temporary id
+        node_type: "proposal",
         title: "New Node",
         scope: "scope",
-        node_type: "proposal",
+        status: 'Draft',
         references: [],
         new: true,
       };
@@ -83,6 +84,8 @@ export default {
             id: node.node_id.toString(),
             position: { x: Math.random() * 500, y: Math.random() * 500 },
             label: node.title, // move out of data? 
+            style: { opacity: node.status === 'Completed' ? 0.4 : 0.95, 
+                     borderColor: node.status === 'Completed' ? 'green' : 'black'},  // define rule in custom node component
             data: {
               node_id: node.node_id,
               title: node.title,
@@ -156,8 +159,9 @@ export default {
       this.node = {
         node_id: newNode.id,  // temporary id
         title: newNode.data.title,
-        scope: newNode.data.scope,
         node_type: newNode.data.node_type,
+        scope: newNode.data.scope,
+        status: 'Draft',
         references: [],
         new: true,
         fromConnection: newNode.data.fromConnection,

@@ -1,8 +1,10 @@
 <template>
     <div>
       <strong>Title:  </strong>   "{{ node.title }}"<br />
-      <strong>Scope:  </strong>   {{ node.scope }}<br />
       <strong>Type:</strong>   {{ node.node_type }}<br />
+      <strong>Scope:  </strong>   {{ node.scope }}<br />
+      <strong>Status: </strong>  {{ node.status }}<br />
+
       <!-- <strong>gradable:  </strong>   {{ node.gradable === undefined ? false : node.gradable}}<br /> -->
       <!-- <strong>proponents:  </strong>   {{ node.proponents ? node.proponents.join(', ') : '' }}<br /> -->
       <strong>References:  </strong> <br /> <!-- Added line to show number of references -->

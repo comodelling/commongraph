@@ -8,6 +8,13 @@
       </div>
     </div>
     <div class="field">
+      <strong>Type:</strong>
+      <div class="field-content">
+        <span v-if="editingField !== 'node_type'" @click="startEditing('node_type')">{{ editedNode.node_type }}</span>
+        <input v-else v-model="editedNode.node_type" @blur="stopEditing('node_type')" ref="node_typeInput" />
+      </div>
+    </div>
+    <div class="field">
       <strong>Scope:</strong>
       <div class="field-content">
         <span v-if="editingField !== 'scope'" @click="startEditing('scope')">{{ editedNode.scope }}</span>
@@ -15,10 +22,16 @@
       </div>
     </div>
     <div class="field">
-      <strong>Type:</strong>
+      <strong>Status:</strong>
       <div class="field-content">
-        <span v-if="editingField !== 'node_type'" @click="startEditing('node_type')">{{ editedNode.node_type }}</span>
-        <input v-else v-model="editedNode.node_type" @blur="stopEditing('node_type')" ref="node_typeInput" />
+        <!-- Modified to always show the select menu -->
+        <select v-model="editedNode.status" ref="statusInput">
+          <option value="Unspecified">Unspecified</option>
+          <option value="Draft">Draft</option>
+          <option value="Live">Live</option>
+          <option value="Completed">Completed</option>
+          <option value="Legacy">Legacy</option>
+        </select>
       </div>
     </div>
     <div class="field">
@@ -92,6 +105,7 @@ export default {
   async submit() {
     // Remove empty references
     this.editedNode.references = this.editedNode.references.filter(ref => ref.trim() !== '');
+    this.editedNode.status = this.editedNode.status || null;
     console.log('number of references:', this.editedNode.references.length);
     if (this.editedNode.new) {
       try {

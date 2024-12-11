@@ -236,6 +236,7 @@ def search_nodes(
     node_type: str | None = None,
     title: str | None = None,
     scope: str | None = None,
+    status: str | None = None,
     description: str | None = None,
     db=Depends(get_db_connection),
 ) -> list[NodeBase]:
@@ -248,6 +249,8 @@ def search_nodes(
         traversal = traversal.has("title", Text.text_contains_fuzzy(title))
     if scope:
         traversal = traversal.has("scope", Text.text_contains_fuzzy(scope))
+    if status:
+        traversal = traversal.has("status", status)
     if description:
         traversal = traversal.has("description", Text.text_contains_fuzzy(description))
     return [convert_gremlin_vertex(node) for node in traversal.to_list()]
@@ -445,6 +448,7 @@ def create_gremlin_node(
     #    created_node = created_node.property(T.id, UUID(long=node.node_id))
     created_node = created_node.property("title", node.title)
     created_node = created_node.property("scope", node.scope)
+    created_node = created_node.property("status", node.status)
     created_node = created_node.property("gradable", node.gradable)
     created_node = created_node.property("grade", node.grade)
     created_node = created_node.property("description", node.description)
@@ -480,6 +484,8 @@ def update_gremlin_node(
         updated_node = updated_node.property("node_type", node.node_type)
     if node.scope is not None:
         updated_node = updated_node.property("scope", node.scope)
+    if node.status is not None:
+        updated_node = updated_node.property("status", node.status)
     if node.description is not None:
         updated_node = updated_node.property("description", node.description)
     if node.gradable is not None:

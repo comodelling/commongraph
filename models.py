@@ -38,12 +38,22 @@ class QualitativeGrade(str, Enum):
     E = "E"
 
 
+class NodeStatus(str, Enum):
+    unspecified = "Unspecified"
+    draft = "Draft"
+    live = "Live"
+    completed = "Completed"
+    legacy = "Legacy"
+
+
 class NodeBase(BaseModel):
     node_type: NodeType = NodeType.change
     title: str
     scope: str | None = None
+    status: NodeStatus | None = "Unspecified"
     description: str | None = None
-    node_id: NodeId | None = None  # TODO: check whether this could lead to issues if argument passed in create for example
+    # TODO: check whether this could lead to issues if argument passed in create for example
+    node_id: NodeId | None = None
     id_from_ui: int | None = None
     gradable: bool = False
     grade: QualitativeGrade | None = None

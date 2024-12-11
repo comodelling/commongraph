@@ -300,7 +300,7 @@ def create_node(node: NodeBase, db=Depends(get_db_connection)) -> NodeBase:
     return convert_gremlin_vertex(created_node)
 
 
-@app.delete("/nodes/{node_id}", status_code=status.HTTP_205_RESET_CONTENT)
+@app.delete("/nodes/{node_id}")  # , status_code=status.HTTP_205_RESET_CONTENT)
 def delete_node(node_id: NodeId, db=Depends(get_db_connection)):
     """Delete the node with provided ID."""
     if not db.V(node_id).has_next():
@@ -308,7 +308,7 @@ def delete_node(node_id: NodeId, db=Depends(get_db_connection)):
 
     db.V(node_id).both_e().drop().iterate()
     db.V(node_id).drop().iterate()
-    return {"message": "Node deleted successfully"}
+    return {"message": "Node deleted"}
 
 
 @app.put("/nodes")
@@ -390,7 +390,9 @@ def create_edge(edge: EdgeBase, db=Depends(get_db_connection)) -> EdgeBase:
         raise HTTPException(status_code=404, detail="Node or edge not found")
 
 
-@app.delete("/edges/{source_id}/{target_id}", status_code=205)
+@app.delete(
+    "/edges/{source_id}/{target_id}"
+)  # , status_code=status.HTTP_205_RESET_CONTENT)
 def delete_edge(
     source_id: NodeId,
     target_id: NodeId,
@@ -409,7 +411,7 @@ def delete_edge(
             trav = db.V(source_id).out_e().where(__.in_v().has_id(target_id))
         # logging.info(f"Traversal query: {trav}")
         trav.drop().iterate()
-        return {"message": "Edges deleted successfully"}
+        return {"message": "Edge deleted"}
     except StopIteration:
         logging.error(f"Edge from {source_id} to {target_id} not found")
         raise HTTPException(status_code=404, detail="Edge not found")

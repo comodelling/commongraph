@@ -97,7 +97,7 @@ def test_create_and_delete_node():
     # Delete node
     response = client.delete(f"/nodes/{node_id}")
     assert (
-        response.status_code == 205
+        response.status_code == 200
     ), f"Node deletion failed with status code {response.status_code}"
     assert (
         json.loads(client.get("/network/summary").content.decode("utf-8"))["nodes"]
@@ -203,7 +203,7 @@ def test_create_update_and_delete_edge(fixtures):
 
     # DELETE
     response = client.delete(f"/edges/{fixtures['node_id']}/{fixtures['node_id']}")
-    assert response.status_code == 205
+    assert response.status_code == 200
 
     # Verify edge deletion
     response = client.get(f"/edges/{fixtures['node_id']}/{fixtures['node_id']}")

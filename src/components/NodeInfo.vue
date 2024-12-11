@@ -45,6 +45,7 @@ export default {
   },
   methods: {
     switchTab(tab) {
+      if (this.currentTab === tab) return;
       this.currentTab = tab;
       if (tab === 'edit') {
         this.$router.push(`${this.$route.path}/edit`);

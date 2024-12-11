@@ -3,7 +3,7 @@
     <div class="title">Menu</div>
     <router-link to="/">Main page</router-link><br />
     <a href="#" @click="createNewNode">New node</a><br />
-    <a href="#" @click="fetchRandomObjective">Random objective</a><br />
+    <a href="#" @click="fetchRandomNode">Random node</a><br />
     <router-link to="/about">About ObjectiveNet</router-link>
   </div>
 </template>
@@ -17,11 +17,11 @@ export default {
   setup() {
     const router = useRouter();
 
-    const fetchRandomObjective = async () => {
+    const fetchRandomNode = async () => {
       try {
-        const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/nodes/random?node_type=objective`);
+        const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/nodes/random`);
         const objective = response.data;
-        console.log('Random objective:', objective);
+        console.log('Random node:', objective);
         // router.push(`/node/${objective.node_id}`);
         window.location.href = `/node/${objective.node_id}`;
       } catch (error) {
@@ -40,7 +40,7 @@ export default {
       }
     };
     return {
-      fetchRandomObjective: fetchRandomObjective,
+      fetchRandomNode: fetchRandomNode,
       createNewNode, 
     };
   },

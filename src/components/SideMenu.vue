@@ -2,8 +2,8 @@
   <div class="side-menu">
     <div class="title">Menu</div>
     <router-link to="/">Main page</router-link><br />
-    <a href="#" @click="createNewNode">New proposal</a><br />
-    <a href="#" @click="fetchRandomProposal">Random proposal</a><br />
+    <a href="#" @click="createNewNode">New node</a><br />
+    <a href="#" @click="fetchRandomObjective">Random objective</a><br />
     <router-link to="/about">About ObjectiveNet</router-link>
   </div>
 </template>
@@ -17,15 +17,15 @@ export default {
   setup() {
     const router = useRouter();
 
-    const fetchRandomProposal = async () => {
+    const fetchRandomObjective = async () => {
       try {
-        const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/nodes/random?node_type=proposal`);
-        const proposal = response.data;
-        console.log('Random proposal:', proposal);
-        // router.push(`/node/${proposal.node_id}`);
-        window.location.href = `/node/${proposal.node_id}`;
+        const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/nodes/random?node_type=objective`);
+        const objective = response.data;
+        console.log('Random objective:', objective);
+        // router.push(`/node/${objective.node_id}`);
+        window.location.href = `/node/${objective.node_id}`;
       } catch (error) {
-        console.error('Error fetching random proposal:', error);
+        console.error('Error fetching random objective:', error);
       }
     };
 
@@ -40,7 +40,7 @@ export default {
       }
     };
     return {
-      fetchRandomProposal,
+      fetchRandomObjective: fetchRandomObjective,
       createNewNode, 
     };
   },

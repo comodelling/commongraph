@@ -68,7 +68,7 @@ export default {
       if (!this.searchQuery.trim()) {
       //   this.nodes = [];
         // return;
-        console.warn('Empty search query, will fetch all proposals');
+        console.warn('Empty search query, will fetch all objectives');
       }
       try {
         if (this.searchQuery !== this.$route.params.searchQuery) {
@@ -77,7 +77,7 @@ export default {
         const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/nodes`, {
           params: {
             title: this.searchQuery,
-            node_type: "proposal",
+            node_type: "objective",
           },
         });
         this.nodes = response.data;

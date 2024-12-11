@@ -1,6 +1,6 @@
 <template>
     <div class="search-bar">
-      <input v-model="searchQuery" @input="updateSearchQuery" @keyup.enter="search" placeholder="Search for proposals..." />
+      <input v-model="searchQuery" @input="updateSearchQuery" @keyup.enter="search" placeholder="Search for objectives..." />
       <button @click="search">Search</button>
     </div>
   </template>

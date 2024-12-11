@@ -1,14 +1,13 @@
 <template>
     <div class="about">
       <h1>About ObjectiveNet</h1>
-      <p>ObjectiveNet aims at providing an accessible tool for people to collaboratively curate a causal network of proposals.</p>
+      <p>ObjectiveNet aims at providing an accessible tool for people to collaboratively curate a causal network of actions, changes, and objectives.</p>
 
       
       <p>You can contribute by:</p>
       <ul>
-        <li>Creating new proposals</li>
-        <li>Enriching existing proposals</li>
-        <li>Helping to improve the code</li>
+        <li>Creating, improving, sharing an objective-net.</li>
+        <li>Helping to improve the code.</li>
       </ul>
     </div>
   </template>

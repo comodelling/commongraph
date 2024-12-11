@@ -1,9 +1,9 @@
 <template>
     <div>
       <strong>Title:  </strong>   "{{ node.title }}"<br />
-      <strong>Type:</strong>   {{ node.node_type }}<br />
+      <strong>Type:</strong>   {{ capitalizeFirstLetter(node.node_type) }}<br />
       <strong>Scope:  </strong>   {{ node.scope }}<br />
-      <strong>Status: </strong>  {{ node.status }}<br />
+      <strong>Status: </strong>  {{ capitalizeFirstLetter(node.status) }}<br />
 
       <!-- <strong>gradable:  </strong>   {{ node.gradable === undefined ? false : node.gradable}}<br /> -->
       <!-- <strong>proponents:  </strong>   {{ node.proponents ? node.proponents.join(', ') : '' }}<br /> -->
@@ -22,5 +22,10 @@
     props: {
       node: Object,
     },
+    methods: {
+      capitalizeFirstLetter(string) {  // Added method
+        return string.charAt(0).toUpperCase() + string.slice(1);
+      }
+    }
   };
   </script>

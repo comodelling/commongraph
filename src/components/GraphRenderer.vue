@@ -234,7 +234,8 @@ function onConnectEnd(event) {
       data: {
         title: 'New Node',
         scope: scope,  // inherited scope
-        node_type: 'change',
+        node_type: 'action',
+        satus: 'draft',
         fromConnection: {'id': nodeId, 'edge_type': edgeType} // to be used to update edge data
       },
     };

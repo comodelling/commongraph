@@ -49,10 +49,10 @@ export default {
       console.log('opening brand new node in focus');
       this.node = {
         node_id: 'new',  // temporary id
-        node_type: "proposal",
+        node_type: "action",
         title: "New Node",
-        scope: "scope",
-        status: 'Draft',
+        scope: "Enter a scope",
+        status: 'draft',
         references: [],
         new: true,
       };
@@ -62,7 +62,20 @@ export default {
       this.fetchElementAndSubgraphData();
     }
   },
+
   methods: {
+
+    getBorderWidthByType(nodeType) {
+      const typeToBorderWidthMap = {
+        'change': '1px',
+        'action': '2px',
+        'proposal': '3px',
+        'objective': '4px',
+        // Add more mappings as needed
+      };
+      return typeToBorderWidthMap[nodeType]; // Default to 1 if type not found
+    },
+
     async fetchElementAndSubgraphData() {
       try {
         const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/subgraph/${this.nodeId}`, {
@@ -80,21 +93,31 @@ export default {
         }
 
         this.graphData = {
-          nodes: fetched_nodes.map(node => ({
-            id: node.node_id.toString(),
-            position: { x: Math.random() * 500, y: Math.random() * 500 },
-            label: node.title, // move out of data? 
-            style: { opacity: node.status === 'Completed' ? 0.4 : 0.95, 
-                     borderColor: node.status === 'Completed' ? 'green' : 'black'},  // define rule in custom node component
-            data: {
-              node_id: node.node_id,
-              title: node.title,
-              scope: node.scope,
-              node_type: node.node_type,
-              gradable: node.gradable !== undefined ? node.gradable : node.node_type === "proposal",
-              grade: node.grade,
-            }
-          })),
+          nodes: fetched_nodes.map(node => {
+            const style = {
+              opacity: node.status === 'completed' ? 0.4 : 0.95, 
+              borderColor: node.status === 'completed' ? 'green' : 'black',
+              borderWidth: this.getBorderWidthByType(node.node_type),
+              borderStyle: node.status === 'draft' ? 'dotted' : 'solid', // Ensure border style is set
+              borderRadius: '8px',
+            };
+            console.log('Node style:', style); // Added console log to check the style object
+            return {
+              id: node.node_id.toString(),
+              position: { x: Math.random() * 500, y: Math.random() * 500 },
+              label: node.title, // move out of data? 
+              style: style,  // define rule in custom node component
+              data: {
+                node_id: node.node_id,
+                title: node.title,
+                node_type: node.node_type,
+                scope: node.scope,
+                status: node.status,
+                gradable: node.gradable,
+                grade: node.grade,
+              }
+            };
+          }),
           edges: fetched_edges.map(edge => {
             const edgeLabel = edge.edge_type.toString();
             let source = edgeLabel === "imply" ? edge.source.toString() : edge.target.toString();
@@ -161,7 +184,7 @@ export default {
         title: newNode.data.title,
         node_type: newNode.data.node_type,
         scope: newNode.data.scope,
-        status: 'Draft',
+        status: 'draft',
         references: [],
         new: true,
         fromConnection: newNode.data.fromConnection,

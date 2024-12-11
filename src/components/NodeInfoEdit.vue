@@ -10,8 +10,12 @@
     <div class="field">
       <strong>Type:</strong>
       <div class="field-content">
-        <span v-if="editingField !== 'node_type'" @click="startEditing('node_type')">{{ editedNode.node_type }}</span>
-        <input v-else v-model="editedNode.node_type" @blur="stopEditing('node_type')" ref="node_typeInput" />
+        <select v-model="editedNode.node_type" ref="typeInput">
+          <option value="action">Action</option>
+          <option value="proposal">Proposal</option>
+          <option value="objective">Objective</option>
+          <option value="change">Change</option>
+        </select>
       </div>
     </div>
     <div class="field">
@@ -24,13 +28,12 @@
     <div class="field">
       <strong>Status:</strong>
       <div class="field-content">
-        <!-- Modified to always show the select menu -->
         <select v-model="editedNode.status" ref="statusInput">
-          <option value="Unspecified">Unspecified</option>
-          <option value="Draft">Draft</option>
-          <option value="Live">Live</option>
-          <option value="Completed">Completed</option>
-          <option value="Legacy">Legacy</option>
+          <option value="unspecified">Unspecified</option>
+          <option value="draft">Draft</option>
+          <option value="live">Live</option>
+          <option value="completed">Completed</option>
+          <option value="legacy">Legacy</option>
         </select>
       </div>
     </div>

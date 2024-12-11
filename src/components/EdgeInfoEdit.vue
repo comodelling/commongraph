@@ -38,9 +38,9 @@
             <span v-if="editingField !== `reference-${index}`" @click="startEditing(`reference-${index}`)">{{ reference || 'Click to edit' }}</span>
             <input v-else v-model="editedEdge.references[index]" @blur="stopEditing(`reference-${index}`)" :ref="`reference-${index}Input`" />
           </li>
+          <button class="add-reference-button" @click="addReference">+ Reference</button>
         </ul>
       </div>
-      <button class="add-reference-button" @click="addReference">+ Reference</button>
       <div class="field" v-if="editedEdge.description || editingField === 'description'">
         <strong>Description:</strong>
         <div class="field-content">
@@ -195,8 +195,22 @@
   }
   
   .add-proponent-button,
-  .add-reference-button,
-  .add-description-button {
+  .add-reference-button {
+  display: block;
+  margin: 10px auto;
+  padding: 5px 10px;
+  background: #f9f9f9;
+  border: 1px solid #ccc;
+  cursor: pointer;
+  margin: 0 auto;
+  display: block;
+  width: 30%;
+  text-align: center;
+  font-size: 12px
+}
+
+/* TODO: share with NodeInfoEdit.vue */
+  .add-description-button {  
     display: block;
     margin: 10px auto;
     padding: 5px 10px;

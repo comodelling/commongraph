@@ -28,9 +28,10 @@
           <span v-if="editingField !== `reference-${index}`" @click="startEditing(`reference-${index}`)">{{ reference || 'Click to edit' }}</span>
           <input v-else v-model="editedNode.references[index]" @blur="stopEditing(`reference-${index}`)" :ref="`reference-${index}Input`" />
         </li>
+        <!-- Added button to add a reference -->
+        <button class="add-reference-button" @click="addReference">+ Reference</button>
       </ul>
     </div>
-    <button class="add-reference-button" @click="addReference">+ Reference</button>
     <div class="field" v-if="editedNode.description || editingField === 'description'">
       <strong>Description:</strong>
       <div class="field-content">
@@ -76,13 +77,11 @@ export default {
     }
   },
   addReference() {
-    // Allow adding a new reference even if the last one is empty, but only if it's not currently being edited
-    if (this.editingField === null || !this.editingField.startsWith('reference-')) {
+      // Modified to not add an empty reference by default
       this.editedNode.references.push('');
       this.$nextTick(() => {
         this.startEditing(`reference-${this.editedNode.references.length - 1}`);
       });
-    }
   },
   addDescription() {
     this.editedNode.description = '';
@@ -93,6 +92,7 @@ export default {
   async submit() {
     // Remove empty references
     this.editedNode.references = this.editedNode.references.filter(ref => ref.trim() !== '');
+    console.log('number of references:', this.editedNode.references.length);
     if (this.editedNode.new) {
       try {
         const fromConnection = this.editedNode.fromConnection;
@@ -221,6 +221,7 @@ button.editing {
   display: block;
   width: 30%;
   text-align: center;
+  font-size: 12px
 }
 
 .add-description-button {

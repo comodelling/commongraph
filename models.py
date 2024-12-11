@@ -20,9 +20,19 @@ Proba = Annotated[float, Query(title="conditional proba", ge=0, le=1)]
 
 
 class NodeType(str, Enum):
+    action = "action"
+    objective = "objective"
     change = "change"
     wish = "wish"
     proposal = "proposal"
+
+    @classmethod
+    def _missing_(cls, value):
+        value = value.lower()
+        for member in cls:
+            if member.value == value:
+                return member
+        raise ValueError(f"{value} is not a valid {cls.__name__}")
 
 
 class EdgeType(str, Enum):
@@ -39,18 +49,26 @@ class QualitativeGrade(str, Enum):
 
 
 class NodeStatus(str, Enum):
-    unspecified = "Unspecified"
-    draft = "Draft"
-    live = "Live"
-    completed = "Completed"
-    legacy = "Legacy"
+    unspecified = "unspecified"
+    draft = "draft"
+    live = "live"
+    completed = "completed"
+    legacy = "legacy"
+
+    @classmethod
+    def _missing_(cls, value):
+        value = value.lower()
+        for member in cls:
+            if member.value == value:
+                return member
+        raise ValueError(f"{value} is not a valid {cls.__name__}")
 
 
 class NodeBase(BaseModel):
     node_type: NodeType = NodeType.change
     title: str
     scope: str | None = None
-    status: NodeStatus | None = "Unspecified"
+    status: NodeStatus | None = "unspecified"
     description: str | None = None
     # TODO: check whether this could lead to issues if argument passed in create for example
     node_id: NodeId | None = None

@@ -4,7 +4,7 @@
       <!-- <h1>Search Results</h1> -->
       <SearchBar :initialQuery="searchQuery" @search="(query) => search(query)" />
       <div class="filters">
-        <strong> Node Type: </strong>
+        <strong> Type: </strong>
 
         <label>
           <input type="checkbox" v-model="nodeTypes.objective" /> Objectives
@@ -20,6 +20,25 @@
         </label>
         <label>
           <input type="checkbox" v-model="nodeTypes.proposal" /> Proposals
+        </label>
+      </div>
+      <div class="filters">
+        <strong> Status: </strong>
+
+        <label>
+          <input type="checkbox" v-model="nodeStatus.draft" /> Draft
+        </label>
+        <label>
+          <input type="checkbox" v-model="nodeStatus.live" /> Live
+        </label>
+        <label>
+          <input type="checkbox" v-model="nodeStatus.completed" /> Completed
+        </label>
+        <label>
+          <input type="checkbox" v-model="nodeStatus.unspecified" /> Unspecified
+        </label>
+        <label>
+          <input type="checkbox" v-model="nodeStatus.legacy" /> Legacy
         </label>
       </div>
       <h2>Search Results</h2>
@@ -56,10 +75,17 @@ export default {
       nodes: [],
       nodeTypes: {
         objective: true,
-        action: false,
+        action: true,
         potentiality: false,
         change: false,
         proposal: false,
+      },
+      nodeStatus: {
+        unspecified: true,
+        draft: true,
+        live: true,
+        completed: true,
+        legacy: false,
       },
     };
   },
@@ -89,6 +115,7 @@ export default {
   methods: {
     async search(query) {
       const nodeTypes = Object.keys(this.nodeTypes).filter(type => this.nodeTypes[type]);
+      const nodeStatus = Object.keys(this.nodeStatus).filter(type => this.nodeStatus[type]);
       if (!nodeTypes.length) {
         console.warn('Select a node type to search');
         this.nodes = [];
@@ -104,18 +131,25 @@ export default {
         }
 
         console.log('searching for nodes with types:', nodeTypes);
+        console.log('searching for nodes with status:', nodeStatus);
+
+        // Measure search time
+        const startTime = performance.now();
+
         const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/nodes`, {
           params: {
             title: this.searchQuery,
-            node_types: nodeTypes, //nodeTypes,
+            node_type: nodeTypes,
+            status: nodeStatus,
           },
           paramsSerializer: params => {
             return qs.stringify(params, { arrayFormat: 'repeat' });
           },
-          // paramsSerializer: params => {
-          //    return new URLSearchParams(params).toString();
-          // }
         });
+
+        const endTime = performance.now();
+        console.log(`Search completed in ${endTime - startTime} milliseconds`);
+
         this.nodes = response.data;
       } catch (error) {
         console.error('Error fetching nodes:', error);
@@ -140,7 +174,7 @@ export default {
 }
 
 .filters {
-  margin-bottom: 20px;
+  margin-bottom: 5px;
   font-size: 11px;
 }
 

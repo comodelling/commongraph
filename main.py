@@ -233,25 +233,27 @@ def get_subgraph_from_node(
 
 @app.get("/nodes")
 def search_nodes(
-    node_types: list[NodeType] = Query(None),
+    node_type: list[NodeType] | NodeType = Query(None),
     title: str | None = None,
     scope: str | None = None,
-    status: str | None = None,
+    status: list[NodeStatus] | NodeStatus = Query(None),
     description: str | None = None,
     db=Depends(get_db_connection),
 ) -> list[NodeBase]:
     """Search in nodes."""
     print("search_nodes...")
     trav = db.V()
-    if node_types is not None:
+    if node_type is not None:
         # print('node_types:', node_types)
         # print('node_types type:', type(node_types))
-        if isinstance(node_types, list):
-            trav = trav.has_label(P.within(node_types))
+        if isinstance(node_type, list):
+            trav = trav.has_label(P.within(node_type))
         # elif isinstance(node_type, NodeType):
         # trav = trav.has_label(node_type)
+        elif isinstance(node_type, NodeType):
+            trav = trav.has_label(node_type)
         else:
-            print("node_type is not a list:", node_types)
+            print("node_type is not a list:", node_type)
     # if node_type is not None:
     # print('node_type:', node_type)
     # print('node_type type:', type(node_type))
@@ -261,8 +263,13 @@ def search_nodes(
         # print('title:', title)
     if scope:
         trav = trav.has("scope", Text.text_contains_fuzzy(scope))
-    if status:
-        trav = trav.has("status", status)
+    if status is not None:
+        if isinstance(status, list):
+            trav = trav.has("status", P.within(status))
+        elif isinstance(status, NodeStatus):
+            trav = trav.has("status", status)
+        else:
+            print("status is not a list:", status)
     if description:
         trav = trav.has("description", Text.text_contains_fuzzy(description))
     return [convert_gremlin_vertex(node) for node in trav.to_list()]

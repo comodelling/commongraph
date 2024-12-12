@@ -5,11 +5,15 @@
       <SearchBar :initialQuery="searchQuery" @search="(query) => search(query)" />
       <div class="filters">
         <strong> Node Type: </strong>
+
         <label>
           <input type="checkbox" v-model="nodeTypes.objective" /> Objectives
         </label>
         <label>
           <input type="checkbox" v-model="nodeTypes.action" /> Actions
+        </label>
+        <label>
+          <input type="checkbox" v-model="nodeTypes.potentiality" /> Potentialities
         </label>
         <label>
           <input type="checkbox" v-model="nodeTypes.change" /> Changes
@@ -52,8 +56,9 @@ export default {
       nodes: [],
       nodeTypes: {
         objective: true,
-        change: false,
         action: false,
+        potentiality: false,
+        change: false,
         proposal: false,
       },
     };

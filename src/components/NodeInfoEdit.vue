@@ -12,9 +12,10 @@
       <div class="field-content">
         <select v-model="editedNode.node_type" ref="typeInput">
           <option value="action">Action</option>
-          <option value="proposal">Proposal</option>
           <option value="objective">Objective</option>
-          <option value="change">Change</option>
+          <option value="potentiality">Potentiality</option>
+          <!-- <option value="change">Change</option>
+          <option value="proposal">Proposal</option> -->
         </select>
       </div>
     </div>

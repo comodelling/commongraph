@@ -49,7 +49,7 @@ export default {
       console.log('opening brand new node in focus');
       this.node = {
         node_id: 'new',  // temporary id
-        node_type: "action",
+        node_type: "potentiality",
         title: "New Node",
         scope: "Enter a scope",
         status: 'draft',
@@ -68,6 +68,7 @@ export default {
     getBorderWidthByType(nodeType) {
       const typeToBorderWidthMap = {
         'change': '1px',
+        'potentiality': '1px',
         'action': '2px',
         'proposal': '3px',
         'objective': '4px',

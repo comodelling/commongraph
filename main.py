@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from gremlin_python.process.anonymous_traversal import traversal
 from gremlin_python.driver.driver_remote_connection import DriverRemoteConnection
 from gremlin_python.process.graph_traversal import __
-from gremlin_python.process.traversal import Order
+from gremlin_python.process.traversal import Order, P
 from gremlin_python.structure.graph import Edge as GremlinEdge
 from gremlin_python.structure.graph import Vertex as Gremlin_vertex
 from janusgraph_python.driver.serializer import JanusGraphSONSerializersV3d0
@@ -233,7 +233,7 @@ def get_subgraph_from_node(
 
 @app.get("/nodes")
 def search_nodes(
-    node_type: str | None = None,
+    node_types: list[NodeType] = Query(None),
     title: str | None = None,
     scope: str | None = None,
     status: str | None = None,
@@ -241,24 +241,36 @@ def search_nodes(
     db=Depends(get_db_connection),
 ) -> list[NodeBase]:
     """Search in nodes."""
-    print("search_nodes", node_type, title, scope, description)
-    traversal = db.V()
-    if node_type is not None:
-        traversal = traversal.has_label(node_type)
+    print("search_nodes...")
+    trav = db.V()
+    if node_types is not None:
+        # print('node_types:', node_types)
+        # print('node_types type:', type(node_types))
+        if isinstance(node_types, list):
+            trav = trav.has_label(P.within(node_types))
+        # elif isinstance(node_type, NodeType):
+        # trav = trav.has_label(node_type)
+        else:
+            print("node_type is not a list:", node_types)
+    # if node_type is not None:
+    # print('node_type:', node_type)
+    # print('node_type type:', type(node_type))
+    # trav = trav.has_label(node_type)
     if title:
-        traversal = traversal.has("title", Text.text_contains_fuzzy(title))
+        trav = trav.has("title", Text.text_contains_fuzzy(title))
+        # print('title:', title)
     if scope:
-        traversal = traversal.has("scope", Text.text_contains_fuzzy(scope))
+        trav = trav.has("scope", Text.text_contains_fuzzy(scope))
     if status:
-        traversal = traversal.has("status", status)
+        trav = trav.has("status", status)
     if description:
-        traversal = traversal.has("description", Text.text_contains_fuzzy(description))
-    return [convert_gremlin_vertex(node) for node in traversal.to_list()]
+        trav = trav.has("description", Text.text_contains_fuzzy(description))
+    return [convert_gremlin_vertex(node) for node in trav.to_list()]
 
 
 @app.get("/nodes/random")
 def get_random_node(
-    node_type: str | None = None, db=Depends(get_db_connection)
+    node_type: NodeType | None = None, db=Depends(get_db_connection)
 ) -> NodeBase:
     """Return a random node."""
     print("\nget_random_node")

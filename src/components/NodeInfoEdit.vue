@@ -11,9 +11,9 @@
       <strong>Type:</strong>
       <div class="field-content">
         <select v-model="editedNode.node_type" ref="typeInput">
-          <option value="action">Action</option>
-          <option value="objective">Objective</option>
           <option value="potentiality">Potentiality</option>
+          <option value="objective">Objective</option>
+          <option value="action">Action</option>
           <!-- <option value="change">Change</option>
           <option value="proposal">Proposal</option> -->
         </select>
@@ -30,7 +30,7 @@
       <strong>Status:</strong>
       <div class="field-content">
         <select v-model="editedNode.status" ref="statusInput">
-          <option value="unspecified">Unspecified</option>
+          <option value="unspecified"></option>
           <option value="draft">Draft</option>
           <option value="live">Live</option>
           <option value="completed">Completed</option>

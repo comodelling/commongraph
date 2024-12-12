@@ -1,9 +1,9 @@
 <template>
     <div>
       <strong>Title:  </strong>   "{{ node.title }}"<br />
-      <strong>Type:</strong>   {{ capitalizeFirstLetter(node.node_type) }}<br />
+      <strong>Type:</strong>   {{ capitalise(node.node_type) }}<br />
       <strong>Scope:  </strong>   {{ node.scope }}<br />
-      <strong>Status: </strong>  {{ capitalizeFirstLetter(node.status) }}<br />
+      <strong>Status: </strong>  {{ formatStatus(node.status) }}<br />
 
       <!-- <strong>gradable:  </strong>   {{ node.gradable === undefined ? false : node.gradable}}<br /> -->
       <!-- <strong>proponents:  </strong>   {{ node.proponents ? node.proponents.join(', ') : '' }}<br /> -->
@@ -18,12 +18,20 @@
     </div>
   </template>
   <script>
+import { capitalize } from 'vue';
+
   export default {
     props: {
       node: Object,
     },
     methods: {
-      capitalizeFirstLetter(string) {  // Added method
+      formatStatus(string) {  // Added method
+        if (string === 'unspecified') {
+          return '';
+        }
+        return this.capitalise(string);
+      },
+      capitalise(string) {
         return string.charAt(0).toUpperCase() + string.slice(1);
       }
     }

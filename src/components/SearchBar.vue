@@ -1,6 +1,6 @@
 <template>
     <div class="search-bar">
-      <input v-model="searchQuery" @input="updateSearchQuery" @keyup.enter="search" placeholder="Search for objectives..." />
+      <input v-model="searchQuery" @input="updateSearchQuery" @keyup.enter="search" placeholder="Search for nodes..." />
       <button @click="search">Search</button>
     </div>
   </template>
@@ -33,7 +33,7 @@
   .search-bar {
     display: flex;
     align-items: center;
-    width: 400px; /* Adjust the width as needed */
+    width: 600px; /* Adjust the width as needed */
   }
   .search-bar input {
     flex-grow: 1;

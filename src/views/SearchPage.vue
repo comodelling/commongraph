@@ -3,6 +3,21 @@
     <div class="content">
       <!-- <h1>Search Results</h1> -->
       <SearchBar :initialQuery="searchQuery" @search="(query) => search(query)" />
+      <div class="filters">
+        <strong> Node Type: </strong>
+        <label>
+          <input type="checkbox" v-model="nodeTypes.objective" /> Objectives
+        </label>
+        <label>
+          <input type="checkbox" v-model="nodeTypes.action" /> Actions
+        </label>
+        <label>
+          <input type="checkbox" v-model="nodeTypes.change" /> Changes
+        </label>
+        <label>
+          <input type="checkbox" v-model="nodeTypes.proposal" /> Proposals
+        </label>
+      </div>
       <h2>Search Results</h2>
       <div v-if="!nodes.length && searchQuery">
         <p>No results found for "{{ searchQuery }}"</p>
@@ -23,6 +38,7 @@
 
 <script>
 import axios from 'axios';
+import qs from 'qs';
 import { useRouter, useRoute } from 'vue-router';
 import SearchBar from '../components/SearchBar.vue';
 
@@ -34,6 +50,12 @@ export default {
     return {
       searchQuery: '',
       nodes: [],
+      nodeTypes: {
+        objective: true,
+        change: false,
+        action: false,
+        proposal: false,
+      },
     };
   },
   computed: {
@@ -61,24 +83,33 @@ export default {
   },
   methods: {
     async search(query) {
-      // if (query === this.searchQuery) {
-      //   return;
-      // }
+      const nodeTypes = Object.keys(this.nodeTypes).filter(type => this.nodeTypes[type]);
+      if (!nodeTypes.length) {
+        console.warn('Select a node type to search');
+        this.nodes = [];
+        return;
+      }
       this.searchQuery = query;
       if (!this.searchQuery.trim()) {
-      //   this.nodes = [];
-        // return;
         console.warn('Empty search query, will fetch all objectives');
       }
       try {
         if (this.searchQuery !== this.$route.params.searchQuery) {
           this.$router.push({ name: 'SearchPage', params: { searchQuery: this.searchQuery } });
         }
+
+        console.log('searching for nodes with types:', nodeTypes);
         const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/nodes`, {
           params: {
             title: this.searchQuery,
-            node_type: "objective",
+            node_types: nodeTypes, //nodeTypes,
           },
+          paramsSerializer: params => {
+            return qs.stringify(params, { arrayFormat: 'repeat' });
+          },
+          // paramsSerializer: params => {
+          //    return new URLSearchParams(params).toString();
+          // }
         });
         this.nodes = response.data;
       } catch (error) {
@@ -101,6 +132,11 @@ export default {
   display: flex;
   flex-grow: 1;
   text-align: left;
+}
+
+.filters {
+  margin-bottom: 20px;
+  font-size: 11px;
 }
 
 .scope-group {

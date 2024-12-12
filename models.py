@@ -20,11 +20,12 @@ Proba = Annotated[float, Query(title="conditional proba", ge=0, le=1)]
 
 
 class NodeType(str, Enum):
-    action = "action"
     objective = "objective"
+    action = "action"
+    potentiality = "potentiality"
     change = "change"
-    wish = "wish"
-    proposal = "proposal"
+    wish = "wish"  # TODO: depreacate?
+    proposal = "proposal"  # TODO: deprecate?
 
     @classmethod
     def _missing_(cls, value):
@@ -65,7 +66,7 @@ class NodeStatus(str, Enum):
 
 
 class NodeBase(BaseModel):
-    node_type: NodeType = NodeType.change
+    node_type: NodeType = NodeType.potentiality
     title: str
     scope: str | None = None
     status: NodeStatus | None = "unspecified"

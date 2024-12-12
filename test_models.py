@@ -4,7 +4,14 @@ from pydantic import ValidationError
 from models import NodeBase, EdgeBase
 
 
-correct_node_types = ["change", "wish", "proposal"]
+correct_node_types = [
+    "change",
+    "wish",
+    "proposal",
+    "action",
+    "objective",
+    "potentiality",
+]
 correct_edge_types = ["require", "imply"]
 
 

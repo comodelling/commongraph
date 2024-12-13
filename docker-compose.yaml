@@ -1,0 +1,29 @@
+services:
+  janusgraph:
+    image: docker.io/janusgraph/janusgraph:latest
+    container_name: objnet-janusgraph
+    ports:
+      - "8182:8182"
+    volumes:
+      # bind mounts for configs; use read only so not overridden by environment variables
+      - "./janusgraph_config/janusgraph-server.yaml:/etc/opt/janusgraph/janusgraph-server.yaml:ro"
+      - "./janusgraph_config/main.properties:/etc/opt/janusgraph/main.properties:ro"
+      - "./janusgraph_config/test.properties:/etc/opt/janusgraph/test.properties:ro"
+      - "./janusgraph_config/empty-sample.groovy:/opt/janusgraph/scripts/empty-sample.groovy:ro"
+      # Named volume mounts. The data mount is only used when BerkeleyDB is used for storage.
+      - "janusgraph-mount-data:/var/lib/janusgraph"
+
+  fastapi:
+    build: .
+    container_name: objnet-fastapi
+    ports:
+      - "8000:8000"
+    depends_on:
+      - janusgraph
+    environment:
+      - TRAVERSAL_SOURCE=g
+      - JANUSGRAPH_HOST=janusgraph
+
+# use a named volume to maintain database data between restarts
+volumes:
+  janusgraph-mount-data:

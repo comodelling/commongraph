@@ -1,7 +1,7 @@
 from typing import Annotated
 from enum import Enum
+import math
 
-import numpy as np
 from pydantic import BaseModel, field_validator
 from fastapi import Path, Query
 from pydantic import BaseModel
@@ -106,7 +106,7 @@ class EdgeBase(BaseModel):
 
     @field_validator("cprob")
     def convert_nan_to_none(cls, v):
-        if v is None or (isinstance(v, float) and np.isnan(v)):
+        if v is None or (isinstance(v, float) and math.isnan(v)):
             return None
         return v
 

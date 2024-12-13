@@ -30,6 +30,8 @@ origins = [
     "https://localhost:5173",
     "https://localhost",
     "http://localhost",
+    "http://127.0.0.1:8000",
+    "http://localhost:8000",
 ]
 
 app.add_middleware(
@@ -42,10 +44,11 @@ app.add_middleware(
 
 
 def get_db_connection():
+    janusgraph_host = os.getenv("JANUSGRAPH_HOST", "localhost")
     traversal_source = os.getenv("TRAVERSAL_SOURCE", "g")
     print("opening connection... with traversal_source:", traversal_source)
     connection = DriverRemoteConnection(
-        "ws://localhost:8182/gremlin",  # TODO: abstract in config
+        f"ws://{janusgraph_host}:8182/gremlin",  # TODO: abstract in config
         traversal_source,
         message_serializer=JanusGraphSONSerializersV3d0(),
     )

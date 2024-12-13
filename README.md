@@ -10,7 +10,16 @@
 ### Database setup
 
 run docker container for local janusgraph server:
-```docker run -it -p 8182:8182 janusgraph/janusgraph```
+```docker run -it -p 8182:8182 \
+  -v full_path_to_janusgraph_config_path/janusgraph-server.yaml:/etc/opt/janusgraph/janusgraph-server.yaml \
+  -v full_path_to_janusgraph_config_path/main.properties:/etc/opt/janusgraph/main.properties \
+  -v full_path_to_janusgraph_config_path/test.properties:/etc/opt/janusgraph/test.properties \
+  -v full_path_to_janusgraph_config_path/traversal-sources.groovy:/etc/opt/janusgraph/scripts/traversal-sources.groovy \
+  janusgraph/janusgraph
+```
+
+
+docker run -it -p 8182:8182 -v $full_path_to_janusgraph_config_path/janusgraph-server.yaml:/etc/opt/janusgraph/janusgraph-server.yaml:ro  -v $full_path_to_janusgraph_config_path/test.properties:/etc/opt/janusgraph/test.properties:ro -v $full_path_to_janusgraph_config_path/main.properties:/etc/opt/janusgraph/main.properties:ro -v $full_path_to_janusgraph_config_path/empty-sample.groovy:/opt/janusgraph/scripts/empty-sample.groovy:ro janusgraph/janusgraph
 
 ## Contributing
 

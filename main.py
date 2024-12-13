@@ -1,3 +1,4 @@
+import os
 import warnings
 import logging
 
@@ -41,9 +42,11 @@ app.add_middleware(
 
 
 def get_db_connection():
+    traversal_source = os.getenv("TRAVERSAL_SOURCE", "g")
+    print("opening connection... with traversal_source:", traversal_source)
     connection = DriverRemoteConnection(
         "ws://localhost:8182/gremlin",  # TODO: abstract in config
-        "g",
+        traversal_source,
         message_serializer=JanusGraphSONSerializersV3d0(),
     )
     g = traversal().with_remote(connection)
@@ -136,13 +139,13 @@ def update_network(
                 if edge.source in mapping:
                     update_edge_source_from = edge.source
                     edge.source = mapping[edge.source]
-                    print("edge.source", edge.source)
-                    print("mapping[edge.source]", update_edge_source_from)
+                    # print("edge.source", edge.source)
+                    # print("mapping[edge.source]", update_edge_source_from)
                 if edge.target in mapping:
                     update_edge_target_from = edge.target
                     edge.target = mapping[edge.target]
-                    print("edge.target", edge.target)
-                    print("mapping[edge.target]", update_edge_target_from)
+                    # print("edge.target", edge.target)
+                    # print("mapping[edge.target]", update_edge_target_from)
                 edge_out = convert_gremlin_edge(create_gremlin_edge(edge, db))
                 edge_out.source_from_ui = (
                     update_edge_source_from  # TODO: add to history log

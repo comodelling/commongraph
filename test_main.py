@@ -1,19 +1,22 @@
+import os
+
 import pytest
 import json
 from fastapi.testclient import TestClient
 
-from main import app, get_db_connection
+from main import app
 
 
 # TODO: ensure we're handling a test database, e.g. https://jointhegraph.github.io/articles/hosting-multiple-graphs-on-janusgraph/
 # see.g. https://www.answeroverflow.com/m/1258024441737117716 or https://gist.github.com/pluradj/7879df851c45269cd0cf8042955169f5
+
+os.environ["TRAVERSAL_SOURCE"] = "g_test"
 
 client = TestClient(app)
 
 
 @pytest.fixture(scope="module")
 def fixtures():
-    next(get_db_connection())
     client.delete("/network")
 
     result = client.post(

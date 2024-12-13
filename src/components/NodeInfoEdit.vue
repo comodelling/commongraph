@@ -39,6 +39,17 @@
       </div>
     </div>
     <div class="field">
+      <strong>Tags:</strong>
+      <div class="tags-container">
+        <span v-for="(tag, index) in editedNode.tags" :key="index" class="tag" @click="startEditing(`tag-${index}`)">
+          <span v-if="editingField !== `tag-${index}`">{{ tag }}</span>
+          <input v-else v-model="editedNode.tags[index]" @blur="stopEditing(`tag-${index}`)" :ref="`tag-${index}Input`" class="tag-input" :style="{ width: `${tag.length * 8 + 20}px` }" />
+        </span>
+        <!-- Added button to add a tag -->
+        <button class="add-tag-button" @click="addTag">+ Tag</button>
+      </div>
+    </div>
+    <div class="field">
       <strong>References:</strong>
       <ul>
         <li v-for="(reference, index) in editedNode.references" :key="index" :class="{'invalid-reference': !reference.trim()}" class="field-content">
@@ -93,6 +104,12 @@ export default {
       this.editingField = null;
     }
   },
+  addTag() {
+      this.editedNode.tags.push('');
+      this.$nextTick(() => {
+        this.startEditing(`tag-${this.editedNode.tags.length - 1}`);
+      });
+    },
   addReference() {
       // Modified to not add an empty reference by default
       this.editedNode.references.push('');
@@ -107,8 +124,9 @@ export default {
     });
   },
   async submit() {
-    // Remove empty references
+    // Remove empty references or tags
     this.editedNode.references = this.editedNode.references.filter(ref => ref.trim() !== '');
+    this.editedNode.tags = this.editedNode.tags.filter(tag => tag.trim() !== '');
     this.editedNode.status = this.editedNode.status || null;
     console.log('number of references:', this.editedNode.references.length);
     if (this.editedNode.new) {
@@ -275,5 +293,40 @@ button.editing {
 
 .submit-button:hover {
   background-color: #0056b3;
+}
+
+.tags-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  align-items: center; /* Ensure items are aligned in the center */
+}
+
+.tag {
+  background-color: #e0e0e0;
+  border-radius: 3px;
+  padding: 5px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.tag-input {
+  padding: 5px 10px;
+  font-size: 12px;
+  border-radius: 3px;
+  border: 1px solid #ccc;
+  max-width: 100px; /* Added max-width to input field */
+}
+
+.add-tag-button {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 12px;
+  white-space: nowrap; /* Prevent button text from wrapping */
+  width: auto; /* Set a specific width for the button */
 }
 </style>

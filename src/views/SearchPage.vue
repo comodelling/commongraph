@@ -41,6 +41,10 @@
           <input type="checkbox" v-model="nodeStatus.legacy" /> Legacy
         </label>
       </div>
+      <div class="filters">
+        <strong> Tags: </strong>
+        <input type="text" v-model="tagFilter" placeholder="e.g. tag1, tag2" />
+      </div>
       <h2>Search Results</h2>
       <div v-if="!nodes.length && searchQuery">
         <p>No results found for "{{ searchQuery }}"</p>
@@ -87,6 +91,7 @@ export default {
         completed: true,
         legacy: false,
       },
+      tagFilter: '',
     };
   },
   computed: {
@@ -129,9 +134,11 @@ export default {
         if (this.searchQuery !== this.$route.params.searchQuery) {
           this.$router.push({ name: 'SearchPage', params: { searchQuery: this.searchQuery } });
         }
+        const tags = this.tagFilter.split(',').map(tag => tag.trim()).filter(tag => tag);
 
         console.log('searching for nodes with types:', nodeTypes);
         console.log('searching for nodes with status:', nodeStatus);
+        console.log('searching for nodes with tags:', tags);
 
         // Measure search time
         const startTime = performance.now();
@@ -141,6 +148,7 @@ export default {
             title: this.searchQuery,
             node_type: nodeTypes,
             status: nodeStatus,
+            tags: tags.length ? tags : undefined,
           },
           paramsSerializer: params => {
             return qs.stringify(params, { arrayFormat: 'repeat' });

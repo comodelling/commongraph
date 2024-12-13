@@ -81,9 +81,11 @@ export default {
     node: Object,
   },
   data() {
+    let editedNode = _.cloneDeep(this.node);
+    editedNode.tags = editedNode.tags || [];
     return {
       editingField: null,
-      editedNode: _.cloneDeep(this.node),
+      editedNode: editedNode,
     };
   },
   methods: {

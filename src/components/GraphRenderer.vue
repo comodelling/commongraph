@@ -375,7 +375,9 @@ function exportGraph() {
   }));
 
   const graphData = { nodes, edges };
+  console.log('Exporting graph data:', graphData);
   const blob = new Blob([JSON.stringify(graphData, null, 2)], { type: 'application/json' });
+  // console.log('Blob:', blob);
   saveAs(blob, 'export.json');
 }
 

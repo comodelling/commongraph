@@ -109,13 +109,7 @@ export default {
               label: node.title, // move out of data? 
               style: style,  // define rule in custom node component
               data: {
-                node_id: node.node_id,
-                title: node.title,
-                node_type: node.node_type,
-                scope: node.scope,
-                status: node.status,
-                gradable: node.gradable,
-                grade: node.grade,
+                ...node,
               }
             };
           }),
@@ -132,11 +126,7 @@ export default {
               markerEnd: edgeLabel === 'imply' ? "arrowclosed" : undefined,
               markerStart: edgeLabel === 'require' ? "arrowclosed" : undefined,
               data: {
-                edge_type: edgeLabel,
-                cprob: edge.cprob,
-                source: edge.source,
-                target: edge.target,
-                references: edge.references,
+                ...edge,
               },
             };
           })

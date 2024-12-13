@@ -68,18 +68,31 @@ class NodeStatus(str, Enum):
 class NodeBase(BaseModel):
     node_type: NodeType = NodeType.potentiality
     title: str
-    scope: str | None = None
+    scope: str = None
     status: NodeStatus | None = "unspecified"
     description: str | None = None
     # TODO: check whether this could lead to issues if argument passed in create for example
     node_id: NodeId | None = None
+    tags: list[str] = []
+    references: list[str] = []
+    # TODO: add history
+
+    # deprecated
     id_from_ui: int | None = None
-    gradable: bool = False
+    gradable: bool | None = False
     grade: QualitativeGrade | None = None
     proponents: list[str] = []
-    references: list[str] = []
-    tags: list[str] = []
-    # TODO: add history
+
+
+class PartialNodeBase(NodeBase):
+    node_id: NodeId
+    node_type: NodeType | None = None
+    title: str | None = None
+    scope: str | None = None
+    status: NodeStatus | None = None
+    tags: list[str] | None = None
+    references: list[str] | None = None
+    description: str | None = None
 
 
 class EdgeBase(BaseModel):

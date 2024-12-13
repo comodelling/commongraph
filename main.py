@@ -341,7 +341,7 @@ def delete_node(node_id: NodeId, db=Depends(get_db_connection)):
 
 
 @app.put("/nodes")
-def update_node(node: NodeBase, db=Depends(get_db_connection)) -> NodeBase:
+def update_node(node: PartialNodeBase, db=Depends(get_db_connection)) -> NodeBase:
     """Update the node with provided ID."""
     if not db.V(node.node_id).has_next():
         raise HTTPException(status_code=404, detail="Node not found")

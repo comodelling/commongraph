@@ -152,7 +152,9 @@ def test_update_node(fixtures):
 
     # inexistant ID
     response = client.put("/nodes", json={"title": "test", "description": "test"})
-    assert response.status_code == 404
+    assert (
+        response.status_code == 422
+    )  # Unprocessable Entity #TODO: maybe something more informative?
 
 
 def test_delete_node_wrong_id():

@@ -6,15 +6,15 @@ services:
       - "8182:8182"
     volumes:
       # bind mounts for configs; use read only so not overridden by environment variables
-      - "./janusgraph_config/janusgraph-server.yaml:/etc/opt/janusgraph/janusgraph-server.yaml:ro"
-      - "./janusgraph_config/main.properties:/etc/opt/janusgraph/main.properties:ro"
-      - "./janusgraph_config/test.properties:/etc/opt/janusgraph/test.properties:ro"
-      - "./janusgraph_config/empty-sample.groovy:/opt/janusgraph/scripts/empty-sample.groovy:ro"
+      - "./backend/janusgraph_config/janusgraph-server.yaml:/etc/opt/janusgraph/janusgraph-server.yaml:ro"
+      - "./backend/janusgraph_config/main.properties:/etc/opt/janusgraph/main.properties:ro"
+      - "./backend/janusgraph_config/test.properties:/etc/opt/janusgraph/test.properties:ro"
+      - "./backend/janusgraph_config/empty-sample.groovy:/opt/janusgraph/scripts/empty-sample.groovy:ro"
       # Named volume mounts. The data mount is only used when BerkeleyDB is used for storage.
       - "janusgraph-mount-data:/var/lib/janusgraph"
 
   fastapi:
-    build: .
+    build: ./backend
     container_name: objnet-fastapi
     ports:
       - "8000:8000"
@@ -23,6 +23,18 @@ services:
     environment:
       - TRAVERSAL_SOURCE=g
       - JANUSGRAPH_HOST=janusgraph
+
+  frontend:
+    image: node:latest
+    container_name: objnet-frontend
+    ports:
+      - "5173:5173"
+    working_dir: /app
+    command: sh -c "npm install && npm run dev -- --host"
+    volumes:
+      - ./frontend:/app
+    depends_on:
+      - fastapi
 
 # use a named volume to maintain database data between restarts
 volumes:

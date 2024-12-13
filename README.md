@@ -1,6 +1,9 @@
 # ObjectiveNet
 
-This project uses fastAPI framework and a janusgraph graph database.
+This project uses:
+- fastAPI framework and a janusgraph graph database on the backend,
+- [Vue](https://vuejs.org/) 3, [Vite](https://vite.dev/), and [Vue Flow](https://vueflow.dev/) on the fronend.
+
 It is dockerised, so you'll need to have Docker installed to run it.
 
 ## Usage

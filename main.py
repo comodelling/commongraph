@@ -237,6 +237,7 @@ def search_nodes(
     title: str | None = None,
     scope: str | None = None,
     status: list[NodeStatus] | NodeStatus = Query(None),
+    tags: list[str] | None = Query(None),
     description: str | None = None,
     db=Depends(get_db_connection),
 ) -> list[NodeBase]:
@@ -270,6 +271,12 @@ def search_nodes(
             trav = trav.has("status", status)
         else:
             print("status is not a list:", status)
+    if tags:
+        print("search with tags:", tags)
+        for tag in tags:
+            trav = trav.has(
+                "tags", Text.text_contains_fuzzy(tag)
+            )  # Ok for now because tags is parsed as string
     if description:
         trav = trav.has("description", Text.text_contains_fuzzy(description))
     return [convert_gremlin_vertex(node) for node in trav.to_list()]
@@ -473,6 +480,7 @@ def create_gremlin_node(
     created_node = created_node.property("description", node.description)
     created_node = created_node.property("proponents", parse_list(node.proponents))
     created_node = created_node.property("references", parse_list(node.references))
+    created_node = created_node.property("tags", parse_list(node.tags))
     return created_node.next()
 
 
@@ -515,6 +523,8 @@ def update_gremlin_node(
         updated_node = updated_node.property("references", parse_list(node.references))
     if node.proponents is not None:
         updated_node = updated_node.property("proponents", parse_list(node.proponents))
+    if node.tags is not None:
+        updated_node = updated_node.property("tags", parse_list(node.tags))
     return updated_node.next()
 
 
@@ -554,7 +564,7 @@ def convert_gremlin_vertex(vertex: Gremlin_vertex) -> NodeBase:
     d["node_type"] = vertex.label
     if vertex.properties is not None:
         for p in vertex.properties:
-            if p.key in ["proponents", "references"]:
+            if p.key in ["proponents", "references", "tags"]:
                 d[p.key] = unparse_stringlist(p.value)
             elif p.key in NodeBase.model_fields:
                 d[p.key] = p.value

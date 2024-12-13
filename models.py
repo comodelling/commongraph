@@ -78,6 +78,7 @@ class NodeBase(BaseModel):
     grade: QualitativeGrade | None = None
     proponents: list[str] = []
     references: list[str] = []
+    tags: list[str] = []
     # TODO: add history
 
 

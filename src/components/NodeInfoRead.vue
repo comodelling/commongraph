@@ -54,5 +54,6 @@ export default {
   padding: 1px 3px;
   font-size: 12px;
   cursor: default;
+  display: flex;
 }
 </style>

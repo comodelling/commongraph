@@ -41,11 +41,11 @@
     <div class="field">
       <strong>Tags:</strong>
       <div class="tags-container">
-        <span v-for="(tag, index) in editedNode.tags" :key="index" class="tag" @click="startEditing(`tag-${index}`)">
-          <span v-if="editingField !== `tag-${index}`">{{ tag }}</span>
+        <span v-for="(tag, index) in editedNode.tags" :key="index" class="tag">
+          <span v-if="editingField !== `tag-${index}`" @click="startEditing(`tag-${index}`)">{{ tag }}</span>
           <input v-else v-model="editedNode.tags[index]" @blur="stopEditing(`tag-${index}`)" :ref="`tag-${index}Input`" class="tag-input" :style="{ width: `${tag.length * 8 + 20}px` }" />
+          <button class="delete-tag-button" @click="deleteTag(index)">x</button> <!-- Added delete button -->
         </span>
-        <!-- Added button to add a tag -->
         <button class="add-tag-button" @click="addTag">+ Tag</button>
       </div>
     </div>
@@ -89,98 +89,102 @@ export default {
     };
   },
   methods: {
-  startEditing(field) {
-    this.editingField = field;
-    this.$nextTick(() => {
-      const refName = `${field}Input`;
-      const ref = this.$refs[refName];
-      if (Array.isArray(ref)) {
-        ref[0].focus();
-      } else if (ref) {
-        ref.focus();
-      }
-    });
-  },
-  stopEditing(field) {
-    if (this.editingField === field) {
-      this.editingField = null;
-    }
-  },
-  addTag() {
-      this.editedNode.tags.push('');
+    startEditing(field) {
+      this.editingField = field;
       this.$nextTick(() => {
-        this.startEditing(`tag-${this.editedNode.tags.length - 1}`);
+        const refName = `${field}Input`;
+        const ref = this.$refs[refName];
+        if (Array.isArray(ref)) {
+          ref[0].focus();
+        } else if (ref) {
+          ref.focus();
+        }
+      });
+
+    },
+    stopEditing(field) {
+      if (this.editingField === field) {
+        this.editingField = null;
+      }
+    },
+    addTag() {
+        this.editedNode.tags.push('');
+        this.$nextTick(() => {
+          this.startEditing(`tag-${this.editedNode.tags.length - 1}`);
+        });
+      },
+    deleteTag(index) {
+      this.editedNode.tags.splice(index, 1);
+    },
+    addReference() {
+        // Modified to not add an empty reference by default
+        this.editedNode.references.push('');
+        this.$nextTick(() => {
+          this.startEditing(`reference-${this.editedNode.references.length - 1}`);
+        });
+    },
+    addDescription() {
+      this.editedNode.description = '';
+      this.$nextTick(() => {
+        this.startEditing('description');
       });
     },
-  addReference() {
-      // Modified to not add an empty reference by default
-      this.editedNode.references.push('');
-      this.$nextTick(() => {
-        this.startEditing(`reference-${this.editedNode.references.length - 1}`);
-      });
-  },
-  addDescription() {
-    this.editedNode.description = '';
-    this.$nextTick(() => {
-      this.startEditing('description');
-    });
-  },
-  async submit() {
-    // Remove empty references or tags
-    this.editedNode.references = this.editedNode.references.filter(ref => ref.trim() !== '');
-    this.editedNode.tags = this.editedNode.tags.filter(tag => tag.trim() !== '');
-    this.editedNode.status = this.editedNode.status || null;
-    console.log('number of references:', this.editedNode.references.length);
-    if (this.editedNode.new) {
-      try {
-        const fromConnection = this.editedNode.fromConnection;
-        //delete fromConnection from editedNode;
-        delete this.editedNode.fromConnection;
-        delete this.editedNode.new;
-        delete this.editedNode.node_id;
-        console.log('Submitting node for creation:', this.editedNode);
-        const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/nodes`, this.editedNode);
-        // console.log('Created node returned:', response.data);
-        // this.$emit('publish', response.data);
-        const target = response.data.node_id;
+    async submit() {
+      // Remove empty references or tags
+      this.editedNode.references = this.editedNode.references.filter(ref => ref.trim() !== '');
+      this.editedNode.tags = this.editedNode.tags.filter(tag => tag.trim() !== '');
+      this.editedNode.status = this.editedNode.status || null;
+      console.log('number of references:', this.editedNode.references.length);
+      if (this.editedNode.new) {
+        try {
+          const fromConnection = this.editedNode.fromConnection;
+          //delete fromConnection from editedNode;
+          delete this.editedNode.fromConnection;
+          delete this.editedNode.new;
+          delete this.editedNode.node_id;
+          console.log('Submitting node for creation:', this.editedNode);
+          const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/nodes`, this.editedNode);
+          // console.log('Created node returned:', response.data);
+          // this.$emit('publish', response.data);
+          const target = response.data.node_id;
 
-        if (fromConnection) // create edge if node was created from a connection
-        {
-          try {
-            
-            const newEdge = {
-              source: parseInt(fromConnection.id),
-              target: target,
-              edge_type: fromConnection.edge_type,
-            };
-            console.log('Submitting edge for creation:', newEdge);
-            const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/edges`, newEdge);
-            // console.log('Created edge returned:', response.data);
-            // this.$emit('publish', response.data);
-          } catch (error) {
-            console.error('Failed to create edge:', error);
+          if (fromConnection) // create edge if node was created from a connection
+          {
+            try {
+              
+              const newEdge = {
+                source: parseInt(fromConnection.id),
+                target: target,
+                edge_type: fromConnection.edge_type,
+              };
+              console.log('Submitting edge for creation:', newEdge);
+              const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/edges`, newEdge);
+              // console.log('Created edge returned:', response.data);
+              // this.$emit('publish', response.data);
+            } catch (error) {
+              console.error('Failed to create edge:', error);
+          }
+          
         }
-        
-      }
-      window.location.href = `/node/${target}`;
+        window.location.href = `/node/${target}`;
 
+        }
+      catch (error) {
+        console.error('Failed to create node:', error);
+      }}
+      else {
+        try {
+          // if node id starts by 'temp-node', create the node instead
+          console.log('Submitting node for update:', this.editedNode);
+          const response = await axios.put(`${import.meta.env.VITE_BACKEND_URL}/nodes`, this.editedNode);
+          console.log('Updated node returned:', response.data);
+          this.$emit('publish', response.data);
+        } catch (error) {
+          console.error('Failed to update node:', error);
+        }
       }
-     catch (error) {
-      console.error('Failed to create node:', error);
-    }}
-    else {
-      try {
-        // if node id starts by 'temp-node', create the node instead
-        console.log('Submitting node for update:', this.editedNode);
-        const response = await axios.put(`${import.meta.env.VITE_BACKEND_URL}/nodes`, this.editedNode);
-        console.log('Updated node returned:', response.data);
-        this.$emit('publish', response.data);
-      } catch (error) {
-        console.error('Failed to update node:', error);
-      }
-    }
+    },
   },
-},
   watch: {
     node: {
       handler(newNode) {
@@ -307,9 +311,13 @@ button.editing {
 .tag {
   background-color: #e0e0e0;
   border-radius: 3px;
-  padding: 5px 10px;
+  padding: 1px 3px;
+  /* padding-right: 5px; Added padding to make space for delete button */
   font-size: 12px;
-  cursor: pointer;
+  cursor: default;
+  display: inline-flex; 
+  align-items: center;
+  /* position: relative; */
 }
 
 .tag-input {
@@ -330,5 +338,24 @@ button.editing {
   font-size: 12px;
   white-space: nowrap; /* Prevent button text from wrapping */
   width: auto; /* Set a specific width for the button */
+}
+
+.delete-tag-button {
+  background: none;
+  border: none;
+  color: red;
+  font-size: 11px;
+  /* padding: 1px 3px; */
+  padding-top: 0px;
+  padding-bottom: 0px;
+  /* display: inline-block; */
+  padding-left: 5-3px;
+  /* padding: 1px 3px; */
+  /* margin-left: 5px; */
+  cursor: pointer;
+  /* position: absolute; */
+  /* top: 0; Positioned at the top */
+  /* right: 0; Positioned at the right */
+  /* transform: translate(80%, -50%); Adjust position to be inside the tag */
 }
 </style>

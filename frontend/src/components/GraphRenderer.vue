@@ -108,9 +108,23 @@ watch(
 
 onNodeClick(({ node }) => {
   console.log('Node Click', node.id)
-  // window.location.href = `/node/${node.node_id}`  full page reload
+  // get current selection from route.params
+  // route.params.id
+
+  // is current node id same as clicked node id?
+  // if (id === node.id) {
+  //   // if yes, do nothing
+  //   return
+  // }
+
+  // is the current element selected?
+  // yes --> extend the selection and uri to the clicked node
+
+  // no --> switch to the clicked node as sole selected element
+
   router.push({ name: 'NodeView', params: { id: node.id } })
   emit('nodeClick', node.id)
+  // window.location.href = `/node/${node.node_id}`  full page reload
 })
 
 onEdgeClick(({ edge }) => {
@@ -616,20 +630,6 @@ function optionClicked({ option }) {
 
 <script>
 export default {
-  itemArray1: [
-        {
-          name: 'Jim',
-          job: 'Salesman',
-        },
-        {
-          name: 'Dwight',
-          job: 'Assistant to the Regional Manager',
-        },
-        {
-          name: 'Pam',
-          job: 'Receptionist',
-        },
-      ],
   props: {
     data: {
       type: Object,
@@ -663,7 +663,15 @@ export default {
   flex-grow: 1;
   border: 1px solid #ccc;
   margin: 5px;
+  /* cursor: pointer!important; */
 }
+/* .graph-renderer .vue-flow__node,
+.graph-renderer .vue-flow__edge {
+  cursor: move!important;
+}
+.graph-renderer .vue-flow__pane {
+  /* cursor: crosshair!important;
+} */
 
 .process-panel,
 .layout-panel {

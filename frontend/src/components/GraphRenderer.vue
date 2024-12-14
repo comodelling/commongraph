@@ -8,9 +8,42 @@ import { Background } from '@vue-flow/background'
 import { ControlButton, Controls } from '@vue-flow/controls'
 import { MiniMap } from '@vue-flow/minimap'
 import Icon from './Icon.vue' // Update this line
-import SpecialNode from '../components/SpecialNode.vue'
+// import SpecialNode from '../components/SpecialNode.vue'
 import { useLayout } from '../composables/useLayout'
+import VueSimpleContextMenu from 'vue-simple-context-menu';
+import 'vue-simple-context-menu/dist/vue-simple-context-menu.css';
 // import SpecialEdge from './SpecialEdge.vue'
+
+
+const { onInit,
+  getNodes,
+  getEdges,
+  addNodes,
+  addEdges,
+  findNode,
+  findEdge,
+  setNodes,
+  setEdges,
+  updateNodeData,
+  applyNodeChanges,
+  applyEdgeChanges,
+  removeEdges,
+  updateEdge,
+  updateEdgeData,
+  // onConnect,
+  // onConnectStart,
+  // onConnectEnd,
+  onNodeDragStop,
+  setViewport,
+  zoomTo,
+  toObject,
+  fitView,
+  onNodeClick,
+  onEdgeClick,
+  // onNodeContextMenu,
+  // onSelectionContextMenu,
+ } = useVueFlow()
+
 
 // props to receive nodes and edges data
 const props = defineProps({
@@ -20,34 +53,11 @@ const props = defineProps({
   },
 })
 
+const router = useRouter()
+const route = useRoute()
 const emit = defineEmits(['nodeClick', 'edgeClick', 'newNodeCreated', 'newEdgeCreated'])
 
-const { onInit, 
-  getNodes, 
-  getEdges,
-  findNode, 
-  findEdge,
-  setNodes, 
-  setEdges, 
-  updateNodeData,
-  applyNodeChanges,
-  applyEdgeChanges,
-  removeEdges,
-  updateEdge,
-  updateEdgeData,
-  // onConnect, 
-  // onConnectStart,
-  // onConnectEnd,
-  addNodes,
-  addEdges, 
-  onNodeDragStop, 
-  setViewport,
-  zoomTo, 
-  toObject, 
-  fitView,
-  onNodeClick,
-  onEdgeClick,
- } = useVueFlow()
+
 
 const { layout, layoutSingleton, previousDirection } = useLayout()
 
@@ -56,13 +66,13 @@ const nodes = ref([])
 const edges = ref([])
 const connectionInfo = ref(null)
 const dark = ref(false)
-const router = useRouter()
-const route = useRoute()
+const contextMenuOptions = ref([]);
+const contextMenuRef = ref(null);
 
  function updateGraphFromData(data) {
   setNodes(data.nodes || []);
   setEdges(data.edges || []);
-  
+
   if (route.params.source_id && route.params.target_id) {
     const edgeId = `${route.params.source_id}-${route.params.target_id}`;
     console.log('selecting edgeId', edgeId);
@@ -105,7 +115,7 @@ onNodeClick(({ node }) => {
 
 onEdgeClick(({ edge }) => {
   console.log('Edge Click', edge.source, edge.target)
-  
+
   // window.location.href = `/edge/${node.node_id}`  full page reload
   router.push({ name: 'EdgeView', params: { source_id: edge.data.source, target_id: edge.data.target } })  // uri follows backend convention
   emit('edgeClick', edge.data.source, edge.data.target)  // emit event to parent component
@@ -129,8 +139,9 @@ const onNodesChange = async (changes) => {
         } catch (error) {
           console.error('Failed to delete node:', error);
         }
-        
+
         //find all edges connected to this node and delete them
+        // note: edges on teh backend have already been deleted by the above call
         const connectedEdges = getEdges.value.filter(edge => edge.source === node_id || edge.target === node_id)
 
         for (const edge of connectedEdges) {
@@ -153,7 +164,7 @@ const onEdgesChange = async (changes) => {
   const is_edge_selected = source_id && target_id
 
   for (const change of changes) {
-    if (is_edge_selected && change.type === 'remove') {
+    if (change.type === 'remove' && (change.rightClick || is_edge_selected)) {
       const isConfirmed = await confirm('Are you sure you want to delete this edge?')
 
       if (isConfirmed) {
@@ -164,7 +175,7 @@ const onEdgesChange = async (changes) => {
         const target_id = edge.data.target
         const edge_type = edge.data.edge_type
         try {
-          const response = await axios.delete(`${import.meta.env.VITE_BACKEND_URL}/edges/${source_id}/${target_id}`, 
+          const response = await axios.delete(`${import.meta.env.VITE_BACKEND_URL}/edges/${source_id}/${target_id}`,
             { 'edge_type': edge_type });
           // console.log('Deleted edge returned:', response.data);
         } catch (error) {
@@ -220,13 +231,13 @@ function onConnectEnd(event) {
     console.log('Target Node:', targetId);
     // connectionInfo.value = null;
     // return;
-    
+
   }
   else {
     console.log('Connected to a new node');
     const scope = sourceNode.data.scope;
     targetId = `temp-node`;
-    
+
     newNodeData = {
       id: targetId,
       position: { x: event.clientX, y: event.clientY },
@@ -241,7 +252,7 @@ function onConnectEnd(event) {
     };
     console.log('New Node:', newNodeData);
     addNodes(newNodeData);
-  }  
+  }
 
   //inherit scope from source node
 
@@ -266,16 +277,16 @@ function onConnectEnd(event) {
 
   if (targetElement && targetElement.classList.contains('vue-flow__handle')) {
     nextTick(() => {
-      router.push({ name: 'EdgeEdit', params: { source_id: nodeId , target_id: targetId} });
-      console.log(`Navigated to /edge/${nodeId}/${targetId}/edit`);
+      // router.push({ name: 'EdgeEdit', params: { source_id: nodeId , target_id: targetId} });
+      // console.log(`Navigated to /edge/${nodeId}/${targetId}/edit`);
       emit('newEdgeCreated', newEdgeData);
     });
   }
   else {
     nextTick(() => {
       // router.push({ name: 'NodeInfoEdit', params: { id: newNodeId } });
-      router.push({ name: 'NodeEdit', params: { id: targetId } });
-      console.log(`Navigated to /node/${targetId}/edit`);
+      // router.push({ name: 'NodeEdit', params: { id: targetId } });
+      // console.log(`Navigated to /node/${targetId}/edit`);
       emit('newNodeCreated', newNodeData);
     });
   }
@@ -381,6 +392,117 @@ function exportGraph() {
   saveAs(blob, 'export.json');
 }
 
+
+// ********* CONTEXT MENUS *********
+// onNodeContextMenu((event, node) => {
+//   showContextMenu(event, [
+//     { label: 'Edit Node', action: () => editNode(node) },
+//     { label: 'Delete Node', action: () => deleteNode(node) },
+//   ]);
+// })
+
+function showContextMenu(event, options) {
+  console.log('event location', event.clientX, event.clientY);
+  console.log('options', options);
+  event.preventDefault();
+  contextMenuOptions.value = options;
+  // event.clientX = event.clientX - 100;
+  // event.clientX = event.clientX - 100;
+  let newEvent = new MouseEvent('contextmenu', {
+    bubbles: true,
+    cancelable: true,
+    clientX: event.clientX -640,
+    clientY: event.clientY -50,
+  });
+  contextMenuRef.value.showMenu(newEvent);
+}
+
+function onNodeRightClick({ event, node }) {
+  console.log('Node Right Click', node);
+  showContextMenu(event, [
+    { name: 'Edit Node', action: () => editNode(node) },
+    { name: 'Delete Node', action: () => deleteNode(node) },
+  ]);
+}
+
+function onEdgeRightClick({ event, edge }) {
+  console.log('Edge Right Click', edge);
+  showContextMenu(event, [
+    { name: 'Edit Edge', action: () => editEdge(edge) },
+    { name: 'Delete Edge', action: () => deleteEdge(edge) },
+  ]);
+}
+
+
+function onSelectionRightClick({ event, selection }) {
+  showContextMenu(event, [
+    { name: 'Group Selection', action: () => groupSelection(selection) },
+    { name: 'Delete Selection', action: () => deleteSelection(selection) },
+  ]);
+}
+
+function onConnectEndEmpty(event) {
+  showContextMenu(event, [
+    { name: 'Create New Node', action: () => createNode(event) },
+
+  ]);
+}
+
+function editNode(node) {
+  console.log('Edit Node', node);
+  router.push({ name: 'NodeEdit', params: { id: node.id } });
+  // console.log(`Navigated to /node/${node.id}/edit`);
+}
+
+function deleteNode(node) {
+  console.log('Delete Node', node);
+  onNodesChange([{ type: 'remove', id: node.id}]);
+}
+
+function editEdge(edge) {
+  console.log('Edit Edge', edge);
+  router.push({ name: 'EdgeEdit', params: { source_id: edge.data.source , target_id: edge.data.target} });
+  // console.log(`Navigated to /edge/${edge.source}/${edge.target}/edit`);
+}
+
+async function deleteEdge(edge) {
+  console.log('Delete Edge', edge);
+  onEdgesChange([{ type: 'remove', id: edge.id, rightClick: true}]);
+  //TODO: merge with onEdgesChange
+  // const isConfirmed = await confirm('Are you sure you want to delete this edge?')
+
+  // if (isConfirmed) {
+  //   // console.log("change:", change)
+  //   const source_id = edge.data.source
+  //   const target_id = edge.data.target
+  //   const edge_type = edge.data.edge_type
+  //   try {
+  //     const response = await axios.delete(`${import.meta.env.VITE_BACKEND_URL}/edges/${source_id}/${target_id}`,
+  //       { 'edge_type': edge_type });
+  //     // console.log('Deleted edge returned:', response.data);
+  //   } catch (error) {
+  //     console.error('Failed to delete edge:', error);
+  //   }
+  // }
+}
+
+function groupSelection(selection) {
+  console.log('Group Selection', selection);
+}
+
+function deleteSelection(selection) {
+  console.log('Delete Selection', selection);
+}
+
+function createNode(event) {
+  console.log('Create Node', event);
+}
+
+function optionClicked({ option }) {
+  console.log('Option Clicked', option);
+  option.action();
+}
+
 </script>
 
 <template>
@@ -398,10 +520,51 @@ function exportGraph() {
       @connect="onConnect"
       @connect-start="onConnectStart"
       @connect-end="onConnectEnd"
-    >  
-    <template #node-special="specialNodeProps">
-      <SpecialNode v-bind="specialNodeProps" />
-    </template>
+      @node-context-menu="onNodeRightClick"
+      @edge-context-menu="onEdgeRightClick"
+      @selection-context-menu="onSelectionRightClick"
+    >
+
+    <!-- <div class="item-wrapper">
+      <div
+        v-for="item in items"
+        @click.prevent.stop="handleClick($event, item)"
+        class="item-wrapper__item"
+      >
+        {{item.name}}
+      </div>
+    </div> -->
+    <!-- <template #node-special="specialNodeProps"> -->
+      <!-- <SpecialNode v-bind="specialNodeProps" /> -->
+    <!-- </template> -->
+
+    <!-- <div class="list-group">
+      <div
+        v-for="(item, index) in itemArray1"
+        :key="index"
+        @contextmenu.prevent.stop="handleClick1($event, item)"
+        class="list-group-item list-group-item-action"
+      >
+        {{ item.name }}
+      </div>
+    </div>
+     -->
+    <!-- <vue-simple-context-menu
+      element-id="myFirstMenu"
+      :options="optionsArray1"
+      ref="vueSimpleContextMenu1"
+      @option-clicked="optionClicked1"
+    >
+  </vue-simple-context-menu> -->
+
+
+    <vue-simple-context-menu
+        element-id="myUniqueId"
+        :options="contextMenuOptions"
+        ref="contextMenuRef"
+        @option-clicked="optionClicked"
+      />
+
 
     <Background pattern-color="#aaa" :gap="16" />
 
@@ -451,6 +614,20 @@ function exportGraph() {
 
 <script>
 export default {
+  itemArray1: [
+        {
+          name: 'Jim',
+          job: 'Salesman',
+        },
+        {
+          name: 'Dwight',
+          job: 'Assistant to the Regional Manager',
+        },
+        {
+          name: 'Pam',
+          job: 'Receptionist',
+        },
+      ],
   props: {
     data: {
       type: Object,
@@ -467,7 +644,11 @@ export default {
 
       console.log('Data for graph:', this.data.nodes, this.data.edges);
     },
+    handleClick1(event, item) {
+      this.$refs.vueSimpleContextMenu1.showMenu(event, item);
+    },
   },
+
 };
 </script>
 
@@ -542,4 +723,18 @@ export default {
   transition: background-color 0.2s;
 }
 
+/* Add this to your CSS file */
+/* .vue-simple-context-menu {
+  position: absolute;
+  z-index: 1000;
+}
+
+.vue-simple-context-menu__item {
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.vue-simple-context-menu__item:hover {
+  background-color: #f0f0f0;
+} */
 </style>

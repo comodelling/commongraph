@@ -103,7 +103,6 @@ export default {
               borderStyle: node.status === 'draft' ? 'dotted' : 'solid', // Ensure border style is set
               borderRadius: '8px',
             };
-            console.log('Node style:', style); // Added console log to check the style object
             return {
               id: node.node_id.toString(),
               position: { x: Math.random() * 500, y: Math.random() * 500 },

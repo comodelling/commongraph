@@ -12,6 +12,7 @@ import Icon from './Icon.vue' // Update this line
 import { useLayout } from '../composables/useLayout'
 import VueSimpleContextMenu from 'vue-simple-context-menu';
 import 'vue-simple-context-menu/dist/vue-simple-context-menu.css';
+// import { create } from 'axios';
 // import SpecialEdge from './SpecialEdge.vue'
 
 
@@ -228,87 +229,77 @@ function onConnectEnd(event) {
     return;
   }
 
-  const { nodeId, handleType } = connectionInfo.value;
-
-  const sourceNode = findNode(nodeId);
-  const newEdgeId = `temp-edge`;
-  const edgeType = handleType === 'source' ? 'imply' : 'require';
-
   // Check if the connection is to an existing node handle
   const targetElement = event.target;
+  const isConnectedToHandle = (targetElement && targetElement.classList.contains('vue-flow__handle'));
   let targetId = null;
-  let newNodeData = null;
+  // let newNodeData = null;
 
-  if (targetElement && targetElement.classList.contains('vue-flow__handle')) {
+  if  (isConnectedToHandle) {
     console.log('Connected to an existing node handle');
     targetId = targetElement.getAttribute('data-nodeid');
-    console.log('Target Node:', targetId);
-    // connectionInfo.value = null;
-    // return;
-
-  }
-  else {
-    console.log('Connected to a new node');
-    const scope = sourceNode.data.scope;
-    const tags = sourceNode.data.tags;
-    targetId = `temp-node`;
-
-    newNodeData = {
-      id: targetId,
-      position: { x: event.clientX, y: event.clientY },
-      label: 'New Node',
-      data: {
-        title: 'New Node',
-        scope: scope,  // inherited scope
-        node_type: 'potentiality',  // most general type
-        satus: 'draft',
-        tags: tags, // inherited tags
-        fromConnection: {'id': nodeId, 'edge_type': edgeType} // to be used to update edge data
-      },
-    };
-    console.log('New Node:', newNodeData);
-    addNodes(newNodeData);
-  }
-
-  //inherit scope from source node
-
-  const newEdgeData = {
-    id: newEdgeId,
-    source: handleType === 'source' ? nodeId : targetId,
-    target: handleType === 'source' ? targetId : nodeId,
-    // type: handleType === 'source' ? 'sourceType' : 'targetType',
-    label: edgeType,
-    data: {
-      edge_type: handleType === 'source' ? 'imply' : 'require',
-      source: parseInt(nodeId),
-      target: parseInt(targetId),
-    }
-  };
-
-  console.log('New Edge:', newEdgeData);
-  addEdges(newEdgeData);
-  // nodes.value.push(newNodeData);
-  // edges.value.push(newEdgeData);
-  // newNode.value = newNodeData;
-
-  if (targetElement && targetElement.classList.contains('vue-flow__handle')) {
+    const newEdgeData = createEdgeOnConnection(targetId);
     nextTick(() => {
-      // router.push({ name: 'EdgeEdit', params: { source_id: nodeId , target_id: targetId} });
-      // console.log(`Navigated to /edge/${nodeId}/${targetId}/edit`);
       emit('newEdgeCreated', newEdgeData);
     });
+    connectionInfo.value = null;
   }
   else {
+    console.log('Connected to an empty space');
+    const newNodeData = createNodeOnConnection(event);
+    createEdgeOnConnection('temp-node');
+    // console.log('opening search for new node');
+    // searchBarPosition.value = { x: event.clientX, y: event.clientY };
+    // showSearchBar.value = true;
+    // connectionInfo.value = { nodeId, handleType };
     nextTick(() => {
-      // router.push({ name: 'NodeInfoEdit', params: { id: newNodeId } });
-      // router.push({ name: 'NodeEdit', params: { id: targetId } });
-      // console.log(`Navigated to /node/${targetId}/edit`);
       emit('newNodeCreated', newNodeData);
     });
+    connectionInfo.value = null;
   }
-
-  connectionInfo.value = null;
 }
+
+function createEdgeOnConnection(targetId){
+  const { nodeId, handleType } = connectionInfo.value;
+  const newEdgeData = {
+      id: `temp-edge`,
+      source: handleType === 'source' ? nodeId : targetId,
+      target: handleType === 'source' ? targetId : nodeId,
+      // type: handleType === 'source' ? 'sourceType' : 'targetType',
+      label: handleType === 'source' ? 'imply' : 'require',
+      data: {
+        edge_type: handleType === 'source' ? 'imply' : 'require',
+        source: parseInt(nodeId),
+        target: parseInt(targetId),
+      }
+    };
+  addEdges(newEdgeData);
+  return newEdgeData;
+}
+
+
+function createNodeOnConnection(event) {
+  console.log('Connected to a new node');
+  const { nodeId, handleType } = connectionInfo.value;
+  const sourceNode = findNode(nodeId);
+
+  const newNodeData = {
+    id: `temp-node`,
+    position: { x: event.clientX, y: event.clientY },
+    label: 'New Node',
+    data: {
+      title: 'New Node',
+      scope: sourceNode.data.scope,  // inherited scope
+      node_type: 'potentiality',  // most general type
+      satus: 'draft',
+      tags: sourceNode.data.tags, // inherited tags
+      fromConnection: {'id': nodeId, 'edge_type': handleType === 'source' ? 'imply' : 'require'} // to be used to update edge data
+    },
+  };
+  addNodes(newNodeData);
+  return newNodeData;
+}
+
 
 
 /**
@@ -508,10 +499,6 @@ function groupSelection(selection) {
 
 function deleteSelection(selection) {
   console.log('Delete Selection', selection);
-}
-
-function createNode(event) {
-  console.log('Create Node', event);
 }
 
 function optionClicked({ option }) {

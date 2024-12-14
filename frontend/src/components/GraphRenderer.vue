@@ -236,6 +236,7 @@ function onConnectEnd(event) {
   else {
     console.log('Connected to a new node');
     const scope = sourceNode.data.scope;
+    const tags = sourceNode.data.tags;
     targetId = `temp-node`;
 
     newNodeData = {
@@ -247,6 +248,7 @@ function onConnectEnd(event) {
         scope: scope,  // inherited scope
         node_type: 'potentiality',  // most general type
         satus: 'draft',
+        tags: tags, // inherited tags
         fromConnection: {'id': nodeId, 'edge_type': edgeType} // to be used to update edge data
       },
     };

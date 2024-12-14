@@ -12,11 +12,13 @@ repos:
     rev: 22.10.0
     hooks:
     -   id: black
+        files: ^backend/
 -   repo: local
     hooks:
     -   id: pytest-check
         name: pytest-check
+        files: ^backend/
         entry: pytest
         language: system
         pass_filenames: false
-        always_run: true
+        always_run: false

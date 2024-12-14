@@ -53,6 +53,7 @@ export default {
         title: "New Node",
         scope: "Enter a scope",
         status: 'draft',
+        tags: [],
         references: [],
         new: true,
       };
@@ -96,7 +97,7 @@ export default {
         this.graphData = {
           nodes: fetched_nodes.map(node => {
             const style = {
-              opacity: node.status === 'completed' ? 0.4 : 0.95, 
+              opacity: node.status === 'completed' ? 0.4 : 0.95,
               borderColor: node.status === 'completed' ? 'green' : 'black',
               borderWidth: this.getBorderWidthByType(node.node_type),
               borderStyle: node.status === 'draft' ? 'dotted' : 'solid', // Ensure border style is set
@@ -106,7 +107,7 @@ export default {
             return {
               id: node.node_id.toString(),
               position: { x: Math.random() * 500, y: Math.random() * 500 },
-              label: node.title, // move out of data? 
+              label: node.title, // move out of data?
               style: style,  // define rule in custom node component
               data: {
                 ...node,
@@ -176,6 +177,7 @@ export default {
         node_type: newNode.data.node_type,
         scope: newNode.data.scope,
         status: 'draft',
+        tags: newNode.data.tags,
         references: [],
         new: true,
         fromConnection: newNode.data.fromConnection,

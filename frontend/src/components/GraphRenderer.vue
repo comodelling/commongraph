@@ -12,7 +12,7 @@ import Icon from './Icon.vue' // Update this line
 import { useLayout } from '../composables/useLayout'
 import VueSimpleContextMenu from 'vue-simple-context-menu';
 import 'vue-simple-context-menu/dist/vue-simple-context-menu.css';
-// import { create } from 'axios';
+import SearchBar from './SearchBar.vue'; // Import the SearchBar component
 // import SpecialEdge from './SpecialEdge.vue'
 
 
@@ -41,6 +41,7 @@ const { onInit,
   fitView,
   onNodeClick,
   onEdgeClick,
+  onPaneClick,
   // onNodeContextMenu,
   // onSelectionContextMenu,
  } = useVueFlow()
@@ -69,6 +70,9 @@ const connectionInfo = ref(null)
 const dark = ref(false)
 const contextMenuOptions = ref([]);
 const contextMenuRef = ref(null);
+const showSearchBar = ref(false);
+const searchBarPosition = ref({ x: 0, y: 0 });
+const searchResults = ref(null);
 
  function updateGraphFromData(data) {
   setNodes(data.nodes || []);
@@ -126,6 +130,7 @@ onNodeClick(({ node }) => {
   router.push({ name: 'NodeView', params: { id: node.id } })
   emit('nodeClick', node.id)
   // window.location.href = `/node/${node.node_id}`  full page reload
+  closeSearchBar();
 })
 
 onEdgeClick(({ edge }) => {
@@ -134,6 +139,13 @@ onEdgeClick(({ edge }) => {
   // window.location.href = `/edge/${node.node_id}`  full page reload
   router.push({ name: 'EdgeView', params: { source_id: edge.data.source, target_id: edge.data.target } })  // uri follows backend convention
   emit('edgeClick', edge.data.source, edge.data.target)  // emit event to parent component
+  closeSearchBar();
+})
+
+onPaneClick(({ event }) => {
+  console.log('Pane Click', event)
+  // showSearchBar.value = false;
+  // searchResults.value = [];
 })
 
 
@@ -233,7 +245,7 @@ function onConnectEnd(event) {
   const targetElement = event.target;
   const isConnectedToHandle = (targetElement && targetElement.classList.contains('vue-flow__handle'));
   let targetId = null;
-  // let newNodeData = null;
+  const { nodeId, handleType } = connectionInfo.value;
 
   if  (isConnectedToHandle) {
     console.log('Connected to an existing node handle');
@@ -242,23 +254,33 @@ function onConnectEnd(event) {
     nextTick(() => {
       emit('newEdgeCreated', newEdgeData);
     });
+    addEdges(newEdgeData);
     connectionInfo.value = null;
   }
   else {
     console.log('Connected to an empty space');
-    const newNodeData = createNodeOnConnection(event);
-    createEdgeOnConnection('temp-node');
-    // console.log('opening search for new node');
-    // searchBarPosition.value = { x: event.clientX, y: event.clientY };
-    // showSearchBar.value = true;
-    // connectionInfo.value = { nodeId, handleType };
-    nextTick(() => {
-      emit('newNodeCreated', newNodeData);
-    });
-    connectionInfo.value = null;
+    // createNodeOnConnection(event);
+
+    console.log('opening search for new node');
+    const position = ensureVisibility({ x: event.clientX, y: event.clientY });
+    searchBarPosition.value = position;
+    showSearchBar.value = true;
+    connectionInfo.value = { nodeId, handleType };
+
+
   }
 }
 
+function ensureVisibility(position) {
+  const { innerWidth, innerHeight } = window;
+  const offset = 20; // offset from the edges
+  return {
+    x: Math.min(Math.max(position.x, offset), innerWidth - offset - 350), // 300 is the max-width of the search bar
+    y: Math.min(Math.max(position.y, offset), innerHeight - offset - 200), // 200 is an estimated height of the search bar
+  };
+}
+
+// direct connection between existing handles
 function createEdgeOnConnection(targetId){
   const { nodeId, handleType } = connectionInfo.value;
   const newEdgeData = {
@@ -273,19 +295,44 @@ function createEdgeOnConnection(targetId){
         target: parseInt(targetId),
       }
     };
-  addEdges(newEdgeData);
+
   return newEdgeData;
 }
 
 
-function createNodeOnConnection(event) {
+function handleSearch(query) {
+  // Perform search and update searchResults
+  // Example: searchResults.value = searchNodes(query);
+  console.log('Searching for:', query);
+  if (!query.trim()) {
+    searchResults.value = null;
+    console.log('Empty query, not searching');
+    return;
+  }
+  try {
+
+    axios.get(`${import.meta.env.VITE_BACKEND_URL}/nodes/`, {params: { title: query }})
+      .then(response => {
+        console.log('Search results:', response.data);
+        searchResults.value = response.data;
+      })
+      .catch(error => {
+        console.error('Failed to search nodes:', error);
+      });
+  } catch (error) {
+    console.error('Failed to search nodes:', error);
+  }
+}
+
+
+function createNodeAndEdgeOnConnection(event = null) {
   console.log('Connected to a new node');
   const { nodeId, handleType } = connectionInfo.value;
   const sourceNode = findNode(nodeId);
 
   const newNodeData = {
     id: `temp-node`,
-    position: { x: event.clientX, y: event.clientY },
+    position: { x: event.clientX || Math.random() * 400, y: event.clientY || Math.random() * 400 },
     label: 'New Node',
     data: {
       title: 'New Node',
@@ -297,9 +344,49 @@ function createNodeOnConnection(event) {
     },
   };
   addNodes(newNodeData);
-  return newNodeData;
+  const newEdgeData = createEdgeOnConnection('temp-node');
+  addEdges(newEdgeData);
+  nextTick(() => {
+      emit('newNodeCreated', newNodeData);
+    });
+  connectionInfo.value = null;
+  showSearchBar.value = false;
+  // return newNodeData;
 }
 
+function linkSourceToSearchResult(id) {
+  // console.log('Linking source to search result:', result);
+  // const id = result.id;
+  console.log('Linking source to search result id:', id);
+  // if (findNode(id)) {
+  const newEdgeData = createEdgeOnConnection(id);
+  console.log('New edge data (towards search result):', newEdgeData);
+  if (findNode(id)) {
+    console.log('Node already exists, adding edge first');
+    addEdges(newEdgeData);
+    nextTick(() => {
+      emit('newEdgeCreated', newEdgeData);
+    });
+  }
+  else {
+    nextTick(() => {
+      emit('newEdgeCreated', newEdgeData);
+    });
+    addEdges(newEdgeData);
+  }
+
+  // }
+  // else {
+    //push new connection to backend
+
+  // }
+  closeSearchBar();
+}
+
+function closeSearchBar() {
+  showSearchBar.value = false;
+  searchResults.value = [];
+}
 
 
 /**
@@ -528,39 +615,6 @@ function optionClicked({ option }) {
       @selection-context-menu="onSelectionRightClick"
     >
 
-    <!-- <div class="item-wrapper">
-      <div
-        v-for="item in items"
-        @click.prevent.stop="handleClick($event, item)"
-        class="item-wrapper__item"
-      >
-        {{item.name}}
-      </div>
-    </div> -->
-    <!-- <template #node-special="specialNodeProps"> -->
-      <!-- <SpecialNode v-bind="specialNodeProps" /> -->
-    <!-- </template> -->
-
-    <!-- <div class="list-group">
-      <div
-        v-for="(item, index) in itemArray1"
-        :key="index"
-        @contextmenu.prevent.stop="handleClick1($event, item)"
-        class="list-group-item list-group-item-action"
-      >
-        {{ item.name }}
-      </div>
-    </div>
-     -->
-    <!-- <vue-simple-context-menu
-      element-id="myFirstMenu"
-      :options="optionsArray1"
-      ref="vueSimpleContextMenu1"
-      @option-clicked="optionClicked1"
-    >
-  </vue-simple-context-menu> -->
-
-
     <vue-simple-context-menu
         element-id="myUniqueId"
         :options="contextMenuOptions"
@@ -568,6 +622,17 @@ function optionClicked({ option }) {
         @option-clicked="optionClicked"
       />
 
+      <div v-if="showSearchBar" class="search-bar-container" :style="{ top: searchBarPosition.y - 40 + 'px', left: searchBarPosition.x - 640 + 'px' }">
+      <button class="close-button" @click="closeSearchBar">✖</button>
+      <SearchBar @search="handleSearch" :placeholder="'Search for existing nodes...'" :show-button="false" />
+      <ul v-if="searchResults && searchResults.length" style="font-size: 10px;">
+        <li v-for="result in searchResults" :key="result.node_id" @click="linkSourceToSearchResult(result.node_id.toString())">
+          <span style="margin-right: 5px;">➔</span>{{ result.title }}
+        </li>
+      </ul>
+      <p v-else-if="searchResults && !searchResults.length" style="font-size: 10px;">No results found</p>
+      <button @click="createNodeAndEdgeOnConnection" style="padding: 5px; margin-top: 6px">Create New Node</button>
+    </div>
 
     <Background pattern-color="#aaa" :gap="16" />
 
@@ -633,9 +698,6 @@ export default {
 
       console.log('Data for graph:', this.data.nodes, this.data.edges);
     },
-    handleClick1(event, item) {
-      this.$refs.vueSimpleContextMenu1.showMenu(event, item);
-    },
   },
 
 };
@@ -658,6 +720,49 @@ export default {
 }
 .graph-renderer .vue-flow__pane {
   /* cursor: crosshair!important;
+} */
+
+.search-bar-container {
+  position: absolute;
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  padding: 10px;
+  z-index: 1000;
+  max-width: 300px;
+  overflow: hidden;
+}
+
+.search-bar-container ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 11px;
+}
+
+.search-bar-container li {
+  padding: 8px;
+  cursor: pointer;
+}
+
+.search-bar-container li:hover {
+  background-color: #f0f0f0;
+}
+
+.search-bar-container .close-button {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  background: transparent;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+/* .search-bar-container .loading {
+  text-align: center;
+  padding: 10px;
 } */
 
 .process-panel,

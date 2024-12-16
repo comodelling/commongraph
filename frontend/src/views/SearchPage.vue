@@ -2,7 +2,7 @@
   <div class="search-page">
     <div class="content">
       <!-- <h1>Search Results</h1> -->
-      <SearchBar :initialQuery="searchQuery" @search="(query) => search(query)" />
+      <SearchBar :initialQuery="searchQuery" @search="search" />
       <div class="filters">
         <strong> Type: </strong>
 
@@ -107,35 +107,56 @@ export default {
     },
   },
   watch: {
-    '$route.params.searchQuery': {
-      immediate: true,
-      handler(newQuery) {
-        if (newQuery !== this.searchQuery) {
-          this.searchQuery = newQuery || '';
-          this.search(this.searchQuery);
-        }
-      },
-    },
+    '$route.query': {
+    immediate: true,
+    handler(newQuery) {
+      console.log('new query:', newQuery);
+      if (!newQuery) return;
+      const { searchQuery, nodeTypes, nodeStatus, tags } = newQuery;
+      if (searchQuery !== this.searchQuery) {
+        this.searchQuery = searchQuery;
+        this.nodeTypes = nodeTypes ? JSON.parse(nodeTypes) : this.nodeTypes;
+        this.nodeStatus = nodeStatus ? JSON.parse(nodeStatus) : this.nodeStatus;
+        this.tagFilter = tags || '';
+        // this.search(this.searchQuery);
+      }
+    }
+  },
   },
   methods: {
     async search(query) {
+    //   if (query === this.searchQuery) {
+    //     console.log('Search query has not changed, skipping search.');
+    //     return;
+    //  }
+
+      console.log('searching for nodes with query:', query);
       const nodeTypes = Object.keys(this.nodeTypes).filter(type => this.nodeTypes[type]);
       const nodeStatus = Object.keys(this.nodeStatus).filter(type => this.nodeStatus[type]);
-      if (!nodeTypes.length) {
-        console.warn('Select a node type to search');
-        this.nodes = [];
-        return;
-      }
-      this.searchQuery = query;
-      if (!this.searchQuery.trim()) {
-        console.warn('Empty search query, will fetch all objectives');
-      }
-      try {
-        if (this.searchQuery !== this.$route.params.searchQuery) {
-          this.$router.push({ name: 'SearchPage', params: { searchQuery: this.searchQuery } });
-        }
-        const tags = this.tagFilter.split(',').map(tag => tag.trim()).filter(tag => tag);
+      const tags = this.tagFilter.split(',').map(tag => tag.trim()).filter(tag => tag);
 
+
+      const params = {};
+      if (query.trim()) params.title = query;
+      if (nodeTypes.length && nodeTypes.length !== Object.keys(this.nodeTypes).length) params.node_type = nodeTypes.join(',');
+      if (nodeStatus.length && nodeStatus.length !== Object.keys(this.nodeStatus).length) params.status = nodeStatus.join(',');
+      if (tags.length) params.tags = tags.join(',');
+      // if (!nodeTypes.length) {
+      //   console.warn('Select a node type to search');
+      //   this.nodes = [];
+      //   return;
+      // }
+
+      this.$router.push({
+        name: 'SearchPage',
+        query: params
+      });
+
+      try {
+        // if (this.searchQuery !== this.$route.params.searchQuery) {
+          // this.$router.push({ name: 'SearchPage', params: { searchQuery: this.searchQuery } });
+        // }
+        console.log('searching for nodes with title:', query);
         console.log('searching for nodes with types:', nodeTypes);
         console.log('searching for nodes with status:', nodeStatus);
         console.log('searching for nodes with tags:', tags);
@@ -145,7 +166,7 @@ export default {
 
         const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/nodes`, {
           params: {
-            title: this.searchQuery,
+            title: query,
             node_type: nodeTypes,
             status: nodeStatus,
             tags: tags.length ? tags : undefined,

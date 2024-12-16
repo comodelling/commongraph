@@ -16,7 +16,7 @@ export default {
   },
   methods: {
     goToSearch(query) {
-      this.$router.push({ name: 'SearchPage', params: { searchQuery: query } });
+      this.$router.push({ name: 'SearchPage', query: { title: query } });
     },
   },
 };

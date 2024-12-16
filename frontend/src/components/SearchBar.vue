@@ -29,8 +29,10 @@ export default {
   methods: {
     updateSearchQuery(event) {
       this.searchQuery = event.target.value;
+      console.log('Updated searchQuery in SearchBar:', this.searchQuery);
     },
     search() {
+      console.log('Emitting search with query:', this.searchQuery);
       this.$emit('search', this.searchQuery);
     },
   },

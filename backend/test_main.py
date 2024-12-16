@@ -14,7 +14,7 @@ client = TestClient(app)
 
 @pytest.fixture(scope="module")
 def fixtures():
-    client.delete("/network")
+    client.delete("/graph")
 
     result = client.post(
         "/nodes",
@@ -24,7 +24,7 @@ def fixtures():
 
     yield node_dict
 
-    client.delete("/network")
+    client.delete("/graph")
 
 
 def test_read_main():
@@ -32,31 +32,29 @@ def test_read_main():
     assert response.status_code == 200
 
 
-# /network/*
+# /graph/*
 
 
-def test_get_network():
-    response = client.get("/network")
+def test_get_whole_graph():
+    response = client.get("/graph")
     assert response.status_code == 200
 
 
-def test_put_network():
-    n_nodes = json.loads(client.get("/network/summary").content.decode("utf-8"))[
-        "nodes"
-    ]
+def test_update_subgraph():
+    n_nodes = json.loads(client.get("/graph/summary").content.decode("utf-8"))["nodes"]
     response = client.put(
-        "/network",
+        "/subgraph",
         json={"nodes": [{"title": "test", "description": "test"}], "edges": []},
     )
     assert response.status_code == 200
     assert (
-        json.loads(client.get("/network/summary").content.decode("utf-8"))["nodes"]
+        json.loads(client.get("/graph/summary").content.decode("utf-8"))["nodes"]
         == n_nodes + 1
     )
 
 
-def test_network_summary():
-    response = client.get("/network/summary")
+def test_graph_summary():
+    response = client.get("/graph/summary")
     assert response.status_code == 200
 
 
@@ -69,9 +67,7 @@ def test_get_nodes_list():
 
 
 def test_create_and_delete_node():
-    n_nodes = json.loads(client.get("/network/summary").content.decode("utf-8"))[
-        "nodes"
-    ]
+    n_nodes = json.loads(client.get("/graph/summary").content.decode("utf-8"))["nodes"]
     response = client.post(
         "/nodes",
         json={"title": "test", "description": "test"},
@@ -80,7 +76,7 @@ def test_create_and_delete_node():
         response.status_code == 201
     ), f"Node creation failed with status code {response.status_code}"
     assert (
-        json.loads(client.get("/network/summary").content.decode("utf-8"))["nodes"]
+        json.loads(client.get("/graph/summary").content.decode("utf-8"))["nodes"]
         == n_nodes + 1
     ), "Node count did not increase by 1"
 
@@ -100,7 +96,7 @@ def test_create_and_delete_node():
         response.status_code == 200
     ), f"Node deletion failed with status code {response.status_code}"
     assert (
-        json.loads(client.get("/network/summary").content.decode("utf-8"))["nodes"]
+        json.loads(client.get("/graph/summary").content.decode("utf-8"))["nodes"]
         == n_nodes
     ), "Node count did not come back to initial value"
 
@@ -171,9 +167,7 @@ def test_get_edge_list():
 
 
 def test_create_update_and_delete_edge(fixtures):
-    n_edges = json.loads(client.get("/network/summary").content.decode("utf-8"))[
-        "edges"
-    ]
+    n_edges = json.loads(client.get("/graph/summary").content.decode("utf-8"))["edges"]
     # POST
     response = client.post(
         "/edges",
@@ -185,7 +179,7 @@ def test_create_update_and_delete_edge(fixtures):
     )
     assert response.status_code == 201
     assert (
-        json.loads(client.get("/network/summary").content.decode("utf-8"))["edges"]
+        json.loads(client.get("/graph/summary").content.decode("utf-8"))["edges"]
         == n_edges + 1
     ), "Edge count did not increase by 1"
 

@@ -111,6 +111,6 @@ class EdgeBase(BaseModel):
         return v
 
 
-class Network(BaseModel):
+class Subgraph(BaseModel):
     nodes: list[NodeBase]
     edges: list[EdgeBase]

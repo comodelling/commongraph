@@ -70,13 +70,13 @@ async def root():
     return {"message": "Welcome to ObjectiveNet!"}
 
 
-# /network/* ###  TODO: reorganise code in submodules
+### /graph/ ###
 
 
-@app.get("/network")
-def get_network(
+@app.get("/graph")
+def get_whole_graph(
     db=Depends(get_db_connection),
-) -> Network:
+) -> Subgraph:
     """Return total number of nodes and edges."""
     nodes = [
         convert_gremlin_vertex(vertex)
@@ -89,9 +89,17 @@ def get_network(
     return {"nodes": nodes, "edges": edges}
 
 
-@app.delete("/network", status_code=status.HTTP_205_RESET_CONTENT)
-def reset_whole_network(db=Depends(get_db_connection)) -> None:
-    """Reset the whole network."""
+@app.get("/graph/summary")
+def get_graph_summary(db=Depends(get_db_connection)) -> dict[str, int]:
+    """Return total number of nodes and edges."""
+    vertex_count = db.V().count().next()
+    edge_count = db.E().count().next()
+    return {"nodes": vertex_count, "edges": edge_count}
+
+
+@app.delete("/graph", status_code=status.HTTP_205_RESET_CONTENT)
+def reset_whole_graph(db=Depends(get_db_connection)) -> None:
+    """Delete all nodes and edges in the graph."""
     # TODO: add warning or confirmation
     vertex_count = db.V().count().next()
 
@@ -99,18 +107,16 @@ def reset_whole_network(db=Depends(get_db_connection)) -> None:
         db.V().drop().iterate()
 
 
-@app.put("/network")
-def update_network(
-    network: Network, delete=False, db=Depends(get_db_connection)
-) -> Network:
+### /subgraph/ ###
+
+
+@app.put("/subgraph")
+def update_subgraph(subgraph: Subgraph, db=Depends(get_db_connection)) -> Subgraph:
     """Add missing nodes and edges, update existing ones, and delete the rest only if requested."""
-    print("network:", network)
-    if delete:
-        raise NotImplementedError
     mapping = {}
     nodes_out = []
     edges_out = []
-    for node in network.nodes:
+    for node in subgraph.nodes:
         try:
             if (
                 node.node_id is not None and db.V(node.node_id).has_next()
@@ -125,7 +131,7 @@ def update_network(
             nodes_out.append(node_out)
         except StopIteration:
             ...
-    for edge in network.edges:
+    for edge in subgraph.edges:
         try:
             if (
                 db.V(edge.source)
@@ -161,20 +167,12 @@ def update_network(
     return {"nodes": nodes_out, "edges": edges_out}
 
 
-@app.get("/network/summary")
-def get_network_summary(db=Depends(get_db_connection)) -> dict[str, int]:
-    """Return total number of nodes and edges."""
-    vertex_count = db.V().count().next()
-    edge_count = db.E().count().next()
-    return {"nodes": vertex_count, "edges": edge_count}
-
-
 @app.get("/subgraph/{node_id}")
-def get_subgraph_from_node(
+def get_induced_subgraph(
     node_id: NodeId,
     levels: Annotated[int, Query(get=0)] = 2,
     db=Depends(get_db_connection),
-) -> Network:
+) -> Subgraph:
     """Return the subgraph containing a particular element with an optional limit number of connections.
     If no neighbour is found, a singleton subgraph with a single node is returned from the provided ID.
     """
@@ -220,21 +218,7 @@ def get_subgraph_from_node(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-### /nodes/* ###
-
-
-# @app.get("/nodes")
-# def get_node_list(
-#     node_type: NodeType | None = None, db=Depends(get_db_connection)
-# ) -> list[NodeBase]:
-#     """Return all vertices, optionally of a certain node type."""
-#     if node_type is not None:
-#         return db.V().has_label(node_type).to_list()
-#     return [
-#         convert_gremlin_vertex(vertex)
-#         for vertex in db.V().to_list()
-#         if vertex is not None
-#     ]
+### /nodes/ ###
 
 
 @app.get("/nodes")
@@ -355,7 +339,7 @@ def update_node(node: PartialNodeBase, db=Depends(get_db_connection)) -> NodeBas
     return convert_gremlin_vertex(gremlin_vertex)
 
 
-### /edges/* ###
+### /edges/ ###
 
 
 @app.get("/edges")
@@ -469,9 +453,6 @@ def update_edge(edge: EdgeBase, db=Depends(get_db_connection)) -> EdgeBase:
 # Utils
 
 
-### Gremlin ###
-
-
 def create_gremlin_node(
     node: NodeBase, db=Depends(get_db_connection)
 ) -> Gremlin_vertex:
@@ -559,9 +540,6 @@ def parse_list(l: list[str]) -> str | None:
 
 def unparse_stringlist(s: str) -> list[str]:
     return s.split(";")
-
-
-#### from gremlin to pydantic ####
 
 
 def convert_gremlin_vertex(vertex: Gremlin_vertex) -> NodeBase:

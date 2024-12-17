@@ -135,7 +135,7 @@ export default {
           this.$router.push({ name: 'SearchPage', params: { searchQuery: this.searchQuery } });
         }
         const tags = this.tagFilter.split(',').map(tag => tag.trim()).filter(tag => tag);
-
+        console.log('searching for nodes with title:', this.searchQuery);
         console.log('searching for nodes with types:', nodeTypes);
         console.log('searching for nodes with status:', nodeStatus);
         console.log('searching for nodes with tags:', tags);

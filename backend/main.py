@@ -223,9 +223,12 @@ def search_nodes(
         elif isinstance(node_type, NodeType):
             trav = trav.has_label(node_type)
     if title:
-        trav = trav.has("title", Text.text_contains_fuzzy(title))
+        for word in title.split(" "):
+            trav = trav.has("title", Text.text_contains_fuzzy(word))
+        # trav = trav.has("title", Text.text_fuzzy(title))           # in-memory which can be costly
     if scope:
-        trav = trav.has("scope", Text.text_contains_fuzzy(scope))
+        for word in scope.split(" "):
+            trav = trav.has("scope", Text.text_contains_fuzzy(scope))
     if status is not None:
         if isinstance(status, list):
             trav = trav.has("status", P.within(status))
@@ -237,7 +240,8 @@ def search_nodes(
                 "tags", Text.text_contains_fuzzy(tag)
             )  # Ok for now because tags is parsed as string
     if description:
-        trav = trav.has("description", Text.text_contains_fuzzy(description))
+        for word in description.split(" "):
+            trav = trav.has("description", Text.text_contains_fuzzy(word))
     return [convert_gremlin_vertex(node) for node in trav.to_list()]
 
 

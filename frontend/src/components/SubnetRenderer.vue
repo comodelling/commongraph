@@ -13,7 +13,8 @@ import VueSimpleContextMenu from "vue-simple-context-menu";
 import "vue-simple-context-menu/dist/vue-simple-context-menu.css";
 import SearchBar from "./SearchBar.vue"; // Import the SearchBar component
 // import SpecialNode from '../components/SpecialNode.vue'
-// import SpecialEdge from './SpecialEdge.vue'
+import SpecialEdge from "./SpecialEdge.vue";
+import { formatFlowEdgeProps } from "../composables/formatFlowComponents";
 
 const {
   onInit,
@@ -270,18 +271,12 @@ function ensureVisibility(position) {
 // direct connection between existing handles
 function createEdgeOnConnection(targetId) {
   const { nodeId, handleType } = connectionInfo.value;
-  const newEdgeData = {
-    id: `temp-edge`,
-    source: handleType === "source" ? nodeId : targetId,
-    target: handleType === "source" ? targetId : nodeId,
-    label: handleType === "source" ? "imply" : "require",
-    data: {
-      edge_type: handleType === "source" ? "imply" : "require",
-      source: parseInt(nodeId),
-      target: parseInt(targetId),
-    },
-  };
-
+  const newEdgeData = formatFlowEdgeProps({
+    source: parseInt(nodeId),
+    target: targetId, // targetId is a string
+    edge_type: handleType === "source" ? "imply" : "require",
+  });
+  console.log("New edge data (direct connection):", newEdgeData);
   return newEdgeData;
 }
 
@@ -560,6 +555,14 @@ function optionClicked({ option }) {
       @edge-context-menu="onEdgeRightClick"
       @selection-context-menu="onSelectionRightClick"
     >
+      <template #edge-special="props">
+        <SpecialEdge
+          v-bind="props"
+          :marker-end="props.markerEnd"
+          :marker-start="props.markerStart"
+        />
+      </template>
+
       <vue-simple-context-menu
         element-id="myUniqueId"
         :options="contextMenuOptions"

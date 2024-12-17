@@ -21,6 +21,8 @@ import axios from "axios";
 import NodeInfo from "../components/NodeInfo.vue";
 import EdgeInfo from "../components/EdgeInfo.vue";
 import SubnetRenderer from "../components/SubnetRenderer.vue";
+import { formatFlowEdgeProps } from "../composables/formatFlowComponents";
+// import SpecialEdge from "../components/SpecialEdge.vue";
 
 export default {
   components: {
@@ -133,27 +135,8 @@ export default {
             };
           }),
           edges: fetched_edges.map((edge) => {
-            const edgeLabel = edge.edge_type.toString();
-            let source =
-              edgeLabel === "imply"
-                ? edge.source.toString()
-                : edge.target.toString();
-            let target =
-              edgeLabel === "imply"
-                ? edge.target.toString()
-                : edge.source.toString();
-
-            return {
-              id: `${edge.source}-${edge.target}`,
-              source: source,
-              target: target,
-              label: edgeLabel,
-              markerEnd: edgeLabel === "imply" ? "arrowclosed" : undefined,
-              markerStart: edgeLabel === "require" ? "arrowclosed" : undefined,
-              data: {
-                ...edge,
-              },
-            };
+            const props = formatFlowEdgeProps(edge);
+            return props;
           }),
         };
       } catch (error) {

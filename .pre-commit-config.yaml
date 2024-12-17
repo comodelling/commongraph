@@ -24,7 +24,15 @@ repos:
         always_run: false
     -   id: prettier
         name: prettier
+        files: ^frontend/
         entry: npm run format --prefix frontend
+        language: system
+        pass_filenames: false
+        always_run: false
+    -   id: eslint
+        name: eslint
+        files: ^frontend/
+        entry: npm run lint --prefix frontend
         language: system
         pass_filenames: false
         always_run: false

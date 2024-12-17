@@ -12,6 +12,11 @@ services:
       - "./backend/janusgraph_config/empty-sample.groovy:/opt/janusgraph/scripts/empty-sample.groovy:ro"
       # Named volume mounts. The data mount is only used when BerkeleyDB is used for storage.
       - "janusgraph-mount-data:/var/lib/janusgraph"
+    healthcheck:
+      test: ["CMD", "bin/gremlin.sh", "-e", "scripts/remote-connect.groovy"]
+      interval: 10s
+      timeout: 30s
+      retries: 3
 
   fastapi:
     build: ./backend
@@ -19,13 +24,14 @@ services:
     ports:
       - "8000:8000"
     depends_on:
-      - janusgraph
+      janusgraph:
+        condition: service_healthy
     environment:
       - TRAVERSAL_SOURCE=g
       - JANUSGRAPH_HOST=janusgraph
     volumes:
       - ./backend:/app
-    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload  # Enable auto-reload
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 
   frontend:
     image: node:latest
@@ -37,7 +43,8 @@ services:
     volumes:
       - ./frontend:/app
     depends_on:
-      - fastapi
+      fastapi:
+        condition: service_started
 
 # use a named volume to maintain database data between restarts
 volumes:

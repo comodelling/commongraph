@@ -70,13 +70,13 @@ async def root():
     return {"message": "Welcome to ObjectiveNet!"}
 
 
-### /graph/ ###
+### /network/ ###
 
 
-@app.get("/graph")
-def get_whole_graph(
+@app.get("/network")
+def get_whole_network(
     db=Depends(get_db_connection),
-) -> Subgraph:
+) -> Subnet:
     """Return total number of nodes and edges."""
     nodes = [
         convert_gremlin_vertex(vertex)
@@ -89,16 +89,16 @@ def get_whole_graph(
     return {"nodes": nodes, "edges": edges}
 
 
-@app.get("/graph/summary")
-def get_graph_summary(db=Depends(get_db_connection)) -> dict[str, int]:
+@app.get("/network/summary")
+def get_network_summary(db=Depends(get_db_connection)) -> dict[str, int]:
     """Return total number of nodes and edges."""
     vertex_count = db.V().count().next()
     edge_count = db.E().count().next()
     return {"nodes": vertex_count, "edges": edge_count}
 
 
-@app.delete("/graph", status_code=status.HTTP_205_RESET_CONTENT)
-def reset_whole_graph(db=Depends(get_db_connection)) -> None:
+@app.delete("/network", status_code=status.HTTP_205_RESET_CONTENT)
+def reset_whole_network(db=Depends(get_db_connection)) -> None:
     """Delete all nodes and edges in the graph."""
     # TODO: add warning or confirmation
     vertex_count = db.V().count().next()
@@ -107,16 +107,16 @@ def reset_whole_graph(db=Depends(get_db_connection)) -> None:
         db.V().drop().iterate()
 
 
-### /subgraph/ ###
+### /subnet/ ###
 
 
-@app.put("/subgraph")
-def update_subgraph(subgraph: Subgraph, db=Depends(get_db_connection)) -> Subgraph:
+@app.put("/subnet")
+def update_subnet(subnet: Subnet, db=Depends(get_db_connection)) -> Subnet:
     """Add missing nodes and edges, update existing ones, and delete the rest only if requested."""
     mapping = {}
     nodes_out = []
     edges_out = []
-    for node in subgraph.nodes:
+    for node in subnet.nodes:
         try:
             if (
                 node.node_id is not None and db.V(node.node_id).has_next()
@@ -131,7 +131,7 @@ def update_subgraph(subgraph: Subgraph, db=Depends(get_db_connection)) -> Subgra
             nodes_out.append(node_out)
         except StopIteration:
             ...
-    for edge in subgraph.edges:
+    for edge in subnet.edges:
         try:
             if (
                 db.V(edge.source)
@@ -167,24 +167,16 @@ def update_subgraph(subgraph: Subgraph, db=Depends(get_db_connection)) -> Subgra
     return {"nodes": nodes_out, "edges": edges_out}
 
 
-@app.get("/subgraph/{node_id}")
-def get_induced_subgraph(
+@app.get("/subnet/{node_id}")
+def get_induced_subnet(
     node_id: NodeId,
     levels: Annotated[int, Query(get=0)] = 2,
     db=Depends(get_db_connection),
-) -> Subgraph:
-    """Return the subgraph containing a particular element with an optional limit number of connections.
-    If no neighbour is found, a singleton subgraph with a single node is returned from the provided ID.
+) -> Subnet:
+    """Return the subnet containing a particular element with an optional limit number of connections.
+    If no neighbour is found, a singleton subnet with a single node is returned from the provided ID.
     """
-    print("get_subgraph_from_node", node_id, levels)
     try:
-        # # Start traversal from the given node
-        # trav = db.V(node_id).repeat(__.bothE().subgraph('subGraph').bothV()).times(levels).cap('subGraph')
-        # subgraph = trav.next()
-        # # Extract vertices and edges from the subgraph
-        # vertices = subgraph.V().toList()
-        # edges = subgraph.E().toList()
-
         # Start traversal from the given node
         trav = db.V(node_id).repeat(__.bothE().bothV()).times(levels).dedup()
         vertices = trav.toList()

@@ -14,7 +14,7 @@ client = TestClient(app)
 
 @pytest.fixture(scope="module")
 def fixtures():
-    client.delete("/graph")
+    client.delete("/network")
 
     result = client.post(
         "/nodes",
@@ -24,7 +24,10 @@ def fixtures():
 
     yield node_dict
 
-    client.delete("/graph")
+    client.delete("/network")
+
+
+### / ###
 
 
 def test_read_main():
@@ -32,33 +35,48 @@ def test_read_main():
     assert response.status_code == 200
 
 
-# /graph/*
+### /network/ ###
 
 
-def test_get_whole_graph():
-    response = client.get("/graph")
+def test_get_whole_network():
+    response = client.get("/network")
     assert response.status_code == 200
 
 
-def test_update_subgraph():
-    n_nodes = json.loads(client.get("/graph/summary").content.decode("utf-8"))["nodes"]
+### /subnet/ ###
+
+
+def test_update_subnet():
+    n_nodes = json.loads(client.get("/network/summary").content.decode("utf-8"))[
+        "nodes"
+    ]
     response = client.put(
-        "/subgraph",
+        "/subnet",
         json={"nodes": [{"title": "test", "description": "test"}], "edges": []},
     )
     assert response.status_code == 200
     assert (
-        json.loads(client.get("/graph/summary").content.decode("utf-8"))["nodes"]
+        json.loads(client.get("/network/summary").content.decode("utf-8"))["nodes"]
         == n_nodes + 1
     )
 
 
-def test_graph_summary():
-    response = client.get("/graph/summary")
+def test_get_subnet(fixtures):
+    node_id = fixtures["node_id"]
+    response = client.get(f"/subnet/{node_id}")
+    assert response.status_code == 200
+    assert node_id in [
+        node["node_id"]
+        for node in json.loads(response.content.decode("utf-8"))["nodes"]
+    ]
+
+
+def test_network_summary():
+    response = client.get("/network/summary")
     assert response.status_code == 200
 
 
-# /nodes/*
+### /nodes/ ###
 
 
 def test_get_nodes_list():
@@ -67,7 +85,9 @@ def test_get_nodes_list():
 
 
 def test_create_and_delete_node():
-    n_nodes = json.loads(client.get("/graph/summary").content.decode("utf-8"))["nodes"]
+    n_nodes = json.loads(client.get("/network/summary").content.decode("utf-8"))[
+        "nodes"
+    ]
     response = client.post(
         "/nodes",
         json={"title": "test", "description": "test"},
@@ -76,7 +96,7 @@ def test_create_and_delete_node():
         response.status_code == 201
     ), f"Node creation failed with status code {response.status_code}"
     assert (
-        json.loads(client.get("/graph/summary").content.decode("utf-8"))["nodes"]
+        json.loads(client.get("/network/summary").content.decode("utf-8"))["nodes"]
         == n_nodes + 1
     ), "Node count did not increase by 1"
 
@@ -96,7 +116,7 @@ def test_create_and_delete_node():
         response.status_code == 200
     ), f"Node deletion failed with status code {response.status_code}"
     assert (
-        json.loads(client.get("/graph/summary").content.decode("utf-8"))["nodes"]
+        json.loads(client.get("/network/summary").content.decode("utf-8"))["nodes"]
         == n_nodes
     ), "Node count did not come back to initial value"
 
@@ -158,7 +178,7 @@ def test_delete_node_wrong_id():
     assert response.status_code == 404
 
 
-### /edges/* ###
+### /edges/ ###
 
 
 def test_get_edge_list():
@@ -167,7 +187,9 @@ def test_get_edge_list():
 
 
 def test_create_update_and_delete_edge(fixtures):
-    n_edges = json.loads(client.get("/graph/summary").content.decode("utf-8"))["edges"]
+    n_edges = json.loads(client.get("/network/summary").content.decode("utf-8"))[
+        "edges"
+    ]
     # POST
     response = client.post(
         "/edges",
@@ -179,7 +201,7 @@ def test_create_update_and_delete_edge(fixtures):
     )
     assert response.status_code == 201
     assert (
-        json.loads(client.get("/graph/summary").content.decode("utf-8"))["edges"]
+        json.loads(client.get("/network/summary").content.decode("utf-8"))["edges"]
         == n_edges + 1
     ), "Edge count did not increase by 1"
 
@@ -305,29 +327,3 @@ def test_update_edge_with_references(fixtures):
     assert "references" in updated_edge
     assert len(updated_edge["references"]) == 2
     assert set(updated_edge["references"]) == {"ref3", "ref4"}
-
-
-# def test_delete_edge(fixtures):
-#     # Create an edge
-#     response = client.post(
-#         "/edges",
-#         json={
-#             "edge_type": "imply",
-#             "source": fixtures["node_id"],
-#             "target": fixtures["node_id"],
-#         },
-#     )
-#     assert response.status_code == 201
-#     edge = json.loads(response.content.decode("utf-8"))
-
-#     # Verify edge creation
-#     response = client.get(f"/edges/{fixtures['node_id']}/{fixtures['node_id']}")
-#     assert response.status_code == 200
-
-#     # Delete the edge
-#     response = client.delete(f"/edges/{fixtures['node_id']}/{fixtures['node_id']}")
-#     assert response.status_code == 205
-
-#     # Verify edge deletion
-#     response = client.get(f"/edges/{fixtures['node_id']}/{fixtures['node_id']}")
-#     assert response.status_code == 404

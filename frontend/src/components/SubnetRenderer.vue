@@ -74,7 +74,7 @@ const showSearchBar = ref(false);
 const searchBarPosition = ref({ x: 0, y: 0 });
 const searchResults = ref(null);
 
- function updateGraphFromData(data) {
+ function updateSubnetFromData(data) {
   setNodes(data.nodes || []);
   setEdges(data.edges || []);
 
@@ -94,8 +94,8 @@ onInit((vueFlowInstance) => {
   // instance is the same as the return of `useVueFlow`
   // vueFlowInstance.fitView()
   // set nodes and edges from props
-  console.log('initiating graph from props')
-  updateGraphFromData(props.data)
+  console.log('initiating subnet viz from props')
+  updateSubnetFromData(props.data)
   // fitView()
   })
 
@@ -104,8 +104,8 @@ onInit((vueFlowInstance) => {
 watch(
   () => props.data,
   (newData) => {
-    console.log('updating graph data following props change', newData)
-    updateGraphFromData(newData)
+    console.log('updating subnet data following props change', newData)
+    updateSubnetFromData(newData)
     // fitView()
   },
   { immediate: true }
@@ -428,7 +428,7 @@ function updatePos() {
 }
 
 /**
- * toObject transforms your current graph data to an easily persist-able object
+ * toObject transforms your current data to an easily persist-able object
  */
 function logToObject() {
   console.log(toObject())
@@ -445,13 +445,12 @@ function toggleDarkMode() {
   dark.value = !dark.value
 }
 
-async function layoutGraph(direction) {
+async function layoutSubnet(direction) {
 
   const currentNodes = getNodes.value
   const currentEdges = getEdges.value
 
   if (currentNodes.length === 1) {
-    // console.warn('Nodes or edges are empty, cannot layout graph')
     nodes.value = layoutSingleton(currentNodes, direction)
     nextTick(() => {
       fitView()
@@ -460,7 +459,7 @@ async function layoutGraph(direction) {
     return
   }
   else if (currentNodes.length === 0 || currentEdges.length === 0) {
-    console.warn('Nodes or edges are empty, cannot layout graph')
+    console.warn('Nodes or edges are empty, cannot layout subnet')
     return
   }
   nodes.value = layout(currentNodes, currentEdges, direction)
@@ -470,7 +469,7 @@ async function layoutGraph(direction) {
   })
 }
 
-function exportGraph() {
+function exportSubnet() {
   const nodes = getNodes.value.map(node => ({
     ...node.data
   }));
@@ -479,9 +478,9 @@ function exportGraph() {
     ...edge.data
   }));
 
-  const graphData = { nodes, edges };
-  console.log('Exporting graph data:', graphData);
-  const blob = new Blob([JSON.stringify(graphData, null, 2)], { type: 'application/json' });
+  const subnetData = { nodes, edges };
+  console.log('Exporting subnet data:', subnetData);
+  const blob = new Blob([JSON.stringify(subnetData, null, 2)], { type: 'application/json' });
   // console.log('Blob:', blob);
   saveAs(blob, 'export.json');
 }
@@ -596,7 +595,7 @@ function optionClicked({ option }) {
 </script>
 
 <template>
-  <div class="graph-renderer">
+  <div class="subnet-renderer">
     <VueFlow
       :nodes="nodes"
       :edges="edges"
@@ -604,7 +603,7 @@ function optionClicked({ option }) {
       :min-zoom="0.2"
       :max-zoom="4"
       :apply-default="false"
-      @nodes-initialized="layoutGraph(previousDirection)"
+      @nodes-initialized="layoutSubnet(previousDirection)"
       @nodes-change="onNodesChange"
       @edges-change="onEdgesChange"
       @connect="onConnect"
@@ -639,16 +638,16 @@ function optionClicked({ option }) {
     <MiniMap />
 
     <Panel class="compass-panel" position="top-right">
-        <button class="compass-button bottom" title="Top-Bottom" @click="layoutGraph('TB')">
+        <button class="compass-button bottom" title="Top-Bottom" @click="layoutSubnet('TB')">
           <Icon name="vertical" />
         </button>
-        <button class="compass-button left" title="Right-Left" @click="layoutGraph('RL')">
+        <button class="compass-button left" title="Right-Left" @click="layoutSubnet('RL')">
           <Icon name="horizontal" />
         </button>
-        <button class="compass-button top" title="Bottom-Top" @click="layoutGraph('BT')">
+        <button class="compass-button top" title="Bottom-Top" @click="layoutSubnet('BT')">
           <Icon name="vertical" />
         </button>
-        <button class="compass-button right" title="Left-Right" @click="layoutGraph('LR')">
+        <button class="compass-button right" title="Left-Right" @click="layoutSubnet('LR')">
           <Icon name="horizontal" />
         </button>
       </Panel>
@@ -671,7 +670,7 @@ function optionClicked({ option }) {
         <Icon name="log" />
       </ControlButton>
 
-      <ControlButton title="Export Graph" @click="exportGraph">
+      <ControlButton title="Export Subnet" @click="exportSubnet">
         <Icon name="export" />
       </ControlButton>
     </Controls>
@@ -689,14 +688,12 @@ export default {
     },
   },
   mounted() {
-    this.renderGraph();
+    this.renderSubnet();
   },
   methods: {
-    renderGraph() {
+    renderSubnet() {
       const elementId = this.$route.params.id;  // central node id from route
-      console.log('elementId', elementId, 'type', typeof elementId);
-
-      console.log('Data for graph:', this.data.nodes, this.data.edges);
+      console.log('rendering subnet for elementId', elementId);
     },
   },
 
@@ -708,19 +705,11 @@ export default {
 
 <style>
 
-.graph-renderer {
+.subnet-renderer {
   flex-grow: 1;
   border: 1px solid #ccc;
   margin: 5px;
-  /* cursor: pointer!important; */
 }
-/* .graph-renderer .vue-flow__node,
-.graph-renderer .vue-flow__edge {
-  cursor: move!important;
-}
-.graph-renderer .vue-flow__pane {
-  /* cursor: crosshair!important;
-} */
 
 .search-bar-container {
   position: absolute;

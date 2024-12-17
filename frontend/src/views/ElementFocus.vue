@@ -2,7 +2,7 @@
   <div class="focus">
     <NodeInfo v-if="!targetId" :node="node" @update-node="updateNode" />
     <EdgeInfo v-if="targetId && edge && Object.keys(edge).length" :edge="edge" @update-edge="updateEdge" />
-    <GraphRenderer :data="graphData" @nodeClick="updateNodeFromBackend" @edgeClick="updateEdgeFromBackend" @newNodeCreated="openNewlyCreatedNode" @newEdgeCreated="openNewlyCreatedEdge"/>
+    <SubnetRenderer :data="subnetData" @nodeClick="updateNodeFromBackend" @edgeClick="updateEdgeFromBackend" @newNodeCreated="openNewlyCreatedNode" @newEdgeCreated="openNewlyCreatedEdge"/>
   </div>
 </template>
 
@@ -10,19 +10,19 @@
 import axios from 'axios';
 import NodeInfo from '../components/NodeInfo.vue';
 import EdgeInfo from '../components/EdgeInfo.vue';
-import GraphRenderer from '../components/GraphRenderer.vue';
+import SubnetRenderer from '../components/SubnetRenderer.vue';
 
 export default {
   components: {
     NodeInfo,
     EdgeInfo,
-    GraphRenderer,
+    SubnetRenderer: SubnetRenderer,
   },
   data() {
     return {
       node: undefined,
       edge: undefined,
-      graphData: {},
+      subnetData: {},
       causalDirection: 'LeftToRight',
     };
   },
@@ -60,7 +60,7 @@ export default {
       this.$router.push({ name: 'NodeEdit', params: { id: "new" } });
     }
     else {
-      this.fetchElementAndSubgraphData();
+      this.fetchElementAndSubnetData();
     }
   },
 
@@ -78,9 +78,9 @@ export default {
       return typeToBorderWidthMap[nodeType]; // Default to 1 if type not found
     },
 
-    async fetchElementAndSubgraphData() {
+    async fetchElementAndSubnetData() {
       try {
-        const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/subgraph/${this.nodeId}`, {
+        const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/subnet/${this.nodeId}`, {
           params: {
             levels: 5
           }
@@ -94,7 +94,7 @@ export default {
           this.edge = fetched_edges.find(edge => edge.source === parseInt(this.sourceId) && edge.target === parseInt(this.targetId)) || undefined;
         }
 
-        this.graphData = {
+        this.subnetData = {
           nodes: fetched_nodes.map(node => {
             const style = {
               opacity: node.status === 'completed' ? 0.4 : 0.95,
@@ -132,7 +132,7 @@ export default {
           })
         };
       } catch (error) {
-        console.error('Error fetching induced subgraph:', error);
+        console.error('Error fetching induced subnet:', error);
       }
     },
     async updateNodeFromBackend(node_id) {
@@ -164,7 +164,6 @@ export default {
     async updateEdge(updatedEdge) {
       try {
         this.edge = updatedEdge;
-        // this.updateGraphEdge(response.data);
       } catch (error) {
         console.error('Failed to update edge:', error);
       }
@@ -196,20 +195,20 @@ export default {
       };
       this.$router.push({ name: 'EdgeEdit', params: { source_id: newEdge.data.source, target_id:  newEdge.data.target} });
     },
-    updateGraphNode(updatedNode) {
-      const nodeIndex = this.graphData.nodes.findIndex(node => node.id === updatedNode.id.toString());
+    updateNodeViz(updatedNode) {
+      const nodeIndex = this.subnetData.nodes.findIndex(node => node.id === updatedNode.id.toString());
       if (nodeIndex !== -1) {
-        this.graphData.nodes[nodeIndex].data = {
-          ...this.graphData.nodes[nodeIndex].data,
+        this.subnetData.nodes[nodeIndex].data = {
+          ...this.subnetData.nodes[nodeIndex].data,
           ...updatedNode,
         };
       }
     },
-    updateGraphEdge(updatedEdge) {
-      const edgeIndex = this.graphData.edges.findIndex(edge => edge.id === `${updatedEdge.source}-${updatedEdge.target}`);
+    updateEdgeViz(updatedEdge) {
+      const edgeIndex = this.subnetData.edges.findIndex(edge => edge.id === `${updatedEdge.source}-${updatedEdge.target}`);
       if (edgeIndex !== -1) {
-        this.graphData.edges[edgeIndex].data = {
-          ...this.graphData.edges[edgeIndex].data,
+        this.subnetData.edges[edgeIndex].data = {
+          ...this.subnetData.edges[edgeIndex].data,
           ...updatedEdge,
         };
       }

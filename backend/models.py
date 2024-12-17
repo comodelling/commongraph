@@ -68,7 +68,7 @@ class NodeStatus(str, Enum):
 class NodeBase(BaseModel):
     node_type: NodeType = NodeType.potentiality
     title: str
-    scope: str = None
+    scope: str = ""
     status: NodeStatus | None = NodeStatus.unspecified
     description: str | None = None
     # TODO: check whether this could lead to issues if argument passed in create for example

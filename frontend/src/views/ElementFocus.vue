@@ -51,7 +51,7 @@ export default {
         node_id: 'new',  // temporary id
         node_type: "potentiality",
         title: "New Node",
-        scope: "Enter a scope",
+        scope: "",
         status: 'draft',
         tags: [],
         references: [],

@@ -22,7 +22,7 @@
     <div class="field">
       <strong>Scope:</strong>
       <div class="field-content">
-        <span v-if="editingField !== 'scope'" @click="startEditing('scope')">{{ editedNode.scope }}</span>
+        <span v-if="editingField !== 'scope'" @click="startEditing('scope')">{{ editedNode.scope || 'Click to edit scope' }}</span>
         <input v-else v-model="editedNode.scope" @blur="stopEditing('scope')" ref="scopeInput" />
       </div>
     </div>

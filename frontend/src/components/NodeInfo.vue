@@ -71,7 +71,6 @@ export default {
     },
     publishNode(updatedNode) {
       this.$emit("update-node", updatedNode);
-      console.log("publishNode event emitted");
       this.switchTab("read");
     },
   },

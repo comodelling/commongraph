@@ -174,7 +174,6 @@ export default {
         const response = await axios.get(
           `${import.meta.env.VITE_BACKEND_URL}/edges/${source_id}/${target_id}`,
         );
-        console.log("response from edges/ api call", response.data);
         this.edge = response.data || undefined;
       } catch (error) {
         console.error("Error fetching edge:", error);

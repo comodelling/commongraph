@@ -196,7 +196,6 @@ export default {
         (tag) => tag.trim() !== "",
       );
       this.editedNode.status = this.editedNode.status || null;
-      console.log("number of references:", this.editedNode.references.length);
       if (this.editedNode.new) {
         try {
           const fromConnection = this.editedNode.fromConnection;
@@ -233,12 +232,10 @@ export default {
         }
       } else {
         try {
-          console.log("Submitting node for update:", this.editedNode);
           const response = await axios.put(
             `${import.meta.env.VITE_BACKEND_URL}/nodes`,
             this.editedNode,
           );
-          console.log("Updated node returned:", response.data);
           this.$emit("publish", response.data);
         } catch (error) {
           console.error("Failed to update node:", error);

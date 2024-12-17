@@ -75,7 +75,6 @@ function updateSubnetFromData(data) {
 
   if (route.params.source_id && route.params.target_id) {
     const edgeId = `${route.params.source_id}-${route.params.target_id}`;
-    console.log("selecting edgeId", edgeId);
     const edge = findEdge(edgeId);
     if (edge) {
       edge.selected = true;
@@ -89,8 +88,8 @@ onInit((vueFlowInstance) => {
   // instance is the same as the return of `useVueFlow`
   // vueFlowInstance.fitView()
   // set nodes and edges from props
-  console.log("initiating subnet viz from props");
-  updateSubnetFromData(props.data);
+  // console.log("initiating subnet viz");
+  // updateSubnetFromData(props.data);
   // fitView()
 });
 
@@ -98,7 +97,7 @@ onInit((vueFlowInstance) => {
 watch(
   () => props.data,
   (newData) => {
-    console.log("updating subnet data following props change", newData);
+    console.log("updating subnet data following props change");
     updateSubnetFromData(newData);
     // fitView()
   },
@@ -106,7 +105,6 @@ watch(
 );
 
 onNodeClick(({ node }) => {
-  console.log("Node Click", node.id);
   // get current selection from route.params
   // route.params.id
 
@@ -128,7 +126,6 @@ onNodeClick(({ node }) => {
 });
 
 onEdgeClick(({ edge }) => {
-  console.log("Edge Click", edge.source, edge.target);
   router.push({
     name: "EdgeView",
     params: { source_id: edge.data.source, target_id: edge.data.target },
@@ -265,8 +262,8 @@ function ensureVisibility(position) {
   const offsetX = 370; // offset from the edges
   const offsetY = 220;
   return {
-    x: Math.min(Math.max(position.x, offset), innerWidth - offsetX), // 300 is the max-width of the search bar
-    y: Math.min(Math.max(position.y, offset), innerHeight - offsetY), // 200 is an estimated height of the search bar
+    x: Math.min(Math.max(position.x, offsetX), innerWidth - offsetX), // 300 is the max-width of the search bar
+    y: Math.min(Math.max(position.y, offsetY), innerHeight - offsetY), // 200 is an estimated height of the search bar
   };
 }
 
@@ -677,15 +674,6 @@ export default {
     data: {
       type: Object,
       required: true,
-    },
-  },
-  mounted() {
-    this.renderSubnet();
-  },
-  methods: {
-    renderSubnet() {
-      const elementId = this.$route.params.id; // central node id from route
-      console.log("rendering subnet for elementId", elementId);
     },
   },
 };

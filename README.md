@@ -7,7 +7,7 @@ ObjectiveNet is an open source software to help people build causal networks of 
 To start ObjectiveNet:
 
 - [install Docker](https://www.docker.com/get-started/) if not already on your machine,
-- close the repo (e.g. by running ```git clone https://github.com/planningcommons/objectivenet.git``` from a terminal)
+- clone the repo (e.g. by running ```git clone https://github.com/planningcommons/objectivenet.git``` from a terminal)
 - run ```docker compose up``` from the cloned *objectivenet/* directory,
 - wait for it to start...and that's it! you can access it at [http://localhost:5173/](http://localhost:5173/) from a browser.
 

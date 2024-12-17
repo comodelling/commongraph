@@ -1,7 +1,9 @@
 import os
 import warnings
 import logging
+from pathlib import Path as PathlibPath
 
+from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, status, Query, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from gremlin_python.process.anonymous_traversal import traversal
@@ -23,16 +25,16 @@ from models import *
 app = FastAPI(
     title="ObjectiveNet API",
 )
-origins = [
-    "http://127.0.0.1:5173",
-    "http://localhost:5173",
-    "https://127.0.0.1:5173",
-    "https://localhost:5173",
-    "https://localhost",
-    "http://localhost",
-    "http://127.0.0.1:8000",
-    "http://localhost:8000",
-]
+
+if os.getenv("DOCKER_ENV"):
+    env_path = PathlibPath("/app/.env")
+    if not env_path.exists():
+        raise FileNotFoundError(f".env file not found at {env_path}")
+    load_dotenv(dotenv_path=env_path)
+
+    origins = [origin.strip() for origin in os.getenv("ALLOWED_ORIGINS", "").split(",")]
+else:
+    origins = []
 
 app.add_middleware(
     CORSMiddleware,

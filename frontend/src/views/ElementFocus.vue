@@ -86,14 +86,16 @@ export default {
 
     async fetchElementAndSubnetData() {
       try {
+        console.time("axiosRequest");
         const response = await axios.get(
           `${import.meta.env.VITE_BACKEND_URL}/subnet/${this.nodeId}`,
           {
             params: {
-              levels: 5,
+              levels: 10,
             },
           },
         );
+        console.timeEnd("axiosRequest");
         const fetched_nodes = response.data.nodes;
         const fetched_edges = response.data.edges;
 

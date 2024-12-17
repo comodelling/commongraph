@@ -1,32 +1,46 @@
 # ObjectiveNet
 
-This project uses:
-- fastAPI framework and a janusgraph graph database on the backend,
-- [Vue](https://vuejs.org/) 3, [Vite](https://vite.dev/), and [Vue Flow](https://vueflow.dev/) on the fronend.
-
-It is dockerised, so you'll need to have Docker installed to run it.
+ObjectiveNet is an open source software to help people build causal networks of objectives, actions, and potentialities.
 
 ## Usage
 
-To start the project, run: ```docker compose up```
+To start ObjectiveNet:
 
-Then you should be able to access: http://localhost:8000/network/summary to query the number of nodes and edges in the (local) database.
+- [install Docker](https://www.docker.com/get-started/) if not already on your machine,
+- close the repo (e.g. by running ```git clone https://github.com/voicingcommons/objectivenet.git``` from a terminal)
+- run ```docker compose up``` from the cloned *objectivenet/* directory,
+- wait for it to start...and that's it! you can access it at [http://localhost:5173/](http://localhost:5173/) from a browser.
 
 
-## Contributing
+### Backend API
+
+ObjectiveNet's graph database can also be queried directly using its backend API framework.
+You can find its API schema at: http://localhost:8000/docs (generated automatically using Swagger).
 
 
-### Dev setup
+## Development
 
-To generate new .txt requirements files from .in, you'll need pip-tools: ```pip install pip-tools```<br>
-Then, you can run: ```pip-compile requirements.in``` or ```pip-compile requirements-dev.in``` whenever you update these `.in` files.
+This project uses:
+- [FastAPI](https://fastapi.tiangolo.com/) framework and a [JanusGraph](https://janusgraph.org/) graph database on the backend,
+- [Vue.js](https://vuejs.org/), [Vite](https://vite.dev/), and [Vue Flow](https://vueflow.dev/) on the frontend.
+
+
+### Contributing
+
+Looking to file a bug report or a feature request? https://github.com/voicingcommons/objectivenet/issues
+
+You can also contribute to ObjectiveNet by:
+- experimenting with the software and directly [sending feedback via email](mario.morvan@ucl.ac.uk),
+- creating feature/ or fix/ branches and opening [pull requests](https://github.com/voicingcommons/objectivenet/pulls).
+
+
+### Dev tools
 
 Run `pre-commit install` to set up the git hook scripts. It'll check that some formatting and unit tests are met before any commit.
+
+To generate new *.txt* requirements files from *.in*, you'll need pip-tools: ```pip install pip-tools```<br>
+Then, you can run: ```pip-compile requirements.in``` or ```pip-compile requirements-dev.in``` whenever you update these `.in` files.
 
 ## License
 
 This project is licensed under the GNU Affero General Public License - see the [COPYING](COPYING) file for details.
-
-## Contact Information
-
-For any inquiries, please contact [Mario](mario.morvan@ucl.ac.uk).

@@ -1,27 +1,26 @@
 <template>
-    <div class="about">
-      <h1>About ObjectiveNet</h1>
-      <p>ObjectiveNet aims at providing an accessible tool for people to collaboratively curate a causal network of objectives, actions, and potentialities.</p>
+  <div class="about">
+    <h1>About ObjectiveNet</h1>
+    <p>ObjectiveNet is an open source software to help people build causal networks of objectives, actions, and potentialities.</p>
 
-      
-      <p>You can contribute by:</p>
-      <ul>
-        <li>Creating, improving, sharing an objective-net.</li>
-        <li>Helping to improve the code.</li>
-      </ul>
-    </div>
-  </template>
-  
-  <script>
-  export default {
-  };
-  </script>
+    <p> Looking to contribute? You can:</p>
+    <ul>
+      <li><a href="https://github.com/voicingcommons/objectivenet/issues">File a bug report or a feature request</a>,</li>
+      <li>Experiment with the software and <a href="mailto:mario.morvan@ucl.ac.uk">send feedback via email</a>,</li>
+      <li>Improve the code by creating feature/fix branches and <a href="https://github.com/voicingcommons/objectivenet/pulls">opening pull requests</a>.</li>
+    </ul>
+  </div>
+</template>
 
+<script>
+export default {
+};
+</script>
 
 <style scoped>
 .about {
-  border: 1px solid #ccc;         /* Border for main page */
-  padding: 20px;                  /* Padding for content */
-  padding-left: 100px;
+border: 1px solid #ccc;         /* Border for main page */
+padding: 20px;                  /* Padding for content */
+padding-left: 100px;
 }
 </style>

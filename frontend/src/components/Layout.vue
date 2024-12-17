@@ -8,7 +8,7 @@
 </template>
 
 <script>
-import SideMenu from './SideMenu.vue';
+import SideMenu from "./SideMenu.vue";
 
 export default {
   components: {
@@ -17,7 +17,9 @@ export default {
   computed: {
     isFocused() {
       // Uses a condition to determine if we're in a focused state
-      return ['NodeView', 'NodeEdit', 'EdgeView', 'EdgeEdit'].includes(this.$route.name);
+      return ["NodeView", "NodeEdit", "EdgeView", "EdgeEdit"].includes(
+        this.$route.name,
+      );
     },
   },
 };
@@ -34,13 +36,13 @@ export default {
 
 .content {
   display: flex;
-  flex-grow: 1;                  /* Allow content to expand */
+  flex-grow: 1; /* Allow content to expand */
   margin-left: 30px;
   margin-top: 20px;
   padding: 20px;
   border: 1px solid #ccc;
   max-height: 100%;
-  overflow-y: auto;              /* Enable vertical scrolling */
+  overflow-y: auto; /* Enable vertical scrolling */
 }
 
 .full-width {

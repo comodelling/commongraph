@@ -1,12 +1,26 @@
 <template>
   <div class="element-info">
     <div class="tabs">
-      <button :class="{ active: currentTab === 'read' }" @click="switchTab('read')">Read</button>
-      <button :class="{ active: currentTab === 'edit' }" @click="switchTab('edit')">Edit</button>
+      <button
+        :class="{ active: currentTab === 'read' }"
+        @click="switchTab('read')"
+      >
+        Read
+      </button>
+      <button
+        :class="{ active: currentTab === 'edit' }"
+        @click="switchTab('edit')"
+      >
+        Edit
+      </button>
     </div>
     <h2>Edge Information</h2>
     <div v-if="edge">
-      <component :is="currentTabComponent" :edge="edge" @publish="publishEdge" />
+      <component
+        :is="currentTabComponent"
+        :edge="edge"
+        @publish="publishEdge"
+      />
     </div>
     <div v-else>
       <p>Edge not found</p>
@@ -15,8 +29,8 @@
 </template>
 
 <script>
-import EdgeInfoRead from './EdgeInfoRead.vue';
-import EdgeInfoEdit from './EdgeInfoEdit.vue';
+import EdgeInfoRead from "./EdgeInfoRead.vue";
+import EdgeInfoEdit from "./EdgeInfoEdit.vue";
 
 export default {
   props: {
@@ -28,33 +42,33 @@ export default {
   },
   data() {
     return {
-      currentTab: this.$route.path.endsWith('/edit') ? 'edit' : 'read',
+      currentTab: this.$route.path.endsWith("/edit") ? "edit" : "read",
     };
   },
   watch: {
-    '$route.path'(newPath) {
-      this.currentTab = newPath.endsWith('/edit') ? 'edit' : 'read';
+    "$route.path"(newPath) {
+      this.currentTab = newPath.endsWith("/edit") ? "edit" : "read";
     },
   },
   computed: {
     currentTabComponent() {
-      return this.currentTab === 'read' ? EdgeInfoRead : EdgeInfoEdit;
+      return this.currentTab === "read" ? EdgeInfoRead : EdgeInfoEdit;
     },
   },
   methods: {
     switchTab(tab) {
       if (this.currentTab === tab) return;
       this.currentTab = tab;
-      if (tab === 'edit') {
+      if (tab === "edit") {
         this.$router.push(`${this.$route.path}/edit`);
       } else {
-        const path = this.$route.path.split('/edit')[0];
+        const path = this.$route.path.split("/edit")[0];
         this.$router.push(path);
       }
     },
     publishEdge(updatedEdge) {
-      this.$emit('update-edge', updatedEdge);
-      this.switchTab('read');
+      this.$emit("update-edge", updatedEdge);
+      this.switchTab("read");
     },
   },
 };

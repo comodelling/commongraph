@@ -9,9 +9,8 @@
 </template>
 
 <script>
-import axios from 'axios';
-import { useRouter } from 'vue-router';
-
+import axios from "axios";
+import { useRouter } from "vue-router";
 
 export default {
   setup() {
@@ -19,21 +18,21 @@ export default {
 
     const fetchRandomNode = async () => {
       try {
-        const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/nodes/random`);
+        const response = await axios.get(
+          `${import.meta.env.VITE_BACKEND_URL}/nodes/random`,
+        );
         const node = response.data;
         window.location.href = `/node/${node.node_id}`;
       } catch (error) {
-        console.error('Error fetching random node:', error);
+        console.error("Error fetching random node:", error);
       }
     };
 
     const createNewNode = async () => {
-      const path = router.currentRoute.value.path
+      const path = router.currentRoute.value.path;
       if (path.startsWith("/node") || path.startsWith("/edge")) {
         window.location.href = `/node/new`;
-
-      }
-      else {
+      } else {
         router.push(`/node/new`);
       }
     };

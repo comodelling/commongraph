@@ -1,6 +1,6 @@
 <script setup>
-import { BaseEdge, EdgeLabelRenderer, getBezierPath } from '@vue-flow/core'
-import { computed } from 'vue'
+import { BaseEdge, EdgeLabelRenderer, getBezierPath } from "@vue-flow/core";
+import { computed } from "vue";
 
 const props = defineProps({
   sourceX: {
@@ -30,16 +30,16 @@ const props = defineProps({
   data: {
     type: Object,
     required: true,
-  }
-})
+  },
+});
 
-const path = computed(() => getBezierPath(props))
+const path = computed(() => getBezierPath(props));
 </script>
 
 <script>
 export default {
   inheritAttrs: false,
-}
+};
 </script>
 
 <template>

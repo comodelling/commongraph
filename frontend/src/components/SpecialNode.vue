@@ -1,5 +1,5 @@
 <script setup>
-import { Handle, Position, useVueFlow } from '@vue-flow/core'
+import { Handle, Position, useVueFlow } from "@vue-flow/core";
 
 defineProps({
   id: String,
@@ -20,19 +20,18 @@ defineProps({
   parentNodeId: String,
   zIndex: Number,
   label: String,
-  dragHandle: String
-})
+  dragHandle: String,
+});
 
-defineEmits(['updateNodeInternals'])
+defineEmits(["updateNodeInternals"]);
 
 // console.log('sourcePosition', sourcePosition)
-
 </script>
 
 <template>
-  <Handle type="source" :position=sourcePosition />
-  
+  <Handle type="source" :position="sourcePosition" />
+
   <span>{{ label }}</span>
-  
-  <Handle type="target" :position=targetPosition />
+
+  <Handle type="target" :position="targetPosition" />
 </template>

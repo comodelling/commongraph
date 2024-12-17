@@ -4,12 +4,14 @@ defineProps({
     type: String,
     required: true,
   },
-})
+});
 </script>
 
 <template>
   <svg v-if="name === 'reset'" width="16" height="16" viewBox="0 0 32 32">
-    <path d="M18 28A12 12 0 1 0 6 16v6.2l-3.6-3.6L1 20l6 6l6-6l-1.4-1.4L8 22.2V16a10 10 0 1 1 10 10Z" />
+    <path
+      d="M18 28A12 12 0 1 0 6 16v6.2l-3.6-3.6L1 20l6 6l6-6l-1.4-1.4L8 22.2V16a10 10 0 1 1 10 10Z"
+    />
   </svg>
 
   <svg v-if="name === 'update'" width="16" height="16" viewBox="0 0 24 24">
@@ -37,26 +39,37 @@ defineProps({
   </svg>
 
   <svg v-if="name === 'export'" width="16" height="16" viewBox="0 0 24 24">
-    <path d="M12 2L12 14M12 14L8 10M12 14L16 10M4 18H20V22H4V18Z" stroke="black" stroke-width="2" fill="none"/>
+    <path
+      d="M12 2L12 14M12 14L8 10M12 14L16 10M4 18H20V22H4V18Z"
+      stroke="black"
+      stroke-width="2"
+      fill="none"
+    />
   </svg>
 
-  <svg v-else-if="name === 'horizontal'" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-  <path d="M2,12 L22,12" stroke="white" stroke-width="2" />
-  <path d="M7,7 L2,12 L7,17" stroke="white" stroke-width="2" fill="none" />
-  <path d="M17,7 L22,12 L17,17" stroke="white" stroke-width="2" fill="none" />
-</svg>
+  <svg
+    v-else-if="name === 'horizontal'"
+    viewBox="0 0 24 24"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path d="M2,12 L22,12" stroke="white" stroke-width="2" />
+    <path d="M7,7 L2,12 L7,17" stroke="white" stroke-width="2" fill="none" />
+    <path d="M17,7 L22,12 L17,17" stroke="white" stroke-width="2" fill="none" />
+  </svg>
 
-<svg v-else-if="name === 'vertical'" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-  <path d="M12,2 L12,22" stroke="white" stroke-width="2" />
-  <path d="M7,7 L12,2 L17,7" stroke="white" stroke-width="2" fill="none" />
-  <path d="M7,17 L12,22 L17,17" stroke="white" stroke-width="2" fill="none" />
-</svg>
-
-
+  <svg
+    v-else-if="name === 'vertical'"
+    viewBox="0 0 24 24"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path d="M12,2 L12,22" stroke="white" stroke-width="2" />
+    <path d="M7,7 L12,2 L17,7" stroke="white" stroke-width="2" fill="none" />
+    <path d="M7,17 L12,22 L17,17" stroke="white" stroke-width="2" fill="none" />
+  </svg>
 </template>
 
 <script>
 export default {
-  name: 'Icon',
+  name: "Icon",
 };
 </script>

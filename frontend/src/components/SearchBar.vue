@@ -1,6 +1,11 @@
 <template>
   <div class="search-bar">
-    <input v-model="searchQuery" @input="updateSearchQuery" @keyup.enter="search" :placeholder="placeholder" />
+    <input
+      v-model="searchQuery"
+      @input="updateSearchQuery"
+      @keyup.enter="search"
+      :placeholder="placeholder"
+    />
     <button v-if="showButton" @click="search">Search</button>
   </div>
 </template>
@@ -10,11 +15,11 @@ export default {
   props: {
     initialQuery: {
       type: String,
-      default: '',
+      default: "",
     },
     placeholder: {
       type: String,
-      default: 'Search for nodes...',
+      default: "Search for nodes...",
     },
     showButton: {
       type: Boolean,
@@ -31,26 +36,26 @@ export default {
       this.searchQuery = event.target.value;
     },
     search() {
-      this.$emit('search', this.searchQuery);
+      this.$emit("search", this.searchQuery);
     },
   },
 };
 </script>
 
-  <style scoped>
-  .search-bar {
-    display: flex;
-    align-items: center;
-    width: 400px;
-  }
-  .search-bar input {
-    flex-grow: 1;
-    margin-right: 10px;
-    padding: 5px;
-    width: 400px;
-    min-width: 100px;
-  }
-  .search-bar button {
-    padding: 6px 10px;
-  }
-  </style>
+<style scoped>
+.search-bar {
+  display: flex;
+  align-items: center;
+  width: 400px;
+}
+.search-bar input {
+  flex-grow: 1;
+  margin-right: 10px;
+  padding: 5px;
+  width: 400px;
+  min-width: 100px;
+}
+.search-bar button {
+  padding: 6px 10px;
+}
+</style>

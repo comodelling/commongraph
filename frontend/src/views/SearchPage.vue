@@ -1,7 +1,10 @@
 <template>
   <div class="search-page">
     <div class="content">
-      <SearchBar :initialQuery="searchQuery" @search="(query) => search(query)" />
+      <SearchBar
+        :initialQuery="searchQuery"
+        @search="(query) => search(query)"
+      />
       <div class="filters">
         <strong> Type: </strong>
 
@@ -12,7 +15,8 @@
           <input type="checkbox" v-model="nodeTypes.action" /> Actions
         </label>
         <label>
-          <input type="checkbox" v-model="nodeTypes.potentiality" /> Potentialities
+          <input type="checkbox" v-model="nodeTypes.potentiality" />
+          Potentialities
         </label>
         <label>
           <input type="checkbox" v-model="nodeTypes.change" /> Changes
@@ -49,7 +53,11 @@
         <p>No results found for "{{ searchQuery }}"</p>
       </div>
       <div v-if="groupedNodes">
-        <div v-for="(nodes, scope) in groupedNodes" :key="scope" class="scope-group">
+        <div
+          v-for="(nodes, scope) in groupedNodes"
+          :key="scope"
+          class="scope-group"
+        >
           <h4>{{ scope }}</h4>
           <ul>
             <li v-for="node in nodes" :key="node.id" class="node-item">
@@ -63,10 +71,10 @@
 </template>
 
 <script>
-import axios from 'axios';
-import qs from 'qs';
-import { useRouter, useRoute } from 'vue-router';
-import SearchBar from '../components/SearchBar.vue';
+import axios from "axios";
+import qs from "qs";
+import { useRouter, useRoute } from "vue-router";
+import SearchBar from "../components/SearchBar.vue";
 
 export default {
   components: {
@@ -74,7 +82,7 @@ export default {
   },
   data() {
     return {
-      searchQuery: '',
+      searchQuery: "",
       nodes: [],
       nodeTypes: {
         objective: true,
@@ -90,13 +98,13 @@ export default {
         completed: true,
         legacy: false,
       },
-      tagFilter: '',
+      tagFilter: "",
     };
   },
   computed: {
     groupedNodes() {
       return this.nodes.reduce((groups, node) => {
-        const scope = node.scope || 'Uncategorized';
+        const scope = node.scope || "Uncategorized";
         if (!groups[scope]) {
           groups[scope] = [];
         }
@@ -106,11 +114,11 @@ export default {
     },
   },
   watch: {
-    '$route.params.searchQuery': {
+    "$route.params.searchQuery": {
       immediate: true,
       handler(newQuery) {
         if (newQuery !== this.searchQuery) {
-          this.searchQuery = newQuery || '';
+          this.searchQuery = newQuery || "";
           this.search(this.searchQuery);
         }
       },
@@ -118,48 +126,61 @@ export default {
   },
   methods: {
     async search(query) {
-      const nodeTypes = Object.keys(this.nodeTypes).filter(type => this.nodeTypes[type]);
-      const nodeStatus = Object.keys(this.nodeStatus).filter(type => this.nodeStatus[type]);
+      const nodeTypes = Object.keys(this.nodeTypes).filter(
+        (type) => this.nodeTypes[type],
+      );
+      const nodeStatus = Object.keys(this.nodeStatus).filter(
+        (type) => this.nodeStatus[type],
+      );
       if (!nodeTypes.length) {
-        console.warn('Select a node type to search');
+        console.warn("Select a node type to search");
         this.nodes = [];
         return;
       }
       this.searchQuery = query;
       if (!this.searchQuery.trim()) {
-        console.warn('Empty search query, will fetch all objectives');
+        console.warn("Empty search query, will fetch all objectives");
       }
       try {
         if (this.searchQuery !== this.$route.params.searchQuery) {
-          this.$router.push({ name: 'SearchPage', params: { searchQuery: this.searchQuery } });
+          this.$router.push({
+            name: "SearchPage",
+            params: { searchQuery: this.searchQuery },
+          });
         }
-        const tags = this.tagFilter.split(',').map(tag => tag.trim()).filter(tag => tag);
-        console.log('searching for nodes with title:', this.searchQuery);
-        console.log('searching for nodes with types:', nodeTypes);
-        console.log('searching for nodes with status:', nodeStatus);
-        console.log('searching for nodes with tags:', tags);
+        const tags = this.tagFilter
+          .split(",")
+          .map((tag) => tag.trim())
+          .filter((tag) => tag);
+        console.log("searching for nodes with title:", this.searchQuery);
+        console.log("searching for nodes with types:", nodeTypes);
+        console.log("searching for nodes with status:", nodeStatus);
+        console.log("searching for nodes with tags:", tags);
 
         // Measure search time
         const startTime = performance.now();
 
-        const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/nodes`, {
-          params: {
-            title: this.searchQuery,
-            node_type: nodeTypes,
-            status: nodeStatus,
-            tags: tags.length ? tags : undefined,
+        const response = await axios.get(
+          `${import.meta.env.VITE_BACKEND_URL}/nodes`,
+          {
+            params: {
+              title: this.searchQuery,
+              node_type: nodeTypes,
+              status: nodeStatus,
+              tags: tags.length ? tags : undefined,
+            },
+            paramsSerializer: (params) => {
+              return qs.stringify(params, { arrayFormat: "repeat" });
+            },
           },
-          paramsSerializer: params => {
-            return qs.stringify(params, { arrayFormat: 'repeat' });
-          },
-        });
+        );
 
         const endTime = performance.now();
         console.log(`Search completed in ${endTime - startTime} milliseconds`);
 
         this.nodes = response.data;
       } catch (error) {
-        console.error('Error fetching nodes:', error);
+        console.error("Error fetching nodes:", error);
       }
     },
   },

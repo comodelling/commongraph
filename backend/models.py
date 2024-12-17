@@ -11,7 +11,6 @@ NodeId = Annotated[
     int,
     Path(
         title="the node ID",
-        # alias="node-id",
         ge=0,
     ),
 ]
@@ -50,7 +49,7 @@ class QualitativeGrade(str, Enum):
 
 
 class NodeStatus(str, Enum):
-    unspecified = "unspecified"
+    unspecified = "unspecified"  # default
     draft = "draft"
     live = "live"
     completed = "completed"
@@ -66,16 +65,16 @@ class NodeStatus(str, Enum):
 
 
 class NodeBase(BaseModel):
+    """Base Node model"""
+
     node_type: NodeType = NodeType.potentiality
     title: str
     scope: str = ""
     status: NodeStatus | None = NodeStatus.unspecified
     description: str | None = None
-    # TODO: check whether this could lead to issues if argument passed in create for example
     node_id: NodeId | None = None
     tags: list[str] = []
     references: list[str] = []
-    # TODO: add history
 
     # deprecated
     id_from_ui: int | None = None
@@ -85,6 +84,8 @@ class NodeBase(BaseModel):
 
 
 class PartialNodeBase(NodeBase):
+    """Partial Node model"""
+
     node_id: NodeId
     node_type: NodeType | None = None
     title: str | None = None
@@ -96,6 +97,8 @@ class PartialNodeBase(NodeBase):
 
 
 class EdgeBase(BaseModel):
+    """Base Edge model"""
+
     edge_type: EdgeType
     source: NodeId
     target: NodeId
@@ -112,5 +115,7 @@ class EdgeBase(BaseModel):
 
 
 class Subnet(BaseModel):
+    """Subnet model"""
+
     nodes: list[NodeBase]
     edges: list[EdgeBase]

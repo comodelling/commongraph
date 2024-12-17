@@ -2,7 +2,7 @@
   <div :class="['layout', { 'full-width': isFocused }]">
     <SideMenu />
     <div class="content">
-      <router-view></router-view> <!-- For rendering other components/pages -->
+      <router-view></router-view>
     </div>
   </div>
 </template>
@@ -17,7 +17,7 @@ export default {
   computed: {
     isFocused() {
       // Uses a condition to determine if we're in a focused state
-      return this.$route.name === 'NodeView' || this.$route.name === 'NodeEdit' || this.$route.name === 'EdgeView' || this.$route.name == 'EdgeEdit';  // Adjust based on specific route focus
+      return ['NodeView', 'NodeEdit', 'EdgeView', 'EdgeEdit'].includes(this.$route.name);
     },
   },
 };
@@ -25,25 +25,25 @@ export default {
 
 <style scoped>
 .layout {
-  display: flex;                   /* Flexbox layout for side menu and content */
-  max-width: 1200px;              /* Centered default layout */
-  margin: 0 auto;                 /* Center the layout */
-  border: 1px solid black;         /* Border for layout */
-  height: 100%;                   /* Full height */
+  display: flex;
+  max-width: 1200px;
+  margin: 0 auto;
+  border: 1px solid black;
+  height: 100%;
 }
 
 .content {
-  display: flex;                   /* Flex for internal layout */
-  flex-grow: 1;                   /* Allow content to expand */
-  margin-left: 30px;                   /* Default margin */
+  display: flex;
+  flex-grow: 1;                  /* Allow content to expand */
+  margin-left: 30px;
   margin-top: 20px;
-  padding: 20px;                  /* Padding for content */
-  border: 1px solid #ccc;         /* Border for content */
-  max-height: 100%;              /* Limit height to viewport height */
-  overflow-y: auto;               /* Enable vertical scrolling */
+  padding: 20px;
+  border: 1px solid #ccc;
+  max-height: 100%;
+  overflow-y: auto;              /* Enable vertical scrolling */
 }
 
 .full-width {
-  max-width: 100%;                /* Allow full width in focused view */
+  max-width: 100%;
 }
 </style>

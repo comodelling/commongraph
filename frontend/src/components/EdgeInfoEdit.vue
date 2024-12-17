@@ -8,22 +8,6 @@
           <button v-if="!editedEdge.cprob && editingField !== 'cprob'" @click="addCprob">Add</button> <!-- Modified button visibility condition -->
         </div>
       </div>
-      <!-- <div class="field">
-        <strong>Gradable:</strong>
-        <div class="field-content">
-          <input type="checkbox" v-model="editedEdge.gradable" />
-        </div>
-      </div> -->
-      <!-- <div class="field">
-      <strong>Proponents:</strong>
-      <ul>
-        <li v-for="(proponent, index) in editedEdge.proponents" :key="index" :class="{'invalid-proponent': !proponent.trim()}" class="field-content">
-          <span v-if="editingField !== `proponent-${index}`" @click="startEditing(`proponent-${index}`)">{{ proponent || 'Click to edit' }}</span>
-          <input v-else v-model="editedEdge.proponents[index]" @blur="stopEditing(`proponent-${index}`)" :ref="`proponent-${index}Input`" />
-        </li>
-      </ul>
-    </div>
-    <button class="add-proponent-button" @click="addProponent">+ Proponent</button> -->
       <div class="field">
         <strong>References:</strong>
         <ul>
@@ -78,14 +62,6 @@
           this.editingField = null;
         }
       },
-    //   addProponent() {
-    //     if (this.editingField === null || !this.editingField.startsWith('proponent-')) {
-    //       this.editedEdge.proponents.push('');
-    //       this.$nextTick(() => {
-    //         this.startEditing(`proponent-${this.editedEdge.proponents.length - 1}`);
-    //       });
-    //     }
-    //   },
       addReference() {
         if (this.editingField === null || !this.editingField.startsWith('reference-')) {
           this.editedEdge.references.push('');
@@ -114,9 +90,7 @@
             console.log('Updated edge returned:', response.data);
           }
           this.$emit('publish', response.data);
-          this.$emit('update-edge', response.data); // Emit an event to update the parent component's edge prop
-
-          // window.location.href = `/edge/`;
+          this.$emit('update-edge', response.data);   // Emit an event to update the parent component's edge prop
         } catch (error) {
           console.error('Failed to update edge:', error);
         }
@@ -209,35 +183,34 @@
   font-size: 12px
 }
 
-/* TODO: share with NodeInfoEdit.vue */
-  .add-description-button {
-    display: block;
-    margin: 10px auto;
-    padding: 5px 10px;
-    background: #f9f9f9;
-    border: 1px solid #ccc;
-    cursor: pointer;
-    margin: 0 auto;
-    display: block;
-    width: 30%;
-    text-align: center;
-  }
+.add-description-button {
+  display: block;
+  margin: 10px auto;
+  padding: 5px 10px;
+  background: #f9f9f9;
+  border: 1px solid #ccc;
+  cursor: pointer;
+  margin: 0 auto;
+  display: block;
+  width: 30%;
+  text-align: center;
+}
 
-  .submit-button {
-    margin-top: 20px;
-    margin: 0 auto;
-    display: block;
-    width: 30%;
-    text-align: center;
-    padding: 10px 20px;
-    background-color: #007bff;
-    color: white;
-    border: none;
-    cursor: pointer;
-    font-size: 16px;
-  }
+.submit-button {
+  margin-top: 20px;
+  margin: 0 auto;
+  display: block;
+  width: 30%;
+  text-align: center;
+  padding: 10px 20px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+}
 
-  .submit-button:hover {
-    background-color: #0056b3;
-  }
-  </style>
+.submit-button:hover {
+  background-color: #0056b3;
+}
+</style>

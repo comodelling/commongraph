@@ -77,7 +77,7 @@ async def root():
 def get_whole_network(
     db=Depends(get_db_connection),
 ) -> Subnet:
-    """Return total number of nodes and edges."""
+    """Return full network of nodes and edges from the database."""
     nodes = [
         convert_gremlin_vertex(vertex)
         for vertex in db.V().to_list()
@@ -91,7 +91,7 @@ def get_whole_network(
 
 @app.get("/network/summary")
 def get_network_summary(db=Depends(get_db_connection)) -> dict[str, int]:
-    """Return total number of nodes and edges."""
+    """Count nodes and edges."""
     vertex_count = db.V().count().next()
     edge_count = db.E().count().next()
     return {"nodes": vertex_count, "edges": edge_count}
@@ -99,7 +99,7 @@ def get_network_summary(db=Depends(get_db_connection)) -> dict[str, int]:
 
 @app.delete("/network", status_code=status.HTTP_205_RESET_CONTENT)
 def reset_whole_network(db=Depends(get_db_connection)) -> None:
-    """Delete all nodes and edges in the graph."""
+    """Delete all nodes and edges. Be careful!"""
     # TODO: add warning or confirmation
     vertex_count = db.V().count().next()
 
@@ -112,7 +112,7 @@ def reset_whole_network(db=Depends(get_db_connection)) -> None:
 
 @app.put("/subnet")
 def update_subnet(subnet: Subnet, db=Depends(get_db_connection)) -> Subnet:
-    """Add missing nodes and edges, update existing ones, and delete the rest only if requested."""
+    """Add missing nodes and edges and update existing ones (given IDs)."""
     mapping = {}
     nodes_out = []
     edges_out = []
@@ -169,7 +169,7 @@ def get_induced_subnet(
     levels: Annotated[int, Query(get=0)] = 2,
     db=Depends(get_db_connection),
 ) -> Subnet:
-    """Return the subnet containing a particular element with an optional limit number of connections.
+    """Return the subnet induced from a particular element with an optional limit number of connections.
     If no neighbour is found, a singleton subnet with a single node is returned from the provided ID.
     """
     try:
@@ -215,7 +215,7 @@ def search_nodes(
     description: str | None = None,
     db=Depends(get_db_connection),
 ) -> list[NodeBase]:
-    """Search in nodes."""
+    """Search in nodes on a field by field level."""
     trav = db.V()
     if node_type is not None:
         if isinstance(node_type, list):
@@ -249,7 +249,7 @@ def search_nodes(
 def get_random_node(
     node_type: NodeType | None = None, db=Depends(get_db_connection)
 ) -> NodeBase:
-    """Return a random node."""
+    """Return a random node with optional node_type."""
     try:
         trav = db.V()
         if node_type is not None:
@@ -273,7 +273,6 @@ def get_node(node_id: NodeId, db=Depends(get_db_connection)) -> NodeBase:
     """Return the node associated with the provided ID."""
     try:
         vertex = db.V(node_id).next()
-        print("vertex:", vertex)
     except StopIteration:
         raise HTTPException(status_code=404, detail="Node not found")
     return convert_gremlin_vertex(vertex)
@@ -300,7 +299,7 @@ def delete_node(node_id: NodeId, db=Depends(get_db_connection)):
 
 @app.put("/nodes")
 def update_node(node: PartialNodeBase, db=Depends(get_db_connection)) -> NodeBase:
-    """Update the node with provided ID."""
+    """Update the properties of an existing node."""
     if not db.V(node.node_id).has_next():
         raise HTTPException(status_code=404, detail="Node not found")
     gremlin_vertex = update_gremlin_node(node, db)
@@ -312,7 +311,7 @@ def update_node(node: PartialNodeBase, db=Depends(get_db_connection)) -> NodeBas
 
 @app.get("/edges")
 def get_edge_list(db=Depends(get_db_connection)) -> list[EdgeBase]:
-    """Return all edges."""
+    """Return all edges in the database."""
     return [convert_gremlin_edge(edge) for edge in db.E().to_list() if edge is not None]
 
 
@@ -386,16 +385,17 @@ def delete_edge(
     edge_type: EdgeType | None = None,
     db=Depends(get_db_connection),
 ):
-    """Delete the edge associated with provided ID."""
+    """Delete the edge between two nodes and for an optional edge_type."""
     # logging.info(f"Attempting to delete edge from {source_id} to {target_id} with edge_type {edge_type}")
+    trav = db.V(source_id)
     try:
         if edge_type is not None:
-            trav = db.V(source_id).out_e(edge_type).where(__.in_v().has_id(target_id))
+            trav = trav.out_e(edge_type).where(__.in_v().has_id(target_id))
         else:
             warnings.warn(
                 "No edge type provided, deleting all edges from source to target"
             )
-            trav = db.V(source_id).out_e().where(__.in_v().has_id(target_id))
+            trav = trav.out_e().where(__.in_v().has_id(target_id))
         # logging.info(f"Traversal query: {trav}")
         trav.drop().iterate()
         return {"message": "Edge deleted"}
@@ -406,7 +406,7 @@ def delete_edge(
 
 @app.put("/edges")
 def update_edge(edge: EdgeBase, db=Depends(get_db_connection)) -> EdgeBase:
-    """Update the edge with provided ID."""
+    """Update the properties of an edge."""
     try:
         if not exists_edge_in_db(edge, db):
             raise HTTPException(status_code=404, detail="Edge not found")
@@ -423,6 +423,7 @@ def update_edge(edge: EdgeBase, db=Depends(get_db_connection)) -> EdgeBase:
 def create_gremlin_node(
     node: NodeBase, db=Depends(get_db_connection)
 ) -> Gremlin_vertex:
+    """Create a gremlin vertex in the database."""
     created_node = db.add_v(node.node_type)
     # if node.node_id is not None:
     #    created_node = created_node.property(T.id, UUID(long=node.node_id))
@@ -439,6 +440,7 @@ def create_gremlin_node(
 
 
 def create_gremlin_edge(edge: EdgeBase, db=Depends(get_db_connection)) -> GremlinEdge:
+    """Create a gremlin edge in the database."""
     created_edge = db.V(edge.source).add_e(edge.edge_type)
     created_edge = created_edge.property("cprob", edge.cprob)
     created_edge = created_edge.property("references", parse_list(edge.references))
@@ -447,6 +449,7 @@ def create_gremlin_edge(edge: EdgeBase, db=Depends(get_db_connection)) -> Gremli
 
 
 def exists_edge_in_db(edge: EdgeBase, db=Depends(get_db_connection)) -> bool:
+    """Check if an edge exists in the database."""
     return (
         db.V(edge.source)
         .out_e(edge.edge_type)
@@ -458,6 +461,7 @@ def exists_edge_in_db(edge: EdgeBase, db=Depends(get_db_connection)) -> bool:
 def update_gremlin_node(
     node: NodeBase, db=Depends(get_db_connection)
 ) -> Gremlin_vertex | None:
+    """Update the properties of a node defined by its ID."""
     updated_node = db.V(node.node_id)
     if node.node_type is not None:
         warnings.warn("node_type is not updatable because encoded as label")
@@ -510,6 +514,7 @@ def unparse_stringlist(s: str) -> list[str]:
 
 
 def convert_gremlin_vertex(vertex: Gremlin_vertex) -> NodeBase:
+    """Convert a gremlin vertex to a NodeBase object."""
     d = dict()
     d["node_id"] = vertex.id
     d["node_type"] = vertex.label
@@ -529,6 +534,7 @@ def convert_gremlin_vertex(vertex: Gremlin_vertex) -> NodeBase:
 
 
 def convert_gremlin_edge(edge) -> EdgeBase:
+    """Convert a gremlin edge to an EdgeBase object."""
     d = dict()
     d["source"] = edge.outV.id
     d["target"] = edge.inV.id

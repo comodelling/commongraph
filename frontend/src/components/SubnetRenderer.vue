@@ -7,12 +7,12 @@ import { Panel, VueFlow, useVueFlow } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
 import { ControlButton, Controls } from '@vue-flow/controls'
 import { MiniMap } from '@vue-flow/minimap'
-import Icon from './Icon.vue' // Update this line
-// import SpecialNode from '../components/SpecialNode.vue'
+import Icon from './Icon.vue'
 import { useLayout } from '../composables/useLayout'
 import VueSimpleContextMenu from 'vue-simple-context-menu';
 import 'vue-simple-context-menu/dist/vue-simple-context-menu.css';
 import SearchBar from './SearchBar.vue'; // Import the SearchBar component
+// import SpecialNode from '../components/SpecialNode.vue'
 // import SpecialEdge from './SpecialEdge.vue'
 
 
@@ -29,11 +29,6 @@ const { onInit,
   applyNodeChanges,
   applyEdgeChanges,
   removeEdges,
-  updateEdge,
-  updateEdgeData,
-  // onConnect,
-  // onConnectStart,
-  // onConnectEnd,
   onNodeDragStop,
   setViewport,
   zoomTo,
@@ -42,8 +37,6 @@ const { onInit,
   onNodeClick,
   onEdgeClick,
   onPaneClick,
-  // onNodeContextMenu,
-  // onSelectionContextMenu,
  } = useVueFlow()
 
 
@@ -58,8 +51,6 @@ const props = defineProps({
 const router = useRouter()
 const route = useRoute()
 const emit = defineEmits(['nodeClick', 'edgeClick', 'newNodeCreated', 'newEdgeCreated'])
-
-
 
 const { layout, layoutSingleton, previousDirection } = useLayout()
 
@@ -135,8 +126,6 @@ onNodeClick(({ node }) => {
 
 onEdgeClick(({ edge }) => {
   console.log('Edge Click', edge.source, edge.target)
-
-  // window.location.href = `/edge/${node.node_id}`  full page reload
   router.push({ name: 'EdgeView', params: { source_id: edge.data.source, target_id: edge.data.target } })  // uri follows backend convention
   emit('edgeClick', edge.data.source, edge.data.target)  // emit event to parent component
   closeSearchBar();
@@ -144,31 +133,26 @@ onEdgeClick(({ edge }) => {
 
 onPaneClick(({ event }) => {
   console.log('Pane Click', event)
-  // showSearchBar.value = false;
-  // searchResults.value = [];
 })
 
 
 const onNodesChange = async (changes) => {
   const nextChanges = []
-  // console.log('Changes to perform (onNodesChange):', changes)
   for (let change of changes) {
     if (change.type === 'remove') {
       const isConfirmed = await confirm('Are you sure you want to delete this node and all its connections?')
 
       if (isConfirmed) {
         nextChanges.push(change)
-        // console.log("change:", change)
         const node_id = change.id
         try {
           const response = await axios.delete(`${import.meta.env.VITE_BACKEND_URL}/nodes/${node_id}`);
-          // console.log('Deleted node from backend returned:', response.data);
         } catch (error) {
           console.error('Failed to delete node:', error);
         }
 
-        //find all edges connected to this node and delete them
-        // note: edges on teh backend have already been deleted by the above call
+        // find all edges connected to this node and delete them
+        // note: edges on the backend have already been deleted by the above call
         const connectedEdges = getEdges.value.filter(edge => edge.source === node_id || edge.target === node_id)
 
         for (const edge of connectedEdges) {
@@ -176,7 +160,6 @@ const onNodesChange = async (changes) => {
         }
       }
     } else {
-      // console.log('other change:', change)
       nextChanges.push(change)
     }
   }
@@ -186,7 +169,6 @@ const onNodesChange = async (changes) => {
 
 const onEdgesChange = async (changes) => {
   const nextChanges = []
-  // console.log('Changes to perform (onEdgesChange):', changes)
   const { source_id, target_id } = route.params
   const is_edge_selected = source_id && target_id
 
@@ -196,7 +178,6 @@ const onEdgesChange = async (changes) => {
 
       if (isConfirmed) {
         nextChanges.push(change)
-        // console.log("change:", change)
         const edge = findEdge(change.id)
         const source_id = edge.data.source
         const target_id = edge.data.target
@@ -204,13 +185,11 @@ const onEdgesChange = async (changes) => {
         try {
           const response = await axios.delete(`${import.meta.env.VITE_BACKEND_URL}/edges/${source_id}/${target_id}`,
             { 'edge_type': edge_type });
-          // console.log('Deleted edge returned:', response.data);
         } catch (error) {
           console.error('Failed to delete edge:', error);
         }
       }
     } else {
-      // console.log('other change:', change)
       nextChanges.push(change)
     }
   }
@@ -259,9 +238,6 @@ function onConnectEnd(event) {
   }
   else {
     console.log('Connected to an empty space');
-    // createNodeOnConnection(event);
-
-    console.log('opening search for new node');
     const position = ensureVisibility({ x: event.clientX, y: event.clientY });
     searchBarPosition.value = position;
     showSearchBar.value = true;
@@ -273,10 +249,11 @@ function onConnectEnd(event) {
 
 function ensureVisibility(position) {
   const { innerWidth, innerHeight } = window;
-  const offset = 20; // offset from the edges
+  const offsetX = 370; // offset from the edges
+  const offsetY = 220
   return {
-    x: Math.min(Math.max(position.x, offset), innerWidth - offset - 350), // 300 is the max-width of the search bar
-    y: Math.min(Math.max(position.y, offset), innerHeight - offset - 200), // 200 is an estimated height of the search bar
+    x: Math.min(Math.max(position.x, offset), innerWidth - offsetX), // 300 is the max-width of the search bar
+    y: Math.min(Math.max(position.y, offset), innerHeight - offsetY), // 200 is an estimated height of the search bar
   };
 }
 
@@ -287,7 +264,6 @@ function createEdgeOnConnection(targetId){
       id: `temp-edge`,
       source: handleType === 'source' ? nodeId : targetId,
       target: handleType === 'source' ? targetId : nodeId,
-      // type: handleType === 'source' ? 'sourceType' : 'targetType',
       label: handleType === 'source' ? 'imply' : 'require',
       data: {
         edge_type: handleType === 'source' ? 'imply' : 'require',
@@ -302,7 +278,6 @@ function createEdgeOnConnection(targetId){
 
 function handleSearch(query) {
   // Perform search and update searchResults
-  // Example: searchResults.value = searchNodes(query);
   console.log('Searching for:', query);
   if (!query.trim()) {
     searchResults.value = null;
@@ -336,11 +311,11 @@ function createNodeAndEdgeOnConnection(event = null) {
     label: 'New Node',
     data: {
       title: 'New Node',
-      scope: sourceNode.data.scope,  // inherited scope
-      node_type: 'potentiality',  // most general type
+      scope: sourceNode.data.scope, // inherited scope
+      node_type: 'potentiality',    // most general type
       satus: 'draft',
-      tags: sourceNode.data.tags, // inherited tags
-      fromConnection: {'id': nodeId, 'edge_type': handleType === 'source' ? 'imply' : 'require'} // to be used to update edge data
+      tags: sourceNode.data.tags,   // inherited tags
+      fromConnection: {'id': nodeId, 'edge_type': handleType === 'source' ? 'imply' : 'require'}  // to be used to update edge data
     },
   };
   addNodes(newNodeData);
@@ -351,14 +326,10 @@ function createNodeAndEdgeOnConnection(event = null) {
     });
   connectionInfo.value = null;
   showSearchBar.value = false;
-  // return newNodeData;
 }
 
 function linkSourceToSearchResult(id) {
-  // console.log('Linking source to search result:', result);
-  // const id = result.id;
   console.log('Linking source to search result id:', id);
-  // if (findNode(id)) {
   const newEdgeData = createEdgeOnConnection(id);
   console.log('New edge data (towards search result):', newEdgeData);
   if (findNode(id)) {
@@ -375,11 +346,6 @@ function linkSourceToSearchResult(id) {
     addEdges(newEdgeData);
   }
 
-  // }
-  // else {
-    //push new connection to backend
-
-  // }
   closeSearchBar();
 }
 
@@ -410,11 +376,8 @@ function closeSearchBar() {
  * 3. Create a new array of nodes and pass it to the `nodes` ref
  */
 function updatePos() {
-  //TODO: fix this
-
-  console.log('Trying to update Node Positions')
-  console.log('Current Nodes:', nodes)
-  const outValue =nodes.value.map((node) => {
+  console.log('Updaing Node Positions')
+  const outValue = nodes.value.map((node) => {
     return {
       ...node,
       position: {
@@ -423,7 +386,6 @@ function updatePos() {
       },
     }
   })
-  console.log('New Nodes:', outValue)
   setNodes(outValue)
 }
 
@@ -481,31 +443,22 @@ function exportSubnet() {
   const subnetData = { nodes, edges };
   console.log('Exporting subnet data:', subnetData);
   const blob = new Blob([JSON.stringify(subnetData, null, 2)], { type: 'application/json' });
-  // console.log('Blob:', blob);
   saveAs(blob, 'export.json');
 }
 
 
 // ********* CONTEXT MENUS *********
-// onNodeContextMenu((event, node) => {
-//   showContextMenu(event, [
-//     { label: 'Edit Node', action: () => editNode(node) },
-//     { label: 'Delete Node', action: () => deleteNode(node) },
-//   ]);
-// })
 
 function showContextMenu(event, options) {
   console.log('event location', event.clientX, event.clientY);
   console.log('options', options);
   event.preventDefault();
   contextMenuOptions.value = options;
-  // event.clientX = event.clientX - 100;
-  // event.clientX = event.clientX - 100;
   let newEvent = new MouseEvent('contextmenu', {
     bubbles: true,
     cancelable: true,
-    clientX: event.clientX -640,
-    clientY: event.clientY -50,
+    clientX: event.clientX - 640,
+    clientY: event.clientY - 50,
   });
   contextMenuRef.value.showMenu(newEvent);
 }
@@ -544,7 +497,6 @@ function onConnectEndEmpty(event) {
 function editNode(node) {
   console.log('Edit Node', node);
   router.push({ name: 'NodeEdit', params: { id: node.id } });
-  // console.log(`Navigated to /node/${node.id}/edit`);
 }
 
 function deleteNode(node) {
@@ -555,28 +507,11 @@ function deleteNode(node) {
 function editEdge(edge) {
   console.log('Edit Edge', edge);
   router.push({ name: 'EdgeEdit', params: { source_id: edge.data.source , target_id: edge.data.target} });
-  // console.log(`Navigated to /edge/${edge.source}/${edge.target}/edit`);
 }
 
 async function deleteEdge(edge) {
   console.log('Delete Edge', edge);
   onEdgesChange([{ type: 'remove', id: edge.id, rightClick: true}]);
-  //TODO: merge with onEdgesChange
-  // const isConfirmed = await confirm('Are you sure you want to delete this edge?')
-
-  // if (isConfirmed) {
-  //   // console.log("change:", change)
-  //   const source_id = edge.data.source
-  //   const target_id = edge.data.target
-  //   const edge_type = edge.data.edge_type
-  //   try {
-  //     const response = await axios.delete(`${import.meta.env.VITE_BACKEND_URL}/edges/${source_id}/${target_id}`,
-  //       { 'edge_type': edge_type });
-  //     // console.log('Deleted edge returned:', response.data);
-  //   } catch (error) {
-  //     console.error('Failed to delete edge:', error);
-  //   }
-  // }
 }
 
 function groupSelection(selection) {
@@ -749,11 +684,6 @@ export default {
   cursor: pointer;
 }
 
-/* .search-bar-container .loading {
-  text-align: center;
-  padding: 10px;
-} */
-
 .process-panel,
 .layout-panel {
   display: flex;
@@ -814,18 +744,4 @@ export default {
   transition: background-color 0.2s;
 }
 
-/* Add this to your CSS file */
-/* .vue-simple-context-menu {
-  position: absolute;
-  z-index: 1000;
-}
-
-.vue-simple-context-menu__item {
-  padding: 8px 12px;
-  cursor: pointer;
-}
-
-.vue-simple-context-menu__item:hover {
-  background-color: #f0f0f0;
-} */
 </style>

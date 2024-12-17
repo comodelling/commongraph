@@ -40,11 +40,10 @@ export default {
       return this.$route.path.endsWith('/edit');
     },
     isBrandNewNode() {
-      return this.nodeId === "new";  //TODO: distinguish brand new node and one from connection
+      return this.nodeId === "new";
     }
   },
   created() {
-    // console.log('isbrandnewnode', this.isBrandNewNode)
     if (this.isBrandNewNode) {
       console.log('opening brand new node in focus');
       this.node = {
@@ -73,9 +72,8 @@ export default {
         'action': '2px',
         'proposal': '3px',
         'objective': '4px',
-        // Add more mappings as needed
       };
-      return typeToBorderWidthMap[nodeType]; // Default to 1 if type not found
+      return typeToBorderWidthMap[nodeType];
     },
 
     async fetchElementAndSubnetData() {
@@ -100,7 +98,7 @@ export default {
               opacity: node.status === 'completed' ? 0.4 : 0.95,
               borderColor: node.status === 'completed' ? 'green' : 'black',
               borderWidth: this.getBorderWidthByType(node.node_type),
-              borderStyle: node.status === 'draft' ? 'dotted' : 'solid', // Ensure border style is set
+              borderStyle: node.status === 'draft' ? 'dotted' : 'solid',
               borderRadius: '8px',
             };
             return {
@@ -179,8 +177,6 @@ export default {
         references: [],
         new: true,
         fromConnection: newNode.data.fromConnection,
-        // gradable: newNode.data.gradable,
-        // grade: newNode.data.grade,
       };
       this.$router.push({ name: 'NodeEdit', params: { id: newNode.id } });
     },

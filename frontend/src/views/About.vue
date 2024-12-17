@@ -19,8 +19,8 @@ export default {
 
 <style scoped>
 .about {
-border: 1px solid #ccc;         /* Border for main page */
-padding: 20px;                  /* Padding for content */
+border: 1px solid #ccc;
+padding: 20px;
 padding-left: 100px;
 }
 </style>

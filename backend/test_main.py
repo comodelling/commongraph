@@ -102,7 +102,6 @@ def test_create_and_delete_node():
 
     # Retrieve node ID
     node_id = json.loads(response.content.decode("utf-8"))["node_id"]
-    print(f"Created node ID: {node_id}")
 
     # Verify node creation
     response = client.get(f"/nodes/{node_id}")
@@ -239,7 +238,6 @@ def test_create_update_and_delete_edge(fixtures):
     ), "Edge count did not increase by 1"
 
     # PUT
-    print(response.content.decode("utf-8"))
     response = client.put(
         "/edges",
         json={
@@ -281,7 +279,6 @@ def test_create_node_with_references():
     assert response.status_code == 201
     node = json.loads(response.content.decode("utf-8"))
     assert "references" in node
-    print(node["references"])
     assert len(node["references"]) == 3
     assert set(node["references"]) == {"ref1", "ref2", "ref3"}
 
@@ -311,7 +308,6 @@ def test_update_node_with_references():
     assert response.status_code == 200
     updated_node = json.loads(response.content.decode("utf-8"))
     assert "references" in updated_node
-    print(updated_node["references"])
     assert len(updated_node["references"]) == 2
     assert set(updated_node["references"]) == {"ref3", "ref4"}
 

@@ -4,13 +4,10 @@
       <strong>Type:</strong>   {{ capitalise(node.node_type) }}<br />
       <strong>Scope:  </strong>   {{ node.scope }}<br />
       <strong>Status: </strong>  {{ formatStatus(node.status) }}<br />
-      
       <div class="tags-container" v-if="node.tags && node.tags.length">
         <strong>Tags: </strong>
         <span v-for="tag in node.tags" :key="tag" class="tag">{{ tag }}</span>
       </div>
-      <!-- <strong>gradable:  </strong>   {{ node.gradable === undefined ? false : node.gradable}}<br /> -->
-      <!-- <strong>proponents:  </strong>   {{ node.proponents ? node.proponents.join(', ') : '' }}<br /> -->
       <strong>References:  </strong> <br /> <!-- Added line to show number of references -->
       <ul class="references-list" v-if="node.references && node.references.length">
         <li v-for="reference in node.references" :key="reference">
@@ -28,7 +25,7 @@ export default {
     node: Object,
   },
   methods: {
-    formatStatus(string) {  // Added method
+    formatStatus(string) {
       if (string === 'unspecified') {
         return '';
       }

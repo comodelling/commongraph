@@ -33,7 +33,8 @@ export default {
   },
   watch: {
     '$route.path'(newPath) {
-      if (newPath.includes('/node')) { // Ensure it only updates for node routes
+      // Ensure it only watches for node routes updates
+      if (newPath.includes('/node')) {
         this.currentTab = newPath.endsWith('/edit') ? 'edit' : 'read';
       }
     },

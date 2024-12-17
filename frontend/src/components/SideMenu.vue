@@ -53,7 +53,6 @@ export default {
   border: 1px solid #ccc;
   padding: 10px;
   font-size: 12px;
-  /* margin-top: 50px; */
   margin-left: 10px;
   margin-top: 20px;
   padding-top: 50px;

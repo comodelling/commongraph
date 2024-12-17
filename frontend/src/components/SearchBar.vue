@@ -41,18 +41,16 @@ export default {
   .search-bar {
     display: flex;
     align-items: center;
-    width: 400px; /* Adjust the width as needed */
+    width: 400px;
   }
   .search-bar input {
     flex-grow: 1;
     margin-right: 10px;
     padding: 5px;
-    /* font-size: 16px; */
-    width: 400px; /* Set a specific width for the input field */
+    width: 400px;
     min-width: 100px;
   }
   .search-bar button {
     padding: 6px 10px;
-    /* font-size: 16px; */
   }
   </style>

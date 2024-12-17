@@ -1,7 +1,6 @@
 <template>
   <div class="search-page">
     <div class="content">
-      <!-- <h1>Search Results</h1> -->
       <SearchBar :initialQuery="searchQuery" @search="(query) => search(query)" />
       <div class="filters">
         <strong> Type: </strong>

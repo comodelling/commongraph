@@ -14,8 +14,6 @@
           <option value="potentiality">Potentiality</option>
           <option value="objective">Objective</option>
           <option value="action">Action</option>
-          <!-- <option value="change">Change</option>
-          <option value="proposal">Proposal</option> -->
         </select>
       </div>
     </div>
@@ -44,7 +42,7 @@
         <span v-for="(tag, index) in editedNode.tags" :key="index" class="tag">
           <span v-if="editingField !== `tag-${index}`" @click="startEditing(`tag-${index}`)">{{ tag }}</span>
           <input v-else v-model="editedNode.tags[index]" @blur="stopEditing(`tag-${index}`)" :ref="`tag-${index}Input`" class="tag-input" :style="{ width: `${tag.length * 8 + 20}px` }" />
-          <button class="delete-tag-button" @click="deleteTag(index)">x</button> <!-- Added delete button -->
+          <button class="delete-tag-button" @click="deleteTag(index)">x</button>
         </span>
         <button class="add-tag-button" @click="addTag">+ Tag</button>
       </div>
@@ -56,7 +54,6 @@
           <span v-if="editingField !== `reference-${index}`" @click="startEditing(`reference-${index}`)">{{ reference || 'Click to edit' }}</span>
           <input v-else v-model="editedNode.references[index]" @blur="stopEditing(`reference-${index}`)" :ref="`reference-${index}Input`" />
         </li>
-        <!-- Added button to add a reference -->
         <button class="add-reference-button" @click="addReference">+ Reference</button>
       </ul>
     </div>
@@ -117,7 +114,6 @@ export default {
       this.editedNode.tags.splice(index, 1);
     },
     addReference() {
-        // Modified to not add an empty reference by default
         this.editedNode.references.push('');
         this.$nextTick(() => {
           this.startEditing(`reference-${this.editedNode.references.length - 1}`);
@@ -138,14 +134,11 @@ export default {
       if (this.editedNode.new) {
         try {
           const fromConnection = this.editedNode.fromConnection;
-          //delete fromConnection from editedNode;
           delete this.editedNode.fromConnection;
           delete this.editedNode.new;
           delete this.editedNode.node_id;
           console.log('Submitting node for creation:', this.editedNode);
           const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/nodes`, this.editedNode);
-          // console.log('Created node returned:', response.data);
-          // this.$emit('publish', response.data);
           const target = response.data.node_id;
 
           if (fromConnection) // create edge if node was created from a connection
@@ -159,8 +152,6 @@ export default {
               };
               console.log('Submitting edge for creation:', newEdge);
               const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/edges`, newEdge);
-              // console.log('Created edge returned:', response.data);
-              // this.$emit('publish', response.data);
             } catch (error) {
               console.error('Failed to create edge:', error);
           }
@@ -174,7 +165,6 @@ export default {
       }}
       else {
         try {
-          // if node id starts by 'temp-node', create the node instead
           console.log('Submitting node for update:', this.editedNode);
           const response = await axios.put(`${import.meta.env.VITE_BACKEND_URL}/nodes`, this.editedNode);
           console.log('Updated node returned:', response.data);
@@ -305,19 +295,17 @@ button.editing {
   display: flex;
   flex-wrap: wrap;
   gap: 5px;
-  align-items: center; /* Ensure items are aligned in the center */
+  align-items: center;
 }
 
 .tag {
   background-color: #e0e0e0;
   border-radius: 3px;
   padding: 1px 3px;
-  /* padding-right: 5px; Added padding to make space for delete button */
   font-size: 12px;
   cursor: default;
   display: inline-flex;
   align-items: center;
-  /* position: relative; */
 }
 
 .tag-input {
@@ -325,7 +313,7 @@ button.editing {
   font-size: 12px;
   border-radius: 3px;
   border: 1px solid #ccc;
-  max-width: 100px; /* Added max-width to input field */
+  max-width: 100px;
 }
 
 .add-tag-button {
@@ -336,8 +324,8 @@ button.editing {
   border-radius: 3px;
   cursor: pointer;
   font-size: 12px;
-  white-space: nowrap; /* Prevent button text from wrapping */
-  width: auto; /* Set a specific width for the button */
+  white-space: nowrap;
+  width: auto;
 }
 
 .delete-tag-button {
@@ -345,17 +333,9 @@ button.editing {
   border: none;
   color: red;
   font-size: 11px;
-  /* padding: 1px 3px; */
   padding-top: 0px;
   padding-bottom: 0px;
-  /* display: inline-block; */
   padding-left: 5-3px;
-  /* padding: 1px 3px; */
-  /* margin-left: 5px; */
   cursor: pointer;
-  /* position: absolute; */
-  /* top: 0; Positioned at the top */
-  /* right: 0; Positioned at the right */
-  /* transform: translate(80%, -50%); Adjust position to be inside the tag */
 }
 </style>

@@ -1,6 +1,9 @@
+// adapted from https://vueflow.dev/examples/layout/simple.html
 import dagre from '@dagrejs/dagre'
 import { Position, useVueFlow } from '@vue-flow/core'
 import { ref } from 'vue'
+
+
 
 /**
  * Composable to run the layout algorithm on the graph.
@@ -47,7 +50,6 @@ export function useLayout() {
         sourcePosition: sourcePosition,
       }
     })
-      
   }
 
   function layout(nodes, edges, direction) {

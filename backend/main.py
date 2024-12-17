@@ -148,13 +148,9 @@ def update_subnet(subnet: Subnet, db=Depends(get_db_connection)) -> Subnet:
                 if edge.source in mapping:
                     update_edge_source_from = edge.source
                     edge.source = mapping[edge.source]
-                    # print("edge.source", edge.source)
-                    # print("mapping[edge.source]", update_edge_source_from)
                 if edge.target in mapping:
                     update_edge_target_from = edge.target
                     edge.target = mapping[edge.target]
-                    # print("edge.target", edge.target)
-                    # print("mapping[edge.target]", update_edge_target_from)
                 edge_out = convert_gremlin_edge(create_gremlin_edge(edge, db))
                 edge_out.source_from_ui = (
                     update_edge_source_from  # TODO: add to history log
@@ -199,10 +195,6 @@ def get_induced_subnet(
         # Convert vertices and edges to the appropriate data models
         nodes = [convert_gremlin_vertex(vertex) for vertex in vertices]
         edges = [convert_gremlin_edge(edge) for edge in edges]
-
-        print("nodes", nodes)
-        print("edges", edges)
-
         return {"nodes": nodes, "edges": edges}
     except StopIteration:
         raise HTTPException(status_code=404, detail="Node not found")
@@ -224,26 +216,14 @@ def search_nodes(
     db=Depends(get_db_connection),
 ) -> list[NodeBase]:
     """Search in nodes."""
-    print("search_nodes...")
     trav = db.V()
     if node_type is not None:
-        # print('node_types:', node_types)
-        # print('node_types type:', type(node_types))
         if isinstance(node_type, list):
             trav = trav.has_label(P.within(node_type))
-        # elif isinstance(node_type, NodeType):
-        # trav = trav.has_label(node_type)
         elif isinstance(node_type, NodeType):
             trav = trav.has_label(node_type)
-        else:
-            print("node_type is not a list:", node_type)
-    # if node_type is not None:
-    # print('node_type:', node_type)
-    # print('node_type type:', type(node_type))
-    # trav = trav.has_label(node_type)
     if title:
         trav = trav.has("title", Text.text_contains_fuzzy(title))
-        # print('title:', title)
     if scope:
         trav = trav.has("scope", Text.text_contains_fuzzy(scope))
     if status is not None:
@@ -251,10 +231,7 @@ def search_nodes(
             trav = trav.has("status", P.within(status))
         elif isinstance(status, NodeStatus):
             trav = trav.has("status", status)
-        else:
-            print("status is not a list:", status)
     if tags:
-        print("search with tags:", tags)
         for tag in tags:
             trav = trav.has(
                 "tags", Text.text_contains_fuzzy(tag)
@@ -269,15 +246,11 @@ def get_random_node(
     node_type: NodeType | None = None, db=Depends(get_db_connection)
 ) -> NodeBase:
     """Return a random node."""
-    print("\nget_random_node")
     try:
-        # vertex = db.V().sample(1).next()
-        # vertex = db.V().order().to_list()[0]
         trav = db.V()
         if node_type is not None:
             trav = trav.has_label(node_type)
         vertex = trav.order().by(Order.shuffle).limit(1).next()
-        print("vertex", vertex)
     except StopIteration:
         if node_type is not None:
             raise HTTPException(
@@ -296,7 +269,7 @@ def get_node(node_id: NodeId, db=Depends(get_db_connection)) -> NodeBase:
     """Return the node associated with the provided ID."""
     try:
         vertex = db.V(node_id).next()
-        print("vertex", vertex)
+        print("vertex:", vertex)
     except StopIteration:
         raise HTTPException(status_code=404, detail="Node not found")
     return convert_gremlin_vertex(vertex)
@@ -307,7 +280,6 @@ def create_node(node: NodeBase, db=Depends(get_db_connection)) -> NodeBase:
     """Create a node."""
     # TODO: Check for possible duplicates
     created_node = create_gremlin_node(node, db)
-    print("created_node", created_node)
     return convert_gremlin_vertex(created_node)
 
 
@@ -434,7 +406,6 @@ def update_edge(edge: EdgeBase, db=Depends(get_db_connection)) -> EdgeBase:
     try:
         if not exists_edge_in_db(edge, db):
             raise HTTPException(status_code=404, detail="Edge not found")
-        print("updating edge", edge)
         gremlin_edge = update_gremlin_edge(edge, db)
     except StopIteration:
         raise HTTPException(status_code=404, detail="Error updating edge")
@@ -484,10 +455,10 @@ def update_gremlin_node(
     node: NodeBase, db=Depends(get_db_connection)
 ) -> Gremlin_vertex | None:
     updated_node = db.V(node.node_id)
+    if node.node_type is not None:
+        warnings.warn("node_type is not updatable because encoded as label")
     if node.title is not None:
         updated_node = updated_node.property("title", node.title)
-    if node.node_type is not None:
-        updated_node = updated_node.property("node_type", node.node_type)
     if node.scope is not None:
         updated_node = updated_node.property("scope", node.scope)
     if node.status is not None:
@@ -511,10 +482,10 @@ def update_gremlin_edge(edge: EdgeBase, db=Depends(get_db_connection)) -> Gremli
     """Update the properties of an edge defined by its source and target nodes."""
     updated_edge = db.V(edge.source).out_e().where(__.in_v().has_id(edge.target))
     # TODO: test if any change is made and deal with mere additions
+    if edge.edge_type is not None:
+        warnings.warn("edge_type is not updatable because encoded as label")
     if edge.cprob is not None:
         updated_edge = updated_edge.property("cprob", edge.cprob)
-    if edge.edge_type is not None:
-        updated_edge = updated_edge.property("edge_type", edge.edge_type)
     if edge.references is not None:
         updated_edge = updated_edge.property("references", parse_list(edge.references))
     return updated_edge.next()
@@ -542,12 +513,14 @@ def convert_gremlin_vertex(vertex: Gremlin_vertex) -> NodeBase:
         for p in vertex.properties:
             if p.key in ["proponents", "references", "tags"]:
                 d[p.key] = unparse_stringlist(p.value)
-            elif p.key in NodeBase.model_fields:
+            elif (
+                p.key in NodeBase.model_fields
+                and p.key != "node_id"
+                and p.key != "node_type"
+            ):
                 d[p.key] = p.value
             else:
-                print("property not in model_fields", p.key)
-    # print("vertex properties from gremlin", vertex.properties)
-    # print("converted vertex", d)
+                warnings.warn(f"invalid node property: {p.key}")
     return NodeBase(**d)
 
 
@@ -560,9 +533,13 @@ def convert_gremlin_edge(edge) -> EdgeBase:
         for p in edge.properties:
             if p.key == "references":
                 d["references"] = unparse_stringlist(p.value)
-            elif p.key in EdgeBase.model_fields:
+            elif (
+                p.key in EdgeBase.model_fields
+                and p.key != "source"
+                and p.key != "target"
+                and p.key != "edge_type"
+            ):
                 d[p.key] = p.value
             else:
-                print("property not in model_fields", p.key)
-    # print("edge properties from gremlin", edge.properties)
+                warnings.warn(f"invalid edge property: {p.key}")
     return EdgeBase(**d)

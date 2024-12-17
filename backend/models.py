@@ -69,7 +69,7 @@ class NodeBase(BaseModel):
     node_type: NodeType = NodeType.potentiality
     title: str
     scope: str = None
-    status: NodeStatus | None = "unspecified"
+    status: NodeStatus | None = NodeStatus.unspecified
     description: str | None = None
     # TODO: check whether this could lead to issues if argument passed in create for example
     node_id: NodeId | None = None

@@ -20,12 +20,10 @@ export default {
     const fetchRandomNode = async () => {
       try {
         const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/nodes/random`);
-        const objective = response.data;
-        console.log('Random node:', objective);
-        // router.push(`/node/${objective.node_id}`);
-        window.location.href = `/node/${objective.node_id}`;
+        const node = response.data;
+        window.location.href = `/node/${node.node_id}`;
       } catch (error) {
-        console.error('Error fetching random objective:', error);
+        console.error('Error fetching random node:', error);
       }
     };
 
@@ -41,7 +39,7 @@ export default {
     };
     return {
       fetchRandomNode: fetchRandomNode,
-      createNewNode, 
+      createNewNode,
     };
   },
 };

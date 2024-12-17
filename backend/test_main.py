@@ -154,6 +154,39 @@ def test_search_nodes():
     assert len(json.loads(response.content.decode("utf-8"))) == 1
 
 
+def test_search_nodes_with_node_type():
+    # Create nodes with different types
+    client.post("/nodes", json={"title": "Objective Node", "node_type": "objective"})
+    client.post("/nodes", json={"title": "Action Node", "node_type": "action"})
+    client.post(
+        "/nodes", json={"title": "Potentiality Node", "node_type": "potentiality"}
+    )
+
+    # Search for nodes with type 'objective'
+    response = client.get("/nodes?node_type=objective")
+    assert response.status_code == 200
+    nodes = json.loads(response.content.decode("utf-8"))
+    assert all(
+        node["node_type"] == "objective" for node in nodes
+    ), "Non-objective nodes found"
+
+    # Search for nodes with type 'action'
+    response = client.get("/nodes?node_type=action")
+    assert response.status_code == 200
+    nodes = json.loads(response.content.decode("utf-8"))
+    assert all(
+        node["node_type"] == "action" for node in nodes
+    ), "Non-action nodes found"
+
+    # Search for nodes with type 'potentiality'
+    response = client.get("/nodes?node_type=potentiality")
+    assert response.status_code == 200
+    nodes = json.loads(response.content.decode("utf-8"))
+    assert all(
+        node["node_type"] == "potentiality" for node in nodes
+    ), "Non-potentiality nodes found"
+
+
 def test_update_node(fixtures):
     response = client.put(
         "/nodes",

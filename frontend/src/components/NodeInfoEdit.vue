@@ -10,7 +10,7 @@
     <div class="field">
       <strong>Type:</strong>
       <div class="field-content">
-        <select v-model="editedNode.node_type" ref="typeInput">
+        <select v-model="editedNode.node_type" ref="typeInput" :disabled="!editedNode.new">
           <option value="potentiality">Potentiality</option>
           <option value="objective">Objective</option>
           <option value="action">Action</option>
@@ -151,7 +151,7 @@ export default {
           if (fromConnection) // create edge if node was created from a connection
           {
             try {
-              
+
               const newEdge = {
                 source: parseInt(fromConnection.id),
                 target: target,
@@ -164,7 +164,7 @@ export default {
             } catch (error) {
               console.error('Failed to create edge:', error);
           }
-          
+
         }
         window.location.href = `/node/${target}`;
 
@@ -315,7 +315,7 @@ button.editing {
   /* padding-right: 5px; Added padding to make space for delete button */
   font-size: 12px;
   cursor: default;
-  display: inline-flex; 
+  display: inline-flex;
   align-items: center;
   /* position: relative; */
 }

@@ -1,13 +1,6 @@
 <template>
     <div>
       <div class="field">
-        <strong>Type:</strong>
-        <div class="field-content">
-          <span v-if="editingField !== 'edge_type'" @click="startEditing('edge_type')">{{ editedEdge.edge_type }}</span>
-          <input v-else v-model="editedEdge.edge_type" @blur="stopEditing('edge_type')" ref="edge_typeInput" />
-        </div>
-      </div>
-      <div class="field">
         <strong>CProb:</strong>
         <div class="field-content">
           <span v-if="editingField !== 'cprob' && editedEdge.cprob" @click="startEditing('cprob')">{{ editedEdge.cprob }}</span>
@@ -52,11 +45,11 @@
       <button class="submit-button" @click="submit">Submit</button>
     </div>
   </template>
-  
+
   <script>
   import axios from 'axios';
   import _ from 'lodash';
-  
+
   export default {
     props: {
       edge: Object,
@@ -149,14 +142,14 @@
     },
   };
   </script>
-  
+
   <style scoped>
   .field {
     display: flex;
     flex-direction: column;
     margin: 5px 0;
   }
-  
+
   .field-content {
     flex: 1;
     margin-left: 10px;
@@ -164,13 +157,13 @@
     padding: 5px;
     border-radius: 4px;
   }
-  
+
   .field-content span {
     display: inline-block;
     width: 100%;
     cursor: pointer;
   }
-  
+
   .field-content input,
   .field-content textarea {
     width: 100%;
@@ -179,13 +172,13 @@
     border: 1px solid #007bff;
     outline: none;
   }
-  
+
   .invalid-proponent input,
   .invalid-reference input {
     border-color: lightcoral;
     background-color: #fff3e0;
   }
-  
+
   button {
     background: #f9f9f9;
     border: 1px solid #ccc;
@@ -196,11 +189,11 @@
     width: 100%;
     text-align: left;
   }
-  
+
   button.editing {
     background: #e9e9e9;
   }
-  
+
   .add-proponent-button,
   .add-reference-button {
   display: block;
@@ -217,7 +210,7 @@
 }
 
 /* TODO: share with NodeInfoEdit.vue */
-  .add-description-button {  
+  .add-description-button {
     display: block;
     margin: 10px auto;
     padding: 5px 10px;
@@ -229,7 +222,7 @@
     width: 30%;
     text-align: center;
   }
-  
+
   .submit-button {
     margin-top: 20px;
     margin: 0 auto;
@@ -243,7 +236,7 @@
     cursor: pointer;
     font-size: 16px;
   }
-  
+
   .submit-button:hover {
     background-color: #0056b3;
   }

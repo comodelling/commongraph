@@ -9,7 +9,7 @@
     <p>Looking to contribute? You can:</p>
     <ul>
       <li>
-        <a href="https://github.com/voicingcommons/objectivenet/issues"
+        <a href="https://github.com/planningcommons/objectivenet/issues"
           >File a bug report or a feature request</a
         >,
       </li>
@@ -19,7 +19,7 @@
       </li>
       <li>
         Improve the code by creating feature/fix branches and
-        <a href="https://github.com/voicingcommons/objectivenet/pulls"
+        <a href="https://github.com/planningcommons/objectivenet/pulls"
           >opening pull requests</a
         >.
       </li>

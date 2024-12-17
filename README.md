@@ -7,7 +7,7 @@ ObjectiveNet is an open source software to help people build causal networks of 
 To start ObjectiveNet:
 
 - [install Docker](https://www.docker.com/get-started/) if not already on your machine,
-- close the repo (e.g. by running ```git clone https://github.com/voicingcommons/objectivenet.git``` from a terminal)
+- close the repo (e.g. by running ```git clone https://github.com/planningcommons/objectivenet.git``` from a terminal)
 - run ```docker compose up``` from the cloned *objectivenet/* directory,
 - wait for it to start...and that's it! you can access it at [http://localhost:5173/](http://localhost:5173/) from a browser.
 
@@ -27,11 +27,11 @@ This project uses:
 
 ### Contributing
 
-Looking to file a bug report or a feature request? https://github.com/voicingcommons/objectivenet/issues
+Looking to file a bug report or a feature request? https://github.com/planningcommons/objectivenet/issues
 
 You can also contribute to ObjectiveNet by:
 - experimenting with the software and directly [sending feedback via email](mario.morvan@ucl.ac.uk),
-- creating feature/ or fix/ branches and opening [pull requests](https://github.com/voicingcommons/objectivenet/pulls).
+- creating feature/ or fix/ branches and opening [pull requests](https://github.com/planningcommons/objectivenet/pulls).
 
 
 ### Dev tools

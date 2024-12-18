@@ -15,26 +15,25 @@ from gremlin_python.structure.graph import Vertex as Gremlin_vertex
 from janusgraph_python.driver.serializer import JanusGraphSONSerializersV3d0
 from janusgraph_python.process.traversal import Text
 
-# from gremlin_python.process.traversal import T
-# from gremlin_python.process.traversal import Cardinality
-
 from models import *
 
-# TODO: optimise gremlin python for fastapi
 
-app = FastAPI(
-    title="ObjectiveNet API",
-)
+app = FastAPI(title="ObjectiveNet API", version="v0.1.0")
 
-if os.getenv("DOCKER_ENV"):
-    env_path = PathlibPath("/app/.env")
-    if not env_path.exists():
-        raise FileNotFoundError(f".env file not found at {env_path}")
+env_path = PathlibPath("/app/.env") if os.getenv("DOCKER_ENV") else PathlibPath(".env")
+
+if env_path.exists():
     load_dotenv(dotenv_path=env_path)
-
-    origins = [origin.strip() for origin in os.getenv("ALLOWED_ORIGINS", "").split(",")]
 else:
-    origins = []
+    warnings.warn(
+        f".env file not found at {env_path}, using default environment variables"
+    )
+
+origins = (
+    [origin.strip() for origin in os.getenv("ALLOWED_ORIGINS", "").split(",")]
+    if os.getenv("ALLOWED_ORIGINS")
+    else []
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -59,9 +58,6 @@ def get_db_connection():
         yield g
     finally:
         connection.close()
-
-
-# TODO: is contrast vertex / node helpful? What equivalent for edge?
 
 
 ### root ###
@@ -102,7 +98,7 @@ def get_network_summary(db=Depends(get_db_connection)) -> dict[str, int]:
 @app.delete("/network", status_code=status.HTTP_205_RESET_CONTENT)
 def reset_whole_network(db=Depends(get_db_connection)) -> None:
     """Delete all nodes and edges. Be careful!"""
-    # TODO: add warning or confirmation
+    warnings.warn("Deleting all nodes and edges in the database!")
     vertex_count = db.V().count().next()
 
     if vertex_count:
@@ -154,9 +150,7 @@ def update_subnet(subnet: Subnet, db=Depends(get_db_connection)) -> Subnet:
                     update_edge_target_from = edge.target
                     edge.target = mapping[edge.target]
                 edge_out = convert_gremlin_edge(create_gremlin_edge(edge, db))
-                edge_out.source_from_ui = (
-                    update_edge_source_from  # TODO: add to history log
-                )
+                edge_out.source_from_ui = update_edge_source_from
                 edge_out.target_from_ui = update_edge_target_from
             edges_out.append(edge_out)
         except StopIteration:

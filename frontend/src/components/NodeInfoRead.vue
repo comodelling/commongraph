@@ -9,14 +9,12 @@
       <span v-for="tag in node.tags" :key="tag" class="tag">{{ tag }}</span>
     </div>
     <strong>References: </strong> <br />
-    <!-- Added line to show number of references -->
     <ul
       class="references-list"
       v-if="node.references && node.references.length"
     >
       <li v-for="reference in node.references" :key="reference">
         {{ reference.trim() || "(empty)" }}
-        <!-- TODO: transfer this as check/transfo in backend-->
       </li>
     </ul>
     <strong>Detailed description:</strong> <br />

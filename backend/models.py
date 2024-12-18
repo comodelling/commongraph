@@ -4,7 +4,6 @@ import math
 
 from pydantic import BaseModel, field_validator
 from fastapi import Path, Query
-from pydantic import BaseModel
 
 
 NodeId = Annotated[
@@ -22,9 +21,10 @@ class NodeType(str, Enum):
     objective = "objective"
     action = "action"
     potentiality = "potentiality"
-    change = "change"
-    wish = "wish"  # TODO: depreacate?
-    proposal = "proposal"  # TODO: deprecate?
+
+    change = "change"  # TODO: migrate and deprecate
+    wish = "wish"  # TODO: migrate and deprecate
+    proposal = "proposal"  # TODO: migrate and deprecate?
 
     @classmethod
     def _missing_(cls, value):

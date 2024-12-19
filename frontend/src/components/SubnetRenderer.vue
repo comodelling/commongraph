@@ -618,28 +618,28 @@ function optionClicked({ option }) {
         <div class="compass-container">
           <button
             class="compass-button top"
-            title="Bottom-Top"
+            title="Upward"
             @click="layoutSubnet('BT')"
           >
             <Icon name="arrow-up" />
           </button>
           <button
             class="compass-button left"
-            title="Right-Left"
+            title="Leftward"
             @click="layoutSubnet('RL')"
           >
             <Icon name="arrow-left" />
           </button>
           <button
             class="compass-button bottom"
-            title="Top-Bottom"
+            title="Downward"
             @click="layoutSubnet('TB')"
           >
             <Icon name="arrow-down" />
           </button>
           <button
             class="compass-button right"
-            title="Left-Right"
+            title="Rightward"
             @click="layoutSubnet('LR')"
           >
             <Icon name="arrow-right" />
@@ -668,7 +668,7 @@ function optionClicked({ option }) {
           <Icon name="log" />
         </ControlButton> -->
 
-        <ControlButton title="Export Subnet" @click="exportSubnet">
+        <ControlButton title="Export JSON" @click="exportSubnet">
           <Icon name="export" />
         </ControlButton>
       </Controls>

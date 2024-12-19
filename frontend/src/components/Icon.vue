@@ -66,6 +66,22 @@ defineProps({
     <path d="M7,7 L12,2 L17,7" stroke="white" stroke-width="2" fill="none" />
     <path d="M7,17 L12,22 L17,17" stroke="white" stroke-width="2" fill="none" />
   </svg>
+
+  <svg v-if="name === 'arrow-up'" width="12" height="12" viewBox="0 0 15 24">
+    <path d="M12 2l-10 10h6v10h8v-10h6z" />
+  </svg>
+
+  <svg v-if="name === 'arrow-down'" width="12" height="12" viewBox="0 0 24 24">
+    <path d="M12 22l10-10h-6v-10h-8v10h-6z" />
+  </svg>
+
+  <svg v-if="name === 'arrow-left'" width="12" height="12" viewBox="0 0 24 24">
+    <path d="M2 12l10 10v-6h10v-8h-10v-6z" />
+  </svg>
+
+  <svg v-if="name === 'arrow-right'" width="12" height="12" viewBox="0 0 24 24">
+    <path d="M22 12l-10-10v6h-10v8h10v6z" />
+  </svg>
 </template>
 
 <script>

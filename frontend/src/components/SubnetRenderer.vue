@@ -615,34 +615,36 @@ function optionClicked({ option }) {
       <MiniMap />
 
       <Panel class="compass-panel" position="top-right">
-        <button
-          class="compass-button bottom"
-          title="Top-Bottom"
-          @click="layoutSubnet('TB')"
-        >
-          <Icon name="vertical" />
-        </button>
-        <button
-          class="compass-button left"
-          title="Right-Left"
-          @click="layoutSubnet('RL')"
-        >
-          <Icon name="horizontal" />
-        </button>
-        <button
-          class="compass-button top"
-          title="Bottom-Top"
-          @click="layoutSubnet('BT')"
-        >
-          <Icon name="vertical" />
-        </button>
-        <button
-          class="compass-button right"
-          title="Left-Right"
-          @click="layoutSubnet('LR')"
-        >
-          <Icon name="horizontal" />
-        </button>
+        <div class="compass-container">
+          <button
+            class="compass-button top"
+            title="Bottom-Top"
+            @click="layoutSubnet('BT')"
+          >
+            <Icon name="arrow-up" />
+          </button>
+          <button
+            class="compass-button left"
+            title="Right-Left"
+            @click="layoutSubnet('RL')"
+          >
+            <Icon name="arrow-left" />
+          </button>
+          <button
+            class="compass-button bottom"
+            title="Top-Bottom"
+            @click="layoutSubnet('TB')"
+          >
+            <Icon name="arrow-down" />
+          </button>
+          <button
+            class="compass-button right"
+            title="Left-Right"
+            @click="layoutSubnet('LR')"
+          >
+            <Icon name="arrow-right" />
+          </button>
+        </div>
       </Panel>
 
       <Controls position="top-right">
@@ -734,56 +736,54 @@ export default {
 }
 
 .compass-panel {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  width: 100px;
-  height: 100px;
-  display: flex;
-  justify-content: center;
+  /* margin: 20px; */
+  padding: 0px;
+}
+
+.compass-container {
+  display: grid;
+  grid-template-areas:
+    ". top ."
+    "left . right"
+    ". bottom .";
+  gap: 0px; /* Adjusted gap between buttons */
+  justify-items: center;
   align-items: center;
 }
 
 .compass-button {
-  position: absolute;
-  width: 30px;
-  height: 30px;
-  border: none;
-  border-radius: 50%;
-  background-color: #4a5568;
-  color: white;
-  display: flex;
+  width: 20px; /* Slightly bigger than the icons */
+  height: 20px;
+  /* display: flex; */
   justify-content: center;
   align-items: center;
-  cursor: pointer;
+  background: white;
+  border: 1px solid #ccc; /* Ensure buttons are visible */
+  padding: 0;
+  line-height: 20px; /* Center the icon vertically */
+  text-align: center; /* Center the icon horizontally */
 }
 
 .compass-button.top {
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-}
-
-.compass-button.right {
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
-}
-
-.compass-button.bottom {
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
+  /* margin-top: -5px; */
+  grid-area: top;
 }
 
 .compass-button.left {
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
+  grid-area: left;
 }
 
-.compass-button:hover {
-  background-color: #2563eb;
-  transition: background-color 0.2s;
+.compass-button.bottom {
+  grid-area: bottom;
+}
+
+.compass-button.right {
+  grid-area: right;
+  margin-right: 35px; /* Wider margin to the right */
+}
+
+.compass-button svg {
+  width: 12px; /* Icon size */
+  height: 12px;
 }
 </style>

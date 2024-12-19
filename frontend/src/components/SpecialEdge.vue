@@ -95,7 +95,9 @@ export default {
       }"
       class="nodrag nopan"
     >
-      <span v-if="data.cprob !== null">{{ data.cprob * 100 }}%</span>
+      <span v-if="data.cprob !== null && data.cprob !== undefined"
+        >{{ data.cprob * 100 }}%</span
+      >
     </div>
   </EdgeLabelRenderer>
 </template>

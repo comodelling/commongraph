@@ -18,7 +18,7 @@ from janusgraph_python.process.traversal import Text
 from models import *
 
 
-app = FastAPI(title="ObjectiveNet API", version="v0.1.0")
+app = FastAPI(title="ObjectiveNet API", version="v0.1.1")
 
 env_path = PathlibPath("/app/.env") if os.getenv("DOCKER_ENV") else PathlibPath(".env")
 

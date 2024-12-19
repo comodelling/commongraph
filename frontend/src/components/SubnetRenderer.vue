@@ -14,7 +14,10 @@ import "vue-simple-context-menu/dist/vue-simple-context-menu.css";
 import SearchBar from "./SearchBar.vue"; // Import the SearchBar component
 // import SpecialNode from '../components/SpecialNode.vue'
 import SpecialEdge from "./SpecialEdge.vue";
-import { formatFlowEdgeProps } from "../composables/formatFlowComponents";
+import {
+  formatFlowEdgeProps,
+  formatFlowNodeProps,
+} from "../composables/formatFlowComponents";
 
 const {
   onInit,
@@ -310,25 +313,19 @@ function createNodeAndEdgeOnConnection(event = null) {
   const { nodeId, handleType } = connectionInfo.value;
   const sourceNode = findNode(nodeId);
 
-  const newNodeData = {
-    id: `temp-node`,
-    position: {
-      x: event.clientX || Math.random() * 400,
-      y: event.clientY || Math.random() * 400,
-    },
-    label: "New Node",
-    data: {
-      title: "New Node",
-      scope: sourceNode.data.scope, // inherited scope
-      node_type: "potentiality", // most general type
-      satus: "draft",
-      tags: sourceNode.data.tags, // inherited tags
-      fromConnection: {
-        id: nodeId,
-        edge_type: handleType === "source" ? "imply" : "require",
-      }, // to be used to update edge data
-    },
-  };
+  const newNodeData = formatFlowNodeProps({
+    node_id: `temp-node`,
+    title: "New Node",
+    status: "draft",
+    scope: sourceNode.data.scope, // inherited scope
+    node_type: "potentiality", // most general type
+    tags: sourceNode.data.tags, // inherited tags
+    fromConnection: {
+      id: nodeId,
+      edge_type: handleType === "source" ? "imply" : "require",
+    }, // to be used to update edge data
+  });
+  console.log("New Node Data:", newNodeData);
   addNodes(newNodeData);
   const newEdgeData = createEdgeOnConnection("temp-node");
   addEdges(newEdgeData);

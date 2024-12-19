@@ -21,7 +21,10 @@ import axios from "axios";
 import NodeInfo from "../components/NodeInfo.vue";
 import EdgeInfo from "../components/EdgeInfo.vue";
 import SubnetRenderer from "../components/SubnetRenderer.vue";
-import { formatFlowEdgeProps } from "../composables/formatFlowComponents";
+import {
+  formatFlowEdgeProps,
+  formatFlowNodeProps,
+} from "../composables/formatFlowComponents";
 // import SpecialEdge from "../components/SpecialEdge.vue";
 
 export default {
@@ -117,22 +120,8 @@ export default {
 
         this.subnetData = {
           nodes: fetched_nodes.map((node) => {
-            const style = {
-              opacity: node.status === "completed" ? 0.4 : 0.95,
-              borderColor: node.status === "completed" ? "green" : "black",
-              borderWidth: this.getBorderWidthByType(node.node_type),
-              borderStyle: node.status === "draft" ? "dotted" : "solid",
-              borderRadius: "8px",
-            };
-            return {
-              id: node.node_id.toString(),
-              position: { x: Math.random() * 500, y: Math.random() * 500 },
-              label: node.title, // move out of data?
-              style: style, // define rule in custom node component
-              data: {
-                ...node,
-              },
-            };
+            const props = formatFlowNodeProps(node);
+            return props;
           }),
           edges: fetched_edges.map((edge) => {
             const props = formatFlowEdgeProps(edge);

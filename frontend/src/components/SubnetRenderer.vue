@@ -325,7 +325,6 @@ function createNodeAndEdgeOnConnection(event = null) {
       edge_type: handleType === "source" ? "imply" : "require",
     }, // to be used to update edge data
   });
-  console.log("New Node Data:", newNodeData);
   addNodes(newNodeData);
   const newEdgeData = createEdgeOnConnection("temp-node");
   addEdges(newEdgeData);

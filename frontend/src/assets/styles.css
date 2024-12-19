@@ -71,10 +71,13 @@ button:focus-visible {
 }
 
 .vue-flow__handle {
-  height: 10px;
-  width: 10px;
-  border-radius: 8px;
+  height: 11px;
+  width: 11px;
+  border-radius: 9px;
+  /* color: white; */
   border-color: grey;
+  border-width: 0px;
+  background-color: white;
 }
 
 .vue-flow__node-special {

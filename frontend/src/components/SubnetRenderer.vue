@@ -136,7 +136,7 @@ onEdgeClick(({ edge }) => {
 });
 
 onPaneClick(({ event }) => {
-  console.log("Pane Click", event);
+  // console.log("Pane Click", event);
 });
 
 const onNodesChange = async (changes) => {
@@ -647,8 +647,11 @@ function optionClicked({ option }) {
         </div>
       </Panel>
 
-      <Controls position="top-right">
-        <ControlButton title="Reset Transform" @click="resetTransform">
+      <Controls
+        position="top-right"
+        style="margin-top: 72px; margin-right: 20px"
+      >
+        <!--  <ControlButton title="Reset Transform" @click="resetTransform">
           <Icon name="reset" />
         </ControlButton>
 
@@ -663,7 +666,7 @@ function optionClicked({ option }) {
 
         <ControlButton title="Log `toObject`" @click="logToObject">
           <Icon name="log" />
-        </ControlButton>
+        </ControlButton> -->
 
         <ControlButton title="Export Subnet" @click="exportSubnet">
           <Icon name="export" />
@@ -752,20 +755,23 @@ export default {
 }
 
 .compass-button {
-  width: 20px; /* Slightly bigger than the icons */
-  height: 20px;
+  width: 19px; /* Slightly bigger than the icons */
+  height: 19px;
   /* display: flex; */
   justify-content: center;
   align-items: center;
   background: white;
   border: 1px solid #ccc; /* Ensure buttons are visible */
   padding: 0;
-  line-height: 20px; /* Center the icon vertically */
+  line-height: 0px; /* Center the icon vertically */
   text-align: center; /* Center the icon horizontally */
+  border-radius: 15%; /* Make the button round */
+  opacity: 0.8; /* Slightly transparent */
 }
 
 .compass-button.top {
   /* margin-top: -5px; */
+  margin-top: -10px;
   grid-area: top;
 }
 
@@ -779,11 +785,12 @@ export default {
 
 .compass-button.right {
   grid-area: right;
-  margin-right: 35px; /* Wider margin to the right */
+
+  margin-right: -10px; /* Wider margin to the right */
 }
 
 .compass-button svg {
-  width: 12px; /* Icon size */
-  height: 12px;
+  width: 10px; /* Icon size */
+  height: 10px;
 }
 </style>

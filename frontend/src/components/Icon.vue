@@ -67,7 +67,7 @@ defineProps({
     <path d="M7,17 L12,22 L17,17" stroke="white" stroke-width="2" fill="none" />
   </svg>
 
-  <svg v-if="name === 'arrow-up'" width="12" height="12" viewBox="0 0 15 24">
+  <svg v-if="name === 'arrow-up'" width="12" height="12" viewBox="0 0 24 24">
     <path d="M12 2l-10 10h6v10h8v-10h6z" />
   </svg>
 

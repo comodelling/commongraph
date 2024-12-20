@@ -3,10 +3,10 @@
     <h2>{{ edge.edge_type === "require" ? "Condition" : "Implication" }}</h2>
     <div class="field">
       <template v-if="edge.edge_type === 'require'">
-        <strong> Cond.Proba(condition) </strong>
+        <strong> Cond.Proba(condition|source) </strong>
       </template>
       <template v-if="edge.edge_type === 'imply'">
-        <strong> Cond.Proba(implication) </strong>
+        <strong> Cond.Proba(implication|source) </strong>
       </template>
       <div class="field-content">
         <span v-if="editingField !== 'cprob'" @click="startEditing('cprob')">

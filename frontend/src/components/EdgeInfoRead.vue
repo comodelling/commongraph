@@ -4,12 +4,22 @@
     <!-- <strong>Type:</strong> {{ localEdge.edge_type }}<br /> -->
 
     <template v-if="localEdge.edge_type === 'require'">
-      <strong> Cond.Proba(condition) </strong> =
-      {{ localEdge.cprob * 100 || "? " }}%<br />
+      <strong>
+        Cond.Proba(<a :href="`/node/${localEdge.target}`">condition</a>|<a
+          :href="`/node/${localEdge.source}`"
+          >source</a
+        >)
+      </strong>
+      = {{ localEdge.cprob * 100 || "? " }}%<br />
     </template>
     <template v-if="localEdge.edge_type === 'imply'">
-      <strong> Cond.Proba(implication) </strong> =
-      {{ localEdge.cprob * 100 || "? " }}%<br />
+      <strong>
+        Cond.Proba(<a :href="`/node/${localEdge.target}`">implication</a>|<a
+          :href="`/node/${localEdge.source}`"
+          >source</a
+        >)
+      </strong>
+      = {{ localEdge.cprob * 100 || "? " }}%<br />
     </template>
     <strong>References: </strong> <br />
     <ul
@@ -37,6 +47,14 @@ export default {
     return {
       localEdge: this.edge,
     };
+  },
+  computed: {
+    sourceLink() {
+      return;
+    },
+    targetLink() {
+      return `/nodes/${this.localEdge.target}`;
+    },
   },
   watch: {
     edge: {

@@ -41,6 +41,8 @@ const {
   onNodeClick,
   onEdgeClick,
   onPaneClick,
+  onEdgeMouseEnter,
+  onEdgeMouseLeave,
 } = useVueFlow();
 
 // props to receive nodes and edges data
@@ -536,6 +538,20 @@ function optionClicked({ option }) {
   console.log("Option Clicked", option);
   option.action();
 }
+
+onEdgeMouseEnter(({ edge }) => {
+  console.log("Edge Mouse Enter", edge);
+  edge.style = {
+    strokeWidth: "1.4px",
+  };
+});
+
+onEdgeMouseLeave(({ edge }) => {
+  edge.style = {
+    stroke: undefined,
+    strokeWidth: undefined,
+  };
+});
 </script>
 
 <template>

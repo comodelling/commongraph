@@ -1,30 +1,40 @@
 <template>
   <div>
+    <h2>{{ edge.edge_type === "require" ? "Condition" : "Implication" }}</h2>
     <div class="field">
-      <strong>CProb:</strong>
+      <template v-if="edge.edge_type === 'require'">
+        <strong> Cond.Proba(condition) </strong>
+      </template>
+      <template v-if="edge.edge_type === 'imply'">
+        <strong> Cond.Proba(implication) </strong>
+      </template>
       <div class="field-content">
-        <span
-          v-if="editingField !== 'cprob' && editedEdge.cprob"
-          @click="startEditing('cprob')"
-          >{{ editedEdge.cprob }}</span
-        >
-        <input
-          v-else-if="editingField === 'cprob'"
-          v-model="editedEdge.cprob"
-          @blur="stopEditing('cprob')"
-          ref="cprobInput"
-        />
-        <button
+        <span v-if="editingField !== 'cprob'" @click="startEditing('cprob')">
+          {{ editedEdge.cprob }}%
+        </span>
+        <div v-else style="display: flex; align-items: center">
+          <input
+            type="number"
+            v-model.number="editedEdge.cprob"
+            @blur="stopEditing('cprob')"
+            ref="cprobInput"
+            min="0"
+            max="100"
+            style="width: 50px; margin-right: 5px"
+          />
+          <span>%</span>
+        </div>
+
+        <!-- <button
           v-if="!editedEdge.cprob && editingField !== 'cprob'"
           @click="addCprob"
         >
           Add
-        </button>
-        <!-- Modified button visibility condition -->
+        </button> -->
       </div>
     </div>
     <div class="field">
-      <strong>References:</strong>
+      <strong>References:</strong><br />
       <ul>
         <li
           v-for="(reference, index) in editedEdge.references"
@@ -44,11 +54,12 @@
             :ref="`reference-${index}Input`"
           />
         </li>
-        <button class="add-reference-button" @click="addReference">
-          + Reference
-        </button>
       </ul>
+      <button class="add-reference-button" @click="addReference">
+        + Reference
+      </button>
     </div>
+    <br />
     <strong>Description:</strong>
     <div
       class="field"
@@ -88,9 +99,11 @@ export default {
     edge: Object,
   },
   data() {
+    const editedEdge = _.cloneDeep(this.edge);
+    editedEdge.cprob = this.edge.cprob * 100 || 0;
     return {
       editingField: null,
-      editedEdge: _.cloneDeep(this.edge),
+      editedEdge: editedEdge,
     };
   },
   methods: {
@@ -134,6 +147,7 @@ export default {
       this.editedEdge.references = this.editedEdge.references.filter(
         (ref) => ref.trim() !== "",
       );
+      this.editedEdge.cprob = this.editedEdge.cprob / 100;
       console.log("submitting ", this.editedEdge);
       let response;
       try {

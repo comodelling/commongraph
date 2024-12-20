@@ -14,7 +14,7 @@
         Edit
       </button>
     </div>
-    <h2>Edge Information</h2>
+    <!-- <h2>Edge Information</h2> -->
     <div v-if="edge">
       <component
         :is="currentTabComponent"

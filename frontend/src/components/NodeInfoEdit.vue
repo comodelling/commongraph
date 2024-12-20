@@ -1,5 +1,21 @@
 <template>
   <div>
+    <div class="field" v-if="editedNode.new">
+      <strong>Type:</strong>
+      <div class="field-content">
+        <select
+          v-model="editedNode.node_type"
+          ref="typeInput"
+          :disabled="!editedNode.new"
+        >
+          <option value="potentiality">Potentiality</option>
+          <option value="objective">Objective</option>
+          <option value="action">Action</option>
+        </select>
+      </div>
+    </div>
+    <h2 v-else>{{ capitalise(editedNode.node_type) }}</h2>
+
     <div class="field">
       <strong>Title:</strong>
       <div class="field-content">
@@ -14,20 +30,7 @@
         />
       </div>
     </div>
-    <div class="field">
-      <strong>Type:</strong>
-      <div class="field-content">
-        <select
-          v-model="editedNode.node_type"
-          ref="typeInput"
-          :disabled="!editedNode.new"
-        >
-          <option value="potentiality">Potentiality</option>
-          <option value="objective">Objective</option>
-          <option value="action">Action</option>
-        </select>
-      </div>
-    </div>
+
     <div class="field">
       <strong>Scope:</strong>
       <div class="field-content">
@@ -76,8 +79,8 @@
         <button class="add-tag-button" @click="addTag">+ Tag</button>
       </div>
     </div>
+    <strong>References:</strong>
     <div class="field">
-      <strong>References:</strong>
       <ul>
         <li
           v-for="(reference, index) in editedNode.references"
@@ -97,10 +100,12 @@
             :ref="`reference-${index}Input`"
           />
         </li>
-        <button class="add-reference-button" @click="addReference">
-          + Reference
-        </button>
       </ul>
+    </div>
+    <div>
+      <button class="add-reference-button" @click="addReference">
+        + Reference
+      </button>
     </div>
     <strong>Description:</strong>
     <div
@@ -142,13 +147,16 @@ export default {
   },
   data() {
     let editedNode = _.cloneDeep(this.node);
-    editedNode.tags = editedNode.tags || [];
+    // editedNode.tags = editedNode.tags || [];
     return {
       editingField: null,
       editedNode: editedNode,
     };
   },
   methods: {
+    capitalise(string) {
+      return string.charAt(0).toUpperCase() + string.slice(1);
+    },
     startEditing(field) {
       this.editingField = field;
       this.$nextTick(() => {
@@ -176,6 +184,7 @@ export default {
       this.editedNode.tags.splice(index, 1);
     },
     addReference() {
+      console.log("Adding reference");
       this.editedNode.references.push("");
       this.$nextTick(() => {
         this.startEditing(`reference-${this.editedNode.references.length - 1}`);

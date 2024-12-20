@@ -1,14 +1,16 @@
 <template>
   <div>
-    <strong>Type:</strong> {{ localEdge.edge_type }}<br />
-    <strong>
-      <template v-if="localEdge.edge_type === 'require'"
-        >CProb(requirement) = {{ localEdge.cprob }}</template
-      >
-      <template v-else-if="localEdge.edge_type === 'imply'"
-        >CProb(implication) = {{ localEdge.cprob }}</template
-      > </strong
-    ><br />
+    <h2>{{ edge.edge_type === "require" ? "Condition" : "Implication" }}</h2>
+    <!-- <strong>Type:</strong> {{ localEdge.edge_type }}<br /> -->
+
+    <template v-if="localEdge.edge_type === 'require'">
+      <strong> Cond.Proba(condition) </strong> =
+      {{ localEdge.cprob * 100 || "? " }}%<br />
+    </template>
+    <template v-if="localEdge.edge_type === 'imply'">
+      <strong> Cond.Proba(implication) </strong> =
+      {{ localEdge.cprob * 100 || "? " }}%<br />
+    </template>
     <strong>References: </strong> <br />
     <ul
       class="references-list"

@@ -1,7 +1,8 @@
 <template>
   <div>
+    <h2>{{ capitalise(node.node_type) }}</h2>
     <strong>Title: </strong> "{{ node.title }}"<br />
-    <strong>Type:</strong> {{ capitalise(node.node_type) }}<br />
+    <!-- <strong>Type:</strong> {{ capitalise(node.node_type) }}<br /> -->
     <strong>Scope: </strong> {{ node.scope }}<br />
     <strong>Status: </strong> {{ formatStatus(node.status) }}<br />
     <div class="tags-container" v-if="node.tags && node.tags.length">

@@ -33,6 +33,7 @@ const {
   applyNodeChanges,
   applyEdgeChanges,
   removeEdges,
+  onNodeDragStart,
   onNodeDragStop,
   setViewport,
   zoomTo,
@@ -368,6 +369,10 @@ function closeSearchBar() {
   searchResults.value = [];
 }
 
+onNodeDragStart(({ event, node }) => {
+  // console.log("Node Drag Start", { event, nodes, node });
+});
+
 /**
  * onNodeDragStop is called when a node is done being dragged
  *
@@ -378,7 +383,7 @@ function closeSearchBar() {
  * 4. any intersections with other nodes
  */
 onNodeDragStop(({ event, nodes, node }) => {
-  console.log("Node Drag Stop", { event, nodes, node });
+  // console.log("Node Drag Stop", { event, nodes, node });
 });
 
 /**
@@ -540,7 +545,6 @@ function optionClicked({ option }) {
 }
 
 onEdgeMouseEnter(({ edge }) => {
-  console.log("Edge Mouse Enter", edge);
   edge.style = {
     strokeWidth: "1.4px",
   };

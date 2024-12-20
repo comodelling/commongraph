@@ -92,6 +92,10 @@ button:focus-visible {
   max-width: 250px;
 }
 
+.vue-flow__node-special :hover {
+  cursor: pointer;
+}
+
 .element-info {
   width: 350px;
   border: 1px solid #ccc;

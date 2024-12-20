@@ -645,7 +645,7 @@ onEdgeMouseLeave(({ edge }) => {
           <button
             class="compass-button top"
             :class="{ selected: selectedDirection === 'BT' }"
-            title="Upward"
+            title="Upward causality"
             @click="selectDirection('BT')"
           >
             <Icon name="arrow-up" />
@@ -653,7 +653,7 @@ onEdgeMouseLeave(({ edge }) => {
           <button
             class="compass-button left"
             :class="{ selected: selectedDirection === 'RL' }"
-            title="Leftward"
+            title="Leftward causality"
             @click="selectDirection('RL')"
           >
             <Icon name="arrow-left" />
@@ -661,7 +661,7 @@ onEdgeMouseLeave(({ edge }) => {
           <button
             class="compass-button bottom"
             :class="{ selected: selectedDirection === 'TB' }"
-            title="Downward"
+            title="Downward causality"
             @click="selectDirection('TB')"
           >
             <Icon name="arrow-down" />
@@ -669,7 +669,7 @@ onEdgeMouseLeave(({ edge }) => {
           <button
             class="compass-button right"
             :class="{ selected: selectedDirection === 'LR' }"
-            title="Rightward"
+            title="Rightward causality"
             @click="selectDirection('LR')"
           >
             <Icon name="arrow-right" />

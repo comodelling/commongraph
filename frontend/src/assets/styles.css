@@ -71,13 +71,11 @@ button:focus-visible {
 }
 
 .vue-flow__handle {
-  height: 11px;
-  width: 11px;
+  height: 12px;
+  width: 12px;
   border-radius: 9px;
-  /* color: white; */
   border-color: grey;
-  border-width: 0px;
-  background-color: white;
+  background-color: lightgray;
 }
 
 .vue-flow__node-special {
@@ -89,8 +87,13 @@ button:focus-visible {
   flex-direction: column;
   justify-content: space-between;
   align-items: center;
-  gap: 10px;
+  gap: 15px;
+  min-width: 150px;
   max-width: 250px;
+}
+
+.vue-flow__node-special :hover {
+  cursor: pointer;
 }
 
 .element-info {

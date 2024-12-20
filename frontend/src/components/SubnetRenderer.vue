@@ -12,7 +12,7 @@ import { useLayout } from "../composables/useLayout";
 import VueSimpleContextMenu from "vue-simple-context-menu";
 import "vue-simple-context-menu/dist/vue-simple-context-menu.css";
 import SearchBar from "./SearchBar.vue"; // Import the SearchBar component
-// import SpecialNode from '../components/SpecialNode.vue'
+import SpecialNode from "../components/SpecialNode.vue";
 import SpecialEdge from "./SpecialEdge.vue";
 import {
   formatFlowEdgeProps,
@@ -33,6 +33,7 @@ const {
   applyNodeChanges,
   applyEdgeChanges,
   removeEdges,
+  onNodeDragStart,
   onNodeDragStop,
   setViewport,
   zoomTo,
@@ -41,6 +42,8 @@ const {
   onNodeClick,
   onEdgeClick,
   onPaneClick,
+  onEdgeMouseEnter,
+  onEdgeMouseLeave,
 } = useVueFlow();
 
 // props to receive nodes and edges data
@@ -72,21 +75,7 @@ const contextMenuRef = ref(null);
 const showSearchBar = ref(false);
 const searchBarPosition = ref({ x: 0, y: 0 });
 const searchResults = ref(null);
-
-function updateSubnetFromData(data) {
-  setNodes(data.nodes || []);
-  setEdges(data.edges || []);
-
-  if (route.params.source_id && route.params.target_id) {
-    const edgeId = `${route.params.source_id}-${route.params.target_id}`;
-    const edge = findEdge(edgeId);
-    if (edge) {
-      edge.selected = true;
-    }
-  } else {
-    updateNodeData(route.params.id, { selected: true });
-  }
-}
+const selectedDirection = ref(previousDirection || null);
 
 onInit((vueFlowInstance) => {
   // instance is the same as the return of `useVueFlow`
@@ -107,6 +96,26 @@ watch(
   },
   { immediate: true },
 );
+
+function updateSubnetFromData(data) {
+  setNodes(data.nodes || []);
+  setEdges(data.edges || []);
+
+  if (route.params.source_id && route.params.target_id) {
+    const edgeId = `${route.params.source_id}-${route.params.target_id}`;
+    const edge = findEdge(edgeId);
+    if (edge) {
+      edge.selected = true;
+    }
+  } else {
+    updateNodeData(route.params.id, { selected: true });
+  }
+}
+
+function selectDirection(direction) {
+  selectedDirection.value = direction;
+  layoutSubnet(direction);
+}
 
 onNodeClick(({ node }) => {
   // get current selection from route.params
@@ -360,6 +369,10 @@ function closeSearchBar() {
   searchResults.value = [];
 }
 
+onNodeDragStart(({ event, node }) => {
+  // console.log("Node Drag Start", { event, nodes, node });
+});
+
 /**
  * onNodeDragStop is called when a node is done being dragged
  *
@@ -370,7 +383,7 @@ function closeSearchBar() {
  * 4. any intersections with other nodes
  */
 onNodeDragStop(({ event, nodes, node }) => {
-  console.log("Node Drag Stop", { event, nodes, node });
+  // console.log("Node Drag Stop", { event, nodes, node });
 });
 
 /**
@@ -530,6 +543,19 @@ function optionClicked({ option }) {
   console.log("Option Clicked", option);
   option.action();
 }
+
+onEdgeMouseEnter(({ edge }) => {
+  edge.style = {
+    strokeWidth: "1.4px",
+  };
+});
+
+onEdgeMouseLeave(({ edge }) => {
+  edge.style = {
+    stroke: undefined,
+    strokeWidth: undefined,
+  };
+});
 </script>
 
 <template>
@@ -557,6 +583,10 @@ function optionClicked({ option }) {
           :marker-end="props.markerEnd"
           :marker-start="props.markerStart"
         />
+      </template>
+
+      <template #node-special="props">
+        <SpecialNode v-bind="props" />
       </template>
 
       <vue-simple-context-menu
@@ -614,29 +644,33 @@ function optionClicked({ option }) {
         <div class="compass-container">
           <button
             class="compass-button top"
+            :class="{ selected: selectedDirection === 'BT' }"
             title="Upward"
-            @click="layoutSubnet('BT')"
+            @click="selectDirection('BT')"
           >
             <Icon name="arrow-up" />
           </button>
           <button
             class="compass-button left"
+            :class="{ selected: selectedDirection === 'RL' }"
             title="Leftward"
-            @click="layoutSubnet('RL')"
+            @click="selectDirection('RL')"
           >
             <Icon name="arrow-left" />
           </button>
           <button
             class="compass-button bottom"
+            :class="{ selected: selectedDirection === 'TB' }"
             title="Downward"
-            @click="layoutSubnet('TB')"
+            @click="selectDirection('TB')"
           >
             <Icon name="arrow-down" />
           </button>
           <button
             class="compass-button right"
+            :class="{ selected: selectedDirection === 'LR' }"
             title="Rightward"
-            @click="layoutSubnet('LR')"
+            @click="selectDirection('LR')"
           >
             <Icon name="arrow-right" />
           </button>
@@ -647,41 +681,13 @@ function optionClicked({ option }) {
         position="top-right"
         style="margin-top: 72px; margin-right: 20px"
       >
-        <!--  <ControlButton title="Reset Transform" @click="resetTransform">
-          <Icon name="reset" />
-        </ControlButton>
-
-        <ControlButton title="Shuffle Node Positions" @click="updatePos">
-          <Icon name="update" />
-        </ControlButton>
-
-        <ControlButton title="Toggle Dark Mode" @click="toggleDarkMode">
-          <Icon v-if="dark" name="sun" />
-          <Icon v-else name="moon" />
-        </ControlButton>
-
-        <ControlButton title="Log `toObject`" @click="logToObject">
-          <Icon name="log" />
-        </ControlButton> -->
-
-        <ControlButton title="Export JSON" @click="exportSubnet">
+        <ControlButton title="Export subnet as JSON" @click="exportSubnet">
           <Icon name="export" />
         </ControlButton>
       </Controls>
     </VueFlow>
   </div>
 </template>
-
-<script>
-export default {
-  props: {
-    data: {
-      type: Object,
-      required: true,
-    },
-  },
-};
-</script>
 
 <style>
 .subnet-renderer {
@@ -783,6 +789,11 @@ export default {
   grid-area: right;
 
   margin-right: -10px; /* Wider margin to the right */
+}
+
+.compass-button.selected {
+  background-color: #007bff; /* Change to your preferred color */
+  color: white;
 }
 
 .compass-button svg {

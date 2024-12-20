@@ -29,9 +29,17 @@ defineEmits(["updateNodeInternals"]);
 </script>
 
 <template>
-  <Handle type="source" :position="sourcePosition" />
+  <Handle
+    type="source"
+    :position="sourcePosition"
+    title="Connect to implications by dragging"
+  />
 
   <span>{{ label }}</span>
 
-  <Handle type="target" :position="targetPosition" />
+  <Handle
+    type="target"
+    :position="targetPosition"
+    title="Connect to conditions by dragging"
+  />
 </template>

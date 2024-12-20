@@ -13,11 +13,14 @@
       class="references-list"
       v-if="node.references && node.references.length"
     >
-      <li v-for="reference in node.references" :key="reference">
-        {{ reference.trim() || "(empty)" }}
+      <li
+        v-for="reference in node.references.filter((ref) => ref.trim())"
+        :key="reference"
+      >
+        {{ reference.trim() }}
       </li>
     </ul>
-    <strong>Detailed description:</strong> <br />
+    <strong>Description:</strong> <br />
     <p>{{ node.description ? node.description : "" }}</p>
   </div>
 </template>

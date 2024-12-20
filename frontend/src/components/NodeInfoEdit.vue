@@ -102,11 +102,11 @@
         </button>
       </ul>
     </div>
+    <strong>Description:</strong>
     <div
       class="field"
       v-if="editedNode.description || editingField === 'description'"
     >
-      <strong>Description:</strong>
       <div class="field-content">
         <span
           v-if="editingField !== 'description'"

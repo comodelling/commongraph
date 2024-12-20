@@ -14,12 +14,14 @@
       class="references-list"
       v-if="localEdge.references && localEdge.references.length"
     >
-      <li v-for="reference in localEdge.references" :key="reference">
-        {{ reference.trim() || "(empty)" }}
-        <!-- TODO: transfer this as check/transfo in backend-->
+      <li
+        v-for="reference in localEdge.references.filter((ref) => ref.trim())"
+        :key="reference"
+      >
+        {{ reference.trim() }}
       </li>
     </ul>
-    <strong>Detailed description:</strong><br />
+    <strong>Description:</strong><br />
     <p>{{ localEdge.description ? localEdge.description : "" }}</p>
   </div>
 </template>

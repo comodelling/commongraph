@@ -12,7 +12,7 @@ import { useLayout } from "../composables/useLayout";
 import VueSimpleContextMenu from "vue-simple-context-menu";
 import "vue-simple-context-menu/dist/vue-simple-context-menu.css";
 import SearchBar from "./SearchBar.vue"; // Import the SearchBar component
-// import SpecialNode from '../components/SpecialNode.vue'
+import SpecialNode from "../components/SpecialNode.vue";
 import SpecialEdge from "./SpecialEdge.vue";
 import {
   formatFlowEdgeProps,
@@ -563,6 +563,10 @@ function optionClicked({ option }) {
           :marker-end="props.markerEnd"
           :marker-start="props.markerStart"
         />
+      </template>
+
+      <template #node-special="props">
+        <SpecialNode v-bind="props" />
       </template>
 
       <vue-simple-context-menu

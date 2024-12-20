@@ -46,6 +46,7 @@ export function formatFlowNodeProps(data) {
 
   const nodeProps = {
     id: node_id.toString(),
+    type: "special",
     position: { x: 0, y: 0 },
     label: title,
     style: style,

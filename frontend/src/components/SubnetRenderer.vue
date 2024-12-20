@@ -545,15 +545,20 @@ function optionClicked({ option }) {
 }
 
 onEdgeMouseEnter(({ edge }) => {
+  // event.preventDefault();
   edge.style = {
-    strokeWidth: "1.4px",
+    strokeWidth: edge.style.strokeWidth ? edge.style.strokeWidth * 2 : 1,
+    // stroke: "black"
   };
 });
 
 onEdgeMouseLeave(({ edge }) => {
+  // event.preventDefault();
   edge.style = {
-    stroke: undefined,
-    strokeWidth: undefined,
+    strokeWidth: edge.style.strokeWidth / 2,
+    // color: "grey",
+    // stroke: undefined,
+    // strokeWidth: undefined,
   };
 });
 </script>
@@ -578,11 +583,7 @@ onEdgeMouseLeave(({ edge }) => {
       @selection-context-menu="onSelectionRightClick"
     >
       <template #edge-special="props">
-        <SpecialEdge
-          v-bind="props"
-          :marker-end="props.markerEnd"
-          :marker-start="props.markerStart"
-        />
+        <SpecialEdge v-bind="props" />
       </template>
 
       <template #node-special="props">

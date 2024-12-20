@@ -9,13 +9,27 @@ export function formatFlowEdgeProps(data) {
     edge_type === "imply" ? source.toString() : target.toString();
   const flowTarget =
     edge_type === "imply" ? target.toString() : source.toString();
+
+  const strokeWidth = 1 + (data.cprob ?? 0.5);
+  const markerFactor = 1 / (1 + (data.cprob ?? 0.5) / 2);
+
   const markerEnd =
     edge_type === "imply"
-      ? { type: "arrowclosed", height: 25, width: 25 }
+      ? {
+          type: "arrowclosed",
+          height: 25 * markerFactor,
+          width: 25 * markerFactor,
+          color: "grey",
+        }
       : undefined;
   const markerStart =
     edge_type === "require"
-      ? { type: "arrow", height: 25, width: 25 }
+      ? {
+          type: "arrow",
+          height: 25 * markerFactor,
+          width: 25 * markerFactor,
+          color: "grey",
+        }
       : undefined;
 
   return {
@@ -26,6 +40,11 @@ export function formatFlowEdgeProps(data) {
     markerEnd: markerEnd,
     markerStart: markerStart,
     data: { ...data },
+    style: {
+      stroke: "grey",
+      strokeWidth: strokeWidth,
+      // opacity: `${0.5 + (data.cprob ?? 0.5) / 2}`,
+    },
   };
 }
 

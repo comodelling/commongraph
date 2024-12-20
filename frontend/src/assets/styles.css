@@ -5,10 +5,9 @@
 @import "https://cdn.jsdelivr.net/npm/@vue-flow/node-resizer@latest/dist/style.css";
 
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: system-ui, Helvetica, Arial, Tahoma, Verdana, sans-serif;
   line-height: 1.5;
   font-weight: 400;
-
   color-scheme: light; /* dark; */
   font-synthesis: none;
   text-rendering: optimizeLegibility;

@@ -661,24 +661,7 @@ function optionClicked({ option }) {
         position="top-right"
         style="margin-top: 72px; margin-right: 20px"
       >
-        <!--  <ControlButton title="Reset Transform" @click="resetTransform">
-          <Icon name="reset" />
-        </ControlButton>
-
-        <ControlButton title="Shuffle Node Positions" @click="updatePos">
-          <Icon name="update" />
-        </ControlButton>
-
-        <ControlButton title="Toggle Dark Mode" @click="toggleDarkMode">
-          <Icon v-if="dark" name="sun" />
-          <Icon v-else name="moon" />
-        </ControlButton>
-
-        <ControlButton title="Log `toObject`" @click="logToObject">
-          <Icon name="log" />
-        </ControlButton> -->
-
-        <ControlButton title="Export JSON" @click="exportSubnet">
+        <ControlButton title="Export subnet as JSON" @click="exportSubnet">
           <Icon name="export" />
         </ControlButton>
       </Controls>

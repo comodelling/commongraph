@@ -39,20 +39,3 @@ export default {
   },
 };
 </script>
-
-<style scoped>
-.tags-container {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-}
-
-.tag {
-  background-color: #e0e0e0;
-  border-radius: 3px;
-  padding: 1px 3px;
-  font-size: 12px;
-  cursor: default;
-  display: flex;
-}
-</style>

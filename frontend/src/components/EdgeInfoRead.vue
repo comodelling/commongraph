@@ -1,25 +1,39 @@
 <template>
   <div>
-    <strong>Type:</strong> {{ localEdge.edge_type }}<br />
-    <strong>
-      <template v-if="localEdge.edge_type === 'require'"
-        >CProb(requirement) = {{ localEdge.cprob }}</template
-      >
-      <template v-else-if="localEdge.edge_type === 'imply'"
-        >CProb(implication) = {{ localEdge.cprob }}</template
-      > </strong
-    ><br />
+    <h2>{{ edge.edge_type === "require" ? "Condition" : "Implication" }}</h2>
+    <!-- <strong>Type:</strong> {{ localEdge.edge_type }}<br /> -->
+
+    <template v-if="localEdge.edge_type === 'require'">
+      <strong>
+        Cond.Proba(<a :href="`/node/${localEdge.target}`">condition</a>|<a
+          :href="`/node/${localEdge.source}`"
+          >source</a
+        >)
+      </strong>
+      = {{ localEdge.cprob * 100 || "? " }}%<br />
+    </template>
+    <template v-if="localEdge.edge_type === 'imply'">
+      <strong>
+        Cond.Proba(<a :href="`/node/${localEdge.target}`">implication</a>|<a
+          :href="`/node/${localEdge.source}`"
+          >source</a
+        >)
+      </strong>
+      = {{ localEdge.cprob * 100 || "? " }}%<br />
+    </template>
     <strong>References: </strong> <br />
     <ul
       class="references-list"
       v-if="localEdge.references && localEdge.references.length"
     >
-      <li v-for="reference in localEdge.references" :key="reference">
-        {{ reference.trim() || "(empty)" }}
-        <!-- TODO: transfer this as check/transfo in backend-->
+      <li
+        v-for="reference in localEdge.references.filter((ref) => ref.trim())"
+        :key="reference"
+      >
+        {{ reference.trim() }}
       </li>
     </ul>
-    <strong>Detailed description:</strong><br />
+    <strong>Description:</strong><br />
     <p>{{ localEdge.description ? localEdge.description : "" }}</p>
   </div>
 </template>
@@ -33,6 +47,14 @@ export default {
     return {
       localEdge: this.edge,
     };
+  },
+  computed: {
+    sourceLink() {
+      return;
+    },
+    targetLink() {
+      return `/nodes/${this.localEdge.target}`;
+    },
   },
   watch: {
     edge: {

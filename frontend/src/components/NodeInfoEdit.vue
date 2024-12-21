@@ -1,5 +1,21 @@
 <template>
   <div>
+    <div class="field" v-if="editedNode.new">
+      <strong>Type:</strong>
+      <div class="field-content">
+        <select
+          v-model="editedNode.node_type"
+          ref="typeInput"
+          :disabled="!editedNode.new"
+        >
+          <option value="potentiality">Potentiality</option>
+          <option value="objective">Objective</option>
+          <option value="action">Action</option>
+        </select>
+      </div>
+    </div>
+    <h2 v-else>{{ capitalise(editedNode.node_type) }}</h2>
+
     <div class="field">
       <strong>Title:</strong>
       <div class="field-content">
@@ -14,20 +30,7 @@
         />
       </div>
     </div>
-    <div class="field">
-      <strong>Type:</strong>
-      <div class="field-content">
-        <select
-          v-model="editedNode.node_type"
-          ref="typeInput"
-          :disabled="!editedNode.new"
-        >
-          <option value="potentiality">Potentiality</option>
-          <option value="objective">Objective</option>
-          <option value="action">Action</option>
-        </select>
-      </div>
-    </div>
+
     <div class="field">
       <strong>Scope:</strong>
       <div class="field-content">
@@ -76,8 +79,8 @@
         <button class="add-tag-button" @click="addTag">+ Tag</button>
       </div>
     </div>
+    <strong>References:</strong>
     <div class="field">
-      <strong>References:</strong>
       <ul>
         <li
           v-for="(reference, index) in editedNode.references"
@@ -97,16 +100,18 @@
             :ref="`reference-${index}Input`"
           />
         </li>
-        <button class="add-reference-button" @click="addReference">
-          + Reference
-        </button>
       </ul>
     </div>
+    <div>
+      <button class="add-reference-button" @click="addReference">
+        + Reference
+      </button>
+    </div>
+    <strong>Description:</strong>
     <div
       class="field"
       v-if="editedNode.description || editingField === 'description'"
     >
-      <strong>Description:</strong>
       <div class="field-content">
         <span
           v-if="editingField !== 'description'"
@@ -142,13 +147,16 @@ export default {
   },
   data() {
     let editedNode = _.cloneDeep(this.node);
-    editedNode.tags = editedNode.tags || [];
+    // editedNode.tags = editedNode.tags || [];
     return {
       editingField: null,
       editedNode: editedNode,
     };
   },
   methods: {
+    capitalise(string) {
+      return string.charAt(0).toUpperCase() + string.slice(1);
+    },
     startEditing(field) {
       this.editingField = field;
       this.$nextTick(() => {
@@ -176,6 +184,7 @@ export default {
       this.editedNode.tags.splice(index, 1);
     },
     addReference() {
+      console.log("Adding reference");
       this.editedNode.references.push("");
       this.$nextTick(() => {
         this.startEditing(`reference-${this.editedNode.references.length - 1}`);
@@ -259,151 +268,3 @@ export default {
   },
 };
 </script>
-
-<style scoped>
-.field {
-  display: flex;
-  flex-direction: column;
-  margin: 5px 0;
-}
-
-.field-content {
-  flex: 1;
-  margin-left: 10px;
-  border: 1px solid #ccc;
-  padding: 5px;
-  border-radius: 4px;
-}
-
-.field-content span {
-  display: inline-block;
-  width: 100%;
-  cursor: pointer;
-}
-
-.field-content input,
-.field-content textarea {
-  width: 100%;
-  box-sizing: border-box;
-  resize: vertical;
-  border: 1px solid #007bff;
-  outline: none;
-}
-
-.invalid-reference input {
-  border-color: lightcoral;
-  background-color: #fff3e0;
-}
-
-button {
-  background: #f9f9f9;
-  border: 1px solid #ccc;
-  cursor: pointer;
-  padding: 5px;
-  margin: 5px 0;
-  display: block;
-  width: 100%;
-  text-align: left;
-}
-
-button.editing {
-  background: #e9e9e9;
-}
-
-.add-reference-button {
-  display: block;
-  margin: 10px auto;
-  padding: 5px 10px;
-  background: #f9f9f9;
-  border: 1px solid #ccc;
-  cursor: pointer;
-  margin: 0 auto;
-  display: block;
-  width: 30%;
-  text-align: center;
-  font-size: 12px;
-}
-
-.add-description-button {
-  display: block;
-  margin: 10px auto;
-  padding: 5px 10px;
-  background: #f9f9f9;
-  border: 1px solid #ccc;
-  cursor: pointer;
-  margin: 0 auto;
-  display: block;
-  width: 30%;
-  text-align: center;
-}
-
-.add-reference-button.invalid {
-  background-color: lightorange;
-}
-
-.submit-button {
-  margin-top: 20px;
-  margin: 0 auto;
-  display: block;
-  width: 30%;
-  text-align: center;
-  padding: 10px 20px;
-  background-color: #007bff;
-  color: white;
-  border: none;
-  cursor: pointer;
-  font-size: 16px;
-}
-
-.submit-button:hover {
-  background-color: #0056b3;
-}
-
-.tags-container {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-  align-items: center;
-}
-
-.tag {
-  background-color: #e0e0e0;
-  border-radius: 3px;
-  padding: 1px 3px;
-  font-size: 12px;
-  cursor: default;
-  display: inline-flex;
-  align-items: center;
-}
-
-.tag-input {
-  padding: 5px 10px;
-  font-size: 12px;
-  border-radius: 3px;
-  border: 1px solid #ccc;
-  max-width: 100px;
-}
-
-.add-tag-button {
-  background-color: #007bff;
-  color: white;
-  border: none;
-  padding: 5px 10px;
-  border-radius: 3px;
-  cursor: pointer;
-  font-size: 12px;
-  white-space: nowrap;
-  width: auto;
-}
-
-.delete-tag-button {
-  background: none;
-  border: none;
-  color: red;
-  font-size: 11px;
-  padding-top: 0px;
-  padding-bottom: 0px;
-  padding-left: 5-3px;
-  cursor: pointer;
-}
-</style>

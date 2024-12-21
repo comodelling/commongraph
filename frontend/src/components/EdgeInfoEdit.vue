@@ -1,30 +1,40 @@
 <template>
   <div>
+    <h2>{{ edge.edge_type === "require" ? "Condition" : "Implication" }}</h2>
     <div class="field">
-      <strong>CProb:</strong>
+      <template v-if="edge.edge_type === 'require'">
+        <strong> Cond.Proba(condition|source) </strong>
+      </template>
+      <template v-if="edge.edge_type === 'imply'">
+        <strong> Cond.Proba(implication|source) </strong>
+      </template>
       <div class="field-content">
-        <span
-          v-if="editingField !== 'cprob' && editedEdge.cprob"
-          @click="startEditing('cprob')"
-          >{{ editedEdge.cprob }}</span
-        >
-        <input
-          v-else-if="editingField === 'cprob'"
-          v-model="editedEdge.cprob"
-          @blur="stopEditing('cprob')"
-          ref="cprobInput"
-        />
-        <button
+        <span v-if="editingField !== 'cprob'" @click="startEditing('cprob')">
+          {{ editedEdge.cprob }}%
+        </span>
+        <div v-else style="display: flex; align-items: center">
+          <input
+            type="number"
+            v-model.number="editedEdge.cprob"
+            @blur="stopEditing('cprob')"
+            ref="cprobInput"
+            min="0"
+            max="100"
+            style="width: 50px; margin-right: 5px"
+          />
+          <span>%</span>
+        </div>
+
+        <!-- <button
           v-if="!editedEdge.cprob && editingField !== 'cprob'"
           @click="addCprob"
         >
           Add
-        </button>
-        <!-- Modified button visibility condition -->
+        </button> -->
       </div>
     </div>
     <div class="field">
-      <strong>References:</strong>
+      <strong>References:</strong><br />
       <ul>
         <li
           v-for="(reference, index) in editedEdge.references"
@@ -44,16 +54,17 @@
             :ref="`reference-${index}Input`"
           />
         </li>
-        <button class="add-reference-button" @click="addReference">
-          + Reference
-        </button>
       </ul>
+      <button class="add-reference-button" @click="addReference">
+        + Reference
+      </button>
     </div>
+    <br />
+    <strong>Description:</strong>
     <div
       class="field"
       v-if="editedEdge.description || editingField === 'description'"
     >
-      <strong>Description:</strong>
       <div class="field-content">
         <span
           v-if="editingField !== 'description'"
@@ -88,9 +99,11 @@ export default {
     edge: Object,
   },
   data() {
+    const editedEdge = _.cloneDeep(this.edge);
+    editedEdge.cprob = this.edge.cprob * 100 || 0;
     return {
       editingField: null,
-      editedEdge: _.cloneDeep(this.edge),
+      editedEdge: editedEdge,
     };
   },
   methods: {
@@ -134,6 +147,7 @@ export default {
       this.editedEdge.references = this.editedEdge.references.filter(
         (ref) => ref.trim() !== "",
       );
+      this.editedEdge.cprob = this.editedEdge.cprob / 100;
       console.log("submitting ", this.editedEdge);
       let response;
       try {
@@ -178,101 +192,3 @@ export default {
   },
 };
 </script>
-
-<style scoped>
-.field {
-  display: flex;
-  flex-direction: column;
-  margin: 5px 0;
-}
-
-.field-content {
-  flex: 1;
-  margin-left: 10px;
-  border: 1px solid #ccc;
-  padding: 5px;
-  border-radius: 4px;
-}
-
-.field-content span {
-  display: inline-block;
-  width: 100%;
-  cursor: pointer;
-}
-
-.field-content input,
-.field-content textarea {
-  width: 100%;
-  box-sizing: border-box;
-  resize: vertical;
-  border: 1px solid #007bff;
-  outline: none;
-}
-
-.invalid-proponent input,
-.invalid-reference input {
-  border-color: lightcoral;
-  background-color: #fff3e0;
-}
-
-button {
-  background: #f9f9f9;
-  border: 1px solid #ccc;
-  cursor: pointer;
-  padding: 5px;
-  margin: 5px 0;
-  display: block;
-  width: 100%;
-  text-align: left;
-}
-
-button.editing {
-  background: #e9e9e9;
-}
-
-.add-proponent-button,
-.add-reference-button {
-  display: block;
-  margin: 10px auto;
-  padding: 5px 10px;
-  background: #f9f9f9;
-  border: 1px solid #ccc;
-  cursor: pointer;
-  margin: 0 auto;
-  display: block;
-  width: 30%;
-  text-align: center;
-  font-size: 12px;
-}
-
-.add-description-button {
-  display: block;
-  margin: 10px auto;
-  padding: 5px 10px;
-  background: #f9f9f9;
-  border: 1px solid #ccc;
-  cursor: pointer;
-  margin: 0 auto;
-  display: block;
-  width: 30%;
-  text-align: center;
-}
-
-.submit-button {
-  margin-top: 20px;
-  margin: 0 auto;
-  display: block;
-  width: 30%;
-  text-align: center;
-  padding: 10px 20px;
-  background-color: #007bff;
-  color: white;
-  border: none;
-  cursor: pointer;
-  font-size: 16px;
-}
-
-.submit-button:hover {
-  background-color: #0056b3;
-}
-</style>

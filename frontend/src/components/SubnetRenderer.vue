@@ -545,15 +545,20 @@ function optionClicked({ option }) {
 }
 
 onEdgeMouseEnter(({ edge }) => {
+  // event.preventDefault();
   edge.style = {
-    strokeWidth: "1.4px",
+    strokeWidth: edge.style.strokeWidth ? edge.style.strokeWidth * 2 : 1,
+    // stroke: "black"
   };
 });
 
 onEdgeMouseLeave(({ edge }) => {
+  // event.preventDefault();
   edge.style = {
-    stroke: undefined,
-    strokeWidth: undefined,
+    strokeWidth: edge.style.strokeWidth / 2,
+    // color: "grey",
+    // stroke: undefined,
+    // strokeWidth: undefined,
   };
 });
 </script>
@@ -578,11 +583,7 @@ onEdgeMouseLeave(({ edge }) => {
       @selection-context-menu="onSelectionRightClick"
     >
       <template #edge-special="props">
-        <SpecialEdge
-          v-bind="props"
-          :marker-end="props.markerEnd"
-          :marker-start="props.markerStart"
-        />
+        <SpecialEdge v-bind="props" />
       </template>
 
       <template #node-special="props">
@@ -645,7 +646,7 @@ onEdgeMouseLeave(({ edge }) => {
           <button
             class="compass-button top"
             :class="{ selected: selectedDirection === 'BT' }"
-            title="Upward"
+            title="Upward causality"
             @click="selectDirection('BT')"
           >
             <Icon name="arrow-up" />
@@ -653,7 +654,7 @@ onEdgeMouseLeave(({ edge }) => {
           <button
             class="compass-button left"
             :class="{ selected: selectedDirection === 'RL' }"
-            title="Leftward"
+            title="Leftward causality"
             @click="selectDirection('RL')"
           >
             <Icon name="arrow-left" />
@@ -661,7 +662,7 @@ onEdgeMouseLeave(({ edge }) => {
           <button
             class="compass-button bottom"
             :class="{ selected: selectedDirection === 'TB' }"
-            title="Downward"
+            title="Downward causality"
             @click="selectDirection('TB')"
           >
             <Icon name="arrow-down" />
@@ -669,7 +670,7 @@ onEdgeMouseLeave(({ edge }) => {
           <button
             class="compass-button right"
             :class="{ selected: selectedDirection === 'LR' }"
-            title="Rightward"
+            title="Rightward causality"
             @click="selectDirection('LR')"
           >
             <Icon name="arrow-right" />

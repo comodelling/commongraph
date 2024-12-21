@@ -14,7 +14,7 @@
         Edit
       </button>
     </div>
-    <h2>Node Information</h2>
+    <!-- <h2>Node Information</h2> -->
     <div v-if="node">
       <component
         :is="currentTabComponent"

@@ -1,6 +1,8 @@
 <template>
   <div>
-    <h2>{{ edge.edge_type === "require" ? "Condition" : "Implication" }}</h2>
+    <h2 :title="edgeTypeTooltip">
+      {{ edge.edge_type === "require" ? "Condition" : "Implication" }}
+    </h2>
     <!-- <strong>Type:</strong> {{ localEdge.edge_type }}<br /> -->
 
     <template v-if="localEdge.edge_type === 'require'">
@@ -57,6 +59,9 @@ export default {
     },
     targetLink() {
       return `/nodes/${this.localEdge.target}`;
+    },
+    edgeTypeTooltip() {
+      return this.tooltips.edge[this.edge.edge_type] || this.tooltips.edge.type;
     },
   },
   watch: {

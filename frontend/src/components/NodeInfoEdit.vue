@@ -1,20 +1,26 @@
 <template>
   <div>
     <div class="field" v-if="editedNode.new">
-      <strong>Type:</strong>
+      <strong :title="tooltips.node.type">Type:</strong>
       <div class="field-content">
         <select
           v-model="editedNode.node_type"
           ref="typeInput"
           :disabled="!editedNode.new"
         >
-          <option value="potentiality">Potentiality</option>
-          <option value="objective">Objective</option>
-          <option value="action">Action</option>
+          <option value="potentiality" :title="tooltips.node.potentiality">
+            Potentiality
+          </option>
+          <option value="objective" :title="tooltips.node.objective">
+            Objective
+          </option>
+          <option value="action" :title="tooltips.node.action">Action</option>
         </select>
       </div>
     </div>
-    <h2 v-else>{{ capitalise(editedNode.node_type) }}</h2>
+    <h2 :title="nodeTypeTooltip" v-else>
+      {{ capitalise(editedNode.node_type) }}
+    </h2>
 
     <div class="field">
       <strong :title="tooltips.node.title">Title:</strong>
@@ -49,11 +55,16 @@
       <strong :title="tooltips.node.status">Status:</strong>
       <div class="field-content">
         <select v-model="editedNode.status" ref="statusInput">
-          <option value="unspecified"></option>
-          <option value="draft">Draft</option>
-          <option value="live">Live</option>
-          <option value="completed">Completed</option>
-          <option value="legacy">Legacy</option>
+          <option
+            value="unspecified"
+            :title="tooltips.node.unspecified"
+          ></option>
+          <option value="draft" :title="tooltips.node.draft">Draft</option>
+          <option value="live" :title="tooltips.node.live">Live</option>
+          <option value="completed" :title="tooltips.node.completed">
+            Completed
+          </option>
+          <option value="legacy" :title="tooltips.node.legacy">Legacy</option>
         </select>
       </div>
     </div>
@@ -153,6 +164,11 @@ export default {
       editedNode: editedNode,
       tooltips,
     };
+  },
+  computed: {
+    nodeTypeTooltip() {
+      return this.tooltips.node[this.node.node_type] || this.tooltips.node.type;
+    },
   },
   methods: {
     capitalise(string) {

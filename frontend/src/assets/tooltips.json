@@ -6,13 +6,21 @@
         "objective": "A potential objective to be pursued within the given scope",
       "title": "What is this node about?",
       "scope": "Where/to whom does this node apply?",
-      "status": "Is this node currently live?",
+      "status": "What stage is this node currently at?",
+        "live": "A node ready for full consideration",
+        "draft": "Not yet ready for full consideration",
+        "completed": "Already completed",
+        "legacy": "No longer relevant",
+        "unspecified": "Not specified",
+
       "tags": "Node tags",
       "references": "A list of relevant references",
       "description": "A longer description of the node"
     },
     "edge": {
       "type": "Edge type",
+        "require": "Indicates a conditionality of the source on the target",
+        "imply": "Indicates an implication from the source to the target",
       "source": "Source node",
       "target": "Target node",
       "cprob": "Conditional probability of the target node given the source node",

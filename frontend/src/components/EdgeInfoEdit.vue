@@ -1,6 +1,8 @@
 <template>
   <div>
-    <h2>{{ edge.edge_type === "require" ? "Condition" : "Implication" }}</h2>
+    <h2 :title="edgeTypeTooltip">
+      {{ edge.edge_type === "require" ? "Condition" : "Implication" }}
+    </h2>
     <div class="field">
       <template v-if="edge.edge_type === 'require'">
         <strong :title="tooltips.edge.cprob_condition">
@@ -104,6 +106,11 @@ export default {
       editedEdge: editedEdge,
       tooltips, // Add this line
     };
+  },
+  computed: {
+    edgeTypeTooltip() {
+      return this.tooltips.edge[this.edge.edge_type] || this.tooltips.edge.type;
+    },
   },
   methods: {
     startEditing(field) {

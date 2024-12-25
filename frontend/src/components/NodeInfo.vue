@@ -2,10 +2,10 @@
   <div class="element-info">
     <div class="tabs">
       <button
-        :class="{ active: currentTab === 'read' }"
-        @click="switchTab('read')"
+        :class="{ active: currentTab === 'view' }"
+        @click="switchTab('view')"
       >
-        Read
+        View
       </button>
       <button
         :class="{ active: currentTab === 'edit' }"

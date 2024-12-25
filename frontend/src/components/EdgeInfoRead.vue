@@ -4,7 +4,7 @@
     <!-- <strong>Type:</strong> {{ localEdge.edge_type }}<br /> -->
 
     <template v-if="localEdge.edge_type === 'require'">
-      <strong>
+      <strong :title="tooltips.edge.cprob_condition">
         Cond.Proba(<a :href="`/node/${localEdge.target}`">condition</a>|<a
           :href="`/node/${localEdge.source}`"
           >source</a
@@ -13,7 +13,7 @@
       = {{ localEdge.cprob * 100 || "? " }}%<br />
     </template>
     <template v-if="localEdge.edge_type === 'imply'">
-      <strong>
+      <strong :title="tooltips.edge.cprob_implication">
         Cond.Proba(<a :href="`/node/${localEdge.target}`">implication</a>|<a
           :href="`/node/${localEdge.source}`"
           >source</a
@@ -21,7 +21,7 @@
       </strong>
       = {{ localEdge.cprob * 100 || "? " }}%<br />
     </template>
-    <strong>References: </strong> <br />
+    <strong :title="tooltips.edge.references">References: </strong> <br />
     <ul
       class="references-list"
       v-if="localEdge.references && localEdge.references.length"
@@ -33,12 +33,14 @@
         {{ reference.trim() }}
       </li>
     </ul>
-    <strong>Description:</strong><br />
+    <strong :title="tooltips.edge.description">Description:</strong><br />
     <p>{{ localEdge.description ? localEdge.description : "" }}</p>
   </div>
 </template>
 
 <script>
+import tooltips from "../assets/tooltips.json"; // Add this line
+
 export default {
   props: {
     edge: Object,
@@ -46,6 +48,7 @@ export default {
   data() {
     return {
       localEdge: this.edge,
+      tooltips, // Add this line
     };
   },
   computed: {

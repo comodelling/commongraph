@@ -1,0 +1,24 @@
+{
+    "node": {
+      "type": "Node type",
+        "action": "A potential action that can be undertaken within the given scope",
+        "potentiality": "An event or change that is relevant to the network",
+        "objective": "A potential objective to be pursued within the given scope",
+      "title": "What is this node about?",
+      "scope": "Where/to whom does this node apply?",
+      "status": "Is this node currently live?",
+      "tags": "Node tags",
+      "references": "A list of relevant references",
+      "description": "A longer description of the node"
+    },
+    "edge": {
+      "type": "Edge type",
+      "source": "Source node",
+      "target": "Target node",
+      "cprob": "Conditional probability of the target node given the source node",
+      "cprob_condition": "How necessary is this condition for the source to realise?",
+      "cprob_imlication": "How likely is this implication given the source?",
+      "references": "A list of relevant references",
+      "description": "A longer description of the edge"
+    }
+  }

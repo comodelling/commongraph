@@ -3,10 +3,14 @@
     <h2>{{ edge.edge_type === "require" ? "Condition" : "Implication" }}</h2>
     <div class="field">
       <template v-if="edge.edge_type === 'require'">
-        <strong> Cond.Proba(condition|source) </strong>
+        <strong :title="tooltips.edge.cprob_condition">
+          Cond.Proba(condition|source)
+        </strong>
       </template>
       <template v-if="edge.edge_type === 'imply'">
-        <strong> Cond.Proba(implication|source) </strong>
+        <strong :title="tooltips.edge.cprob_implication">
+          Cond.Proba(implication|source)
+        </strong>
       </template>
       <div class="field-content">
         <span v-if="editingField !== 'cprob'" @click="startEditing('cprob')">
@@ -24,17 +28,10 @@
           />
           <span>%</span>
         </div>
-
-        <!-- <button
-          v-if="!editedEdge.cprob && editingField !== 'cprob'"
-          @click="addCprob"
-        >
-          Add
-        </button> -->
       </div>
     </div>
     <div class="field">
-      <strong>References:</strong><br />
+      <strong :title="tooltips.edge.references">References:</strong><br />
       <ul>
         <li
           v-for="(reference, index) in editedEdge.references"
@@ -60,7 +57,7 @@
       </button>
     </div>
     <br />
-    <strong>Description:</strong>
+    <strong :title="tooltips.edge.description">Description:</strong>
     <div
       class="field"
       v-if="editedEdge.description || editingField === 'description'"
@@ -93,6 +90,7 @@
 <script>
 import axios from "axios";
 import _ from "lodash";
+import tooltips from "../assets/tooltips.json"; // Add this line
 
 export default {
   props: {
@@ -104,6 +102,7 @@ export default {
     return {
       editingField: null,
       editedEdge: editedEdge,
+      tooltips, // Add this line
     };
   },
   methods: {

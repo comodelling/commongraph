@@ -17,7 +17,7 @@
     <h2 v-else>{{ capitalise(editedNode.node_type) }}</h2>
 
     <div class="field">
-      <strong>Title:</strong>
+      <strong :title="tooltips.node.title">Title:</strong>
       <div class="field-content">
         <span v-if="editingField !== 'title'" @click="startEditing('title')">{{
           editedNode.title
@@ -32,7 +32,7 @@
     </div>
 
     <div class="field">
-      <strong>Scope:</strong>
+      <strong :title="tooltips.node.scope">Scope:</strong>
       <div class="field-content">
         <span v-if="editingField !== 'scope'" @click="startEditing('scope')">{{
           editedNode.scope || "Click to edit scope"
@@ -46,7 +46,7 @@
       </div>
     </div>
     <div class="field">
-      <strong>Status:</strong>
+      <strong :title="tooltips.node.status">Status:</strong>
       <div class="field-content">
         <select v-model="editedNode.status" ref="statusInput">
           <option value="unspecified"></option>
@@ -58,7 +58,7 @@
       </div>
     </div>
     <div class="field">
-      <strong>Tags:</strong>
+      <strong :title="tooltips.node.tags">Tags:</strong>
       <div class="tags-container">
         <span v-for="(tag, index) in editedNode.tags" :key="index" class="tag">
           <span
@@ -79,7 +79,7 @@
         <button class="add-tag-button" @click="addTag">+ Tag</button>
       </div>
     </div>
-    <strong>References:</strong>
+    <strong :title="tooltips.node.references">References:</strong>
     <div class="field">
       <ul>
         <li
@@ -107,7 +107,7 @@
         + Reference
       </button>
     </div>
-    <strong>Description:</strong>
+    <strong :title="tooltips.node.description">Description:</strong>
     <div
       class="field"
       v-if="editedNode.description || editingField === 'description'"
@@ -140,6 +140,7 @@
 <script>
 import axios from "axios";
 import _ from "lodash";
+import tooltips from "../assets/tooltips.json";
 
 export default {
   props: {
@@ -147,10 +148,10 @@ export default {
   },
   data() {
     let editedNode = _.cloneDeep(this.node);
-    // editedNode.tags = editedNode.tags || [];
     return {
       editingField: null,
       editedNode: editedNode,
+      tooltips,
     };
   },
   methods: {

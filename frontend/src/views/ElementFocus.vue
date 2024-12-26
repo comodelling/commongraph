@@ -160,7 +160,7 @@ export default {
         this.edge = undefined;
       }
     },
-    // currently useful to swap between edit and read mode
+    // currently useful to swap between edit and view mode
     // also to reduce chances of misalignment between backend and frontend data after update
     updateNodeFromEditor(updatedNode) {
       console.log("updating node from editor", updatedNode);
@@ -170,7 +170,7 @@ export default {
         console.error("Failed to update node:", error);
       }
     },
-    // currently useful to swap between edit and read mode
+    // currently useful to swap between edit and view mode
     // also to reduce changes of misalignment between backend and frontend data after update
     updateEdgeFromEditor(updatedEdge) {
       console.log("updating edge from editor", updatedEdge);

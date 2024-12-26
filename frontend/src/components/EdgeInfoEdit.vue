@@ -171,8 +171,7 @@ export default {
           );
           console.log("Updated edge returned:", response.data);
         }
-        this.$emit("publish", response.data);
-        this.$emit("update-edge", response.data); // Emit an event to update the parent component's edge prop
+        this.$emit("publish-edge", response.data);
       } catch (error) {
         console.error("Failed to update edge:", error);
       }
@@ -189,12 +188,12 @@ export default {
       },
       deep: true,
     },
-    editedEdge: {
-      handler(newEditedEdge) {
-        this.$emit("update-edited-edge", newEditedEdge);
-      },
-      deep: true,
-    },
+    // editedEdge: {
+    //   handler(newEditedEdge) {
+    //     this.$emit("update-edited-edge", newEditedEdge);  // not handled
+    //   },
+    //   deep: true,
+    // },
   },
 };
 </script>

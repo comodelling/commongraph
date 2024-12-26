@@ -262,7 +262,7 @@ export default {
             `${import.meta.env.VITE_BACKEND_URL}/nodes`,
             this.editedNode,
           );
-          this.$emit("publish", response.data);
+          this.$emit("publish-node", response.data);
         } catch (error) {
           console.error("Failed to update node:", error);
         }
@@ -276,12 +276,16 @@ export default {
       },
       deep: true,
     },
-    editedNode: {
-      handler(newEditedNode) {
-        this.$emit("update-edited-node", newEditedNode);
-      },
-      deep: true,
-    },
+    // editedNode: {
+    //   handler(newEditedNode, oldEditedNode) {
+    //     // console.log("editedNode changed", newEditedNode, oldEditedNode);
+    //     // if (newEditedNode.title !== oldEditedNode.title || newEditedNode.status !== oldEditedNode.status) {
+    //     this.$emit("update-node-on-graph", newEditedNode);
+    //     // console.log("emitted update-node-on-graph");
+    //     // }
+    //   },
+    //   deep: true,
+    // },
   },
 };
 </script>

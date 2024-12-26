@@ -19,7 +19,7 @@
       <component
         :is="currentTabComponent"
         :node="node"
-        @publish="publishNode"
+        @publish-node="updateNodeFromEditor"
       />
     </div>
     <div v-else>
@@ -69,8 +69,9 @@ export default {
         this.$router.push(path);
       }
     },
-    publishNode(updatedNode) {
-      this.$emit("update-node", updatedNode);
+    updateNodeFromEditor(updatedNode) {
+      console.log("updateNodeFromEditor", updatedNode);
+      this.$emit("update-node-from-editor", updatedNode); // Ensure this line is present
       this.switchTab("read");
     },
   },

@@ -1,10 +1,14 @@
 <template>
   <div class="focus">
-    <NodeInfo v-if="!targetId" :node="node" @update-node="updateNode" />
+    <NodeInfo
+      v-if="!targetId"
+      :node="node"
+      @update-node-from-editor="updateNodeFromEditor"
+    />
     <EdgeInfo
       v-if="targetId && edge && Object.keys(edge).length"
       :edge="edge"
-      @update-edge="updateEdge"
+      @update-edge-from-editor="updateEdgeFromEditor"
     />
     <SubnetRenderer
       :data="subnetData"
@@ -12,6 +16,8 @@
       @edgeClick="updateEdgeFromBackend"
       @newNodeCreated="openNewlyCreatedNode"
       @newEdgeCreated="openNewlyCreatedEdge"
+      :focusNode="node"
+      :focusEdge="edge"
     />
   </div>
 </template>
@@ -25,7 +31,6 @@ import {
   formatFlowEdgeProps,
   formatFlowNodeProps,
 } from "../composables/formatFlowComponents";
-// import SpecialEdge from "../components/SpecialEdge.vue";
 
 export default {
   components: {
@@ -90,6 +95,7 @@ export default {
     },
 
     async fetchElementAndSubnetData() {
+      console.log("fetchElementAndSubnetData");
       try {
         console.time("axiosRequest");
         const response = await axios.get(
@@ -154,14 +160,20 @@ export default {
         this.edge = undefined;
       }
     },
-    async updateNode(updatedNode) {
+    // currently useful to swap between edit and read mode
+    // also to reduce chances of misalignment between backend and frontend data after update
+    updateNodeFromEditor(updatedNode) {
+      console.log("updating node from editor", updatedNode);
       try {
         this.node = updatedNode;
       } catch (error) {
         console.error("Failed to update node:", error);
       }
     },
-    async updateEdge(updatedEdge) {
+    // currently useful to swap between edit and read mode
+    // also to reduce changes of misalignment between backend and frontend data after update
+    updateEdgeFromEditor(updatedEdge) {
+      console.log("updating edge from editor", updatedEdge);
       try {
         this.edge = updatedEdge;
       } catch (error) {
@@ -198,28 +210,6 @@ export default {
           target_id: newEdge.data.target,
         },
       });
-    },
-    updateNodeViz(updatedNode) {
-      const nodeIndex = this.subnetData.nodes.findIndex(
-        (node) => node.id === updatedNode.id.toString(),
-      );
-      if (nodeIndex !== -1) {
-        this.subnetData.nodes[nodeIndex].data = {
-          ...this.subnetData.nodes[nodeIndex].data,
-          ...updatedNode,
-        };
-      }
-    },
-    updateEdgeViz(updatedEdge) {
-      const edgeIndex = this.subnetData.edges.findIndex(
-        (edge) => edge.id === `${updatedEdge.source}-${updatedEdge.target}`,
-      );
-      if (edgeIndex !== -1) {
-        this.subnetData.edges[edgeIndex].data = {
-          ...this.subnetData.edges[edgeIndex].data,
-          ...updatedEdge,
-        };
-      }
     },
   },
 };

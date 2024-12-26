@@ -53,6 +53,7 @@ export function formatFlowEdgeProps(data) {
  * backend data is kept as is in the data field
  **/
 export function formatFlowNodeProps(data) {
+  // console.log("formatFlowNodeProps", data);
   const { node_id, title, node_type, status } = data;
 
   const style = {

@@ -19,7 +19,7 @@
       <component
         :is="currentTabComponent"
         :edge="edge"
-        @publish="publishEdge"
+        @publish-edge="updateEdgeFromEditor"
       />
     </div>
     <div v-else>
@@ -67,8 +67,9 @@ export default {
         this.$router.push(path);
       }
     },
-    publishEdge(updatedEdge) {
-      this.$emit("update-edge", updatedEdge);
+    updateEdgeFromEditor(updatedEdge) {
+      console.log("updateEdgeFromEditor");
+      this.$emit("update-edge-from-editor", updatedEdge);
       this.switchTab("read");
     },
   },

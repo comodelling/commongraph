@@ -29,7 +29,10 @@ const {
   findEdge,
   setNodes,
   setEdges,
+  updateNode,
+  updateEdge,
   updateNodeData,
+  updateEdgeData,
   applyNodeChanges,
   applyEdgeChanges,
   removeEdges,
@@ -52,6 +55,8 @@ const props = defineProps({
     type: Object,
     required: true,
   },
+  focusNode: Object,
+  focusEdge: Object,
 });
 
 const router = useRouter();
@@ -93,6 +98,49 @@ watch(
     console.log("updating subnet data following props change");
     updateSubnetFromData(newData);
     // fitView()
+  },
+  { immediate: true },
+);
+
+watch(
+  () => props.focusNode,
+  (newFocusNode) => {
+    console.log("Focus node changed:", newFocusNode);
+    if (newFocusNode) {
+      let updatedNode = formatFlowNodeProps(newFocusNode);
+      // console.log('formatted newFocusNode', updatedNode)
+      const node = findNode(updatedNode.id);
+      // console.log('node', node)
+      if (node) {
+        updatedNode = {
+          ...node,
+          ...updatedNode,
+          selected: true,
+          position: node.position,
+        };
+        // console.log('updatedNode', updatedNode)
+        updateNode(node.id, updatedNode);
+      }
+    }
+  },
+  { immediate: true },
+);
+
+watch(
+  () => props.focusEdge,
+  (newFocusEdge) => {
+    console.log("Focus edge changed:", newFocusEdge);
+    if (newFocusEdge) {
+      let updatedEdge = formatFlowEdgeProps(newFocusEdge);
+      let edge = findEdge(updatedEdge.id);
+      console.log("found edge", edge);
+      if (edge) {
+        Object.assign(edge, updatedEdge); // Update each field from updatedEdge
+        edge.selected = true;
+      }
+      // console.log('updatedNode', updatedNode)
+      // edge = updatedEdge;
+    }
   },
   { immediate: true },
 );
@@ -152,6 +200,7 @@ onPaneClick(({ event }) => {
 });
 
 const onNodesChange = async (changes) => {
+  // console.log("Nodes change", changes);
   const nextChanges = [];
   for (let change of changes) {
     if (change.type === "remove") {

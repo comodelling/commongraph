@@ -96,8 +96,13 @@ watch(
   () => props.data,
   (newData) => {
     console.log("updating subnet data following props change");
+    // console.log("newData", newData);
     updateSubnetFromData(newData);
-    // fitView()
+    // console.log('found node', findNode(route.params.id));
+    if (getNodes.value.length === 1) {
+      layoutSubnet(selectedDirection.value);
+    }
+    // fitView();
   },
   { immediate: true },
 );
@@ -146,6 +151,7 @@ watch(
 );
 
 function updateSubnetFromData(data) {
+  console.log("Updating subnet from data:", data);
   setNodes(data.nodes || []);
   setEdges(data.edges || []);
 

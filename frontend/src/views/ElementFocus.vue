@@ -77,6 +77,11 @@ export default {
         new: true,
       };
       this.$router.push({ name: "NodeEdit", params: { id: "new" } });
+      // console.log('formatFlowNodeProps(this.node)', formatFlowNodeProps(this.node));
+      this.subnetData = {
+        nodes: [formatFlowNodeProps(this.node)],
+        edges: [],
+      };
     } else {
       this.fetchElementAndSubnetData();
     }

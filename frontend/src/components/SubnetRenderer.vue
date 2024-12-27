@@ -47,6 +47,7 @@ const {
   onPaneClick,
   onEdgeMouseEnter,
   onEdgeMouseLeave,
+  screenToFlowCoordinate,
 } = useVueFlow();
 
 // props to receive nodes and edges data
@@ -451,15 +452,22 @@ function handleSearch(query) {
 
 function createNodeAndEdgeOnConnection(event = null) {
   console.log("Connected to a new node");
+  // console.log("event position", event.clientX, event.clientY);
   const { nodeId, handleType } = connectionInfo.value;
-  const sourceNode = findNode(nodeId);
+  // console.log("Connection info", nodeId, handleType);
+  // console.log("source node position", findNode(nodeId).position);
+  const position = screenToFlowCoordinate({
+    x: event.clientX,
+    y: event.clientY,
+  });
+  // console.log("computed flow coordinates", position);
 
-  console.log("event", event);
+  const sourceNode = findNode(nodeId);
   const newNodeData = formatFlowNodeProps({
     node_id: `new`,
     title: "New Node",
     status: "draft",
-    position: { x: event.clientX, y: event.clientY },
+    position: position,
     scope: sourceNode.data.scope, // inherited scope
     node_type: "potentiality", // most general type
     tags: sourceNode.data.tags, // inherited tags

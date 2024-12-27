@@ -398,7 +398,7 @@ function onConnectEnd(event) {
     //   y: event.clientY,
     // });
     // const position = { x: event.clientX, y: event.clientY };
-    const position = ensureVisibility({ x: event.layerX, y: event.layerY });
+    const position = determinePositionWithinWindow(event);
     // const position = flowToScreenCoordinate({
     //   x: event.clientX,
     //   y: event.clientY,
@@ -409,14 +409,21 @@ function onConnectEnd(event) {
   }
 }
 
-function ensureVisibility(position) {
+function determinePositionWithinWindow(event) {
   const { innerWidth, innerHeight } = window;
   const offsetX = 370; // offset from the edges
   const offsetY = 200;
-  return {
-    x: Math.min(position.x, innerWidth - offsetX), // 300 is the max-width of the search bar
-    y: Math.min(position.y, innerHeight - offsetY), // 200 is an estimated height of the search bar
-  };
+  let x = event.layerX;
+  let y = event.layerY;
+
+  if (event.clientX + offsetX > innerWidth) {
+    x = x + innerWidth - event.clientX - offsetX;
+  }
+  if (event.clientY + offsetY > innerHeight) {
+    y = y + innerHeight - event.clientY - offsetY;
+  }
+
+  return { x: x, y: y };
 }
 
 // direct connection between existing handles

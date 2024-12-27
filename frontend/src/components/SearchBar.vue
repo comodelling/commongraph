@@ -46,7 +46,8 @@ export default {
 .search-bar {
   display: flex;
   align-items: center;
-  width: 400px;
+  max-width: 500px;
+  min-width: 200px;
 }
 .search-bar input {
   flex-grow: 1;

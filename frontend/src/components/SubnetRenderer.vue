@@ -522,7 +522,7 @@ function linkSourceToSearchResult(id) {
 
 function closeSearchBar() {
   showSearchBar.value = false;
-  searchResults.value = [];
+  searchResults.value = null;
 }
 
 onNodeDragStart(({ event, node }) => {
@@ -710,10 +710,27 @@ onEdgeMouseLeave(({ edge }) => {
         }"
       >
         <button class="close-button" @click="closeSearchBar">✖</button>
+        <button
+          @click="createNodeAndEdgeOnConnection"
+          style="
+            padding: 5px;
+            margin-top: 6px;
+            border-radius: 2px;
+            margin-top: 2px;
+            margin-bottom: 3px;
+            width: 100%;
+            text-align: left;
+            font-size: 14px;
+          "
+        >
+          Create New Node
+        </button>
+
         <SearchBar
           @search="handleSearch"
-          :placeholder="'Search for existing nodes...'"
+          :placeholder="'Or search for existing nodes...'"
           :show-button="false"
+          style="width: 104%"
         />
         <ul
           v-if="searchResults && searchResults.length"
@@ -733,12 +750,6 @@ onEdgeMouseLeave(({ edge }) => {
         >
           No results found
         </p>
-        <button
-          @click="createNodeAndEdgeOnConnection"
-          style="padding: 5px; margin-top: 6px"
-        >
-          Create New Node
-        </button>
       </div>
 
       <Background pattern-color="#aaa" :gap="16" />
@@ -805,11 +816,12 @@ onEdgeMouseLeave(({ edge }) => {
   position: absolute;
   background: white;
   border: 1px solid #ccc;
-  border-radius: 8px;
+  border-radius: 5px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  padding: 10px;
+  padding: 5px;
   z-index: 1000;
-  max-width: 300px;
+  max-width: 250px;
+  min-width: 50px;
   overflow: hidden;
 }
 
@@ -831,11 +843,12 @@ onEdgeMouseLeave(({ edge }) => {
 
 .search-bar-container .close-button {
   position: absolute;
-  top: 5px;
-  right: 5px;
+  top: 0px;
+  right: 3px;
+  padding: 0;
   background: transparent;
   border: none;
-  font-size: 16px;
+  font-size: 10px;
   cursor: pointer;
 }
 

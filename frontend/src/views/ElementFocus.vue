@@ -86,7 +86,7 @@ export default {
           nodes: [formattedNode],
           edges: [],
         };
-      }, 5);
+      }, 45);
     } else {
       this.fetchElementAndSubnetData();
     }

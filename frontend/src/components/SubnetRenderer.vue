@@ -276,7 +276,8 @@ onEdgeClick(({ edge }) => {
 });
 
 onPaneClick(({ event }) => {
-  // console.log("Pane Click", event);
+  console.log("Pane Click", event);
+  showSearchBar.value = false;
 });
 
 const onNodesChange = async (changes) => {
@@ -404,8 +405,12 @@ function onConnectEnd(event) {
     //   y: event.clientY,
     // });
     searchBarPosition.value = position;
-    showSearchBar.value = true;
+
     connectionInfo.value = { nodeId, handleType };
+
+    setTimeout(() => {
+      showSearchBar.value = true;
+    }, 10);
   }
 }
 

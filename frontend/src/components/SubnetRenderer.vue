@@ -277,7 +277,7 @@ onEdgeClick(({ edge }) => {
 
 onPaneClick(({ event }) => {
   console.log("Pane Click", event);
-  showSearchBar.value = false;
+  closeSearchBar();
 });
 
 const onNodesChange = async (changes) => {
@@ -393,21 +393,8 @@ function onConnectEnd(event) {
     connectionInfo.value = null;
   } else {
     console.log("Connected to an empty space");
-    // const position = ensureVisibility({ x: event.clientX, y: event.clientY });
-    // const position = screenToFlowCoordinate({
-    //   x: event.clientX,
-    //   y: event.clientY,
-    // });
-    // const position = { x: event.clientX, y: event.clientY };
-    const position = determinePositionWithinWindow(event);
-    // const position = flowToScreenCoordinate({
-    //   x: event.clientX,
-    //   y: event.clientY,
-    // });
-    searchBarPosition.value = position;
-
     connectionInfo.value = { nodeId, handleType };
-
+    searchBarPosition.value = determinePositionWithinWindow(event);
     setTimeout(() => {
       showSearchBar.value = true;
     }, 10);
@@ -468,41 +455,43 @@ function handleSearch(query) {
   }
 }
 
-function createNodeAndEdgeOnConnection(event = null) {
+function createNodeAndEdge(event = null) {
   console.log("Connected to a new node");
-  // console.log("event position", event.clientX, event.clientY);
-  const { nodeId, handleType } = connectionInfo.value;
-  // console.log("Connection info", nodeId, handleType);
-  // console.log("source node position", findNode(nodeId).position);
-  const position = screenToFlowCoordinate({
-    x: event.clientX,
-    y: event.clientY,
-  });
-  // console.log("computed flow coordinates", position);
 
-  const sourceNode = findNode(nodeId);
-  const newNodeData = formatFlowNodeProps({
+  let newNodeData = formatFlowNodeProps({
     node_id: `new`,
     title: "New Node",
     status: "draft",
-    position: position,
-    scope: sourceNode.data.scope, // inherited scope
+    position: screenToFlowCoordinate({ x: event.clientX, y: event.clientY }),
+    scope: "",
     node_type: "potentiality", // most general type
-    tags: sourceNode.data.tags, // inherited tags
-    fromConnection: {
-      id: nodeId,
-      edge_type: handleType === "source" ? "imply" : "require",
-    }, // to be used to update edge data
+    tags: [],
   });
 
-  addNodes(newNodeData);
-  const newEdgeData = createEdgeOnConnection("new");
-  addEdges(newEdgeData);
+  if (connectionInfo.value) {
+    console.log("connectionInfo value detected");
+    const { nodeId, handleType } = connectionInfo.value;
+    const sourceNode = findNode(nodeId);
+    newNodeData.scope = sourceNode.data.scope; // inherited scope
+    newNodeData.tags = sourceNode.data.tags; // inherited tags
+    newNodeData.fromConnection = {
+      id: nodeId,
+      edge_type: handleType === "source" ? "imply" : "require",
+    }; // to be used to update edge data
+
+    addNodes(newNodeData);
+    const newEdgeData = createEdgeOnConnection("new");
+    addEdges(newEdgeData);
+  } else {
+    console.log("No connectionInfo available");
+    addNodes(newNodeData);
+  }
+
   nextTick(() => {
     emit("newNodeCreated", newNodeData);
   });
   connectionInfo.value = null;
-  showSearchBar.value = false;
+  closeSearchBar();
 }
 
 function linkSourceToSearchResult(id) {
@@ -610,6 +599,16 @@ function onSelectionRightClick({ event, selection }) {
   ]);
 }
 
+function onPaneRightClick(event) {
+  event.preventDefault();
+  console.log("Pane Right Click", event);
+
+  searchBarPosition.value = determinePositionWithinWindow(event);
+  setTimeout(() => {
+    showSearchBar.value = true;
+  }, 10);
+}
+
 function onConnectEndEmpty(event) {
   showContextMenu(event, [
     { name: "Create New Node", action: () => createNode(event) },
@@ -689,6 +688,7 @@ onEdgeMouseLeave(({ edge }) => {
       @node-context-menu="onNodeRightClick"
       @edge-context-menu="onEdgeRightClick"
       @selection-context-menu="onSelectionRightClick"
+      @pane-context-menu="onPaneRightClick"
     >
       <template #edge-special="props">
         <SpecialEdge v-bind="props" />
@@ -716,7 +716,7 @@ onEdgeMouseLeave(({ edge }) => {
       >
         <button class="close-button" @click="closeSearchBar">✖</button>
         <button
-          @click="createNodeAndEdgeOnConnection"
+          @click="createNodeAndEdge"
           style="
             padding: 5px;
             margin-top: 6px;

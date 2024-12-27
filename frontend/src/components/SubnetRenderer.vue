@@ -1,7 +1,7 @@
 <script setup>
 import axios from "axios";
 import { saveAs } from "file-saver";
-import { nextTick, ref, warn, watch } from "vue";
+import { nextTick, ref, warn, watch, computed } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { Panel, VueFlow, useVueFlow } from "@vue-flow/core";
 import { Background } from "@vue-flow/background";
@@ -78,6 +78,10 @@ const showSearchBar = ref(false);
 const searchBarPosition = ref({ x: 0, y: 0 });
 const searchResults = ref(null);
 const selectedDirection = ref(previousDirection.value || null);
+
+const currentNodeIds = computed(() => {
+  return new Set(nodes.value.map((node) => node.id));
+});
 
 onInit((vueFlowInstance) => {
   // instance is the same as the return of `useVueFlow`
@@ -754,6 +758,14 @@ onEdgeMouseLeave(({ edge }) => {
             v-for="result in searchResults"
             :key="result.node_id"
             @click="handleSearchResultClick(result.node_id.toString(), $event)"
+            :class="{
+              highlight: currentNodeIds.has(result.node_id.toString()),
+            }"
+            :title="
+              connectionInfo
+                ? 'Connect to node ' + result.node_id
+                : 'Fetching unnconnected nodes is not yet supported'
+            "
           >
             <span style="margin-right: 5px">➔</span>{{ result.title }}
           </li>
@@ -857,6 +869,10 @@ onEdgeMouseLeave(({ edge }) => {
 
 .search-bar-container li:hover {
   background-color: #f0f0f0;
+}
+
+.search-bar-container .highlight {
+  background-color: #ffff99; /* Highlight color */
 }
 
 .search-bar-container .close-button {

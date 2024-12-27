@@ -494,6 +494,15 @@ function createNodeAndEdge(event = null) {
   closeSearchBar();
 }
 
+function handleSearchResultClick(id, event) {
+  console.log("search result clicked", id);
+
+  //TODO: if id not present in current subnet, fetch node from backend and add it to viz here (question, with its induced subnet or not? )
+
+  // if connected from existing node, create edge
+  if (connectionInfo.value) linkSourceToSearchResult(id);
+}
+
 function linkSourceToSearchResult(id) {
   console.log("Linking source to search result id:", id);
   const newEdgeData = createEdgeOnConnection(id);
@@ -744,7 +753,7 @@ onEdgeMouseLeave(({ edge }) => {
           <li
             v-for="result in searchResults"
             :key="result.node_id"
-            @click="linkSourceToSearchResult(result.node_id.toString())"
+            @click="handleSearchResultClick(result.node_id.toString(), $event)"
           >
             <span style="margin-right: 5px">➔</span>{{ result.title }}
           </li>

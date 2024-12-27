@@ -68,7 +68,7 @@ const emit = defineEmits([
   "newEdgeCreated",
 ]);
 
-const { layout, layoutSingleton, previousDirection } = useLayout();
+const { layout, affectDirection, previousDirection } = useLayout();
 
 // refs for nodes and edges
 const nodes = ref([]);
@@ -80,7 +80,7 @@ const contextMenuRef = ref(null);
 const showSearchBar = ref(false);
 const searchBarPosition = ref({ x: 0, y: 0 });
 const searchResults = ref(null);
-const selectedDirection = ref(previousDirection || null);
+const selectedDirection = ref(previousDirection.value || null);
 
 onInit((vueFlowInstance) => {
   // instance is the same as the return of `useVueFlow`
@@ -89,31 +89,29 @@ onInit((vueFlowInstance) => {
   // console.log("initiating subnet viz");
   // updateSubnetFromData(props.data);
   // fitView()
+  console.log("VueFlow instance initialised");
+  console.log("onInit, selected direction", selectedDirection.value);
 });
 
 // watch for changes in props.data and update nodes and edges accordingly
 watch(
   () => props.data,
-  (newData) => {
+  async (newData) => {
     console.log("updating subnet data following props change");
-    // console.log("newData", newData);
     updateSubnetFromData(newData);
-    // console.log('found node', findNode(route.params.id));
-    if (getNodes.value.length === 1) {
+    setTimeout(() => {
       layoutSubnet(selectedDirection.value);
-    }
-    // fitView();
+    }, 16); // leave time for nodes to initialise (size)
   },
-  { immediate: true },
+  { immediate: false },
 );
 
 watch(
   () => props.focusNode,
   (newFocusNode, oldFocusNode) => {
-    console.log("Focus node changed:", newFocusNode);
     if (newFocusNode) {
+      console.log("new focus node detected:", newFocusNode);
       let updatedNode = formatFlowNodeProps(newFocusNode);
-
       // case of a new node (with possibly new connection too)
       if (oldFocusNode != null && oldFocusNode.node_id === "new") {
         console.log("Focus replaces new node");
@@ -132,9 +130,6 @@ watch(
           updateNode(node.id, updatedNode);
           if (edge) {
             console.log("Updating edge target to new node");
-            // edge.target = updatedNode.id;
-            // edge.selected = true;
-            // edge.id = `${edge.source}-${updatedNode.id}`;
             if (edge.target === "new") {
               edge.target = updatedNode.id;
               edge.id = `${edge.source}-${updatedNode.id}`;
@@ -145,8 +140,6 @@ watch(
               edge.id = `${updatedNode.id}-${edge.target}`;
               edge.data.target = updatedNode.id;
             }
-            // updateEdge(edge, {source: edge.source, target: updatedNode.id}, true);
-            // updateEdge(edge.id, edge);
           } else {
             console.log("No edge found for new node", getEdges.value);
           }
@@ -154,6 +147,7 @@ watch(
       }
       // case of an existing node to update
       else {
+        console.log("updating existing node");
         const node = findNode(updatedNode.id);
         if (node) {
           updatedNode = {
@@ -205,9 +199,53 @@ function updateSubnetFromData(data) {
   }
 }
 
-function selectDirection(direction) {
+function selectDirection(direction, layout = false) {
   selectedDirection.value = direction;
-  layoutSubnet(direction);
+  if (layout) {
+    layoutSubnet(direction);
+  } else {
+    nodes.value = affectDirection(getNodes.value, direction);
+  }
+}
+
+async function layoutSubnet(direction) {
+  console.log("layouting subnet with", direction);
+  const currentNodes = getNodes.value;
+  const currentEdges = getEdges.value;
+
+  if (currentNodes.length === 1) {
+    nodes.value = affectDirection(currentNodes, direction);
+    nextTick(() => {
+      fitView();
+      zoomTo(1.5);
+    });
+    return;
+  } else if (currentNodes.length === 0 || currentEdges.length === 0) {
+    console.warn("Nodes or edges are empty, cannot layout subnet");
+    return;
+  }
+  nodes.value = layout(currentNodes, currentEdges, direction);
+
+  nextTick(() => {
+    fitView();
+  });
+}
+
+function exportSubnet() {
+  const nodes = getNodes.value.map((node) => ({
+    ...node.data,
+  }));
+
+  const edges = getEdges.value.map((edge) => ({
+    ...edge.data,
+  }));
+
+  const subnetData = { nodes, edges };
+  console.log("Exporting subnet data:", subnetData);
+  const blob = new Blob([JSON.stringify(subnetData, null, 2)], {
+    type: "application/json",
+  });
+  saveAs(blob, "export.json");
 }
 
 onNodeClick(({ node }) => {
@@ -503,62 +541,8 @@ function updatePos() {
   setNodes(outValue);
 }
 
-/**
- * toObject transforms your current data to an easily persist-able object
- */
-function logToObject() {
-  console.log(toObject());
-}
-
-/**
- * Resets the current viewport transformation (zoom & pan)
- */
-function resetTransform() {
-  setViewport({ x: 0, y: 0, zoom: 1 });
-}
-
 function toggleDarkMode() {
   dark.value = !dark.value;
-}
-
-async function layoutSubnet(direction) {
-  console.log("layouting subnet");
-  const currentNodes = getNodes.value;
-  const currentEdges = getEdges.value;
-
-  if (currentNodes.length === 1) {
-    nodes.value = layoutSingleton(currentNodes, direction);
-    nextTick(() => {
-      fitView();
-      zoomTo(1.5);
-    });
-    return;
-  } else if (currentNodes.length === 0 || currentEdges.length === 0) {
-    console.warn("Nodes or edges are empty, cannot layout subnet");
-    return;
-  }
-  nodes.value = layout(currentNodes, currentEdges, direction);
-
-  nextTick(() => {
-    fitView();
-  });
-}
-
-function exportSubnet() {
-  const nodes = getNodes.value.map((node) => ({
-    ...node.data,
-  }));
-
-  const edges = getEdges.value.map((edge) => ({
-    ...edge.data,
-  }));
-
-  const subnetData = { nodes, edges };
-  console.log("Exporting subnet data:", subnetData);
-  const blob = new Blob([JSON.stringify(subnetData, null, 2)], {
-    type: "application/json",
-  });
-  saveAs(blob, "export.json");
 }
 
 // ********* CONTEXT MENUS *********
@@ -670,7 +654,7 @@ onEdgeMouseLeave(({ edge }) => {
       :min-zoom="0.2"
       :max-zoom="4"
       :apply-default="false"
-      @nodes-initialized="layoutSubnet(previousDirection)"
+      @nodes-initialized="selectDirection(selectedDirection)"
       @nodes-change="onNodesChange"
       @edges-change="onEdgesChange"
       @connect="onConnect"
@@ -745,7 +729,7 @@ onEdgeMouseLeave(({ edge }) => {
             class="compass-button top"
             :class="{ selected: selectedDirection === 'BT' }"
             title="Upward causality"
-            @click="selectDirection('BT')"
+            @click="selectDirection('BT', true)"
           >
             <Icon name="arrow-up" />
           </button>
@@ -753,7 +737,7 @@ onEdgeMouseLeave(({ edge }) => {
             class="compass-button left"
             :class="{ selected: selectedDirection === 'RL' }"
             title="Leftward causality"
-            @click="selectDirection('RL')"
+            @click="selectDirection('RL', true)"
           >
             <Icon name="arrow-left" />
           </button>
@@ -761,7 +745,7 @@ onEdgeMouseLeave(({ edge }) => {
             class="compass-button bottom"
             :class="{ selected: selectedDirection === 'TB' }"
             title="Downward causality"
-            @click="selectDirection('TB')"
+            @click="selectDirection('TB', true)"
           >
             <Icon name="arrow-down" />
           </button>
@@ -769,7 +753,7 @@ onEdgeMouseLeave(({ edge }) => {
             class="compass-button right"
             :class="{ selected: selectedDirection === 'LR' }"
             title="Rightward causality"
-            @click="selectDirection('LR')"
+            @click="selectDirection('LR', true)"
           >
             <Icon name="arrow-right" />
           </button>

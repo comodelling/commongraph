@@ -1,7 +1,7 @@
 <script setup>
 import axios from "axios";
 import { saveAs } from "file-saver";
-import { nextTick, ref, watch } from "vue";
+import { nextTick, ref, warn, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { Panel, VueFlow, useVueFlow } from "@vue-flow/core";
 import { Background } from "@vue-flow/background";
@@ -97,7 +97,7 @@ onInit((vueFlowInstance) => {
 // watch for changes in props.data and update nodes and edges accordingly
 watch(
   () => props.data,
-  async (newData) => {
+  (newData) => {
     console.log("updating subnet data following props change");
     updateSubnetFromData(newData);
     setTimeout(() => {
@@ -114,7 +114,7 @@ watch(
       console.log("new focus node detected:", newFocusNode);
       let updatedNode = formatFlowNodeProps(newFocusNode);
       // case of a new node (with possibly new connection too)
-      if (oldFocusNode != null && oldFocusNode.node_id === "new") {
+      if (oldFocusNode && oldFocusNode.node_id === "new") {
         console.log("Focus replaces new node");
         const node = findNode("new");
         if (node) {
@@ -147,8 +147,8 @@ watch(
         }
       }
       // case of an existing node to update
-      else {
-        console.log("updating existing node");
+      else if (newFocusNode.node_id !== "new") {
+        console.log("updating existing node with id", newFocusNode.node_id);
         const node = findNode(updatedNode.id);
         if (node) {
           updatedNode = {
@@ -157,8 +157,8 @@ watch(
             selected: true,
             position: node.position,
           };
-        }
-        updateNode(node.id, updatedNode);
+          updateNode(node.id, updatedNode);
+        } else warn("Node not found in subnet", updatedNode);
       }
     }
   },

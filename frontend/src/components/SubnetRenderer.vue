@@ -30,17 +30,13 @@ const {
   setNodes,
   setEdges,
   updateNode,
-  updateEdge,
   updateNodeData,
-  updateEdgeData,
   applyNodeChanges,
   applyEdgeChanges,
   removeEdges,
   onNodeDragStart,
   onNodeDragStop,
-  setViewport,
   zoomTo,
-  toObject,
   fitView,
   onNodeClick,
   onEdgeClick,
@@ -396,7 +392,17 @@ function onConnectEnd(event) {
     connectionInfo.value = null;
   } else {
     console.log("Connected to an empty space");
-    const position = ensureVisibility({ x: event.clientX, y: event.clientY });
+    // const position = ensureVisibility({ x: event.clientX, y: event.clientY });
+    // const position = screenToFlowCoordinate({
+    //   x: event.clientX,
+    //   y: event.clientY,
+    // });
+    // const position = { x: event.clientX, y: event.clientY };
+    const position = ensureVisibility({ x: event.layerX, y: event.layerY });
+    // const position = flowToScreenCoordinate({
+    //   x: event.clientX,
+    //   y: event.clientY,
+    // });
     searchBarPosition.value = position;
     showSearchBar.value = true;
     connectionInfo.value = { nodeId, handleType };
@@ -406,10 +412,10 @@ function onConnectEnd(event) {
 function ensureVisibility(position) {
   const { innerWidth, innerHeight } = window;
   const offsetX = 370; // offset from the edges
-  const offsetY = 220;
+  const offsetY = 200;
   return {
-    x: Math.min(Math.max(position.x, offsetX), innerWidth - offsetX), // 300 is the max-width of the search bar
-    y: Math.min(Math.max(position.y, offsetY), innerHeight - offsetY), // 200 is an estimated height of the search bar
+    x: Math.min(position.x, innerWidth - offsetX), // 300 is the max-width of the search bar
+    y: Math.min(position.y, innerHeight - offsetY), // 200 is an estimated height of the search bar
   };
 }
 
@@ -691,8 +697,9 @@ onEdgeMouseLeave(({ edge }) => {
         v-if="showSearchBar"
         class="search-bar-container"
         :style="{
-          top: searchBarPosition.y - 40 + 'px',
-          left: searchBarPosition.x - 640 + 'px',
+          position: 'absolute',
+          top: searchBarPosition.y + 'px',
+          left: searchBarPosition.x + 'px',
         }"
       >
         <button class="close-button" @click="closeSearchBar">✖</button>

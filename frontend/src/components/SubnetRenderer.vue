@@ -822,6 +822,8 @@ onEdgeMouseLeave(({ edge }) => {
   z-index: 1000;
   max-width: 250px;
   min-width: 50px;
+  max-height: 300px;
+  overflow-y: auto;
   overflow: hidden;
 }
 
@@ -830,6 +832,8 @@ onEdgeMouseLeave(({ edge }) => {
   padding: 0;
   list-style: none;
   font-size: 11px;
+  max-height: 150px;
+  overflow-y: auto;
 }
 
 .search-bar-container li {

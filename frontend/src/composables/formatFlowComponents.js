@@ -54,7 +54,7 @@ export function formatFlowEdgeProps(data) {
  **/
 export function formatFlowNodeProps(data) {
   // console.log("formatFlowNodeProps", data);
-  const { node_id, title, node_type, status } = data;
+  const { node_id, title, node_type, status, position } = data;
 
   const style = {
     opacity: status === "completed" ? 0.4 : 0.95,
@@ -67,7 +67,7 @@ export function formatFlowNodeProps(data) {
   const nodeProps = {
     id: node_id.toString(),
     type: "special",
-    position: { x: 0, y: 0 },
+    position: position || { x: 0, y: 0 },
     label: title,
     style: style,
     data: { ...data },

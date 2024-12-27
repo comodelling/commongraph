@@ -170,6 +170,20 @@ export default {
     updateNodeFromEditor(updatedNode) {
       console.log("updating node from editor", updatedNode);
       try {
+        // if (this.node.node_id === "new" || updatedNode.new) {
+        //   console.log("updating new node ID on the graph");
+        //   // find the new node in the subnetData and update it
+        //   console.log('this.subnetData.nodes', this.subnetData.nodes);
+        //   let tempNode = this.subnetData.nodes.find(
+        //     (node) => node.id === "new",
+        //   );
+        //   if (tempNode) {
+        //     console.log('updating tempNode.id', updatedNode.node_id);
+        //     tempNode.id = updatedNode.node_id;
+        //   }
+        // }
+        //append formatted node to subnetData.nodes
+        // this.subnetData.nodes.push(formatFlowNodeProps(updatedNode));
         this.node = updatedNode;
       } catch (error) {
         console.error("Failed to update node:", error);

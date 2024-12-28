@@ -39,7 +39,7 @@ You can also contribute to ObjectiveNet by:
 Run `pre-commit install` to set up the git hook scripts. It'll perform some formatting, linting and unit tests before any commit.
 
 To generate new *.txt* requirements files from *.in*, you'll need pip-tools: ```pip install pip-tools```<br>
-Then, you can run: ```pip-compile requirements.in``` or ```pip-compile requirements-dev.in``` whenever you update these `.in` files.
+Then, you can run: ```pip-compile backend/requirements.in``` or ```pip-compile backend/requirements-dev.in``` whenever you update these `.in` files.
 
 
 ## License

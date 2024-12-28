@@ -374,11 +374,11 @@ function onConnectStart({ nodeId, handleType }) {
 
 function onConnectEnd(event) {
   console.log("on connect end", event);
-
   if (!connectionInfo.value) {
     console.error("No connection info available");
     return;
   }
+  connectionInfo.value.position = { x: event.clientX, y: event.clientY };
 
   // Check if the connection is to an existing node handle
   const targetElement = event.target;
@@ -398,7 +398,6 @@ function onConnectEnd(event) {
     connectionInfo.value = null;
   } else {
     console.log("Connected to an empty space");
-    connectionInfo.value = { nodeId, handleType };
     searchBarPosition.value = determinePositionWithinWindow(event);
     setTimeout(() => {
       showSearchBar.value = true;
@@ -466,6 +465,7 @@ function createNodeAndEdge(event = null) {
   let scope = "";
   let tags = [];
   let fromConnection = null;
+  let eventPosition = null;
 
   if (connectionInfo.value) {
     console.log("connectionInfo value detected, creating an edge too");
@@ -477,14 +477,19 @@ function createNodeAndEdge(event = null) {
       id: nodeId,
       edge_type: handleType === "source" ? "imply" : "require",
     }; // to be used to update edge data
+    eventPosition = connectionInfo.value.position || {
+      x: event.clientX,
+      y: event.clientY,
+    };
   } else {
     console.log("No connectionInfo available");
+    eventPosition = { x: event.clientX, y: event.clientY };
   }
   const newNodeData = formatFlowNodeProps({
     node_id: `new`,
     title: "New Node",
     status: "draft",
-    position: screenToFlowCoordinate({ x: event.clientX, y: event.clientY }),
+    position: screenToFlowCoordinate(eventPosition),
     scope: scope,
     node_type: "potentiality", // most general type
     tags: tags,

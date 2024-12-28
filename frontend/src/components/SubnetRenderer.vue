@@ -52,8 +52,8 @@ const props = defineProps({
     type: Object,
     required: true,
   },
-  focusNode: Object,
-  focusEdge: Object,
+  updatedNode: Object,
+  updatedEdge: Object,
 });
 
 const router = useRouter();
@@ -108,38 +108,39 @@ watch(
 );
 
 watch(
-  () => props.focusNode,
-  (newFocusNode, oldFocusNode) => {
-    if (newFocusNode) {
-      console.log("new focus node detected:", newFocusNode);
-      let updatedNode = formatFlowNodeProps(newFocusNode);
+  () => props.updatedNode,
+  (newUpdatedNode) => {
+    if (newUpdatedNode) {
+      console.log("new updated node detected:", newUpdatedNode);
+      // console.log("old updated node is:", oldUpdatedNode);
+      let formattedNode = formatFlowNodeProps(newUpdatedNode);
       // case of a new node (with possibly new connection too)
-      if (oldFocusNode && oldFocusNode.node_id === "new") {
-        console.log("Focus replaces new node");
+      if (newUpdatedNode.new) {
+        console.log("Replacing temporary new node with a proper node");
         const node = findNode("new");
         if (node) {
-          updatedNode = {
+          formattedNode = {
             ...node,
-            ...updatedNode,
-            id: updatedNode.id,
+            ...formattedNode,
+            id: formattedNode.id,
             selected: true,
             position: node.position,
           };
           const edge = getEdges.value.find(
             (edge) => edge.target === "new" || edge.source === "new",
           );
-          updateNode(node.id, updatedNode);
+          updateNode(node.id, formattedNode);
           if (edge) {
             console.log("Updating edge target to new node");
             if (edge.target === "new") {
-              edge.target = updatedNode.id;
-              edge.id = `${edge.source}-${updatedNode.id}`;
+              edge.target = formattedNode.id;
+              edge.id = `${edge.source}-${formattedNode.id}`;
               edge.selected = false;
-              edge.data.target = updatedNode.id;
+              edge.data.target = formattedNode.id;
             } else if (edge.source === "new") {
-              edge.source = updatedNode.id;
-              edge.id = `${updatedNode.id}-${edge.target}`;
-              edge.data.target = updatedNode.id;
+              edge.source = formattedNode.id;
+              edge.id = `${formattedNode.id}-${edge.target}`;
+              edge.data.target = formattedNode.id;
             }
           } else {
             console.log("No edge found for new node", getEdges.value);
@@ -147,18 +148,18 @@ watch(
         }
       }
       // case of an existing node to update
-      else if (newFocusNode.node_id !== "new") {
-        console.log("updating existing node with id", newFocusNode.node_id);
-        const node = findNode(updatedNode.id);
+      else if (newUpdatedNode.node_id !== "new") {
+        console.log("updating existing node with id", newUpdatedNode.node_id);
+        const node = findNode(formattedNode.id);
         if (node) {
-          updatedNode = {
+          formattedNode = {
             ...node,
-            ...updatedNode,
+            ...formattedNode,
             selected: true,
             position: node.position,
           };
-          updateNode(node.id, updatedNode);
-        } else warn("Node not found in subnet", updatedNode);
+          updateNode(node.id, formattedNode);
+        } else warn("Node not found in subnet", formattedNode);
       }
     }
   },
@@ -166,11 +167,11 @@ watch(
 );
 
 watch(
-  () => props.focusEdge,
-  (newFocusEdge) => {
-    console.log("Focus edge changed:", newFocusEdge);
-    if (newFocusEdge) {
-      let updatedEdge = formatFlowEdgeProps(newFocusEdge);
+  () => props.updatedEdge,
+  (newUpdatedEdge) => {
+    console.log("Edge update detected:", newUpdatedEdge);
+    if (newUpdatedEdge) {
+      let updatedEdge = formatFlowEdgeProps(newUpdatedEdge);
       let edge = findEdge(updatedEdge.id);
       console.log("found edge", edge);
       if (edge) {
@@ -460,35 +461,40 @@ function handleSearch(query) {
 }
 
 function createNodeAndEdge(event = null) {
-  console.log("Connected to a new node");
+  console.log("Creating a new node");
 
-  let newNodeData = formatFlowNodeProps({
+  let scope = "";
+  let tags = [];
+  let fromConnection = null;
+
+  if (connectionInfo.value) {
+    console.log("connectionInfo value detected, creating an edge too");
+    const { nodeId, handleType } = connectionInfo.value;
+    const sourceNode = findNode(nodeId);
+    scope = sourceNode.data.scope; // inherited scope
+    tags = sourceNode.data.tags; // inherited tags
+    fromConnection = {
+      id: nodeId,
+      edge_type: handleType === "source" ? "imply" : "require",
+    }; // to be used to update edge data
+  } else {
+    console.log("No connectionInfo available");
+  }
+  const newNodeData = formatFlowNodeProps({
     node_id: `new`,
     title: "New Node",
     status: "draft",
     position: screenToFlowCoordinate({ x: event.clientX, y: event.clientY }),
-    scope: "",
+    scope: scope,
     node_type: "potentiality", // most general type
-    tags: [],
+    tags: tags,
+    fromConnection: fromConnection,
   });
+  addNodes(newNodeData);
 
   if (connectionInfo.value) {
-    console.log("connectionInfo value detected");
-    const { nodeId, handleType } = connectionInfo.value;
-    const sourceNode = findNode(nodeId);
-    newNodeData.scope = sourceNode.data.scope; // inherited scope
-    newNodeData.tags = sourceNode.data.tags; // inherited tags
-    newNodeData.fromConnection = {
-      id: nodeId,
-      edge_type: handleType === "source" ? "imply" : "require",
-    }; // to be used to update edge data
-
-    addNodes(newNodeData);
     const newEdgeData = createEdgeOnConnection("new");
     addEdges(newEdgeData);
-  } else {
-    console.log("No connectionInfo available");
-    addNodes(newNodeData);
   }
 
   nextTick(() => {

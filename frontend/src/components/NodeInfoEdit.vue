@@ -229,11 +229,13 @@ export default {
           delete this.editedNode.new;
           delete this.editedNode.node_id;
           console.log("Submitting node for creation:", this.editedNode);
-          const response = await axios.post(
+          let response = await axios.post(
             `${import.meta.env.VITE_BACKEND_URL}/nodes`,
             this.editedNode,
           );
           const target = response.data.node_id;
+
+          response.data.new = true; // mark as new to replace it in the graph
 
           if (fromConnection) {
             // create edge if node was created from a connection
@@ -244,7 +246,7 @@ export default {
                 edge_type: fromConnection.edge_type,
               };
               console.log("Submitting edge for creation:", newEdge);
-              const response = await axios.post(
+              await axios.post(
                 `${import.meta.env.VITE_BACKEND_URL}/edges`,
                 newEdge,
               );
@@ -252,7 +254,19 @@ export default {
               console.error("Failed to create edge:", error);
             }
           }
-          window.location.href = `/node/${target}`;
+          // window.location.href = `/node/${target}`;
+          // this.$emit("new-node-submitted", response.data);
+          // console.log("new node back from backend", response.data);
+          // await
+
+          this.$emit("publish-node", response.data);
+          this.$router.push({
+            name: "NodeView",
+            params: { id: target.toString() },
+          });
+          // console.log("Route push completed");
+
+          // console.log("Event emitted");
         } catch (error) {
           console.error("Failed to create node:", error);
         }
@@ -262,7 +276,7 @@ export default {
             `${import.meta.env.VITE_BACKEND_URL}/nodes`,
             this.editedNode,
           );
-          this.$emit("publish", response.data);
+          this.$emit("publish-node", response.data);
         } catch (error) {
           console.error("Failed to update node:", error);
         }
@@ -276,12 +290,16 @@ export default {
       },
       deep: true,
     },
-    editedNode: {
-      handler(newEditedNode) {
-        this.$emit("update-edited-node", newEditedNode);
-      },
-      deep: true,
-    },
+    // editedNode: {
+    //   handler(newEditedNode, oldEditedNode) {
+    //     // console.log("editedNode changed", newEditedNode, oldEditedNode);
+    //     // if (newEditedNode.title !== oldEditedNode.title || newEditedNode.status !== oldEditedNode.status) {
+    //     this.$emit("update-node-on-graph", newEditedNode);
+    //     // console.log("emitted update-node-on-graph");
+    //     // }
+    //   },
+    //   deep: true,
+    // },
   },
 };
 </script>

@@ -19,7 +19,7 @@
       <component
         :is="currentTabComponent"
         :edge="edge"
-        @publish="publishEdge"
+        @publish-edge="updateEdgeFromEditor"
       />
     </div>
     <div v-else>
@@ -29,7 +29,7 @@
 </template>
 
 <script>
-import EdgeInfoRead from "./EdgeInfoRead.vue";
+import EdgeInfoView from "./EdgeInfoView.vue";
 import EdgeInfoEdit from "./EdgeInfoEdit.vue";
 
 export default {
@@ -43,17 +43,17 @@ export default {
 
   data() {
     return {
-      currentTab: this.$route.path.endsWith("/edit") ? "edit" : "read",
+      currentTab: this.$route.path.endsWith("/edit") ? "edit" : "view",
     };
   },
   watch: {
     "$route.path"(newPath) {
-      this.currentTab = newPath.endsWith("/edit") ? "edit" : "read";
+      this.currentTab = newPath.endsWith("/edit") ? "edit" : "view";
     },
   },
   computed: {
     currentTabComponent() {
-      return this.currentTab === "read" ? EdgeInfoRead : EdgeInfoEdit;
+      return this.currentTab === "view" ? EdgeInfoView : EdgeInfoEdit;
     },
   },
   methods: {
@@ -67,9 +67,10 @@ export default {
         this.$router.push(path);
       }
     },
-    publishEdge(updatedEdge) {
-      this.$emit("update-edge", updatedEdge);
-      this.switchTab("read");
+    updateEdgeFromEditor(updatedEdge) {
+      console.log("updateEdgeFromEditor");
+      this.$emit("update-edge-from-editor", updatedEdge);
+      this.switchTab("view");
     },
   },
 };

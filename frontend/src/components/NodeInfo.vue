@@ -19,7 +19,7 @@
       <component
         :is="currentTabComponent"
         :node="node"
-        @publish="publishNode"
+        @publish-node="updateNodeFromEditor"
       />
     </div>
     <div v-else>
@@ -29,7 +29,7 @@
 </template>
 
 <script>
-import NodeInfoRead from "./NodeInfoRead.vue";
+import NodeInfoView from "./NodeInfoView.vue";
 import NodeInfoEdit from "./NodeInfoEdit.vue";
 
 export default {
@@ -42,20 +42,20 @@ export default {
   },
   data() {
     return {
-      currentTab: this.$route.path.endsWith("/edit") ? "edit" : "read",
+      currentTab: this.$route.path.endsWith("/edit") ? "edit" : "view",
     };
+  },
+  computed: {
+    currentTabComponent() {
+      return this.currentTab === "view" ? NodeInfoView : NodeInfoEdit;
+    },
   },
   watch: {
     "$route.path"(newPath) {
       // Ensure it only watches for node routes updates
       if (newPath.includes("/node")) {
-        this.currentTab = newPath.endsWith("/edit") ? "edit" : "read";
+        this.currentTab = newPath.endsWith("/edit") ? "edit" : "view";
       }
-    },
-  },
-  computed: {
-    currentTabComponent() {
-      return this.currentTab === "read" ? NodeInfoRead : NodeInfoEdit;
     },
   },
   methods: {
@@ -69,9 +69,10 @@ export default {
         this.$router.push(path);
       }
     },
-    publishNode(updatedNode) {
-      this.$emit("update-node", updatedNode);
-      this.switchTab("read");
+    updateNodeFromEditor(updatedNode) {
+      console.log("updateNodeFromEditor", updatedNode);
+      this.$emit("update-node-from-editor", updatedNode); // Ensure this line is present
+      this.switchTab("view");
     },
   },
 };

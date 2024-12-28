@@ -1,7 +1,7 @@
 <script setup>
 import axios from "axios";
 import { saveAs } from "file-saver";
-import { nextTick, ref, watch } from "vue";
+import { nextTick, ref, warn, watch, computed } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { Panel, VueFlow, useVueFlow } from "@vue-flow/core";
 import { Background } from "@vue-flow/background";
@@ -29,21 +29,21 @@ const {
   findEdge,
   setNodes,
   setEdges,
+  updateNode,
   updateNodeData,
   applyNodeChanges,
   applyEdgeChanges,
   removeEdges,
   onNodeDragStart,
   onNodeDragStop,
-  setViewport,
   zoomTo,
-  toObject,
   fitView,
   onNodeClick,
   onEdgeClick,
   onPaneClick,
   onEdgeMouseEnter,
   onEdgeMouseLeave,
+  screenToFlowCoordinate,
 } = useVueFlow();
 
 // props to receive nodes and edges data
@@ -52,6 +52,8 @@ const props = defineProps({
     type: Object,
     required: true,
   },
+  updatedNode: Object,
+  updatedEdge: Object,
 });
 
 const router = useRouter();
@@ -63,7 +65,7 @@ const emit = defineEmits([
   "newEdgeCreated",
 ]);
 
-const { layout, layoutSingleton, previousDirection } = useLayout();
+const { layout, affectDirection, previousDirection } = useLayout();
 
 // refs for nodes and edges
 const nodes = ref([]);
@@ -75,7 +77,11 @@ const contextMenuRef = ref(null);
 const showSearchBar = ref(false);
 const searchBarPosition = ref({ x: 0, y: 0 });
 const searchResults = ref(null);
-const selectedDirection = ref(previousDirection || null);
+const selectedDirection = ref(previousDirection.value || null);
+
+const currentNodeIds = computed(() => {
+  return new Set(nodes.value.map((node) => node.id));
+});
 
 onInit((vueFlowInstance) => {
   // instance is the same as the return of `useVueFlow`
@@ -84,6 +90,8 @@ onInit((vueFlowInstance) => {
   // console.log("initiating subnet viz");
   // updateSubnetFromData(props.data);
   // fitView()
+  console.log("VueFlow instance initialised");
+  console.log("onInit, selected direction", selectedDirection.value);
 });
 
 // watch for changes in props.data and update nodes and edges accordingly
@@ -92,12 +100,93 @@ watch(
   (newData) => {
     console.log("updating subnet data following props change");
     updateSubnetFromData(newData);
-    // fitView()
+    setTimeout(() => {
+      layoutSubnet(selectedDirection.value);
+    }, 16); // leave time for nodes to initialise (size)
+  },
+  { immediate: false },
+);
+
+watch(
+  () => props.updatedNode,
+  (newUpdatedNode) => {
+    if (newUpdatedNode) {
+      console.log("new updated node detected:", newUpdatedNode);
+      // console.log("old updated node is:", oldUpdatedNode);
+      let formattedNode = formatFlowNodeProps(newUpdatedNode);
+      // case of a new node (with possibly new connection too)
+      if (newUpdatedNode.new) {
+        console.log("Replacing temporary new node with a proper node");
+        const node = findNode("new");
+        if (node) {
+          formattedNode = {
+            ...node,
+            ...formattedNode,
+            id: formattedNode.id,
+            selected: true,
+            position: node.position,
+          };
+          const edge = getEdges.value.find(
+            (edge) => edge.target === "new" || edge.source === "new",
+          );
+          updateNode(node.id, formattedNode);
+          if (edge) {
+            console.log("Updating edge target to new node");
+            if (edge.target === "new") {
+              edge.target = formattedNode.id;
+              edge.id = `${edge.source}-${formattedNode.id}`;
+              edge.selected = false;
+              edge.data.target = formattedNode.id;
+            } else if (edge.source === "new") {
+              edge.source = formattedNode.id;
+              edge.id = `${formattedNode.id}-${edge.target}`;
+              edge.data.target = formattedNode.id;
+            }
+          } else {
+            console.log("No edge found for new node", getEdges.value);
+          }
+        }
+      }
+      // case of an existing node to update
+      else if (newUpdatedNode.node_id !== "new") {
+        console.log("updating existing node with id", newUpdatedNode.node_id);
+        const node = findNode(formattedNode.id);
+        if (node) {
+          formattedNode = {
+            ...node,
+            ...formattedNode,
+            selected: true,
+            position: node.position,
+          };
+          updateNode(node.id, formattedNode);
+        } else warn("Node not found in subnet", formattedNode);
+      }
+    }
+  },
+  { immediate: true },
+);
+
+watch(
+  () => props.updatedEdge,
+  (newUpdatedEdge) => {
+    console.log("Edge update detected:", newUpdatedEdge);
+    if (newUpdatedEdge) {
+      let updatedEdge = formatFlowEdgeProps(newUpdatedEdge);
+      let edge = findEdge(updatedEdge.id);
+      console.log("found edge", edge);
+      if (edge) {
+        Object.assign(edge, updatedEdge); // Update each field from updatedEdge
+        edge.selected = true;
+      }
+      // console.log('updatedNode', updatedNode)
+      // edge = updatedEdge;
+    }
   },
   { immediate: true },
 );
 
 function updateSubnetFromData(data) {
+  console.log("Updating subnet from data:", data);
   setNodes(data.nodes || []);
   setEdges(data.edges || []);
 
@@ -112,9 +201,53 @@ function updateSubnetFromData(data) {
   }
 }
 
-function selectDirection(direction) {
+function selectDirection(direction, layout = false) {
   selectedDirection.value = direction;
-  layoutSubnet(direction);
+  if (layout) {
+    layoutSubnet(direction);
+  } else {
+    nodes.value = affectDirection(getNodes.value, direction);
+  }
+}
+
+async function layoutSubnet(direction) {
+  console.log("layouting subnet with", direction);
+  const currentNodes = getNodes.value;
+  const currentEdges = getEdges.value;
+
+  if (currentNodes.length === 1) {
+    nodes.value = affectDirection(currentNodes, direction);
+    nextTick(() => {
+      fitView();
+      zoomTo(1.5);
+    });
+    return;
+  } else if (currentNodes.length === 0 || currentEdges.length === 0) {
+    console.warn("Nodes or edges are empty, cannot layout subnet");
+    return;
+  }
+  nodes.value = layout(currentNodes, currentEdges, direction);
+
+  nextTick(() => {
+    fitView();
+  });
+}
+
+function exportSubnet() {
+  const nodes = getNodes.value.map((node) => ({
+    ...node.data,
+  }));
+
+  const edges = getEdges.value.map((edge) => ({
+    ...edge.data,
+  }));
+
+  const subnetData = { nodes, edges };
+  console.log("Exporting subnet data:", subnetData);
+  const blob = new Blob([JSON.stringify(subnetData, null, 2)], {
+    type: "application/json",
+  });
+  saveAs(blob, "export.json");
 }
 
 onNodeClick(({ node }) => {
@@ -148,10 +281,12 @@ onEdgeClick(({ edge }) => {
 });
 
 onPaneClick(({ event }) => {
-  // console.log("Pane Click", event);
+  console.log("Pane Click", event);
+  closeSearchBar();
 });
 
 const onNodesChange = async (changes) => {
+  // console.log("Nodes change", changes);
   const nextChanges = [];
   for (let change of changes) {
     if (change.type === "remove") {
@@ -239,11 +374,11 @@ function onConnectStart({ nodeId, handleType }) {
 
 function onConnectEnd(event) {
   console.log("on connect end", event);
-
   if (!connectionInfo.value) {
     console.error("No connection info available");
     return;
   }
+  connectionInfo.value.position = { x: event.clientX, y: event.clientY };
 
   // Check if the connection is to an existing node handle
   const targetElement = event.target;
@@ -263,21 +398,28 @@ function onConnectEnd(event) {
     connectionInfo.value = null;
   } else {
     console.log("Connected to an empty space");
-    const position = ensureVisibility({ x: event.clientX, y: event.clientY });
-    searchBarPosition.value = position;
-    showSearchBar.value = true;
-    connectionInfo.value = { nodeId, handleType };
+    searchBarPosition.value = determinePositionWithinWindow(event);
+    setTimeout(() => {
+      showSearchBar.value = true;
+    }, 10);
   }
 }
 
-function ensureVisibility(position) {
+function determinePositionWithinWindow(event) {
   const { innerWidth, innerHeight } = window;
   const offsetX = 370; // offset from the edges
-  const offsetY = 220;
-  return {
-    x: Math.min(Math.max(position.x, offsetX), innerWidth - offsetX), // 300 is the max-width of the search bar
-    y: Math.min(Math.max(position.y, offsetY), innerHeight - offsetY), // 200 is an estimated height of the search bar
-  };
+  const offsetY = 200;
+  let x = event.layerX;
+  let y = event.layerY;
+
+  if (event.clientX + offsetX > innerWidth) {
+    x = x + innerWidth - event.clientX - offsetX;
+  }
+  if (event.clientY + offsetY > innerHeight) {
+    y = y + innerHeight - event.clientY - offsetY;
+  }
+
+  return { x: x, y: y };
 }
 
 // direct connection between existing handles
@@ -317,31 +459,66 @@ function handleSearch(query) {
   }
 }
 
-function createNodeAndEdgeOnConnection(event = null) {
-  console.log("Connected to a new node");
-  const { nodeId, handleType } = connectionInfo.value;
-  const sourceNode = findNode(nodeId);
+function createNodeAndEdge(event = null) {
+  console.log("Creating a new node");
 
-  const newNodeData = formatFlowNodeProps({
-    node_id: `temp-node`,
-    title: "New Node",
-    status: "draft",
-    scope: sourceNode.data.scope, // inherited scope
-    node_type: "potentiality", // most general type
-    tags: sourceNode.data.tags, // inherited tags
-    fromConnection: {
+  let scope = "";
+  let tags = [];
+  let fromConnection = null;
+  let eventPosition = null;
+
+  if (connectionInfo.value) {
+    console.log("connectionInfo value detected, creating an edge too");
+    const { nodeId, handleType } = connectionInfo.value;
+    const sourceNode = findNode(nodeId);
+    scope = sourceNode.data.scope; // inherited scope
+    tags = sourceNode.data.tags; // inherited tags
+    fromConnection = {
       id: nodeId,
       edge_type: handleType === "source" ? "imply" : "require",
-    }, // to be used to update edge data
+    }; // to be used to update edge data
+    eventPosition = connectionInfo.value.position || {
+      x: event.clientX,
+      y: event.clientY,
+    };
+    //TODO: improve approximate offset between handle and node corner
+    eventPosition.y -= 25;
+    eventPosition.x -= handleType === "target" ? 225 : 0;
+  } else {
+    console.log("No connectionInfo available");
+    eventPosition = { x: event.clientX, y: event.clientY };
+  }
+  const newNodeData = formatFlowNodeProps({
+    node_id: `new`,
+    title: "New Node",
+    status: "draft",
+    position: screenToFlowCoordinate(eventPosition),
+    scope: scope,
+    node_type: "potentiality", // most general type
+    tags: tags,
+    fromConnection: fromConnection,
   });
   addNodes(newNodeData);
-  const newEdgeData = createEdgeOnConnection("temp-node");
-  addEdges(newEdgeData);
+
+  if (connectionInfo.value) {
+    const newEdgeData = createEdgeOnConnection("new");
+    addEdges(newEdgeData);
+  }
+
   nextTick(() => {
     emit("newNodeCreated", newNodeData);
   });
   connectionInfo.value = null;
-  showSearchBar.value = false;
+  closeSearchBar();
+}
+
+function handleSearchResultClick(id, event) {
+  console.log("search result clicked", id);
+
+  //TODO: if id not present in current subnet, fetch node from backend and add it to viz here (question, with its induced subnet or not? )
+
+  // if connected from existing node, create edge
+  if (connectionInfo.value) linkSourceToSearchResult(id);
 }
 
 function linkSourceToSearchResult(id) {
@@ -366,7 +543,7 @@ function linkSourceToSearchResult(id) {
 
 function closeSearchBar() {
   showSearchBar.value = false;
-  searchResults.value = [];
+  searchResults.value = null;
 }
 
 onNodeDragStart(({ event, node }) => {
@@ -406,61 +583,8 @@ function updatePos() {
   setNodes(outValue);
 }
 
-/**
- * toObject transforms your current data to an easily persist-able object
- */
-function logToObject() {
-  console.log(toObject());
-}
-
-/**
- * Resets the current viewport transformation (zoom & pan)
- */
-function resetTransform() {
-  setViewport({ x: 0, y: 0, zoom: 1 });
-}
-
 function toggleDarkMode() {
   dark.value = !dark.value;
-}
-
-async function layoutSubnet(direction) {
-  const currentNodes = getNodes.value;
-  const currentEdges = getEdges.value;
-
-  if (currentNodes.length === 1) {
-    nodes.value = layoutSingleton(currentNodes, direction);
-    nextTick(() => {
-      fitView();
-      zoomTo(1.5);
-    });
-    return;
-  } else if (currentNodes.length === 0 || currentEdges.length === 0) {
-    console.warn("Nodes or edges are empty, cannot layout subnet");
-    return;
-  }
-  nodes.value = layout(currentNodes, currentEdges, direction);
-
-  nextTick(() => {
-    fitView();
-  });
-}
-
-function exportSubnet() {
-  const nodes = getNodes.value.map((node) => ({
-    ...node.data,
-  }));
-
-  const edges = getEdges.value.map((edge) => ({
-    ...edge.data,
-  }));
-
-  const subnetData = { nodes, edges };
-  console.log("Exporting subnet data:", subnetData);
-  const blob = new Blob([JSON.stringify(subnetData, null, 2)], {
-    type: "application/json",
-  });
-  saveAs(blob, "export.json");
 }
 
 // ********* CONTEXT MENUS *********
@@ -500,6 +624,16 @@ function onSelectionRightClick({ event, selection }) {
     { name: "Group Selection", action: () => groupSelection(selection) },
     { name: "Delete Selection", action: () => deleteSelection(selection) },
   ]);
+}
+
+function onPaneRightClick(event) {
+  event.preventDefault();
+  console.log("Pane Right Click", event);
+
+  searchBarPosition.value = determinePositionWithinWindow(event);
+  setTimeout(() => {
+    showSearchBar.value = true;
+  }, 10);
 }
 
 function onConnectEndEmpty(event) {
@@ -545,21 +679,15 @@ function optionClicked({ option }) {
 }
 
 onEdgeMouseEnter(({ edge }) => {
-  // event.preventDefault();
-  edge.style = {
-    strokeWidth: edge.style.strokeWidth ? edge.style.strokeWidth * 2 : 1,
-    // stroke: "black"
-  };
+  // edge.style = {
+  //   strokeWidth: edge.style.strokeWidth ? edge.style.strokeWidth * 2 : 1,
+  // };
 });
 
 onEdgeMouseLeave(({ edge }) => {
-  // event.preventDefault();
-  edge.style = {
-    strokeWidth: edge.style.strokeWidth / 2,
-    // color: "grey",
-    // stroke: undefined,
-    // strokeWidth: undefined,
-  };
+  // edge.style = {
+  //   strokeWidth: edge.style.strokeWidth / 2,
+  // };
 });
 </script>
 
@@ -572,7 +700,7 @@ onEdgeMouseLeave(({ edge }) => {
       :min-zoom="0.2"
       :max-zoom="4"
       :apply-default="false"
-      @nodes-initialized="layoutSubnet(previousDirection)"
+      @nodes-initialized="selectDirection(selectedDirection)"
       @nodes-change="onNodesChange"
       @edges-change="onEdgesChange"
       @connect="onConnect"
@@ -581,6 +709,7 @@ onEdgeMouseLeave(({ edge }) => {
       @node-context-menu="onNodeRightClick"
       @edge-context-menu="onEdgeRightClick"
       @selection-context-menu="onSelectionRightClick"
+      @pane-context-menu="onPaneRightClick"
     >
       <template #edge-special="props">
         <SpecialEdge v-bind="props" />
@@ -601,15 +730,33 @@ onEdgeMouseLeave(({ edge }) => {
         v-if="showSearchBar"
         class="search-bar-container"
         :style="{
-          top: searchBarPosition.y - 40 + 'px',
-          left: searchBarPosition.x - 640 + 'px',
+          position: 'absolute',
+          top: searchBarPosition.y + 'px',
+          left: searchBarPosition.x + 'px',
         }"
       >
         <button class="close-button" @click="closeSearchBar">✖</button>
+        <button
+          @click="createNodeAndEdge"
+          style="
+            padding: 5px;
+            margin-top: 6px;
+            border-radius: 2px;
+            margin-top: 2px;
+            margin-bottom: 3px;
+            width: 100%;
+            text-align: left;
+            font-size: 14px;
+          "
+        >
+          Create New Node
+        </button>
+
         <SearchBar
           @search="handleSearch"
-          :placeholder="'Search for existing nodes...'"
+          :placeholder="'Or search for existing nodes...'"
           :show-button="false"
+          style="width: 104%"
         />
         <ul
           v-if="searchResults && searchResults.length"
@@ -618,7 +765,15 @@ onEdgeMouseLeave(({ edge }) => {
           <li
             v-for="result in searchResults"
             :key="result.node_id"
-            @click="linkSourceToSearchResult(result.node_id.toString())"
+            @click="handleSearchResultClick(result.node_id.toString(), $event)"
+            :class="{
+              highlight: currentNodeIds.has(result.node_id.toString()),
+            }"
+            :title="
+              connectionInfo
+                ? 'Connect to node ' + result.node_id
+                : 'Fetching unnconnected nodes is not yet supported'
+            "
           >
             <span style="margin-right: 5px">➔</span>{{ result.title }}
           </li>
@@ -629,12 +784,6 @@ onEdgeMouseLeave(({ edge }) => {
         >
           No results found
         </p>
-        <button
-          @click="createNodeAndEdgeOnConnection"
-          style="padding: 5px; margin-top: 6px"
-        >
-          Create New Node
-        </button>
       </div>
 
       <Background pattern-color="#aaa" :gap="16" />
@@ -647,7 +796,7 @@ onEdgeMouseLeave(({ edge }) => {
             class="compass-button top"
             :class="{ selected: selectedDirection === 'BT' }"
             title="Upward causality"
-            @click="selectDirection('BT')"
+            @click="selectDirection('BT', true)"
           >
             <Icon name="arrow-up" />
           </button>
@@ -655,7 +804,7 @@ onEdgeMouseLeave(({ edge }) => {
             class="compass-button left"
             :class="{ selected: selectedDirection === 'RL' }"
             title="Leftward causality"
-            @click="selectDirection('RL')"
+            @click="selectDirection('RL', true)"
           >
             <Icon name="arrow-left" />
           </button>
@@ -663,7 +812,7 @@ onEdgeMouseLeave(({ edge }) => {
             class="compass-button bottom"
             :class="{ selected: selectedDirection === 'TB' }"
             title="Downward causality"
-            @click="selectDirection('TB')"
+            @click="selectDirection('TB', true)"
           >
             <Icon name="arrow-down" />
           </button>
@@ -671,7 +820,7 @@ onEdgeMouseLeave(({ edge }) => {
             class="compass-button right"
             :class="{ selected: selectedDirection === 'LR' }"
             title="Rightward causality"
-            @click="selectDirection('LR')"
+            @click="selectDirection('LR', true)"
           >
             <Icon name="arrow-right" />
           </button>
@@ -701,11 +850,14 @@ onEdgeMouseLeave(({ edge }) => {
   position: absolute;
   background: white;
   border: 1px solid #ccc;
-  border-radius: 8px;
+  border-radius: 5px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  padding: 10px;
+  padding: 5px;
   z-index: 1000;
-  max-width: 300px;
+  max-width: 250px;
+  min-width: 50px;
+  max-height: 300px;
+  overflow-y: auto;
   overflow: hidden;
 }
 
@@ -714,6 +866,8 @@ onEdgeMouseLeave(({ edge }) => {
   padding: 0;
   list-style: none;
   font-size: 11px;
+  max-height: 150px;
+  overflow-y: auto;
 }
 
 .search-bar-container li {
@@ -725,13 +879,18 @@ onEdgeMouseLeave(({ edge }) => {
   background-color: #f0f0f0;
 }
 
+.search-bar-container .highlight {
+  background-color: #ffff99; /* Highlight color */
+}
+
 .search-bar-container .close-button {
   position: absolute;
-  top: 5px;
-  right: 5px;
+  top: 0px;
+  right: 3px;
+  padding: 0;
   background: transparent;
   border: none;
-  font-size: 16px;
+  font-size: 10px;
   cursor: pointer;
 }
 

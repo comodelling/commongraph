@@ -22,7 +22,12 @@ export default {
           `${import.meta.env.VITE_BACKEND_URL}/nodes/random`,
         );
         const node = response.data;
-        window.location.href = `/node/${node.node_id}`;
+        const path = router.currentRoute.value.path;
+        if (path.startsWith("/node") || path.startsWith("/edge")) {
+          window.location.href = `/node/${node.node_id}`;
+        } else {
+          router.push({ name: "NodeView", params: { id: node.node_id } });
+        }
       } catch (error) {
         console.error("Error fetching random node:", error);
       }
@@ -32,8 +37,9 @@ export default {
       const path = router.currentRoute.value.path;
       if (path.startsWith("/node") || path.startsWith("/edge")) {
         window.location.href = `/node/new`;
+        // router.push(`/node/new`);
       } else {
-        router.push(`/node/new`);
+        router.push({ name: "NodeEdit", params: { id: "new" } });
       }
     };
     return {

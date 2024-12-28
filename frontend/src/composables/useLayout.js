@@ -23,7 +23,8 @@ export function useLayout() {
     localStorage.setItem("previousDirection", direction);
   }
 
-  function layoutSingleton(nodes, direction) {
+  function affectDirection(nodes, direction) {
+    console.log("affectDirection", direction);
     switch (direction) {
       case "TB":
         targetPosition = Position.Top;
@@ -122,5 +123,5 @@ export function useLayout() {
     });
   }
 
-  return { graph, layout, layoutSingleton, previousDirection };
+  return { graph, layout, affectDirection, previousDirection };
 }

@@ -1,0 +1,5 @@
+site_name: ObjectiveNet Documentation
+nav:
+  - Intro: index.md
+  - Concepts: concepts.md
+theme: readthedocs

@@ -106,6 +106,7 @@ class EdgeBase(BaseModel):
     source_from_ui: int | None = None
     target_from_ui: int | None = None
     references: list[str] = []
+    description: str | None = None
 
     @field_validator("cprob")
     def convert_nan_to_none(cls, v):

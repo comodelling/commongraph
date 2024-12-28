@@ -18,7 +18,7 @@ from janusgraph_python.process.traversal import Text
 from models import *
 
 
-app = FastAPI(title="ObjectiveNet API", version="v0.1.2")
+app = FastAPI(title="ObjectiveNet API", version="v0.1.3")
 
 env_path = PathlibPath("/app/.env") if os.getenv("DOCKER_ENV") else PathlibPath(".env")
 
@@ -440,6 +440,7 @@ def create_gremlin_edge(edge: EdgeBase, db=Depends(get_db_connection)) -> Gremli
     created_edge = db.V(edge.source).add_e(edge.edge_type)
     created_edge = created_edge.property("cprob", edge.cprob)
     created_edge = created_edge.property("references", parse_list(edge.references))
+    created_edge = created_edge.property("description", edge.description)
     created_edge = created_edge.to(__.V(edge.target))
     return created_edge.next()
 
@@ -492,6 +493,8 @@ def update_gremlin_edge(edge: EdgeBase, db=Depends(get_db_connection)) -> Gremli
         updated_edge = updated_edge.property("cprob", edge.cprob)
     if edge.references is not None:
         updated_edge = updated_edge.property("references", parse_list(edge.references))
+    if edge.description is not None:
+        updated_edge = updated_edge.property("description", edge.description)
     return updated_edge.next()
 
 

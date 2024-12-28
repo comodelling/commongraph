@@ -36,6 +36,8 @@ You can also contribute to ObjectiveNet by:
 
 ### Dev tools
 
+It is recommended to install dev requirements when contributing to the code: `pip install -r requirements-dev.txt` (this includes the main requirements).
+
 Run `pre-commit install` to set up the git hook scripts. It'll perform some formatting, linting and unit tests before any commit.
 
 To generate new *.txt* requirements files from *.in*, you'll need pip-tools: ```pip install pip-tools```<br>

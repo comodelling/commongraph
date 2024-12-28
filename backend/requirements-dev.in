@@ -1,23 +1,8 @@
 # main reqs
 -r requirements.in
 
-
 # basic software development tools
 black
 pip-tools
 pre-commit
 pytest
-httpx  # to use pytest and test FastAPI project
-
-
-# maybe just for jupyter notebook?
-ipykernel
-aiohttp
-async_timeout
-nest_asyncio
-
-# viz
-networkx
-matplotlib
-pygraphviz
-dash-cytoscape

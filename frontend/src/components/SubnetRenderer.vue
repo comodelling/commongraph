@@ -481,6 +481,9 @@ function createNodeAndEdge(event = null) {
       x: event.clientX,
       y: event.clientY,
     };
+    //TODO: improve approximate offset between handle and node corner
+    eventPosition.y -= 25;
+    eventPosition.x -= handleType === "target" ? 225 : 0;
   } else {
     console.log("No connectionInfo available");
     eventPosition = { x: event.clientX, y: event.clientY };

@@ -665,21 +665,15 @@ function optionClicked({ option }) {
 }
 
 onEdgeMouseEnter(({ edge }) => {
-  // event.preventDefault();
-  edge.style = {
-    strokeWidth: edge.style.strokeWidth ? edge.style.strokeWidth * 2 : 1,
-    // stroke: "black"
-  };
+  // edge.style = {
+  //   strokeWidth: edge.style.strokeWidth ? edge.style.strokeWidth * 2 : 1,
+  // };
 });
 
 onEdgeMouseLeave(({ edge }) => {
-  // event.preventDefault();
-  edge.style = {
-    strokeWidth: edge.style.strokeWidth / 2,
-    // color: "grey",
-    // stroke: undefined,
-    // strokeWidth: undefined,
-  };
+  // edge.style = {
+  //   strokeWidth: edge.style.strokeWidth / 2,
+  // };
 });
 </script>
 

@@ -29,7 +29,7 @@
 
 <script setup>
 import { BaseEdge, EdgeLabelRenderer, getBezierPath } from "@vue-flow/core";
-import { computed, ref } from "vue";
+import { computed } from "vue";
 
 const props = defineProps({
   sourceX: Number,
@@ -65,8 +65,6 @@ const props = defineProps({
   interactionWidth: Number,
 });
 
-const isHovered = ref(false);
-
 const path = computed(() => getBezierPath(props));
 
 const hoverText = computed(() =>
@@ -74,9 +72,9 @@ const hoverText = computed(() =>
 );
 </script>
 
-<script>
+<!-- <script>
 export default {
   name: "special",
   inheritAttrs: true,
 };
-</script>
+</script> -->

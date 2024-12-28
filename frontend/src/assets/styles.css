@@ -98,6 +98,16 @@ button:focus-visible {
   cursor: pointer;
 }
 
+.vue-flow__node-special.selected {
+  /* border-style: double; Double border for selection */
+  box-shadow: 0 0 10px; /* Glow effect for selection */
+}
+
+.vue-flow__edge.selected .vue-flow__edge-path {
+  filter: drop-shadow(0 0 5px rgba(0, 0, 0, 1))
+    drop-shadow(0 0 10px rgba(0, 0, 0, 0.5)); /* Add a glow effect when selected */
+}
+
 /* element-info */
 
 .element-info {

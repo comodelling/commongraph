@@ -3,7 +3,7 @@
  * backend data is kept as is in the data field
  **/
 export function formatFlowEdgeProps(data) {
-  const { source, target, edge_type } = data;
+  const { source, target, edge_type, selected } = data;
 
   const flowSource =
     edge_type === "imply" ? source.toString() : target.toString();
@@ -40,6 +40,7 @@ export function formatFlowEdgeProps(data) {
     markerEnd: markerEnd,
     markerStart: markerStart,
     data: { ...data },
+    selected: selected ? true : false,
     style: {
       stroke: "grey",
       strokeWidth: strokeWidth,
@@ -54,7 +55,7 @@ export function formatFlowEdgeProps(data) {
  **/
 export function formatFlowNodeProps(data) {
   // console.log("formatFlowNodeProps", data);
-  const { node_id, title, node_type, status, position } = data;
+  const { node_id, title, node_type, status, position, selected } = data;
 
   const style = {
     opacity: status === "completed" ? 0.4 : 0.95,
@@ -70,6 +71,7 @@ export function formatFlowNodeProps(data) {
     position: position || { x: 0, y: 0 },
     label: title,
     style: style,
+    selected: selected ? true : false,
     data: { ...data },
   };
 

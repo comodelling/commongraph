@@ -5,6 +5,7 @@ import json
 from fastapi.testclient import TestClient
 
 from main import app
+from database.janusgraph import JanusGraphDB
 
 
 os.environ["TRAVERSAL_SOURCE"] = "g_test"
@@ -13,7 +14,16 @@ client = TestClient(app)
 
 
 @pytest.fixture(scope="module")
-def fixtures():
+def db():
+    janusgraph_host = os.getenv("JANUSGRAPH_HOST", "localhost")
+    traversal_source = os.getenv("TRAVERSAL_SOURCE", "g_test")
+    db = JanusGraphDB(janusgraph_host, traversal_source)
+    yield db
+    db.reset_whole_network()
+
+
+@pytest.fixture(scope="module")
+def fixtures(db):
     client.delete("/network")
 
     result = client.post(
@@ -27,23 +37,14 @@ def fixtures():
     client.delete("/network")
 
 
-### / ###
-
-
 def test_read_main():
     response = client.get("/")
     assert response.status_code == 200
 
 
-### /network/ ###
-
-
 def test_get_whole_network():
     response = client.get("/network")
     assert response.status_code == 200
-
-
-### /subnet/ ###
 
 
 def test_update_subnet():
@@ -76,9 +77,6 @@ def test_network_summary():
     assert response.status_code == 200
 
 
-### /nodes/ ###
-
-
 def test_get_nodes_list():
     response = client.get("/nodes")
     assert response.status_code == 200
@@ -92,32 +90,23 @@ def test_create_and_delete_node():
         "/nodes",
         json={"title": "test", "description": "test"},
     )
-    assert (
-        response.status_code == 201
-    ), f"Node creation failed with status code {response.status_code}"
+    assert response.status_code == 201
     assert (
         json.loads(client.get("/network/summary").content.decode("utf-8"))["nodes"]
         == n_nodes + 1
-    ), "Node count did not increase by 1"
+    )
 
-    # Retrieve node ID
     node_id = json.loads(response.content.decode("utf-8"))["node_id"]
 
-    # Verify node creation
     response = client.get(f"/nodes/{node_id}")
-    assert (
-        response.status_code == 200
-    ), f"Node not found after creation with status code {response.status_code}"
+    assert response.status_code == 200
 
-    # Delete node
     response = client.delete(f"/nodes/{node_id}")
-    assert (
-        response.status_code == 200
-    ), f"Node deletion failed with status code {response.status_code}"
+    assert response.status_code == 200
     assert (
         json.loads(client.get("/network/summary").content.decode("utf-8"))["nodes"]
         == n_nodes
-    ), "Node count did not come back to initial value"
+    )
 
 
 @pytest.mark.skip
@@ -140,50 +129,37 @@ def test_get_node_wrong_id(fixtures):
     response = client.get(f"/nodes/{fixtures['node_id']}")
     assert response.status_code == 200
 
-    # inexistant ID
     response = client.get("/nodes/999999999")
     assert response.status_code == 404
 
 
 def test_search_nodes():
     response = client.get("/nodes?title=test")
-    assert (
-        response.status_code == 200
-    ), f"Unexpected status code: {response.status_code}, response: {response.json()}"
+    assert response.status_code == 200
     assert len(json.loads(response.content.decode("utf-8"))) == 1
 
 
 def test_search_nodes_with_node_type():
-    # Create nodes with different types
     client.post("/nodes", json={"title": "Objective Node", "node_type": "objective"})
     client.post("/nodes", json={"title": "Action Node", "node_type": "action"})
     client.post(
         "/nodes", json={"title": "Potentiality Node", "node_type": "potentiality"}
     )
 
-    # Search for nodes with type 'objective'
     response = client.get("/nodes?node_type=objective")
     assert response.status_code == 200
     nodes = json.loads(response.content.decode("utf-8"))
-    assert all(
-        node["node_type"] == "objective" for node in nodes
-    ), "Non-objective nodes found"
+    assert all(node["node_type"] == "objective" for node in nodes)
 
-    # Search for nodes with type 'action'
     response = client.get("/nodes?node_type=action")
     assert response.status_code == 200
     nodes = json.loads(response.content.decode("utf-8"))
-    assert all(
-        node["node_type"] == "action" for node in nodes
-    ), "Non-action nodes found"
+    assert all(node["node_type"] == "action" for node in nodes)
 
-    # Search for nodes with type 'potentiality'
     response = client.get("/nodes?node_type=potentiality")
     assert response.status_code == 200
     nodes = json.loads(response.content.decode("utf-8"))
-    assert all(
-        node["node_type"] == "potentiality" for node in nodes
-    ), "Non-potentiality nodes found"
+    assert all(node["node_type"] == "potentiality" for node in nodes)
 
 
 def test_update_node(fixtures):
@@ -198,7 +174,6 @@ def test_update_node(fixtures):
     assert response.status_code == 200
     assert json.loads(response.content.decode("utf-8"))["title"] == "test modified"
 
-    # inexistant ID
     response = client.put("/nodes", json={"title": "test", "description": "test"})
     assert response.status_code == 422
 
@@ -206,9 +181,6 @@ def test_update_node(fixtures):
 def test_delete_node_wrong_id():
     response = client.delete("/nodes/999999999")
     assert response.status_code == 404
-
-
-### /edges/ ###
 
 
 def test_get_edge_list():
@@ -220,7 +192,6 @@ def test_create_update_and_delete_edge(fixtures):
     n_edges = json.loads(client.get("/network/summary").content.decode("utf-8"))[
         "edges"
     ]
-    # POST
     response = client.post(
         "/edges",
         json={
@@ -233,9 +204,8 @@ def test_create_update_and_delete_edge(fixtures):
     assert (
         json.loads(client.get("/network/summary").content.decode("utf-8"))["edges"]
         == n_edges + 1
-    ), "Edge count did not increase by 1"
+    )
 
-    # PUT
     response = client.put(
         "/edges",
         json={
@@ -248,11 +218,9 @@ def test_create_update_and_delete_edge(fixtures):
     assert response.status_code == 200
     assert json.loads(response.content.decode("utf-8"))["cprob"] == 0.5
 
-    # DELETE
     response = client.delete(f"/edges/{fixtures['node_id']}/{fixtures['node_id']}")
     assert response.status_code == 200
 
-    # Verify edge deletion
     response = client.get(f"/edges/{fixtures['node_id']}/{fixtures['node_id']}")
     assert response.status_code == 404
 

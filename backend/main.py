@@ -489,7 +489,7 @@ def update_gremlin_edge(edge: EdgeBase, db=Depends(get_db_connection)) -> Gremli
     # TODO: test if any change is made and deal with mere additions
     if edge.edge_type is not None:
         warnings.warn("edge_type is not updatable because encoded as label")
-    if edge.cprob is not None:
+    if "cprob" in edge.model_fields_set:
         updated_edge = updated_edge.property("cprob", edge.cprob)
     if edge.references is not None:
         updated_edge = updated_edge.property("references", parse_list(edge.references))

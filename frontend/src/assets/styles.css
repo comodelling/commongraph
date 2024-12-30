@@ -163,7 +163,9 @@ button:focus-visible {
   background-color: #0056b3;
 }
 
-.add-reference-button {
+.add-reference-button,
+.add-description-button,
+.add-cprob-button {
   display: block;
   margin: 10px auto;
   padding: 5px 10px;
@@ -175,16 +177,10 @@ button:focus-visible {
   font-size: 12px;
 }
 
-.add-description-button {
-  display: block;
-  margin: 10px auto;
-  padding: 5px 10px;
-  background: #f9f9f9;
-  border: 1px solid #ccc;
-  cursor: pointer;
-  display: block;
-  width: 30%;
-  text-align: center;
+.add-cprob-button {
+  width: auto;
+  margin: 10px 0;
+  text-align: left;
 }
 
 .add-reference-button.invalid {
@@ -202,7 +198,9 @@ button:focus-visible {
   margin: 5px 0;
 }
 
+.cprob-content,
 .field-content {
+  /* min-height: 30px; */
   flex: 1;
   margin-left: 10px;
   border: 1px solid #ccc;
@@ -210,6 +208,10 @@ button:focus-visible {
   border-radius: 2px;
   display: flex; /* Ensure content is displayed inline */
   align-items: center; /* Align items in the center */
+}
+
+.cprob-content {
+  height: 30px;
 }
 
 .field-content span {

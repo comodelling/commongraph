@@ -426,7 +426,7 @@ function determinePositionWithinWindow(event) {
 function createEdgeOnConnection(targetId) {
   const { nodeId, handleType } = connectionInfo.value;
   const newEdgeData = formatFlowEdgeProps({
-    source: parseInt(nodeId),
+    source: nodeId.toString(),
     target: targetId, // targetId is a string
     edge_type: handleType === "source" ? "imply" : "require",
   });

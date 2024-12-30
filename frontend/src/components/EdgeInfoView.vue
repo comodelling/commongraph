@@ -12,7 +12,7 @@
           >source</a
         >)
       </strong>
-      = {{ localEdge.cprob * 100 || "? " }}%<br />
+      = {{ localEdge.cprob !== undefined ? localEdge.cprob * 100 : "?" }}%<br />
     </template>
     <template v-if="localEdge.edge_type === 'imply'">
       <strong :title="tooltips.edge.cprob_implication">
@@ -21,7 +21,7 @@
           >source</a
         >)
       </strong>
-      = {{ localEdge.cprob * 100 || "? " }}%<br />
+      = {{ localEdge.cprob !== undefined ? localEdge.cprob * 100 : "?" }}%<br />
     </template>
     <strong :title="tooltips.edge.references">References: </strong> <br />
     <ul

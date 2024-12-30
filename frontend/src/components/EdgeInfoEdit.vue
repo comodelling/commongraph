@@ -100,11 +100,12 @@ export default {
   },
   data() {
     const editedEdge = _.cloneDeep(this.edge);
-    editedEdge.cprob = this.edge.cprob * 100 || 0;
+    editedEdge.cprob =
+      this.edge.cprob !== undefined ? this.edge.cprob * 100 : undefined;
     return {
       editingField: null,
       editedEdge: editedEdge,
-      tooltips, // Add this line
+      tooltips,
     };
   },
   computed: {

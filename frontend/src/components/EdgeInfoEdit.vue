@@ -14,22 +14,31 @@
           Cond.Proba(implication|source)
         </strong>
       </template>
-      <div class="field-content">
-        <span v-if="editingField !== 'cprob'" @click="startEditing('cprob')">
-          {{ editedEdge.cprob }}%
-        </span>
-        <div v-else style="display: flex; align-items: center">
-          <input
-            type="number"
-            v-model.number="editedEdge.cprob"
-            @blur="stopEditing('cprob')"
-            ref="cprobInput"
-            min="0"
-            max="100"
-            style="width: 50px; margin-right: 5px"
-          />
-          <span>%</span>
-        </div>
+      <div class="cprob-content">
+        <template
+          v-if="editedEdge.cprob !== undefined && editedEdge.cprob !== null"
+        >
+          <span v-if="editingField !== 'cprob'" @click="startEditing('cprob')">
+            {{ editedEdge.cprob }}%
+          </span>
+          <div v-else style="display: flex; align-items: center">
+            <input
+              type="number"
+              v-model.number="editedEdge.cprob"
+              @blur="stopEditing('cprob')"
+              ref="cprobInput"
+              min="0"
+              max="100"
+              style="width: 50px; margin-right: 5px"
+            />
+            <span>%</span>
+          </div>
+        </template>
+        <template v-else>
+          <button class="add-cprob-button" @click="addCprob" style="">
+            + Add cprob
+          </button>
+        </template>
       </div>
     </div>
     <div class="field">
@@ -101,7 +110,9 @@ export default {
   data() {
     const editedEdge = _.cloneDeep(this.edge);
     editedEdge.cprob =
-      this.edge.cprob !== undefined ? this.edge.cprob * 100 : undefined;
+      this.edge.cprob !== undefined && this.edge.cprob !== null
+        ? this.edge.cprob * 100
+        : undefined;
     return {
       editingField: null,
       editedEdge: editedEdge,
@@ -128,6 +139,12 @@ export default {
     },
     stopEditing(field) {
       if (this.editingField === field) {
+        if (
+          field === "cprob" &&
+          (this.editedEdge.cprob < 0 || this.editedEdge.cprob > 100)
+        ) {
+          this.editedEdge.cprob = undefined;
+        }
         this.editingField = null;
       }
     },
@@ -178,7 +195,7 @@ export default {
       }
     },
     addCprob() {
-      this.editedEdge.cprob = "";
+      this.editedEdge.cprob = 0;
       this.startEditing("cprob"); // Ensure the input field is shown immediately
     },
   },

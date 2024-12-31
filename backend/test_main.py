@@ -3,21 +3,28 @@ import os
 import pytest
 import json
 from fastapi.testclient import TestClient
+import socket
 
 from main import app
 from database.janusgraph import JanusGraphDB
+from database.sqlite import SQLiteDB
 
-
-os.environ["TRAVERSAL_SOURCE"] = "g_test"
 
 client = TestClient(app)
 
 
 @pytest.fixture(scope="module")
 def db():
-    janusgraph_host = os.getenv("JANUSGRAPH_HOST", "localhost")
-    traversal_source = os.getenv("TRAVERSAL_SOURCE", "g_test")
-    db = JanusGraphDB(janusgraph_host, traversal_source)
+    # TODO: improve this, testing sqlite systematically and janusgraph if the server is running
+    db_type = os.getenv("DB_TYPE", "sqlite")
+    if db_type == "janusgraph":
+        janusgraph_host = os.getenv("JANUSGRAPH_HOST", "localhost")
+        db = JanusGraphDB(janusgraph_host, "g_test")
+    elif db_type == "sqlite":
+        db = SQLiteDB(":memory:")  # Use in-memory SQLite database for tests
+    else:
+        raise ValueError(f"Unsupported DB_TYPE: {db_type}")
+
     yield db
     db.reset_whole_network()
 

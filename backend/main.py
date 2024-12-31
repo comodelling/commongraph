@@ -22,7 +22,7 @@ from models import (
 
 from database.base import DatabaseInterface
 from database.janusgraph import JanusGraphDB
-
+from database.sqlite import SQLiteDB
 
 app = FastAPI(title="ObjectiveNet API", version="v0.1.3")
 
@@ -58,6 +58,10 @@ def get_db_connection() -> DatabaseInterface:
         janusgraph_host = os.getenv("JANUSGRAPH_HOST", "localhost")
         traversal_source = os.getenv("TRAVERSAL_SOURCE", "g")
         return JanusGraphDB(janusgraph_host, traversal_source)
+    elif DB_TYPE == "sqlite":
+        db_path = os.getenv("SQLITE_DB_PATH", "objectivenet-db.sqlite3")
+        print(f"Using SQLite database at {db_path}")
+        return SQLiteDB(db_path)
     else:
         raise ValueError(f"Unsupported DB_TYPE: {DB_TYPE}")
 

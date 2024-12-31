@@ -2,6 +2,8 @@
 backend/dev/*
 backend/data/*
 backend/scripts/*
+backups/
+
 
 !.gitkeep
 

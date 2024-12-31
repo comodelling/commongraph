@@ -43,6 +43,18 @@ Run `pre-commit install` to set up the git hook scripts. It'll perform some form
 To generate new *.txt* requirements files after updating *.in* requirements files, you can run: ```pip-compile backend/requirements.in``` or ```pip-compile backend/requirements-dev.in```.
 
 
+### Database export
+
+In addition to JSON exports of networks through the graphical UI or backend API, one can export the whole data volume for the janusgraph container.
+Simply replace /path/to/backup with the absolute path to your backup directory in the commands below.
+
+Create backup:
+```docker run --rm -v objectivenet_janusgraph-mount-data:/volume -v /path/to/backup:/backup alpine sh -c "cd /volume && tar czf /backup/janusgraph-mount-data-backup.tar.gz ."```
+
+Restore backup (restart required afterwards):
+```docker run --rm -v objectivenet_janusgraph-mount-data:/volume -v /path/to/backup:/backup alpine   sh -c "cd /volume && tar xzf /backup/janusgraph-mount-data-backup.tar.gz"```
+
+
 ## License
 
 This project is licensed under the GNU Affero General Public License - see the [COPYING](COPYING) file for details.

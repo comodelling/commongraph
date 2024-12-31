@@ -7,7 +7,7 @@ ObjectiveNet is an open source software to help people build causal networks of 
 To start ObjectiveNet:
 
 - [install Docker](https://www.docker.com/get-started/) if not already on your machine,
-- clone the repo (e.g. by running ```git clone https://github.com/planningcommons/objectivenet.git``` from a terminal),
+- clone the repo, e.g. with ```git clone https://github.com/planningcommons/objectivenet.git``` from a terminal,
 - run ```docker compose up``` from the cloned *objectivenet/* directory,
 - wait for it to start...and that's it! you can access it at [http://localhost:5173/](http://localhost:5173/) from a browser.
 
@@ -36,12 +36,11 @@ You can also contribute to ObjectiveNet by:
 
 ### Dev tools
 
-It is recommended to install dev requirements when contributing to the code: `pip install -r requirements-dev.txt` (this includes the main requirements).
+It is recommended to install dev requirements within a virtual environment when contributing to the code: `pip install -r requirements-dev.txt` (this includes the main requirements).
 
 Run `pre-commit install` to set up the git hook scripts. It'll perform some formatting, linting and unit tests before any commit.
 
-To generate new *.txt* requirements files from *.in*, you'll need pip-tools: ```pip install pip-tools```<br>
-Then, you can run: ```pip-compile backend/requirements.in``` or ```pip-compile backend/requirements-dev.in``` whenever you update these `.in` files.
+To generate new *.txt* requirements files after updating *.in* requirements files, you can run: ```pip-compile backend/requirements.in``` or ```pip-compile backend/requirements-dev.in```.
 
 
 ## License

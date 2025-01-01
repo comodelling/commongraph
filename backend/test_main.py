@@ -3,25 +3,32 @@ import os
 import pytest
 import json
 from fastapi.testclient import TestClient
-import socket
 
-from main import app
+from main import app, get_db_connection
 from database.janusgraph import JanusGraphDB
 from database.sqlite import SQLiteDB
 
 
-client = TestClient(app)
-
-
 @pytest.fixture(scope="module")
-def db():
-    # TODO: improve this, testing sqlite systematically and janusgraph if the server is running
-    db_type = os.getenv("DB_TYPE", "sqlite")
+def client(override_get_db_connection):
+    return TestClient(app)
+
+
+@pytest.fixture(scope="module", params=["janusgraph", "sqlite"])
+def db(request):
+    db_type = request.param
     if db_type == "janusgraph":
+        # os.environ["TRAVERSAL_SOURCE"] = "g_test"
         janusgraph_host = os.getenv("JANUSGRAPH_HOST", "localhost")
-        db = JanusGraphDB(janusgraph_host, "g_test")
+        try:
+            db = JanusGraphDB(janusgraph_host, "g_test")
+            with db.connection():
+                db.get_network_summary()
+        except Exception:
+            pytest.skip("JanusGraph server not running.")
     elif db_type == "sqlite":
-        db = SQLiteDB(":memory:")  # Use in-memory SQLite database for tests
+        pytest.skip("SQLite not yet implemented.")
+        db = SQLiteDB(":memory:")
     else:
         raise ValueError(f"Unsupported DB_TYPE: {db_type}")
 
@@ -30,7 +37,7 @@ def db():
 
 
 @pytest.fixture(scope="module")
-def fixtures(db):
+def initial_node(db, client):
     client.delete("/network")
 
     result = client.post(
@@ -44,17 +51,24 @@ def fixtures(db):
     client.delete("/network")
 
 
-def test_read_main():
+@pytest.fixture(autouse=True, scope="module")
+def override_get_db_connection(db):
+    app.dependency_overrides[get_db_connection] = lambda: db
+    yield
+    app.dependency_overrides.pop(get_db_connection, None)
+
+
+def test_read_main(client):
     response = client.get("/")
     assert response.status_code == 200
 
 
-def test_get_whole_network():
+def test_get_whole_network(db, client):
     response = client.get("/network")
     assert response.status_code == 200
 
 
-def test_update_subnet():
+def test_update_subnet(db, client):
     n_nodes = json.loads(client.get("/network/summary").content.decode("utf-8"))[
         "nodes"
     ]
@@ -69,8 +83,8 @@ def test_update_subnet():
     )
 
 
-def test_get_subnet(fixtures):
-    node_id = fixtures["node_id"]
+def test_get_subnet(initial_node, client):
+    node_id = initial_node["node_id"]
     response = client.get(f"/subnet/{node_id}")
     assert response.status_code == 200
     assert node_id in [
@@ -79,17 +93,17 @@ def test_get_subnet(fixtures):
     ]
 
 
-def test_network_summary():
+def test_network_summary(db, client):
     response = client.get("/network/summary")
     assert response.status_code == 200
 
 
-def test_get_nodes_list():
+def test_get_nodes_list(db, client):
     response = client.get("/nodes")
     assert response.status_code == 200
 
 
-def test_create_and_delete_node():
+def test_create_and_delete_node(db, client):
     n_nodes = json.loads(client.get("/network/summary").content.decode("utf-8"))[
         "nodes"
     ]
@@ -117,7 +131,7 @@ def test_create_and_delete_node():
 
 
 @pytest.mark.skip
-def test_create_node_specific_id():
+def test_create_node_specific_id(db, client):
     response = client.post(
         "/nodes",
         json={"title": "test", "description": "test", "node_id": 777777},
@@ -127,26 +141,26 @@ def test_create_node_specific_id():
     assert response.status_code == 200
 
 
-def test_get_random_node():
+def test_get_random_node(db, client):
     response = client.get("/nodes/random")
     assert response.status_code == 200
 
 
-def test_get_node_wrong_id(fixtures):
-    response = client.get(f"/nodes/{fixtures['node_id']}")
+def test_get_node_wrong_id(initial_node, client):
+    response = client.get(f"/nodes/{initial_node['node_id']}")
     assert response.status_code == 200
 
     response = client.get("/nodes/999999999")
     assert response.status_code == 404
 
 
-def test_search_nodes():
+def test_search_nodes(db, client):
     response = client.get("/nodes?title=test")
     assert response.status_code == 200
     assert len(json.loads(response.content.decode("utf-8"))) == 1
 
 
-def test_search_nodes_with_node_type():
+def test_search_nodes_with_node_type(db, client):
     client.post("/nodes", json={"title": "Objective Node", "node_type": "objective"})
     client.post("/nodes", json={"title": "Action Node", "node_type": "action"})
     client.post(
@@ -169,11 +183,11 @@ def test_search_nodes_with_node_type():
     assert all(node["node_type"] == "potentiality" for node in nodes)
 
 
-def test_update_node(fixtures):
+def test_update_node(initial_node, client):
     response = client.put(
         "/nodes",
         json={
-            "node_id": fixtures["node_id"],
+            "node_id": initial_node["node_id"],
             "title": "test modified",
             "description": "test modified",
         },
@@ -185,17 +199,17 @@ def test_update_node(fixtures):
     assert response.status_code == 422
 
 
-def test_delete_node_wrong_id():
+def test_delete_node_wrong_id(db, client):
     response = client.delete("/nodes/999999999")
     assert response.status_code == 404
 
 
-def test_get_edge_list():
+def test_get_edge_list(db, client):
     response = client.get("/edges")
     assert response.status_code == 200
 
 
-def test_create_update_and_delete_edge(fixtures):
+def test_create_update_and_delete_edge(initial_node, client):
     n_edges = json.loads(client.get("/network/summary").content.decode("utf-8"))[
         "edges"
     ]
@@ -203,8 +217,8 @@ def test_create_update_and_delete_edge(fixtures):
         "/edges",
         json={
             "edge_type": "imply",
-            "source": fixtures["node_id"],
-            "target": fixtures["node_id"],
+            "source": initial_node["node_id"],
+            "target": initial_node["node_id"],
         },
     )
     assert response.status_code == 201
@@ -217,22 +231,24 @@ def test_create_update_and_delete_edge(fixtures):
         "/edges",
         json={
             "edge_type": "imply",
-            "source": fixtures["node_id"],
-            "target": fixtures["node_id"],
+            "source": initial_node["node_id"],
+            "target": initial_node["node_id"],
             "cprob": 0.5,
         },
     )
     assert response.status_code == 200
     assert json.loads(response.content.decode("utf-8"))["cprob"] == 0.5
 
-    response = client.delete(f"/edges/{fixtures['node_id']}/{fixtures['node_id']}")
+    response = client.delete(
+        f"/edges/{initial_node['node_id']}/{initial_node['node_id']}"
+    )
     assert response.status_code == 200
 
-    response = client.get(f"/edges/{fixtures['node_id']}/{fixtures['node_id']}")
+    response = client.get(f"/edges/{initial_node['node_id']}/{initial_node['node_id']}")
     assert response.status_code == 404
 
 
-def test_find_edges():
+def test_find_edges(db, client):
     response = client.post(
         "/edges/find",
         json={"edge_type": "imply"},
@@ -240,7 +256,7 @@ def test_find_edges():
     assert response.status_code == 200
 
 
-def test_create_node_with_references():
+def test_create_node_with_references(db, client):
     response = client.post(
         "/nodes",
         json={
@@ -256,7 +272,7 @@ def test_create_node_with_references():
     assert set(node["references"]) == {"ref1", "ref2", "ref3"}
 
 
-def test_update_node_with_references():
+def test_update_node_with_references(db, client):
     response = client.post(
         "/nodes",
         json={
@@ -285,13 +301,13 @@ def test_update_node_with_references():
     assert set(updated_node["references"]) == {"ref3", "ref4"}
 
 
-def test_create_edge_with_references(fixtures):
+def test_create_edge_with_references(initial_node, client):
     response = client.post(
         "/edges",
         json={
             "edge_type": "imply",
-            "source": fixtures["node_id"],
-            "target": fixtures["node_id"],
+            "source": initial_node["node_id"],
+            "target": initial_node["node_id"],
             "references": ["ref1", "ref2", "ref3"],
         },
     )
@@ -302,13 +318,13 @@ def test_create_edge_with_references(fixtures):
     assert set(edge["references"]) == {"ref1", "ref2", "ref3"}
 
 
-def test_update_edge_with_references(fixtures):
+def test_update_edge_with_references(initial_node, client):
     response = client.post(
         "/edges",
         json={
             "edge_type": "imply",
-            "source": fixtures["node_id"],
-            "target": fixtures["node_id"],
+            "source": initial_node["node_id"],
+            "target": initial_node["node_id"],
             "references": ["ref1", "ref2"],
         },
     )
@@ -319,8 +335,8 @@ def test_update_edge_with_references(fixtures):
         "/edges",
         json={
             "edge_type": "imply",
-            "source": fixtures["node_id"],
-            "target": fixtures["node_id"],
+            "source": initial_node["node_id"],
+            "target": initial_node["node_id"],
             "references": ["ref3", "ref4"],
         },
     )

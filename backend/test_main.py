@@ -28,7 +28,7 @@ def db(request):
             pytest.skip("JanusGraph server not running.")
     elif db_type == "sqlite":
         pytest.skip("SQLite not yet implemented.")
-        db = SQLiteDB(":memory:")
+        db = SQLiteDB("file::memory:?cache=shared")
     else:
         raise ValueError(f"Unsupported DB_TYPE: {db_type}")
 

@@ -1,3 +1,5 @@
+import random
+
 import sqlite3
 from fastapi import HTTPException
 
@@ -8,6 +10,8 @@ from .base import DatabaseInterface
 class SQLiteDB(DatabaseInterface):
     def __init__(self, db_path: str):
         self.db_path = db_path
+        self.node_description = None
+        self.edge_description = None
         self._initialize_db()
 
     def _initialize_db(self):
@@ -30,7 +34,6 @@ class SQLiteDB(DatabaseInterface):
             cursor.execute(
                 """
                 CREATE TABLE IF NOT EXISTS edges (
-                    edge_id INTEGER PRIMARY KEY,
                     edge_type TEXT,
                     source INTEGER,
                     target INTEGER,
@@ -38,18 +41,28 @@ class SQLiteDB(DatabaseInterface):
                     "references" TEXT,
                     description TEXT,
                     FOREIGN KEY(source) REFERENCES nodes(node_id),
-                    FOREIGN KEY(target) REFERENCES nodes(node_id)
+                    FOREIGN KEY(target) REFERENCES nodes(node_id),
+                    UNIQUE(source, target, edge_type)
                 )
-            """
+                """
             )
             conn.commit()
+            self.node_description = cursor.execute(
+                "SELECT * FROM nodes LIMIT 1"
+            ).description
+            self.edge_description = cursor.execute(
+                "SELECT * FROM edges LIMIT 1"
+            ).description
 
     def get_whole_network(self) -> Subnet:
         with sqlite3.connect(self.db_path, check_same_thread=False, uri=True) as conn:
             cursor = conn.cursor()
             nodes = cursor.execute("SELECT * FROM nodes").fetchall()
             edges = cursor.execute("SELECT * FROM edges").fetchall()
-            return Subnet(nodes=nodes, edges=edges)
+            return Subnet(
+                nodes=[NodeBase(**self.node_row_to_dict(node)) for node in nodes],
+                edges=[EdgeBase(**self.edge_row_to_dict(edge)) for edge in edges],
+            )
 
     def get_network_summary(self) -> dict:
         with sqlite3.connect(self.db_path, check_same_thread=False, uri=True) as conn:
@@ -116,7 +129,10 @@ class SQLiteDB(DatabaseInterface):
             edges = cursor.execute(
                 "SELECT * FROM edges WHERE source = ? OR target = ?", (node_id, node_id)
             ).fetchall()
-            return Subnet(nodes=nodes, edges=edges)
+            return Subnet(
+                nodes=[NodeBase(**self.node_row_to_dict(node)) for node in nodes],
+                edges=[EdgeBase(**self.edge_row_to_dict(edge)) for edge in edges],
+            )
 
     def search_nodes(self, **kwargs) -> list[NodeBase]:
         with sqlite3.connect(self.db_path, check_same_thread=False, uri=True) as conn:
@@ -124,8 +140,14 @@ class SQLiteDB(DatabaseInterface):
             query = "SELECT * FROM nodes WHERE 1=1"
             params = []
             if "node_type" in kwargs and kwargs["node_type"]:
-                query += " AND node_type = ?"
-                params.append(kwargs["node_type"])
+                if isinstance(kwargs["node_type"], list):
+                    query += " AND node_type IN ({})".format(
+                        ",".join("?" * len(kwargs["node_type"]))
+                    )
+                    params.extend(kwargs["node_type"])
+                else:
+                    query += " AND node_type = ?"
+                    params.append(kwargs["node_type"])
             if "title" in kwargs and kwargs["title"]:
                 query += " AND title LIKE ?"
                 params.append(f"%{kwargs['title']}%")
@@ -133,8 +155,14 @@ class SQLiteDB(DatabaseInterface):
                 query += " AND scope LIKE ?"
                 params.append(f"%{kwargs['scope']}%")
             if "status" in kwargs and kwargs["status"]:
-                query += " AND status = ?"
-                params.append(kwargs["status"])
+                if isinstance(kwargs["status"], list):
+                    query += " AND status IN ({})".format(
+                        ",".join("?" * len(kwargs["status"]))
+                    )
+                    params.extend(kwargs["status"])
+                else:
+                    query += " AND status = ?"
+                    params.append(kwargs["status"])
             if "tags" in kwargs and kwargs["tags"]:
                 query += " AND tags LIKE ?"
                 params.append(f"%{kwargs['tags']}%")
@@ -143,7 +171,7 @@ class SQLiteDB(DatabaseInterface):
                 params.append(f"%{kwargs['description']}%")
 
             nodes = cursor.execute(query, params).fetchall()
-            return [NodeBase(**row_to_dict(cursor, node)) for node in nodes]
+            return [NodeBase(**self.node_row_to_dict(node)) for node in nodes]
 
     def get_random_node(self, node_type: str = None) -> NodeBase:
         with sqlite3.connect(self.db_path, check_same_thread=False, uri=True) as conn:
@@ -158,7 +186,7 @@ class SQLiteDB(DatabaseInterface):
             node = cursor.execute(query, params).fetchone()
             if not node:
                 raise HTTPException(status_code=404, detail="Node not found")
-            return NodeBase(**row_to_dict(cursor, node))
+            return NodeBase(**self.node_row_to_dict(node))
 
     def get_node(self, node_id: int) -> NodeBase:
         with sqlite3.connect(self.db_path, check_same_thread=False, uri=True) as conn:
@@ -166,9 +194,11 @@ class SQLiteDB(DatabaseInterface):
             node = cursor.execute(
                 "SELECT * FROM nodes WHERE node_id = ?", (node_id,)
             ).fetchone()
+            print(node)
+            print(self.node_row_to_dict(node))
             if not node:
                 raise HTTPException(status_code=404, detail="Node not found")
-            return NodeBase(**row_to_dict(cursor, node))
+            return NodeBase(**self.node_row_to_dict(node))
 
     def find_edges(self, **kwargs) -> list[EdgeBase]:
         with sqlite3.connect(self.db_path, check_same_thread=False, uri=True) as conn:
@@ -186,36 +216,44 @@ class SQLiteDB(DatabaseInterface):
                 params.append(kwargs["edge_type"])
 
             edges = cursor.execute(query, params).fetchall()
-            return [EdgeBase(**row_to_dict(cursor, edge)) for edge in edges]
+            return [EdgeBase(**self.edge_row_to_dict(edge)) for edge in edges]
+
+    def generate_unique_node_id(self) -> int:
+        with sqlite3.connect(self.db_path, check_same_thread=False, uri=True) as conn:
+            cursor = conn.cursor()
+            while True:
+                node_id = random.randint(1, 1_000_000_000)
+                cursor.execute("SELECT 1 FROM nodes WHERE node_id = ?", (node_id,))
+                if not cursor.fetchone():
+                    return node_id
 
     def create_node(self, node: NodeBase) -> NodeBase:
         with sqlite3.connect(self.db_path, check_same_thread=False, uri=True) as conn:
             cursor = conn.cursor()
+            node_id = self.generate_unique_node_id()  # Generate unique node_id
             cursor.execute(
                 """
-                INSERT INTO nodes (node_type, title, scope, status, description, tags, "references")
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-            """,
+                INSERT INTO nodes (node_id, node_type, title, scope, status, description, tags, "references")
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
                 (
+                    node_id,
                     node.node_type,
                     node.title,
                     node.scope,
                     node.status,
                     node.description,
-                    ";".join(node.tags),
-                    ";".join(node.references),
+                    ";".join(node.tags) if node.tags else "",
+                    ";".join(node.references) if node.references else "",
                 ),
             )
             conn.commit()
-            node_id = cursor.lastrowid
-            node.node_id = node_id
-            return NodeBase(**node.model_dump())
-
-    def delete_node(self, node_id: int) -> None:
-        with sqlite3.connect(self.db_path, check_same_thread=False, uri=True) as conn:
-            cursor = conn.cursor()
-            cursor.execute("DELETE FROM nodes WHERE node_id = ?", (node_id,))
-            conn.commit()
+            cursor.execute("SELECT * FROM nodes WHERE node_id = ?", (node_id,))
+            row = cursor.fetchone()
+            if row:
+                return NodeBase(**self.node_row_to_dict(row))
+            else:
+                raise HTTPException(status_code=500, detail="Failed to create node")
 
     def update_node(self, node: NodeBase) -> NodeBase:
         with sqlite3.connect(self.db_path, check_same_thread=False, uri=True) as conn:
@@ -232,19 +270,32 @@ class SQLiteDB(DatabaseInterface):
                     node.scope,
                     node.status,
                     node.description,
-                    ";".join(node.tags),
-                    ";".join(node.references),
+                    ";".join(node.tags) if node.tags else "",
+                    ";".join(node.references) if node.references else "",
                     node.node_id,
                 ),
             )
             conn.commit()
-            return node
+            cursor.execute("SELECT * FROM nodes WHERE node_id = ?", (node.node_id,))
+            row = cursor.fetchone()
+            if row:
+                return NodeBase(**self.node_row_to_dict(row))
+            else:
+                raise HTTPException(status_code=500, detail="Failed to update node")
+
+    def delete_node(self, node_id: int) -> None:
+        with sqlite3.connect(self.db_path, check_same_thread=False, uri=True) as conn:
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM nodes WHERE node_id = ?", (node_id,))
+            if cursor.rowcount == 0:
+                raise HTTPException(status_code=404, detail="Node not found")
+            conn.commit()
 
     def get_edge_list(self) -> list[EdgeBase]:
         with sqlite3.connect(self.db_path, check_same_thread=False, uri=True) as conn:
             cursor = conn.cursor()
             edges = cursor.execute("SELECT * FROM edges").fetchall()
-            return [EdgeBase(**row_to_dict(cursor, edge)) for edge in edges]
+            return [EdgeBase(**self.edge_row_to_dict(edge)) for edge in edges]
 
     def get_edge(self, source_id: int, target_id: int) -> EdgeBase:
         with sqlite3.connect(self.db_path, check_same_thread=False, uri=True) as conn:
@@ -253,28 +304,66 @@ class SQLiteDB(DatabaseInterface):
                 "SELECT * FROM edges WHERE source = ? AND target = ?",
                 (source_id, target_id),
             ).fetchone()
-            return EdgeBase(**row_to_dict(cursor, edge))
+            if edge is None:
+                raise HTTPException(status_code=404, detail="Edge not found")
+            return EdgeBase(**self.edge_row_to_dict(edge))
 
     def create_edge(self, edge: EdgeBase) -> EdgeBase:
         with sqlite3.connect(self.db_path, check_same_thread=False, uri=True) as conn:
             cursor = conn.cursor()
             cursor.execute(
                 """
-                INSERT INTO edges (edge_type, source, target, cprob, "references", description)
+                INSERT OR IGNORE INTO edges (edge_type, source, target, cprob, "references", description)
                 VALUES (?, ?, ?, ?, ?, ?)
-            """,
+                """,
                 (
                     edge.edge_type,
                     edge.source,
                     edge.target,
-                    edge.cprob,
-                    ";".join(edge.references),
-                    edge.description,
+                    edge.cprob if edge.cprob is not None else 0.0,
+                    ";".join(edge.references) if edge.references else "",
+                    edge.description if edge.description else "",
                 ),
             )
             conn.commit()
-            edge_id = cursor.lastrowid
-            return EdgeBase(edge_id=edge_id, **edge.model_dump())
+            cursor.execute(
+                "SELECT * FROM edges WHERE edge_type = ? AND source = ? AND target = ?",
+                (edge.edge_type, edge.source, edge.target),
+            )
+            new_edge = cursor.fetchone()
+            if new_edge:
+                return EdgeBase(**self.edge_row_to_dict(new_edge))
+            else:
+                raise HTTPException(status_code=500, detail="Failed to create edge")
+
+    def update_edge(self, edge: EdgeBase) -> EdgeBase:
+        with sqlite3.connect(self.db_path, check_same_thread=False, uri=True) as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                """
+                UPDATE edges
+                SET cprob = ?, "references" = ?, description = ?
+                WHERE edge_type = ? AND source = ? AND target = ?
+                """,
+                (
+                    edge.cprob,
+                    ";".join(edge.references) if edge.references else "",
+                    edge.description,
+                    edge.edge_type,
+                    edge.source,
+                    edge.target,
+                ),
+            )
+            conn.commit()
+            cursor.execute(
+                "SELECT * FROM edges WHERE edge_type = ? AND source = ? AND target = ?",
+                (edge.edge_type, edge.source, edge.target),
+            )
+            updated_edge = cursor.fetchone()
+            if updated_edge:
+                return EdgeBase(**self.edge_row_to_dict(updated_edge))
+            else:
+                raise HTTPException(status_code=500, detail="Failed to update edge")
 
     def delete_edge(
         self, source_id: int, target_id: int, edge_type: str = None
@@ -293,28 +382,31 @@ class SQLiteDB(DatabaseInterface):
                 )
             conn.commit()
 
-    def update_edge(self, edge: EdgeBase) -> EdgeBase:
-        with sqlite3.connect(self.db_path, check_same_thread=False, uri=True) as conn:
-            cursor = conn.cursor()
-            cursor.execute(
-                """
-                UPDATE edges
-                SET edge_type = ?, source = ?, target = ?, cprob = ?, "references" = ?, description = ?
-                WHERE edge_id = ?
-            """,
-                (
-                    edge.edge_type,
-                    edge.source,
-                    edge.target,
-                    edge.cprob,
-                    ";".join(edge.references),
-                    edge.description,
-                    edge.edge_id,
-                ),
-            )
-            conn.commit()
-            return edge
+    def node_row_to_dict(self, row):
+        if row is None:
+            return {}
+        d = dict(zip([column[0] for column in self.node_description], row))
+        d["node_id"] = d.get("node_id")
+        d["node_type"] = d.get("node_type") or "potentiality"
+        d["title"] = d.get("title") or "untitled"
+        d["scope"] = d.get("scope") or "uscoped"
+        d["status"] = d.get("status")
+        d["description"] = d.get("description")
+        if "tags" in d:
+            d["tags"] = d["tags"].split(";") if d["tags"] else []
+        if "references" in d:
+            d["references"] = d["references"].split(";") if d["references"] else []
+        return d
 
-
-def row_to_dict(cursor, row):
-    return dict(zip([column[0] for column in cursor.description], row))
+    def edge_row_to_dict(self, row):
+        if row is None:
+            return {}
+        d = dict(zip([column[0] for column in self.edge_description], row))
+        if "references" in d:
+            d["references"] = d["references"].split(";") if d["references"] else []
+        d["edge_type"] = d.get("edge_type")
+        d["source"] = d.get("source")
+        d["target"] = d.get("target")
+        d["cprob"] = d.get("cprob", 0.0)
+        d["description"] = d.get("description") or ""
+        return d

@@ -3,15 +3,11 @@ import os
 import pytest
 import json
 from fastapi.testclient import TestClient
+import tempfile
 
 from main import app, get_db_connection
 from database.janusgraph import JanusGraphDB
 from database.sqlite import SQLiteDB
-
-
-@pytest.fixture(scope="module")
-def client(override_get_db_connection):
-    return TestClient(app)
 
 
 @pytest.fixture(scope="module", params=["janusgraph", "sqlite"])
@@ -27,13 +23,28 @@ def db(request):
         except Exception:
             pytest.skip("JanusGraph server not running.")
     elif db_type == "sqlite":
-        pytest.skip("SQLite not yet implemented.")
-        db = SQLiteDB("file::memory:?cache=shared")
+        fd, path = tempfile.mkstemp()
+        os.close(fd)
+        db = SQLiteDB(path)
     else:
         raise ValueError(f"Unsupported DB_TYPE: {db_type}")
 
     yield db
     db.reset_whole_network()
+    if db_type == "sqlite":
+        os.remove(path)
+
+
+@pytest.fixture(autouse=True, scope="module")
+def override_get_db_connection(db):
+    app.dependency_overrides[get_db_connection] = lambda: db
+    yield
+    app.dependency_overrides.pop(get_db_connection, None)
+
+
+@pytest.fixture(scope="module")
+def client(override_get_db_connection):
+    return TestClient(app)
 
 
 @pytest.fixture(scope="module")
@@ -49,13 +60,6 @@ def initial_node(db, client):
     yield node_dict
 
     client.delete("/network")
-
-
-@pytest.fixture(autouse=True, scope="module")
-def override_get_db_connection(db):
-    app.dependency_overrides[get_db_connection] = lambda: db
-    yield
-    app.dependency_overrides.pop(get_db_connection, None)
 
 
 def test_read_main(client):

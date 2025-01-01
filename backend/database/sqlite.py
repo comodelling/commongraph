@@ -337,7 +337,7 @@ class SQLiteDB(DatabaseInterface):
                     edge.edge_type,
                     edge.source,
                     edge.target,
-                    edge.cprob if edge.cprob is not None else 0.0,
+                    edge.cprob,
                     ";".join(edge.references) if edge.references else "",
                     edge.description if edge.description else "",
                 ),
@@ -407,7 +407,7 @@ class SQLiteDB(DatabaseInterface):
         d["node_type"] = d.get("node_type") or "potentiality"
         d["title"] = d.get("title") or "untitled"
         d["scope"] = d.get("scope") or "unscoped"
-        d["status"] = d.get("status")
+        d["status"] = d.get("status") or "unspecified"
         d["description"] = d.get("description")
         if "tags" in d:
             d["tags"] = d["tags"].split(";") if d["tags"] else []
@@ -419,11 +419,11 @@ class SQLiteDB(DatabaseInterface):
         if row is None:
             return {}
         d = dict(zip([column[0] for column in self.edge_description], row))
-        if "references" in d:
-            d["references"] = d["references"].split(";") if d["references"] else []
         d["edge_type"] = d.get("edge_type")
         d["source"] = d.get("source")
         d["target"] = d.get("target")
-        d["cprob"] = d.get("cprob", 0.0)
-        d["description"] = d.get("description") or ""
+        d["cprob"] = d.get("cprob")
+        d["description"] = d.get("description")
+        if "references" in d:
+            d["references"] = d["references"].split(";") if d["references"] else []
         return d

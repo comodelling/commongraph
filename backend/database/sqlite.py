@@ -118,16 +118,33 @@ class SQLiteDB(DatabaseInterface):
             return Subnet(nodes=nodes_out, edges=edges_out)
 
     def get_induced_subnet(self, node_id: int, levels: int) -> Subnet:
+        def fetch_neighbors(cursor, node_ids, level):
+            if level == 0:
+                return set(node_ids), []
+            nodes = set(node_ids)
+            edges = []
+            for node_id in node_ids:
+                cursor.execute(
+                    "SELECT * FROM edges WHERE source = ? OR target = ?",
+                    (node_id, node_id),
+                )
+                new_edges = cursor.fetchall()
+                edges.extend(new_edges)
+                for edge in new_edges:
+                    nodes.add(edge[1])  # source
+                    nodes.add(edge[2])  # target
+            next_nodes, next_edges = fetch_neighbors(cursor, nodes, level - 1)
+            return nodes.union(next_nodes), edges + next_edges
+
         with sqlite3.connect(self.db_path, check_same_thread=False, uri=True) as conn:
             cursor = conn.cursor()
+            initial_nodes = [node_id]
+            nodes, edges = fetch_neighbors(cursor, initial_nodes, levels)
             nodes = cursor.execute(
-                "SELECT * FROM nodes WHERE node_id = ?", (node_id,)
-            ).fetchall()
-            if not nodes:
-                return Subnet(nodes=[], edges=[])
-
-            edges = cursor.execute(
-                "SELECT * FROM edges WHERE source = ? OR target = ?", (node_id, node_id)
+                "SELECT * FROM nodes WHERE node_id IN ({})".format(
+                    ",".join("?" * len(nodes))
+                ),
+                list(nodes),
             ).fetchall()
             return Subnet(
                 nodes=[NodeBase(**self.node_row_to_dict(node)) for node in nodes],
@@ -389,7 +406,7 @@ class SQLiteDB(DatabaseInterface):
         d["node_id"] = d.get("node_id")
         d["node_type"] = d.get("node_type") or "potentiality"
         d["title"] = d.get("title") or "untitled"
-        d["scope"] = d.get("scope") or "uscoped"
+        d["scope"] = d.get("scope") or "unscoped"
         d["status"] = d.get("status")
         d["description"] = d.get("description")
         if "tags" in d:

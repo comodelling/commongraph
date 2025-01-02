@@ -122,19 +122,19 @@ class SQLiteDB(DatabaseInterface):
             if level == 0:
                 return set(node_ids), []
             nodes = set(node_ids)
-            edges = []
+            edges = set()
             for node_id in node_ids:
                 cursor.execute(
                     "SELECT * FROM edges WHERE source = ? OR target = ?",
                     (node_id, node_id),
                 )
                 new_edges = cursor.fetchall()
-                edges.extend(new_edges)
+                edges = edges.union(new_edges)
                 for edge in new_edges:
                     nodes.add(edge[1])  # source
                     nodes.add(edge[2])  # target
             next_nodes, next_edges = fetch_neighbors(cursor, nodes, level - 1)
-            return nodes.union(next_nodes), edges + next_edges
+            return nodes.union(next_nodes), edges.union(next_edges)
 
         with sqlite3.connect(self.db_path, check_same_thread=False, uri=True) as conn:
             cursor = conn.cursor()

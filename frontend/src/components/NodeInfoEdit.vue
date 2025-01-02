@@ -155,6 +155,31 @@
     >
       + Description
     </button>
+
+    <div class="field">
+      <strong :title="tooltips.node.grade">Grade:</strong>
+      <div class="field-content">
+        <select v-model="editedNode.grade" ref="gradeInput">
+          <option value="" :title="tooltips.node.ungraded"></option>
+          <option value="A" :title="tooltips.node.A">
+            {{ tooltips.node.A }}
+          </option>
+          <option value="B" :title="tooltips.node.B">
+            {{ tooltips.node.B }}
+          </option>
+          <option value="C" :title="tooltips.node.C">
+            {{ tooltips.node.C }}
+          </option>
+          <option value="D" :title="tooltips.node.D">
+            {{ tooltips.node.D }}
+          </option>
+          <option value="E" :title="tooltips.node.E">
+            {{ tooltips.node.E }}
+          </option>
+        </select>
+      </div>
+    </div>
+
     <button class="submit-button" @click="submit">Submit</button>
   </div>
 </template>

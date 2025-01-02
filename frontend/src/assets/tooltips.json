@@ -12,7 +12,13 @@
         "completed": "Already completed",
         "legacy": "No longer relevant",
         "unspecified": "Not specified",
-
+      "grade": "Do you support this?",
+        "A": "Absolutely",
+        "B": "Mostly",
+        "C": "Somewhat",
+        "D": "Not really",
+        "E": "Definitely not",
+        "ungraded": "Select a grade",
       "tags": "Node tags",
       "references": "A list of relevant references",
       "description": "A longer description of the node"

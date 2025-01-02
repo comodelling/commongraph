@@ -75,11 +75,11 @@ class NodeBase(BaseModel):
     node_id: NodeId | None = None
     tags: list[str] = []
     references: list[str] = []
+    grade: QualitativeGrade | None = None
 
     # deprecated
     id_from_ui: int | None = None
     gradable: bool | None = False
-    grade: QualitativeGrade | None = None
     proponents: list[str] = []
 
 

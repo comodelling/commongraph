@@ -27,6 +27,7 @@ class SQLiteDB(DatabaseInterface):
                     title TEXT,
                     scope TEXT,
                     status TEXT,
+                    grade TEXT,
                     description TEXT,
                     tags TEXT,
                     "references" TEXT
@@ -182,6 +183,9 @@ class SQLiteDB(DatabaseInterface):
                 else:
                     query += " AND status = ?"
                     params.append(kwargs["status"])
+            if "grade" in kwargs and kwargs["grade"]:
+                query += " AND scope LIKE ?"
+                params.append(f"%{kwargs['grade']}%")
             if "tags" in kwargs and kwargs["tags"]:
                 query += " AND tags LIKE ?"
                 params.append(f"%{kwargs['tags']}%")
@@ -252,8 +256,8 @@ class SQLiteDB(DatabaseInterface):
             node_id = self.generate_unique_node_id()  # Generate unique node_id
             cursor.execute(
                 """
-                INSERT INTO nodes (node_id, node_type, title, scope, status, description, tags, "references")
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO nodes (node_id, node_type, title, scope, status, grade, description, tags, "references")
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     node_id,
@@ -261,6 +265,7 @@ class SQLiteDB(DatabaseInterface):
                     node.title,
                     node.scope,
                     node.status,
+                    node.grade,
                     node.description,
                     ";".join(node.tags) if node.tags else "",
                     ";".join(node.references) if node.references else "",
@@ -291,6 +296,9 @@ class SQLiteDB(DatabaseInterface):
             if node.status is not None:
                 fields.append("status = ?")
                 params.append(node.status)
+            if node.grade is not None:
+                fields.append("grade = ?")
+                params.append(node.grade)
             if node.description is not None:
                 fields.append("description = ?")
                 params.append(node.description)
@@ -436,6 +444,7 @@ class SQLiteDB(DatabaseInterface):
         d["title"] = d.get("title")
         d["scope"] = d.get("scope")
         d["status"] = d.get("status")
+        d["grade"] = d.get("grade")
         d["description"] = d.get("description")
         if "tags" in d:
             d["tags"] = d["tags"].split(";") if d["tags"] else []

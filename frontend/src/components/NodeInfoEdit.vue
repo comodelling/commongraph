@@ -157,24 +157,24 @@
     </button>
 
     <div class="field">
-      <strong :title="tooltips.node.grade">Grade:</strong>
+      <strong :title="tooltips.node.support">Support:</strong>
       <div class="field-content">
-        <select v-model="editedNode.grade" ref="gradeInput">
+        <select v-model="editedNode.support" ref="supportInput">
           <option value="" :title="tooltips.node.ungraded"></option>
           <option value="A" :title="tooltips.node.A">
-            {{ tooltips.node.A }}
+            A ({{ tooltips.node.A }})
           </option>
           <option value="B" :title="tooltips.node.B">
-            {{ tooltips.node.B }}
+            B ({{ tooltips.node.B }})
           </option>
           <option value="C" :title="tooltips.node.C">
-            {{ tooltips.node.C }}
+            C ({{ tooltips.node.C }})
           </option>
           <option value="D" :title="tooltips.node.D">
-            {{ tooltips.node.D }}
+            E ({{ tooltips.node.D }})
           </option>
           <option value="E" :title="tooltips.node.E">
-            {{ tooltips.node.E }}
+            D ({{ tooltips.node.E }})
           </option>
         </select>
       </div>

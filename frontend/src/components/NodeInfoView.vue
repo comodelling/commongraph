@@ -27,8 +27,8 @@
     <strong :title="tooltips.node.description">Description:</strong>
     <br />
     <p>{{ node.description ? node.description : "" }}</p>
-    <strong :title="tooltips.node.grade">Grade: </strong>
-    {{ node.grade ? nodeGradeTooltip : "" }}<br />
+    <strong :title="tooltips.node.support">Support: </strong>
+    {{ node.support ? node.support + " (" + nodeGradeTooltip + ")" : "" }}<br />
   </div>
 </template>
 
@@ -49,7 +49,9 @@ export default {
       return this.tooltips.node[this.node.node_type] || this.tooltips.node.type;
     },
     nodeGradeTooltip() {
-      return this.tooltips.node[this.node.grade] || this.tooltips.node.grade;
+      return (
+        this.tooltips.node[this.node.support] || this.tooltips.node.support
+      );
     },
   },
   methods: {

@@ -332,7 +332,7 @@ class JanusGraphDB(DatabaseInterface):
             created_node = created_node.property("scope", node.scope)
             created_node = created_node.property("status", node.status)
             # created_node = created_node.property("gradable", node.gradable)
-            created_node = created_node.property("grade", node.grade)
+            created_node = created_node.property("support", node.support)
             created_node = created_node.property("description", node.description)
             created_node = created_node.property(
                 "proponents", parse_list(node.proponents)
@@ -381,8 +381,8 @@ class JanusGraphDB(DatabaseInterface):
                 updated_node = updated_node.property("description", node.description)
             # if node.gradable is not None:
             #     updated_node = updated_node.property("gradable", node.gradable)
-            if node.grade is not None:
-                updated_node = updated_node.property("grade", node.grade)
+            if node.support is not None:
+                updated_node = updated_node.property("support", node.support)
             if node.references is not None:
                 updated_node = updated_node.property(
                     "references", parse_list(node.references)

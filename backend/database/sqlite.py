@@ -27,7 +27,7 @@ class SQLiteDB(DatabaseInterface):
                     title TEXT,
                     scope TEXT,
                     status TEXT,
-                    grade TEXT,
+                    support TEXT,
                     description TEXT,
                     tags TEXT,
                     "references" TEXT
@@ -183,9 +183,9 @@ class SQLiteDB(DatabaseInterface):
                 else:
                     query += " AND status = ?"
                     params.append(kwargs["status"])
-            if "grade" in kwargs and kwargs["grade"]:
+            if "support" in kwargs and kwargs["support"]:
                 query += " AND scope LIKE ?"
-                params.append(f"%{kwargs['grade']}%")
+                params.append(f"%{kwargs['support']}%")
             if "tags" in kwargs and kwargs["tags"]:
                 query += " AND tags LIKE ?"
                 params.append(f"%{kwargs['tags']}%")
@@ -256,7 +256,7 @@ class SQLiteDB(DatabaseInterface):
             node_id = self.generate_unique_node_id()  # Generate unique node_id
             cursor.execute(
                 """
-                INSERT INTO nodes (node_id, node_type, title, scope, status, grade, description, tags, "references")
+                INSERT INTO nodes (node_id, node_type, title, scope, status, support, description, tags, "references")
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
@@ -265,7 +265,7 @@ class SQLiteDB(DatabaseInterface):
                     node.title,
                     node.scope,
                     node.status,
-                    node.grade,
+                    node.support,
                     node.description,
                     ";".join(node.tags) if node.tags else "",
                     ";".join(node.references) if node.references else "",

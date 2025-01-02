@@ -75,7 +75,7 @@ class NodeBase(BaseModel):
     node_id: NodeId | None = None
     tags: list[str] = []
     references: list[str] = []
-    grade: QualitativeGrade | None = None
+    support: QualitativeGrade | None = None
 
     # deprecated
     id_from_ui: int | None = None

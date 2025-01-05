@@ -171,10 +171,10 @@
             C ({{ tooltips.node.C }})
           </option>
           <option value="D" :title="tooltips.node.D">
-            E ({{ tooltips.node.D }})
+            D ({{ tooltips.node.D }})
           </option>
           <option value="E" :title="tooltips.node.E">
-            D ({{ tooltips.node.E }})
+            E ({{ tooltips.node.E }})
           </option>
         </select>
       </div>

@@ -5,7 +5,7 @@ from functools import wraps
 from models import NodeBase, EdgeBase, Subnet
 
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 
 
 def log_method(func):

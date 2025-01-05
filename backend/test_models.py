@@ -15,27 +15,75 @@ correct_node_types = [
 correct_edge_types = ["require", "imply"]
 
 
-def test_node_types():
-    for node_type in correct_node_types:
-        node = NodeBase(node_type=node_type, title="test", scope="test")
-        assert node.node_type == node_type
+def test_node_required_fields():
+    with pytest.raises(ValidationError):
+        NodeBase(node_type="objective", scope="test scope")  # Missing 'title'
+
+
+def test_node_field_types():
+    with pytest.raises(ValidationError):
+        NodeBase(
+            node_type="objective", title=123, scope="test scope"
+        )  # 'title' should be str
 
     with pytest.raises(ValidationError):
-        NodeBase(node_type="wrong_node_type", title="")
+        NodeBase(
+            node_type="objective", title="test", scope=456
+        )  # 'scope' should be str
 
 
-def test_scope():
-    node = NodeBase(node_type="change", title="test", scope="test")
-    assert node.scope == "test"
+def test_edge_required_fields():
+    with pytest.raises(ValidationError):
+        EdgeBase(edge_type="imply", target=1)  # Missing 'source'
 
     with pytest.raises(ValidationError):
-        NodeBase(node_type="change", title="test")
+        EdgeBase(source=1, target=2)  # Missing 'edge_type'
 
 
-def test_edge_types():
-    for edge_type in correct_edge_types:
-        edge = EdgeBase(edge_type=edge_type, source=0, target=0)
-        assert edge.edge_type == edge_type
+def test_edge_field_types():
+    with pytest.raises(ValidationError):
+        EdgeBase(edge_type="imply", source="one", target=2)  # 'source' should be int
 
     with pytest.raises(ValidationError):
-        EdgeBase(edge_type="wrong_edge_type", source=0, target=0)
+        # 'target' should be int
+        EdgeBase(edge_type="imply", source=1, target="two")
+
+
+def test_node_optional_fields():
+    node = NodeBase(title="test", scope="test scope")
+    assert node.description is None
+    assert node.tags == []
+    assert node.references == []
+    assert node.status == "unspecified"
+    assert node.node_type == "potentiality"
+
+    node = NodeBase(
+        node_type="objective",
+        title="test",
+        scope="test scope",
+        description="A test node",
+        tags=["tag1", "tag2"],
+        references=["ref1", "ref2"],
+    )
+    assert node.description == "A test node"
+    assert node.tags == ["tag1", "tag2"]
+    assert node.references == ["ref1", "ref2"]
+
+
+def test_edge_optional_fields():
+    edge = EdgeBase(edge_type="imply", source=1, target=2)
+    assert edge.cprob is None
+    assert edge.references == []
+    assert edge.description is None
+
+    edge = EdgeBase(
+        edge_type="imply",
+        source=1,
+        target=2,
+        cprob=0.75,
+        references=["ref1"],
+        description="A test edge",
+    )
+    assert edge.cprob == 0.75
+    assert edge.references == ["ref1"]
+    assert edge.description == "A test edge"

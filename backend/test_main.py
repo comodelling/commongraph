@@ -4,6 +4,7 @@ import pytest
 import json
 from fastapi.testclient import TestClient
 import tempfile
+import threading
 
 from main import app, get_db_connection
 from database.janusgraph import JanusGraphDB
@@ -75,6 +76,26 @@ def test_read_main(client):
 def test_get_whole_network(db, client):
     response = client.get("/network")
     assert response.status_code == 200
+
+
+def test_reset_whole_network(db, client):
+    # Ensure there are nodes and edges before reset
+    # client.post(
+    #     "/nodes",
+    #     json={
+    #         "title": "test",
+    #         "node_type": "objective",
+    #         "scope": "test scope",
+    #         "description": "test",
+    #     },
+    # )
+    response = client.delete("/network")
+    assert response.status_code == 205
+
+    summary_response = client.get("/network/summary")
+    summary = json.loads(summary_response.content.decode("utf-8"))
+    assert summary["nodes"] == 0
+    assert summary["edges"] == 0
 
 
 def test_update_subnet(db, client):
@@ -153,6 +174,48 @@ def test_create_node_specific_id(db, client):
     assert response.status_code == 201
     response = client.get(f"/nodes/777777")
     assert response.status_code == 200
+
+
+def test_create_node_with_missing_fields(client):
+    response = client.post(
+        "/nodes",
+        json={
+            "node_type": "objective",
+            "scope": "test scope",
+            # "title" is missing
+            "description": "test description",
+        },
+    )
+    assert response.status_code == 422
+
+
+def create_node_concurrently(client, title, results, index):
+    response = client.post(
+        "/nodes",
+        json={
+            "title": title,
+            "node_type": "objective",
+            "scope": "test scope",
+            "description": "test",
+        },
+    )
+    results[index] = response.status_code
+
+
+def test_concurrent_node_creations(client):
+    threads = []
+    results = [None] * 5
+    for i in range(5):
+        thread = threading.Thread(
+            target=create_node_concurrently, args=(client, f"node{i}", results, i)
+        )
+        threads.append(thread)
+        thread.start()
+
+    for thread in threads:
+        thread.join()
+
+    assert all(status == 201 for status in results)
 
 
 def test_get_random_node(db, client):
@@ -275,6 +338,18 @@ def test_create_update_and_delete_edge(initial_node, client):
     assert response.status_code == 200
 
     response = client.get(f"/edges/{initial_node['node_id']}/{initial_node['node_id']}")
+    assert response.status_code == 404
+
+
+def test_create_edge_with_nonexistent_nodes(db, client):
+    response = client.post(
+        "/edges",
+        json={
+            "edge_type": "imply",
+            "source": 999999,  # Nonexistent source
+            "target": 999998,  # Nonexistent target
+        },
+    )
     assert response.status_code == 404
 
 

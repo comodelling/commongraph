@@ -345,6 +345,12 @@ class SQLiteDB(DatabaseInterface):
     def create_edge(self, edge: EdgeBase) -> EdgeBase:
         with sqlite3.connect(self.db_path, check_same_thread=False, uri=True) as conn:
             cursor = conn.cursor()
+            cursor.execute("SELECT 1 FROM nodes WHERE node_id = ?", (edge.source,))
+            if not cursor.fetchone():
+                raise HTTPException(status_code=404, detail="Source node not found")
+            cursor.execute("SELECT 1 FROM nodes WHERE node_id = ?", (edge.target,))
+            if not cursor.fetchone():
+                raise HTTPException(status_code=404, detail="Target node not found")
             cursor.execute(
                 """
                 INSERT OR IGNORE INTO edges (edge_type, source, target, cprob, "references", description)

@@ -3,7 +3,7 @@ import random
 import sqlite3
 from fastapi import HTTPException
 
-from models import NodeBase, EdgeBase, Subnet
+from models import NodeBase, EdgeBase, Subnet, PartialNodeBase
 from .base import DatabaseInterface
 
 
@@ -272,25 +272,40 @@ class SQLiteDB(DatabaseInterface):
             else:
                 raise HTTPException(status_code=500, detail="Failed to create node")
 
-    def update_node(self, node: NodeBase) -> NodeBase:
+    def update_node(self, node: PartialNodeBase) -> NodeBase:
         with sqlite3.connect(self.db_path, check_same_thread=False, uri=True) as conn:
             cursor = conn.cursor()
+            fields = []
+            params = []
+            if node.node_type is not None:
+                fields.append("node_type = ?")
+                params.append(node.node_type)
+            if node.title is not None:
+                fields.append("title = ?")
+                params.append(node.title)
+            if node.scope is not None:
+                fields.append("scope = ?")
+                params.append(node.scope)
+            if node.status is not None:
+                fields.append("status = ?")
+                params.append(node.status)
+            if node.description is not None:
+                fields.append("description = ?")
+                params.append(node.description)
+            if node.tags is not None:
+                fields.append("tags = ?")
+                params.append(";".join(node.tags))
+            if node.references is not None:
+                fields.append('"references" = ?')
+                params.append(";".join(node.references))
+            set_clause = ", ".join(fields)
             cursor.execute(
-                """
+                f"""
                 UPDATE nodes
-                SET node_type = ?, title = ?, scope = ?, status = ?, description = ?, tags = ?, "references" = ?
+                SET {set_clause}
                 WHERE node_id = ?
-            """,
-                (
-                    node.node_type,
-                    node.title,
-                    node.scope,
-                    node.status,
-                    node.description,
-                    ";".join(node.tags) if node.tags else "",
-                    ";".join(node.references) if node.references else "",
-                    node.node_id,
-                ),
+                """,
+                (*params, node.node_id),
             )
             conn.commit()
             cursor.execute("SELECT * FROM nodes WHERE node_id = ?", (node.node_id,))
@@ -356,20 +371,25 @@ class SQLiteDB(DatabaseInterface):
     def update_edge(self, edge: EdgeBase) -> EdgeBase:
         with sqlite3.connect(self.db_path, check_same_thread=False, uri=True) as conn:
             cursor = conn.cursor()
+            fields = []
+            params = []
+            if edge.cprob is not None:
+                fields.append("cprob = ?")
+                params.append(edge.cprob)
+            if edge.references is not None:
+                fields.append('"references" = ?')
+                params.append(";".join(edge.references))
+            if edge.description is not None:
+                fields.append("description = ?")
+                params.append(edge.description)
+            set_clause = ", ".join(fields)
             cursor.execute(
-                """
+                f"""
                 UPDATE edges
-                SET cprob = ?, "references" = ?, description = ?
+                SET {set_clause}
                 WHERE edge_type = ? AND source = ? AND target = ?
                 """,
-                (
-                    edge.cprob,
-                    ";".join(edge.references) if edge.references else "",
-                    edge.description,
-                    edge.edge_type,
-                    edge.source,
-                    edge.target,
-                ),
+                (*params, edge.edge_type, edge.source, edge.target),
             )
             conn.commit()
             cursor.execute(
@@ -404,10 +424,10 @@ class SQLiteDB(DatabaseInterface):
             return {}
         d = dict(zip([column[0] for column in self.node_description], row))
         d["node_id"] = d.get("node_id")
-        d["node_type"] = d.get("node_type") or "potentiality"
-        d["title"] = d.get("title") or "untitled"
-        d["scope"] = d.get("scope") or "unscoped"
-        d["status"] = d.get("status") or "unspecified"
+        d["node_type"] = d.get("node_type")
+        d["title"] = d.get("title")
+        d["scope"] = d.get("scope")
+        d["status"] = d.get("status")
         d["description"] = d.get("description")
         if "tags" in d:
             d["tags"] = d["tags"].split(";") if d["tags"] else []

@@ -53,7 +53,12 @@ def initial_node(db, client):
 
     result = client.post(
         "/nodes",
-        json={"title": "test", "description": "test"},
+        json={
+            "title": "test",
+            "node_type": "objective",
+            "scope": "test scope",
+            "description": "test",
+        },
     ).content
     node_dict = json.loads(result.decode("utf-8"))
 
@@ -281,6 +286,8 @@ def test_update_node_with_references(db, client):
         "/nodes",
         json={
             "title": "test node for update",
+            "node_type": "potentiality",
+            "scope": "test scope",
             "description": "test description",
             "references": ["ref1", "ref2"],
         },

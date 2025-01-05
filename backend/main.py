@@ -50,18 +50,17 @@ app.add_middleware(
 )
 
 
-def get_db_connection() -> DatabaseInterface:
-    DB_TYPE = os.getenv("DB_TYPE", "janusgraph")
-    if DB_TYPE == "janusgraph":
+def get_db_connection(db_type: str = os.getenv("DB_TYPE")) -> DatabaseInterface:
+    if db_type == "janusgraph":
         janusgraph_host = os.getenv("JANUSGRAPH_HOST", "localhost")
         traversal_source = os.getenv("TRAVERSAL_SOURCE", "g_test")
         return JanusGraphDB(janusgraph_host, traversal_source)
-    elif DB_TYPE == "sqlite":
+    elif db_type == "sqlite":
         db_path = os.getenv("SQLITE_DB_PATH", "objectivenet-db.sqlite3")
         print(f"Using SQLite database at {db_path}")
         return SQLiteDB(db_path)
     else:
-        raise ValueError(f"Unsupported DB_TYPE: {DB_TYPE}")
+        raise ValueError(f"Unsupported DB_TYPE: {db_type}")
 
 
 ### root ###

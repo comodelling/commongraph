@@ -69,7 +69,7 @@ class NodeBase(BaseModel):
 
     node_type: NodeType = NodeType.potentiality
     title: str
-    scope: str = ""
+    scope: str
     status: NodeStatus | None = NodeStatus.unspecified
     description: str | None = None
     node_id: NodeId | None = None

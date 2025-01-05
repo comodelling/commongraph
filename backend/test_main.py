@@ -83,7 +83,7 @@ def test_update_subnet(db, client):
     ]
     response = client.put(
         "/subnet",
-        json={"nodes": [{"title": "test", "description": "test"}], "edges": []},
+        json={"nodes": [{"title": "test", "scope": "test scope"}], "edges": []},
     )
     assert response.status_code == 200
     assert (
@@ -118,7 +118,7 @@ def test_create_and_delete_node(db, client):
     ]
     response = client.post(
         "/nodes",
-        json={"title": "test", "description": "test"},
+        json={"title": "test", "scope": "unscoped", "description": "test"},
     )
     assert response.status_code == 201
     assert (
@@ -143,7 +143,12 @@ def test_create_and_delete_node(db, client):
 def test_create_node_specific_id(db, client):
     response = client.post(
         "/nodes",
-        json={"title": "test", "description": "test", "node_id": 777777},
+        json={
+            "title": "test",
+            "scope": "unscoped",
+            "description": "test",
+            "node_id": 777777,
+        },
     )
     assert response.status_code == 201
     response = client.get(f"/nodes/777777")
@@ -170,10 +175,25 @@ def test_search_nodes(db, client):
 
 
 def test_search_nodes_with_node_type(db, client):
-    client.post("/nodes", json={"title": "Objective Node", "node_type": "objective"})
-    client.post("/nodes", json={"title": "Action Node", "node_type": "action"})
     client.post(
-        "/nodes", json={"title": "Potentiality Node", "node_type": "potentiality"}
+        "/nodes",
+        json={
+            "title": "Objective Node",
+            "node_type": "objective",
+            "scope": "test scope",
+        },
+    )
+    client.post(
+        "/nodes",
+        json={"title": "Action Node", "node_type": "action", "scope": "test scope"},
+    )
+    client.post(
+        "/nodes",
+        json={
+            "title": "Potentiality Node",
+            "node_type": "potentiality",
+            "scope": "test scope",
+        },
     )
 
     response = client.get("/nodes?node_type=objective")
@@ -271,6 +291,7 @@ def test_create_node_with_references(db, client):
         json={
             "title": "test node with references",
             "description": "test description",
+            "scope": "test scope",
             "references": ["ref1", "ref2", "ref3"],
         },
     )

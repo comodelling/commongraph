@@ -17,11 +17,19 @@ correct_edge_types = ["require", "imply"]
 
 def test_node_types():
     for node_type in correct_node_types:
-        node = NodeBase(node_type=node_type, title="test")
+        node = NodeBase(node_type=node_type, title="test", scope="test")
         assert node.node_type == node_type
 
     with pytest.raises(ValidationError):
         NodeBase(node_type="wrong_node_type", title="")
+
+
+def test_scope():
+    node = NodeBase(node_type="change", title="test", scope="test")
+    assert node.scope == "test"
+
+    with pytest.raises(ValidationError):
+        NodeBase(node_type="change", title="test")
 
 
 def test_edge_types():

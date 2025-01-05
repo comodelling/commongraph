@@ -8,7 +8,7 @@ To start ObjectiveNet:
 
 - [install Docker](https://www.docker.com/get-started/) if not already on your machine,
 - clone the repo, e.g. with ```git clone https://github.com/planningcommons/objectivenet.git``` from a terminal,
-- run ```bash start.sh``` from the cloned *objectivenet/* directory,
+- run ```bash start_docker.sh``` from the cloned *objectivenet/* directory,
 - wait for it to start...and that's it! you can access it at [http://localhost:5173/](http://localhost:5173/) from a browser.
 
 

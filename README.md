@@ -6,10 +6,17 @@ ObjectiveNet is an open source software to help people build causal networks of 
 
 To start ObjectiveNet:
 
-- [install Docker](https://www.docker.com/get-started/) if not already on your machine,
+- [install Docker engine](https://www.docker.com/get-started/) if not already on your machine,
 - clone the repo, e.g. with ```git clone https://github.com/planningcommons/objectivenet.git``` from a terminal,
-- run ```docker compose up``` from the cloned *objectivenet/* directory,
+- run ```bash start_docker.sh``` from the cloned `objectivenet/` directory,
 - wait for it to start...and that's it! you can access it at [http://localhost:5173/](http://localhost:5173/) from a browser.
+
+### Database configuration
+
+You can choose between different types of databases to store the underlying graph by modifying the value of `DB_TYPE` inside `backend/.env` configuration file.
+Currently supported database types are: `janusgraph`, `sqlite`.
+
+*Note*: there is no synchronisation between those different databases, and switching between them will not import the content of the other. For this, you will need to export and import the content using the `network` API.
 
 
 ### Backend API
@@ -21,7 +28,7 @@ You can find its API schema at: http://localhost:8000/docs (generated automatica
 ## Development
 
 This project uses:
-- [FastAPI](https://fastapi.tiangolo.com/) framework and a [JanusGraph](https://janusgraph.org/) graph database on the backend,
+- [FastAPI](https://fastapi.tiangolo.com/) framework and a [JanusGraph](https://janusgraph.org/) graph database on the backend (or relational alternatives such as [SQlite](https://www.sqlite.org)),
 - [Vue.js](https://vuejs.org/), [Vite](https://vite.dev/), and [Vue Flow](https://vueflow.dev/) on the frontend.
 
 

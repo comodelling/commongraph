@@ -71,7 +71,7 @@ export default {
       this.node = {
         node_id: "new", // temporary id
         node_type: "potentiality",
-        title: "New Node",
+        title: "",
         scope: "",
         status: "draft",
         tags: [],
@@ -81,7 +81,8 @@ export default {
       this.$router.push({ name: "NodeEdit", params: { id: "new" } });
 
       // console.log('formatFlowNodeProps(this.node)', formatFlowNodeProps(this.node));
-      const formattedNode = formatFlowNodeProps(this.node);
+      let formattedNode = formatFlowNodeProps(this.node);
+      formattedNode.label = "New Node";
 
       setTimeout(() => {
         this.subnetData = {
@@ -197,7 +198,7 @@ export default {
     openNewlyCreatedNode(newNode) {
       this.node = {
         node_id: newNode.id, // temporary id
-        title: newNode.data.title,
+        title: "",
         node_type: newNode.data.node_type,
         scope: newNode.data.scope,
         status: "draft",

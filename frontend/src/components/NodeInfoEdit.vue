@@ -25,14 +25,19 @@
     <div class="field">
       <strong :title="tooltips.node.title">Title:</strong>
       <div class="field-content">
-        <span v-if="editingField !== 'title'" @click="startEditing('title')">{{
-          editedNode.title
-        }}</span>
+        <span
+          v-if="editingField !== 'title'"
+          @click="startEditing('title')"
+          :class="{ 'error-text': titleError }"
+        >
+          {{ editedNode.title || "Click to add a title" }}
+        </span>
         <input
           v-else
           v-model="editedNode.title"
           @blur="stopEditing('title')"
           ref="titleInput"
+          :class="{ 'error-input': titleError }"
         />
       </div>
     </div>
@@ -40,17 +45,23 @@
     <div class="field">
       <strong :title="tooltips.node.scope">Scope:</strong>
       <div class="field-content">
-        <span v-if="editingField !== 'scope'" @click="startEditing('scope')">{{
-          editedNode.scope || "Click to edit scope"
-        }}</span>
+        <span
+          v-if="editingField !== 'scope'"
+          @click="startEditing('scope')"
+          :class="{ 'error-text': scopeError }"
+        >
+          {{ editedNode.scope || "Click to add a scope" }}
+        </span>
         <input
           v-else
           v-model="editedNode.scope"
           @blur="stopEditing('scope')"
           ref="scopeInput"
+          :class="{ 'error-input': scopeError }"
         />
       </div>
     </div>
+
     <div class="field">
       <strong :title="tooltips.node.status">Status:</strong>
       <div class="field-content">
@@ -163,6 +174,8 @@ export default {
       editingField: null,
       editedNode: editedNode,
       tooltips,
+      titleError: false,
+      scopeError: false,
     };
   },
   computed: {
@@ -214,6 +227,22 @@ export default {
       });
     },
     async submit() {
+      const trimmedTitle = this.editedNode.title.trim();
+      const trimmedScope = this.editedNode.scope.trim();
+      this.editedNode.title = trimmedTitle;
+      this.editedNode.scope = trimmedScope;
+      this.titleError =
+        trimmedTitle === "" ||
+        trimmedTitle === null ||
+        trimmedTitle === undefined;
+      this.scopeError =
+        trimmedScope === "" ||
+        trimmedScope === null ||
+        trimmedScope === undefined;
+      if (this.titleError || this.scopeError) {
+        return;
+      }
+
       // Remove empty references or tags
       this.editedNode.references = this.editedNode.references.filter(
         (ref) => ref.trim() !== "",
@@ -303,3 +332,13 @@ export default {
   },
 };
 </script>
+
+<style>
+.error-input {
+  border-color: red;
+}
+
+.error-text {
+  color: red;
+}
+</style>

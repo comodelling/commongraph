@@ -1,8 +1,42 @@
-from abc import ABC, abstractmethod
+import logging
+from abc import ABC, ABCMeta, abstractmethod
+from functools import wraps
+
 from models import NodeBase, EdgeBase, Subnet
 
 
-class DatabaseInterface(ABC):
+logging.basicConfig(level=logging.INFO)
+
+
+def log_method(func):
+    @wraps(func)
+    def wrapper(self, *args, **kwargs):
+        self.logger.debug(
+            f"Entering: {func.__name__} with args: {args} kwargs: {kwargs}"
+        )
+        try:
+            result = func(self, *args, **kwargs)
+            self.logger.debug(f"Exiting: {func.__name__} with result: {result}")
+            return result
+        except Exception as e:
+            self.logger.error(f"Exception in {func.__name__}: {e}")
+            raise
+
+    return wrapper
+
+
+class LogMeta(ABCMeta):
+    def __new__(cls, name, bases, attrs):
+        for attr_name, attr_value in attrs.items():
+            if callable(attr_value) and not attr_name.startswith("__"):
+                attrs[attr_name] = log_method(attr_value)
+        return super().__new__(cls, name, bases, attrs)
+
+
+class DatabaseInterface(ABC, metaclass=LogMeta):
+    def __init__(self):
+        self.logger = logging.getLogger(self.__class__.__name__)
+
     @abstractmethod
     def get_whole_network(self) -> Subnet:
         pass

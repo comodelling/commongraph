@@ -9,10 +9,12 @@ from .base import DatabaseInterface
 
 class SQLiteDB(DatabaseInterface):
     def __init__(self, db_path: str):
+        super().__init__()
         self.db_path = db_path
         self.node_description = None
         self.edge_description = None
         self._initialize_db()
+        self.logger.info(f"Initialized SQLiteDB with db_path: {db_path}")
 
     def _initialize_db(self):
         with sqlite3.connect(self.db_path, check_same_thread=False, uri=True) as conn:

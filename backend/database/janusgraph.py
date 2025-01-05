@@ -1,11 +1,7 @@
-import os
 import warnings
 import logging
-from pathlib import Path as PathlibPath
 
-from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, status, Query, Depends
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import HTTPException, Query
 from gremlin_python.process.anonymous_traversal import traversal
 from gremlin_python.driver.driver_remote_connection import DriverRemoteConnection
 from gremlin_python.process.graph_traversal import __
@@ -22,8 +18,12 @@ from .base import DatabaseInterface
 
 class JanusGraphDB(DatabaseInterface):
     def __init__(self, host: str, traversal_source: str):
+        super().__init__()
         self.host = host
         self.traversal_source = traversal_source
+        self.logger.info(
+            f"Initialized JanusGraphDB with host: {host} and traversal source: {traversal_source}"
+        )
 
     @contextmanager
     def connection(self):

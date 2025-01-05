@@ -114,8 +114,8 @@ class JanusGraphDB(DatabaseInterface):
         with self.connection() as g:
             try:
                 # Start traversal from the given node
-                trav = g.V(node_id).repeat(__.bothE().bothV()).times(levels).dedup()
-                vertices = trav.toList()
+                trav = g.V(node_id).repeat(__.both_e().both_v()).times(levels).dedup()
+                vertices = trav.to_list()
 
                 if not vertices:
                     vertex = g.V(node_id).next()
@@ -124,13 +124,13 @@ class JanusGraphDB(DatabaseInterface):
                 # Collect edges separately
                 edge_trav = (
                     g.V(node_id)
-                    .repeat(__.bothE().bothV())
+                    .repeat(__.both_e().both_v())
                     .times(levels)
                     .dedup()
-                    .bothE()
+                    .both_e()
                     .dedup()
                 )
-                edges = edge_trav.toList()
+                edges = edge_trav.to_list()
 
                 # Convert vertices and edges to the appropriate data models
                 nodes = [convert_gremlin_vertex(vertex) for vertex in vertices]
@@ -398,10 +398,17 @@ class JanusGraphDB(DatabaseInterface):
     def update_gremlin_edge(self, edge: EdgeBase) -> GremlinEdge:
         """Update the properties of an edge defined by its source and target nodes."""
         with self.connection() as g:
-            updated_edge = g.V(edge.source).out_e().where(__.in_v().has_id(edge.target))
             # TODO: test if any change is made and deal with mere additions
             if edge.edge_type is not None:
-                warnings.warn("edge_type is not updatable because encoded as label")
+                updated_edge = (
+                    g.V(edge.source)
+                    .out_e(edge.edge_type)
+                    .where(__.in_v().has_id(edge.target))
+                )
+            else:
+                updated_edge = (
+                    g.V(edge.source).outE().where(__.inV().hasId(edge.target))
+                )
             if "cprob" in edge.model_fields_set:
                 updated_edge = updated_edge.property("cprob", edge.cprob)
             if edge.references is not None:

@@ -269,7 +269,8 @@ def test_create_update_and_delete_edge(initial_node, client):
     assert json.loads(response.content.decode("utf-8"))["cprob"] == 0.5
 
     response = client.delete(
-        f"/edges/{initial_node['node_id']}/{initial_node['node_id']}"
+        f"/edges/{initial_node['node_id']}/{initial_node['node_id']}",
+        params={"edge_type": "imply"},
     )
     assert response.status_code == 200
 

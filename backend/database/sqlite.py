@@ -296,9 +296,9 @@ class SQLiteDB(DatabaseInterface):
             if node.status is not None:
                 fields.append("status = ?")
                 params.append(node.status)
-            if node.grade is not None:
-                fields.append("grade = ?")
-                params.append(node.grade)
+            if node.support is not None:
+                fields.append("support = ?")
+                params.append(node.support)
             if node.description is not None:
                 fields.append("description = ?")
                 params.append(node.description)
@@ -444,7 +444,7 @@ class SQLiteDB(DatabaseInterface):
         d["title"] = d.get("title")
         d["scope"] = d.get("scope")
         d["status"] = d.get("status")
-        d["grade"] = d.get("grade")
+        d["support"] = d.get("support")
         d["description"] = d.get("description")
         if "tags" in d:
             d["tags"] = d["tags"].split(";") if d["tags"] else []

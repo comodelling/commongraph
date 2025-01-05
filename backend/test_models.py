@@ -56,7 +56,7 @@ def test_node_optional_fields():
     assert node.references == []
     assert node.status == "unspecified"
     assert node.node_type == "potentiality"
-    assert node.grade is None
+    assert node.support is None
 
     node = NodeBase(
         node_type="objective",
@@ -66,14 +66,14 @@ def test_node_optional_fields():
         description="A test node",
         tags=["tag1", "tag2"],
         references=["ref1", "ref2"],
-        grade="A",
+        support="A",
     )
     assert node.description == "A test node"
     assert node.tags == ["tag1", "tag2"]
     assert node.references == ["ref1", "ref2"]
     assert node.status == "live"
     assert node.node_type == "objective"
-    assert node.grade == "A"
+    assert node.support == "A"
 
 
 def test_edge_optional_fields():

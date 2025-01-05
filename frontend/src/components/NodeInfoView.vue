@@ -28,7 +28,8 @@
     <br />
     <p>{{ node.description ? node.description : "" }}</p>
     <strong :title="tooltips.node.support">Support: </strong>
-    {{ node.support ? node.support + " (" + nodeGradeTooltip + ")" : "" }}<br />
+    {{ node.support ? node.support + " (" + nodeSupportTooltip + ")" : ""
+    }}<br />
   </div>
 </template>
 
@@ -48,7 +49,7 @@ export default {
     nodeTypeTooltip() {
       return this.tooltips.node[this.node.node_type] || this.tooltips.node.type;
     },
-    nodeGradeTooltip() {
+    nodeSupportTooltip() {
       return (
         this.tooltips.node[this.node.support] || this.tooltips.node.support
       );

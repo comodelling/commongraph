@@ -1,11 +1,10 @@
 import os
 import warnings
-import logging
 from pathlib import Path as PathlibPath
 from typing import Annotated
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, status, Query, Depends
+from fastapi import FastAPI, status, Query, Depends, Body, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from models import (
@@ -229,3 +228,26 @@ def update_edge(
 ) -> EdgeBase:
     """Update the properties of an edge."""
     return db.update_edge(edge)
+
+
+from pydantic import BaseModel
+
+
+class MigrateLabelRequest(BaseModel):
+    property_name: str
+
+
+@app.post("/migrate_label_to_property")
+def migrate_label_to_property(
+    request: MigrateLabelRequest, db: JanusGraphDB = Depends(get_db_connection)
+):
+    """Migrate the label of each vertex to a property called 'property_name'."""
+    property_name = request.property_name
+    try:
+        print(f"Starting migration with property_name: {property_name}")  # Added line
+        db.migrate_label_to_property(property_name)
+        print("Migration successful.")  # Added line
+        return {"message": f"Successfully migrated labels to property {property_name}"}
+    except Exception as e:
+        print(f"Migration failed with error: {e}")  # Added line
+        raise HTTPException(status_code=500, detail=str(e))

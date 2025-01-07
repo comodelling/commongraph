@@ -161,20 +161,20 @@
       <div class="field-content">
         <select v-model="editedNode.support" ref="supportInput">
           <option value="" :title="tooltips.node.ungraded"></option>
-          <option value="A" :title="tooltips.node.a">
-            A ({{ tooltips.node.a }})
+          <option value="A" :title="tooltips.node.A">
+            A ({{ tooltips.node.A }})
           </option>
-          <option value="B" :title="tooltips.node.b">
-            B ({{ tooltips.node.b }})
+          <option value="B" :title="tooltips.node.B">
+            B ({{ tooltips.node.B }})
           </option>
-          <option value="C" :title="tooltips.node.c">
-            C ({{ tooltips.node.c }})
+          <option value="C" :title="tooltips.node.C">
+            C ({{ tooltips.node.C }})
           </option>
-          <option value="D" :title="tooltips.node.d">
-            D ({{ tooltips.node.d }})
+          <option value="D" :title="tooltips.node.D">
+            D ({{ tooltips.node.D }})
           </option>
-          <option value="E" :title="tooltips.node.e">
-            E ({{ tooltips.node.e }})
+          <option value="E" :title="tooltips.node.E">
+            E ({{ tooltips.node.E }})
           </option>
         </select>
       </div>

@@ -27,7 +27,7 @@
     <strong :title="tooltips.node.description">Description:</strong>
     <br />
     <p>{{ node.description ? node.description : "" }}</p>
-    <strong :title="tooltips.node.support">Support: </strong>
+    <strong :title="tooltips.node.support">Support Level: </strong>
     {{ node.support ? node.support + " (" + nodeSupportTooltip + ")" : ""
     }}<br />
   </div>

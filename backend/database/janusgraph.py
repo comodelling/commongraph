@@ -325,9 +325,10 @@ class JanusGraphDB(DatabaseInterface):
     def create_gremlin_node(self, node: NodeBase) -> Gremlin_vertex:
         """Create a gremlin vertex in the database."""
         with self.connection() as g:
-            created_node = g.add_v(node.node_type)
+            created_node = g.add_v()
             # if node.node_id is not None:
             #    created_node = created_node.property(T.id, UUID(long=node.node_id))
+            created_node = created_node.property("node_type", node.node_type)
             created_node = created_node.property("title", node.title)
             created_node = created_node.property("scope", node.scope)
             created_node = created_node.property("status", node.status)
@@ -370,7 +371,8 @@ class JanusGraphDB(DatabaseInterface):
         with self.connection() as g:
             updated_node = g.V(node.node_id)
             if node.node_type is not None:
-                warnings.warn("node_type is not updatable because encoded as label")
+                # warnings.warn("node_type is not updatable because encoded as label")
+                updated_node = updated_node.property("node_type", node.node_type)
             if node.title is not None:
                 updated_node = updated_node.property("title", node.title)
             if node.scope is not None:
@@ -419,6 +421,25 @@ class JanusGraphDB(DatabaseInterface):
                 updated_edge = updated_edge.property("description", edge.description)
             return updated_edge.next()
 
+    def migrate_label_to_property(self, property_name: str) -> None:
+        try:
+            with self.connection() as g:
+                vertices = g.V().toList()
+                print(f"Found {len(vertices)} vertices to migrate.")
+                for vertex in vertices:
+                    print(f"Processing vertex: {vertex}")
+                    label = vertex.label
+                    print(f"Label obtained: {label}")
+                    migration_step = g.V(vertex.id).property(property_name, label)
+                    print(f"Migration step: {migration_step}")
+                    migration_step.iterate()
+                    print(f"Vertex {vertex.id} migrated.")
+            logging.info(f"Successfully migrated labels to property {property_name}")
+            print(f"Successfully migrated labels to property {property_name}")
+        except Exception as e:
+            print(f"Error during migration: {e}")  # Added line
+            raise e
+
 
 # Utils
 
@@ -441,7 +462,8 @@ def convert_gremlin_vertex(vertex: Gremlin_vertex) -> NodeBase:
     """Convert a gremlin vertex to a NodeBase object."""
     d = dict()
     d["node_id"] = vertex.id
-    d["node_type"] = vertex.label
+    # if vertex.label is not None:
+    #     d["node_type"] = vertex.label
     if vertex.properties is not None:
         for p in vertex.properties:
             if p.key in ["proponents", "references", "tags"]:
@@ -449,7 +471,7 @@ def convert_gremlin_vertex(vertex: Gremlin_vertex) -> NodeBase:
             elif (
                 p.key in NodeBase.model_fields
                 and p.key != "node_id"
-                and p.key != "node_type"
+                # and p.key != "node_type"
             ):
                 d[p.key] = p.value
             else:

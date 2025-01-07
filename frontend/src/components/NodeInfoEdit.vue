@@ -1,26 +1,22 @@
 <template>
   <div>
-    <div class="field" v-if="editedNode.new">
+    <div class="field">
       <strong :title="tooltips.node.type">Type:</strong>
       <div class="field-content">
-        <select
-          v-model="editedNode.node_type"
-          ref="typeInput"
-          :disabled="!editedNode.new"
-        >
-          <option value="potentiality" :title="tooltips.node.potentiality">
-            Potentiality
-          </option>
+        <select v-model="editedNode.node_type" ref="typeInput">
           <option value="objective" :title="tooltips.node.objective">
             Objective
           </option>
           <option value="action" :title="tooltips.node.action">Action</option>
+          <option value="potentiality" :title="tooltips.node.potentiality">
+            Potentiality
+          </option>
         </select>
       </div>
     </div>
-    <h2 :title="nodeTypeTooltip" v-else>
+    <!-- <h2 :title="nodeTypeTooltip" v-else>
       {{ capitalise(editedNode.node_type) }}
-    </h2>
+    </h2> -->
 
     <div class="field">
       <strong :title="tooltips.node.title">Title:</strong>
@@ -266,6 +262,19 @@ export default {
         trimmedScope === undefined;
       if (this.titleError || this.scopeError) {
         return;
+      }
+
+      if (
+        !this.editedNode.new &&
+        this.editedNode.node_type !== this.node.node_type
+      ) {
+        const confirmChange = confirm(
+          "Changing the node type may have unintended consequences. Are you sure you want to proceed?",
+        );
+        if (!confirmChange) {
+          this.editedNode.node_type = this.node.node_type;
+          return;
+        }
       }
 
       this.editedNode.support = this.editedNode.support || null;

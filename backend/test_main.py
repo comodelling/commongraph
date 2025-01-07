@@ -453,3 +453,30 @@ def test_update_edge_with_references(initial_node, client):
     assert "references" in updated_edge
     assert len(updated_edge["references"]) == 2
     assert set(updated_edge["references"]) == {"ref3", "ref4"}
+
+
+def test_migrate_label_to_property(db, client):
+    from gremlin_python.process.graph_traversal import __
+    from gremlin_python.process.traversal import T
+
+    if not isinstance(db, JanusGraphDB):
+        pytest.skip("This test is only for JanusGraph DB")
+
+    # Define a node with a label directly in the test graph using Gremlin Python
+    with db.connection() as g:
+        g.add_v("label_value").property("name", "test_migration").next()
+
+    # Call the migrate_label_to_property endpoint
+    response = client.post(
+        "/migrate_label_to_property", json={"property_name": "new_property"}
+    )
+    assert response.status_code == 200
+
+    # Verify that the label has been migrated to the property
+    with db.connection() as g:
+        node = g.V().has("name", "test_migration").next()
+        assert node.label == "label_value"  # just checking presence of former index
+        # assert 'new_property' in [p.key for p in node.properties]
+        assert "label_value" in [
+            p.value for p in node.properties if p.key == "new_property"
+        ]

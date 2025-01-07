@@ -264,6 +264,19 @@ export default {
         return;
       }
 
+      if (
+        !this.editedNode.new &&
+        this.editedNode.node_type !== this.node.node_type
+      ) {
+        const confirmChange = confirm(
+          "Changing the node type may have unintended consequences. Are you sure you want to proceed?",
+        );
+        if (!confirmChange) {
+          this.editedNode.node_type = this.node.node_type;
+          return;
+        }
+      }
+
       this.editedNode.support = this.editedNode.support || null;
       if (this.editedNode.support === "") {
         this.editedNode.support = null;

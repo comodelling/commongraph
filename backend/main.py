@@ -23,7 +23,7 @@ from database.base import DatabaseInterface
 from database.janusgraph import JanusGraphDB
 from database.sqlite import SQLiteDB
 
-app = FastAPI(title="ObjectiveNet API", version="v0.2")
+app = FastAPI(title="ObjectiveNet API", version="v0.2.1")
 
 env_path = PathlibPath("/app/.env") if os.getenv("DOCKER_ENV") else PathlibPath(".env")
 

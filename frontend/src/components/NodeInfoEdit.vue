@@ -8,13 +8,13 @@
           ref="typeInput"
           :disabled="!editedNode.new"
         >
-          <option value="potentiality" :title="tooltips.node.potentiality">
-            Potentiality
-          </option>
           <option value="objective" :title="tooltips.node.objective">
             Objective
           </option>
           <option value="action" :title="tooltips.node.action">Action</option>
+          <option value="potentiality" :title="tooltips.node.potentiality">
+            Potentiality
+          </option>
         </select>
       </div>
     </div>

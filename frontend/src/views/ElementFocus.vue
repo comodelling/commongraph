@@ -70,7 +70,7 @@ export default {
       console.log("opening brand new node in focus");
       this.node = {
         node_id: "new", // temporary id
-        node_type: "potentiality",
+        node_type: "action",
         title: "",
         scope: "",
         status: "draft",

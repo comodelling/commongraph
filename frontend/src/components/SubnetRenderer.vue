@@ -494,7 +494,7 @@ function createNodeAndEdge(event = null) {
     status: "draft",
     position: screenToFlowCoordinate(eventPosition),
     scope: scope,
-    node_type: "potentiality", // most general type
+    node_type: "action", // default node type
     tags: tags,
     fromConnection: fromConnection,
   });

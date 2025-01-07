@@ -40,12 +40,12 @@ class EdgeType(str, Enum):
     imply = "imply"
 
 
-class QualitativeGrade(str, Enum):
-    A = "A"
-    B = "B"
-    C = "C"
-    D = "D"
-    E = "E"
+class LikertScale(str, Enum):
+    a = "A"  # strongly agree
+    b = "B"  # agree
+    c = "C"  # neutral
+    d = "D"  # disagree
+    e = "E"  # strongly disagree
 
 
 class NodeStatus(str, Enum):
@@ -75,11 +75,11 @@ class NodeBase(BaseModel):
     node_id: NodeId | None = None
     tags: list[str] = []
     references: list[str] = []
+    support: LikertScale | None = None
 
     # deprecated
     id_from_ui: int | None = None
     gradable: bool | None = False
-    grade: QualitativeGrade | None = None
     proponents: list[str] = []
 
 

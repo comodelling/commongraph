@@ -55,11 +55,31 @@ export function formatFlowEdgeProps(data) {
  **/
 export function formatFlowNodeProps(data) {
   // console.log("formatFlowNodeProps", data);
-  const { node_id, title, node_type, status, position, selected } = data;
+  const { node_id, title, node_type, status, position, selected, support } =
+    data;
+
+  let borderColor = "#ccc";
+  switch (support) {
+    case "A":
+      borderColor = "#006d2c";
+      break;
+    case "B":
+      borderColor = "#74c476";
+      break;
+    case "C":
+      borderColor = "#777";
+      break;
+    case "D":
+      borderColor = "#fb6a4a";
+      break;
+    case "E":
+      borderColor = "#a50f15";
+      break;
+  }
 
   const style = {
-    opacity: status === "completed" ? 0.4 : 0.95,
-    borderColor: status === "completed" ? "green" : "black",
+    opacity: status === "completed" ? 0.5 : 0.95,
+    borderColor: borderColor,
     borderWidth: getBorderWidthByType(node_type),
     borderStyle: status === "draft" ? "dotted" : "solid",
     borderRadius: "8px",

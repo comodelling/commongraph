@@ -268,6 +268,11 @@ export default {
         return;
       }
 
+      this.editedNode.support = this.editedNode.support || null;
+      if (this.editedNode.support === "") {
+        this.editedNode.support = null;
+      }
+
       // Remove empty references or tags
       this.editedNode.references = this.editedNode.references.filter(
         (ref) => ref.trim() !== "",

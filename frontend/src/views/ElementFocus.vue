@@ -73,7 +73,7 @@ export default {
         node_type: "action",
         title: "",
         scope: "",
-        status: "draft",
+        status: "live",
         tags: [],
         references: [],
         new: true,

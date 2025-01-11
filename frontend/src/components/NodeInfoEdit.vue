@@ -277,6 +277,7 @@ export default {
         }
       }
 
+      console.log("current edited support:", this.editedNode.support);
       this.editedNode.support = this.editedNode.support || null;
       if (this.editedNode.support === "") {
         this.editedNode.support = null;
@@ -309,9 +310,15 @@ export default {
             // create edge if node was created from a connection
             try {
               const newEdge = {
-                source: parseInt(fromConnection.id),
-                target: target,
-                edge_type: fromConnection.edge_type,
+                source:
+                  fromConnection.edge_type === "imply"
+                    ? parseInt(fromConnection.id)
+                    : target,
+                target:
+                  fromConnection.edge_type === "imply"
+                    ? target
+                    : parseInt(fromConnection.id),
+                edge_type: "imply",
               };
               console.log("Submitting edge for creation:", newEdge);
               await axios.post(

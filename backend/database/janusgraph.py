@@ -12,7 +12,17 @@ from janusgraph_python.driver.serializer import JanusGraphSONSerializersV3d0
 from janusgraph_python.process.traversal import Text
 
 from contextlib import contextmanager
-from models import NodeBase, EdgeBase, Subnet, NodeType, NodeStatus, NodeId, EdgeType
+from models import (
+    NodeBase,
+    EdgeBase,
+    Subnet,
+    NodeType,
+    NodeStatus,
+    NodeId,
+    EdgeType,
+    PartialNodeBase,
+    EdgeBase,
+)
 from .base import DatabaseInterface
 
 
@@ -74,9 +84,9 @@ class JanusGraphDB(DatabaseInterface):
                         node_out = convert_gremlin_vertex(
                             self.create_gremlin_node(node)
                         )
-                        node_out.id_from_ui = (
-                            node.node_id
-                        )  # TODO: add to history log instead
+                        # node_out.id_from_ui = (
+                        #     node.node_id
+                        # )
                         mapping[node.node_id] = node_out.node_id
                     nodes_out.append(node_out)
                 except StopIteration:
@@ -328,31 +338,20 @@ class JanusGraphDB(DatabaseInterface):
             created_node = g.add_v()
             # if node.node_id is not None:
             #    created_node = created_node.property(T.id, UUID(long=node.node_id))
-            created_node = created_node.property("node_type", node.node_type)
-            created_node = created_node.property("title", node.title)
-            created_node = created_node.property("scope", node.scope)
-            created_node = created_node.property("status", node.status)
-            # created_node = created_node.property("gradable", node.gradable)
-            created_node = created_node.property("support", node.support)
-            created_node = created_node.property("description", node.description)
-            created_node = created_node.property(
-                "proponents", parse_list(node.proponents)
-            )
-            created_node = created_node.property(
-                "references", parse_list(node.references)
-            )
-            created_node = created_node.property("tags", parse_list(node.tags))
+            for p in NodeBase.get_single_field_types():
+                created_node = created_node.property(p, getattr(node, p))
+            for p in NodeBase.get_list_field_types():
+                created_node = created_node.property(p, parse_list(getattr(node, p)))
             return created_node.next()
 
     def create_gremlin_edge(self, edge: EdgeBase) -> GremlinEdge:
         """Create a gremlin edge in the database."""
         with self.connection() as g:
             created_edge = g.V(edge.source).add_e(edge.edge_type)
-            created_edge = created_edge.property("cprob", edge.cprob)
-            created_edge = created_edge.property(
-                "references", parse_list(edge.references)
-            )
-            created_edge = created_edge.property("description", edge.description)
+            for p in EdgeBase.get_single_field_types():
+                created_edge = created_edge.property(p, getattr(edge, p))
+            for p in EdgeBase.get_list_field_types():
+                created_edge = created_edge.property(p, parse_list(getattr(edge, p)))
             created_edge = created_edge.to(__.V(edge.target))
             return created_edge.next()
 
@@ -366,35 +365,18 @@ class JanusGraphDB(DatabaseInterface):
                 .has_next()
             )
 
-    def update_gremlin_node(self, node: NodeBase) -> Gremlin_vertex | None:
+    def update_gremlin_node(self, node: PartialNodeBase) -> Gremlin_vertex | None:
         """Update the properties of a node defined by its ID."""
         with self.connection() as g:
             updated_node = g.V(node.node_id)
-            if node.node_type is not None:
-                # warnings.warn("node_type is not updatable because encoded as label")
-                updated_node = updated_node.property("node_type", node.node_type)
-            if node.title is not None:
-                updated_node = updated_node.property("title", node.title)
-            if node.scope is not None:
-                updated_node = updated_node.property("scope", node.scope)
-            if node.status is not None:
-                updated_node = updated_node.property("status", node.status)
-            if node.description is not None:
-                updated_node = updated_node.property("description", node.description)
-            # if node.gradable is not None:
-            #     updated_node = updated_node.property("gradable", node.gradable)
-            if node.support is not None:
-                updated_node = updated_node.property("support", node.support)
-            if node.references is not None:
-                updated_node = updated_node.property(
-                    "references", parse_list(node.references)
-                )
-            if node.proponents is not None:
-                updated_node = updated_node.property(
-                    "proponents", parse_list(node.proponents)
-                )
-            if node.tags is not None:
-                updated_node = updated_node.property("tags", parse_list(node.tags))
+            for p in NodeBase.get_single_field_types():
+                if getattr(node, p) is not None:
+                    updated_node = updated_node.property(p, getattr(node, p))
+            for p in NodeBase.get_list_field_types():
+                if getattr(node, p) is not None:
+                    updated_node = updated_node.property(
+                        p, parse_list(getattr(node, p))
+                    )
             return updated_node.next()
 
     def update_gremlin_edge(self, edge: EdgeBase) -> GremlinEdge:
@@ -411,14 +393,10 @@ class JanusGraphDB(DatabaseInterface):
                 updated_edge = (
                     g.V(edge.source).outE().where(__.inV().hasId(edge.target))
                 )
-            if "cprob" in edge.model_fields_set:
-                updated_edge = updated_edge.property("cprob", edge.cprob)
-            if edge.references is not None:
-                updated_edge = updated_edge.property(
-                    "references", parse_list(edge.references)
-                )
-            if edge.description is not None:
-                updated_edge = updated_edge.property("description", edge.description)
+            for p in EdgeBase.get_single_field_types():
+                updated_edge = updated_edge.property(p, getattr(edge, p))
+            for p in EdgeBase.get_list_field_types():
+                updated_edge = updated_edge.property(p, parse_list(getattr(edge, p)))
             return updated_edge.next()
 
     def migrate_label_to_property(self, property_name: str) -> None:
@@ -466,13 +444,9 @@ def convert_gremlin_vertex(vertex: Gremlin_vertex) -> NodeBase:
     #     d["node_type"] = vertex.label
     if vertex.properties is not None:
         for p in vertex.properties:
-            if p.key in ["proponents", "references", "tags"]:
+            if p.key in NodeBase.get_list_field_types():
                 d[p.key] = unparse_stringlist(p.value)
-            elif (
-                p.key in NodeBase.model_fields
-                and p.key != "node_id"
-                # and p.key != "node_type"
-            ):
+            elif p.key in NodeBase.get_single_field_types():
                 d[p.key] = p.value
             else:
                 warnings.warn(f"invalid node property: {p.key}")
@@ -487,14 +461,9 @@ def convert_gremlin_edge(edge) -> EdgeBase:
     d["edge_type"] = edge.label
     if edge.properties is not None:
         for p in edge.properties:
-            if p.key == "references":
-                d["references"] = unparse_stringlist(p.value)
-            elif (
-                p.key in EdgeBase.model_fields
-                and p.key != "source"
-                and p.key != "target"
-                and p.key != "edge_type"
-            ):
+            if p.key in EdgeBase.get_list_field_types():
+                d[p.key] = unparse_stringlist(p.value)
+            elif p.key in EdgeBase.get_single_field_types():
                 d[p.key] = p.value
             else:
                 warnings.warn(f"invalid edge property: {p.key}")

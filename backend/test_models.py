@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from models import NodeBase, EdgeBase
+from models import NodeBase, EdgeBase, EdgeType
 
 
 correct_node_types = [
@@ -77,12 +77,16 @@ def test_node_optional_fields():
 
 
 def test_edge_optional_fields():
+    # Edge without deprecated cprob
     edge = EdgeBase(edge_type="imply", source=1, target=2)
     assert edge.cprob is None
+    assert edge.sufficiency is None
+    assert edge.necessity is None
     assert edge.references == []
     assert edge.description is None
 
-    edge = EdgeBase(
+    # Edge with deprecated cprob for 'imply'
+    edge_with_cprob_imply = EdgeBase(
         edge_type="imply",
         source=1,
         target=2,
@@ -90,6 +94,22 @@ def test_edge_optional_fields():
         references=["ref1"],
         description="A test edge",
     )
-    assert edge.cprob == 0.75
-    assert edge.references == ["ref1"]
-    assert edge.description == "A test edge"
+    assert edge_with_cprob_imply.cprob is None
+    assert edge_with_cprob_imply.sufficiency == 0.75
+    assert edge_with_cprob_imply.necessity is None
+    assert edge_with_cprob_imply.references == ["ref1"]
+    assert edge_with_cprob_imply.description == "A test edge"
+
+    # Edge with deprecated cprob for 'require'
+    edge_with_cprob_require = EdgeBase(
+        edge_type="require",
+        source=1,
+        target=2,
+        cprob=0.5,
+    )
+    assert edge_with_cprob_require.cprob is None
+    assert edge_with_cprob_require.necessity == 0.5
+    assert edge_with_cprob_require.sufficiency is None
+    assert edge_with_cprob_require.edge_type == EdgeType.imply
+    assert edge_with_cprob_require.source == 2  # Swapped
+    assert edge_with_cprob_require.target == 1  # Swapped

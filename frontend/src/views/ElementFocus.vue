@@ -201,7 +201,7 @@ export default {
         title: "",
         node_type: newNode.data.node_type,
         scope: newNode.data.scope,
-        status: "draft",
+        status: "live",
         tags: newNode.data.tags,
         references: [],
         new: true,

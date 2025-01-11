@@ -156,7 +156,7 @@
       <strong :title="tooltips.node.support">Support Level:</strong>
       <div class="field-content">
         <select v-model="editedNode.support" ref="supportInput">
-          <option value="" :title="tooltips.node.ungraded"></option>
+          <option value="" :title="tooltips.node.unrated"></option>
           <option value="A" :title="tooltips.node.A">
             A ({{ tooltips.node.A }})
           </option>

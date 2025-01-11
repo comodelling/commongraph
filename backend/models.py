@@ -94,7 +94,10 @@ class NodeBase(BaseModel):
                 "Please use `support` instead.",
                 DeprecationWarning,
             )
-            values["support"] = values.pop("grade")
+            if "support" in values:
+                warnings.warn("Both `grade` and `support` fields are present.")
+            if values["grade"] is not None:
+                values["support"] = values.pop("grade")
         return values
 
     @field_validator("gradable")

@@ -3,22 +3,24 @@
  * backend data is kept as is in the data field
  **/
 export function formatFlowEdgeProps(data) {
-  const { source, target, edge_type, selected } = data;
+  const { source, target, edge_type, selected, causal_strength_rating } = data;
 
   const flowSource =
     edge_type === "imply" ? source.toString() : target.toString();
   const flowTarget =
     edge_type === "imply" ? target.toString() : source.toString();
 
-  const strokeWidth = 1 + (data.cprob ?? 0.5);
-  const markerFactor = 1 / (1 + (data.cprob ?? 0.5) / 2);
+  // const strokeWidth = 1 + (data.cprob ?? 0.5);
+  // const markerFactor = 1 / (1 + (data.cprob ?? 0.5) / 2);
+  const strokeWidth = 1.5;
+  const markerSize = 15;
 
   const markerEnd =
     edge_type === "imply"
       ? {
-          type: "arrowclosed",
-          height: 25 * markerFactor,
-          width: 25 * markerFactor,
+          type: "arrow",
+          height: markerSize,
+          width: markerSize,
           color: "grey",
         }
       : undefined;
@@ -26,11 +28,30 @@ export function formatFlowEdgeProps(data) {
     edge_type === "require"
       ? {
           type: "arrow",
-          height: 25 * markerFactor,
-          width: 25 * markerFactor,
+          height: markerSize,
+          width: markerSize,
           color: "grey",
         }
       : undefined;
+
+  let strokeColor = "#ccc";
+  switch (causal_strength_rating) {
+    case "A":
+      strokeColor = "#006d2c";
+      break;
+    case "B":
+      strokeColor = "#74c476";
+      break;
+    case "C":
+      strokeColor = "#777";
+      break;
+    case "D":
+      strokeColor = "#fb6a4a";
+      break;
+    case "E":
+      strokeColor = "#a50f15";
+      break;
+  }
 
   return {
     id: `${source}-${target}`,
@@ -42,8 +63,9 @@ export function formatFlowEdgeProps(data) {
     data: { ...data },
     selected: selected ? true : false,
     style: {
-      stroke: "grey",
+      stroke: strokeColor,
       strokeWidth: strokeWidth,
+      // strokeColor: "blue",
       // opacity: `${0.5 + (data.cprob ?? 0.5) / 2}`,
     },
   };

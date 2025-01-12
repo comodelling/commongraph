@@ -6,6 +6,8 @@ backups/
 
 *.sqlite*
 
+scripts/
+data/
 
 !.gitkeep
 

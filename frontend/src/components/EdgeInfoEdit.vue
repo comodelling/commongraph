@@ -61,7 +61,7 @@
 
     <div class="field">
       <strong :title="tooltips.edge.causal_strength_rating"
-        >Causal Rating:</strong
+        >Causal Strength:</strong
       >
       <div class="field-content">
         <select v-model="editedEdge.causal_strength_rating" ref="causalInput">

@@ -21,7 +21,9 @@
     <p>{{ localEdge.description ? localEdge.description : "" }}</p>
   </div>
 
-  <strong :title="tooltips.edge.causal_strength_rating"> Causal Rating:</strong>
+  <strong :title="tooltips.edge.causal_strength_rating">
+    Causal Strength:</strong
+  >
   {{
     localEdge.causal_strength_rating
       ? localEdge.causal_strength_rating + " (" + edgeCausalRatingTooltip + ")"

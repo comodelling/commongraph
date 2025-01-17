@@ -38,6 +38,7 @@ export default {
   props: {
     edge: Object,
   },
+  emits: ["publish-edge"],
   data() {
     return {
       localEdge: this.edge,

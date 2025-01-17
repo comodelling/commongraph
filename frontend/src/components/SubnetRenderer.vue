@@ -126,6 +126,7 @@ watch(
             selected: true,
             position: node.position,
           };
+          formattedNode.new = false;
           const edge = getEdges.value.find(
             (edge) => edge.target === "new" || edge.source === "new",
           );
@@ -179,12 +180,14 @@ watch(
     console.log("Edge update detected:", newUpdatedEdge);
     if (newUpdatedEdge) {
       let updatedEdge = formatFlowEdgeProps(newUpdatedEdge);
+      updatedEdge.new = false;
       let edge = findEdge(updatedEdge.id);
       console.log("found edge", edge);
       if (edge) {
         Object.assign(edge, updatedEdge); // Update each field from updatedEdge
         edge.selected = true;
       }
+
       // console.log('updatedNode', updatedNode)
       // edge = updatedEdge;
     }

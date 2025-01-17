@@ -31,6 +31,7 @@ import {
   formatFlowEdgeProps,
   formatFlowNodeProps,
 } from "../composables/formatFlowComponents";
+import _ from "lodash";
 
 export default {
   components: {
@@ -178,8 +179,8 @@ export default {
     updateNodeFromEditor(updatedNode) {
       console.log("updating node from editor", updatedNode);
       try {
-        this.node = updatedNode; // node in focus
-        this.updatedNode = updatedNode; // trigger update on graph view
+        this.node = { ...updatedNode, new: false }; // node in focus with new set to false
+        this.updatedNode = { ...updatedNode }; // trigger update on graph view with new unchanged
       } catch (error) {
         console.error("Failed to update node:", error);
       }
@@ -189,8 +190,8 @@ export default {
     updateEdgeFromEditor(updatedEdge) {
       console.log("updating edge from editor", updatedEdge);
       try {
-        this.edge = updatedEdge; // edge in focus
-        this.updatedEdge = updatedEdge; // trigger update on graph view
+        this.edge = { ...updatedEdge, new: true }; // edge in focus
+        this.updatedEdge = { ...updatedEdge }; // trigger update on graph view
       } catch (error) {
         console.error("Failed to update edge:", error);
       }

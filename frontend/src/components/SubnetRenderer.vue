@@ -131,16 +131,23 @@ watch(
           );
           updateNode(node.id, formattedNode);
           if (edge) {
-            console.log("Updating edge target to new node");
+            console.log(
+              "Found an edge containing (the) new node. Edge: ",
+              edge,
+            );
             if (edge.target === "new") {
+              console.log("Updating edge target to new node");
               edge.target = formattedNode.id;
               edge.id = `${edge.source}-${formattedNode.id}`;
               edge.selected = false;
-              edge.data.target = formattedNode.id;
+              edge.data.source = parseInt(edge.source);
+              edge.data.target = parseInt(formattedNode.id);
             } else if (edge.source === "new") {
+              console.log("Updating edge source to new node");
               edge.source = formattedNode.id;
               edge.id = `${formattedNode.id}-${edge.target}`;
-              edge.data.target = formattedNode.id;
+              edge.data.source = parseInt(formattedNode.id);
+              edge.data.target = parseInt(edge.target);
             }
           } else {
             console.log("No edge found for new node", getEdges.value);
@@ -426,9 +433,9 @@ function determinePositionWithinWindow(event) {
 function createEdgeOnConnection(targetId) {
   const { nodeId, handleType } = connectionInfo.value;
   const newEdgeData = formatFlowEdgeProps({
-    source: nodeId.toString(),
-    target: targetId, // targetId is a string
-    edge_type: handleType === "source" ? "imply" : "require",
+    source: handleType === "source" ? nodeId.toString() : targetId,
+    target: handleType === "source" ? targetId : nodeId.toString(), // targetId is a string
+    edge_type: "imply", //handleType === "source" ? "imply" : "require",
   });
   console.log("New edge data (direct connection):", newEdgeData);
   return newEdgeData;

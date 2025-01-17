@@ -13,7 +13,7 @@
         "legacy": "No longer relevant",
         "unspecified": "Not specified",
       "support": "How strongly do you support this?",
-        "ungraded": "Select a grade",
+        "unrated": "Select a grade",
         "A": "strongly agree",
         "B": "agree",
         "C": "neutral",
@@ -29,10 +29,18 @@
         "imply": "Indicates an implication from the source to the target",
       "source": "Source node",
       "target": "Target node",
+      "references": "A list of relevant references",
+      "description": "A longer description of the edge",
+      "causal_strength_rating": "How strongly does this condition contribute to this outcome?",
+        "unrated": "Select a grade",
+        "A": "strongly agree",
+        "B": "agree",
+        "C": "neutral",
+        "D": "disagree",
+        "E": "strongly disagree",
+
       "cprob": "Conditional probability of the target node given the source node",
       "cprob_condition": "How necessary is this condition for the source to realise?",
-      "cprob_implication": "How likely is this implication given the source?",
-      "references": "A list of relevant references",
-      "description": "A longer description of the edge"
+      "cprob_implication": "How likely is this implication given the source?"
     }
   }

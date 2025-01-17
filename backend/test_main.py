@@ -70,12 +70,12 @@ def initial_node(db, client):
 
 def test_read_main(client):
     response = client.get("/")
-    assert response.status_code == 200
+    assert response.status_code == 200, print(response.json())
 
 
 def test_get_whole_network(db, client):
     response = client.get("/network")
-    assert response.status_code == 200
+    assert response.status_code == 200, print(response.json())
 
 
 def test_reset_whole_network(db, client):
@@ -106,7 +106,7 @@ def test_update_subnet(db, client):
         "/subnet",
         json={"nodes": [{"title": "test", "scope": "test scope"}], "edges": []},
     )
-    assert response.status_code == 200
+    assert response.status_code == 200, print(response.json())
     assert (
         json.loads(client.get("/network/summary").content.decode("utf-8"))["nodes"]
         == n_nodes + 1
@@ -116,7 +116,7 @@ def test_update_subnet(db, client):
 def test_get_subnet(initial_node, client):
     node_id = initial_node["node_id"]
     response = client.get(f"/subnet/{node_id}")
-    assert response.status_code == 200
+    assert response.status_code == 200, print(response.json())
     assert node_id in [
         node["node_id"]
         for node in json.loads(response.content.decode("utf-8"))["nodes"]
@@ -125,12 +125,12 @@ def test_get_subnet(initial_node, client):
 
 def test_network_summary(db, client):
     response = client.get("/network/summary")
-    assert response.status_code == 200
+    assert response.status_code == 200, print(response.json())
 
 
 def test_get_nodes_list(db, client):
     response = client.get("/nodes")
-    assert response.status_code == 200
+    assert response.status_code == 200, print(response.json())
 
 
 def test_create_and_delete_node(db, client):
@@ -141,7 +141,7 @@ def test_create_and_delete_node(db, client):
         "/nodes",
         json={"title": "test", "scope": "unscoped", "description": "test"},
     )
-    assert response.status_code == 201
+    assert response.status_code == 201, print(response.json())
     assert (
         json.loads(client.get("/network/summary").content.decode("utf-8"))["nodes"]
         == n_nodes + 1
@@ -150,10 +150,10 @@ def test_create_and_delete_node(db, client):
     node_id = json.loads(response.content.decode("utf-8"))["node_id"]
 
     response = client.get(f"/nodes/{node_id}")
-    assert response.status_code == 200
+    assert response.status_code == 200, print(response.json())
 
     response = client.delete(f"/nodes/{node_id}")
-    assert response.status_code == 200
+    assert response.status_code == 200, print(response.json())
     assert (
         json.loads(client.get("/network/summary").content.decode("utf-8"))["nodes"]
         == n_nodes
@@ -166,14 +166,15 @@ def test_create_node_specific_id(db, client):
         "/nodes",
         json={
             "title": "test",
+            "node_type": "objective",
             "scope": "unscoped",
             "description": "test",
             "node_id": 777777,
         },
     )
-    assert response.status_code == 201
+    assert response.status_code == 201, print(response.json())
     response = client.get(f"/nodes/777777")
-    assert response.status_code == 200
+    assert response.status_code == 200, print(response.json())
 
 
 def test_create_node_with_missing_fields(client):
@@ -186,7 +187,7 @@ def test_create_node_with_missing_fields(client):
             "description": "test description",
         },
     )
-    assert response.status_code == 422
+    assert response.status_code == 422, print(response.json())
 
 
 def create_node_concurrently(client, title, results, index):
@@ -220,21 +221,23 @@ def test_concurrent_node_creations(client):
 
 def test_get_random_node(db, client):
     response = client.get("/nodes/random")
-    assert response.status_code == 200
+    assert response.status_code == 200, print(response.json())
 
 
 def test_get_node_wrong_id(initial_node, client):
     response = client.get(f"/nodes/{initial_node['node_id']}")
-    assert response.status_code == 200
+    assert response.status_code == 200, print(response.json())
 
     response = client.get("/nodes/999999999")
-    assert response.status_code == 404
+    assert response.status_code == 404, print(response.json())
 
 
 def test_search_nodes(db, client):
     response = client.get("/nodes?title=test")
-    assert response.status_code == 200
-    assert len(json.loads(response.content.decode("utf-8"))) == 1
+    assert response.status_code == 200, print(response.json())
+    assert len(json.loads(response.content.decode("utf-8"))) == 1, print(
+        response.json()
+    )
 
 
 def test_search_nodes_with_node_type(db, client):
@@ -260,17 +263,17 @@ def test_search_nodes_with_node_type(db, client):
     )
 
     response = client.get("/nodes?node_type=objective")
-    assert response.status_code == 200
+    assert response.status_code == 200, print(response.json())
     nodes = json.loads(response.content.decode("utf-8"))
     assert all(node["node_type"] == "objective" for node in nodes)
 
     response = client.get("/nodes?node_type=action")
-    assert response.status_code == 200
+    assert response.status_code == 200, print(response.json())
     nodes = json.loads(response.content.decode("utf-8"))
     assert all(node["node_type"] == "action" for node in nodes)
 
     response = client.get("/nodes?node_type=potentiality")
-    assert response.status_code == 200
+    assert response.status_code == 200, print(response.json())
     nodes = json.loads(response.content.decode("utf-8"))
     assert all(node["node_type"] == "potentiality" for node in nodes)
 
@@ -284,21 +287,21 @@ def test_update_node(initial_node, client):
             "description": "test modified",
         },
     )
-    assert response.status_code == 200
+    assert response.status_code == 200, print(response.json())
     assert json.loads(response.content.decode("utf-8"))["title"] == "test modified"
 
     response = client.put("/nodes", json={"title": "test", "description": "test"})
-    assert response.status_code == 422
+    assert response.status_code == 422, print(response.json())
 
 
 def test_delete_node_wrong_id(db, client):
     response = client.delete("/nodes/999999999")
-    assert response.status_code == 404
+    assert response.status_code == 404, print(response.json())
 
 
 def test_get_edge_list(db, client):
     response = client.get("/edges")
-    assert response.status_code == 200
+    assert response.status_code == 200, print(response.json())
 
 
 def test_create_update_and_delete_edge(initial_node, client):
@@ -313,7 +316,7 @@ def test_create_update_and_delete_edge(initial_node, client):
             "target": initial_node["node_id"],
         },
     )
-    assert response.status_code == 201
+    assert response.status_code == 201, print(response.json())
     assert (
         json.loads(client.get("/network/summary").content.decode("utf-8"))["edges"]
         == n_edges + 1
@@ -325,20 +328,23 @@ def test_create_update_and_delete_edge(initial_node, client):
             "edge_type": "imply",
             "source": initial_node["node_id"],
             "target": initial_node["node_id"],
-            "cprob": 0.5,
+            "sufficiency": 0.5,
         },
     )
-    assert response.status_code == 200
-    assert json.loads(response.content.decode("utf-8"))["cprob"] == 0.5
+    assert response.status_code == 200, print(response.json())
+    response_data = response.json()
+    assert (
+        response_data["sufficiency"] == 0.5
+    ), f"Response JSON: sufficiency = {response_data['sufficiency']} cprob = {response_data['cprob']}"
 
     response = client.delete(
         f"/edges/{initial_node['node_id']}/{initial_node['node_id']}",
         params={"edge_type": "imply"},
     )
-    assert response.status_code == 200
+    assert response.status_code == 200, print(response.json())
 
     response = client.get(f"/edges/{initial_node['node_id']}/{initial_node['node_id']}")
-    assert response.status_code == 404
+    assert response.status_code == 404, print(response.json())
 
 
 def test_create_edge_with_nonexistent_nodes(db, client):
@@ -350,7 +356,7 @@ def test_create_edge_with_nonexistent_nodes(db, client):
             "target": 999998,  # Nonexistent target
         },
     )
-    assert response.status_code == 404
+    assert response.status_code == 404, print(response.json())
 
 
 def test_find_edges(db, client):
@@ -358,7 +364,7 @@ def test_find_edges(db, client):
         "/edges/find",
         json={"edge_type": "imply"},
     )
-    assert response.status_code == 200
+    assert response.status_code == 200, print(response.json())
 
 
 def test_create_node_with_references(db, client):
@@ -371,7 +377,7 @@ def test_create_node_with_references(db, client):
             "references": ["ref1", "ref2", "ref3"],
         },
     )
-    assert response.status_code == 201
+    assert response.status_code == 201, print(response.json())
     node = json.loads(response.content.decode("utf-8"))
     assert "references" in node
     assert len(node["references"]) == 3
@@ -389,7 +395,7 @@ def test_update_node_with_references(db, client):
             "references": ["ref1", "ref2"],
         },
     )
-    assert response.status_code == 201
+    assert response.status_code == 201, print(response.json())
     node = json.loads(response.content.decode("utf-8"))
     node_id = node["node_id"]
 
@@ -402,7 +408,7 @@ def test_update_node_with_references(db, client):
             "references": ["ref3", "ref4"],
         },
     )
-    assert response.status_code == 200
+    assert response.status_code == 200, print(response.json())
     updated_node = json.loads(response.content.decode("utf-8"))
     assert "references" in updated_node
     assert len(updated_node["references"]) == 2
@@ -419,24 +425,25 @@ def test_create_edge_with_references(initial_node, client):
             "references": ["ref1", "ref2", "ref3"],
         },
     )
-    assert response.status_code == 201
+    assert response.status_code == 201, print(response.json())
     edge = json.loads(response.content.decode("utf-8"))
     assert "references" in edge
-    assert len(edge["references"]) == 3
+    assert len(edge["references"]) == 3, f"references = {edge['references']}"
     assert set(edge["references"]) == {"ref1", "ref2", "ref3"}
 
 
 def test_update_edge_with_references(initial_node, client):
+
     response = client.post(
         "/edges",
         json={
-            "edge_type": "imply",
+            "edge_type": "require",
             "source": initial_node["node_id"],
             "target": initial_node["node_id"],
             "references": ["ref1", "ref2"],
         },
     )
-    assert response.status_code == 201
+    assert response.status_code == 201, print(response.json())
     edge = json.loads(response.content.decode("utf-8"))
 
     response = client.put(
@@ -448,7 +455,7 @@ def test_update_edge_with_references(initial_node, client):
             "references": ["ref3", "ref4"],
         },
     )
-    assert response.status_code == 200
+    assert response.status_code == 200, print(response.json())
     updated_edge = json.loads(response.content.decode("utf-8"))
     assert "references" in updated_edge
     assert len(updated_edge["references"]) == 2
@@ -470,7 +477,7 @@ def test_migrate_label_to_property(db, client):
     response = client.post(
         "/migrate_label_to_property", json={"property_name": "new_property"}
     )
-    assert response.status_code == 200
+    assert response.status_code == 200, print(response.json())
 
     # Verify that the label has been migrated to the property
     with db.connection() as g:

@@ -3,44 +3,7 @@
     <h2 :title="edgeTypeTooltip">
       {{ edge.edge_type === "require" ? "Condition" : "Implication" }}
     </h2>
-    <div class="field">
-      <template v-if="edge.edge_type === 'require'">
-        <strong :title="tooltips.edge.cprob_condition">
-          Cond.Proba(condition|source)
-        </strong>
-      </template>
-      <template v-if="edge.edge_type === 'imply'">
-        <strong :title="tooltips.edge.cprob_implication">
-          Cond.Proba(implication|source)
-        </strong>
-      </template>
-      <div class="cprob-content">
-        <template
-          v-if="editedEdge.cprob !== undefined && editedEdge.cprob !== null"
-        >
-          <span v-if="editingField !== 'cprob'" @click="startEditing('cprob')">
-            {{ editedEdge.cprob }}%
-          </span>
-          <div v-else style="display: flex; align-items: center">
-            <input
-              type="number"
-              v-model.number="editedEdge.cprob"
-              @blur="stopEditing('cprob')"
-              ref="cprobInput"
-              min="0"
-              max="100"
-              style="width: 50px; margin-right: 5px"
-            />
-            <span>%</span>
-          </div>
-        </template>
-        <template v-else>
-          <button class="add-cprob-button" @click="addCprob" style="">
-            + Add cprob
-          </button>
-        </template>
-      </div>
-    </div>
+
     <div class="field">
       <strong :title="tooltips.edge.references">References:</strong><br />
       <ul>
@@ -68,6 +31,7 @@
       </button>
     </div>
     <br />
+
     <strong :title="tooltips.edge.description">Description:</strong>
     <div
       class="field"
@@ -94,6 +58,33 @@
     >
       + Description
     </button>
+
+    <div class="field">
+      <strong :title="tooltips.edge.causal_strength_rating"
+        >Causal Strength:</strong
+      >
+      <div class="field-content">
+        <select v-model="editedEdge.causal_strength_rating" ref="causalInput">
+          <option value="" :title="tooltips.edge.unrated"></option>
+          <option value="A" :title="tooltips.edge.A">
+            A ({{ tooltips.edge.A }})
+          </option>
+          <option value="B" :title="tooltips.edge.B">
+            B ({{ tooltips.edge.B }})
+          </option>
+          <option value="C" :title="tooltips.edge.C">
+            C ({{ tooltips.edge.C }})
+          </option>
+          <option value="D" :title="tooltips.edge.D">
+            D ({{ tooltips.edge.D }})
+          </option>
+          <option value="E" :title="tooltips.edge.E">
+            E ({{ tooltips.edge.E }})
+          </option>
+        </select>
+      </div>
+    </div>
+
     <button class="submit-button" @click="submit">Submit</button>
   </div>
 </template>
@@ -109,10 +100,10 @@ export default {
   },
   data() {
     const editedEdge = _.cloneDeep(this.edge);
-    editedEdge.cprob =
-      this.edge.cprob !== undefined && this.edge.cprob !== null
-        ? this.edge.cprob * 100
-        : undefined;
+    // editedEdge.cprob =
+    //   this.edge.cprob !== undefined && this.edge.cprob !== null
+    //     ? this.edge.cprob * 100
+    //     : undefined;
     return {
       editingField: null,
       editedEdge: editedEdge,
@@ -139,12 +130,12 @@ export default {
     },
     stopEditing(field) {
       if (this.editingField === field) {
-        if (
-          field === "cprob" &&
-          (this.editedEdge.cprob < 0 || this.editedEdge.cprob > 100)
-        ) {
-          this.editedEdge.cprob = undefined;
-        }
+        // if (
+        // field === "cprob" &&
+        // (this.editedEdge.cprob < 0 || this.editedEdge.cprob > 100)
+        // ) {
+        // this.editedEdge.cprob = undefined;
+        // }
         this.editingField = null;
       }
     },
@@ -171,8 +162,19 @@ export default {
       this.editedEdge.references = this.editedEdge.references.filter(
         (ref) => ref.trim() !== "",
       );
-      this.editedEdge.cprob = this.editedEdge.cprob / 100;
+      // this.editedEdge.cprob = this.editedEdge.cprob / 100;
       console.log("submitting ", this.editedEdge);
+
+      console.log(
+        "current edited support:",
+        this.editedEdge.causal_strength_rating,
+      );
+      this.editedEdge.causal_strength_rating =
+        this.editedEdge.causal_strength_rating || null;
+      if (this.editedEdge.causal_strength_rating === "") {
+        this.editedEdge.causal_strength_rating = null;
+      }
+
       let response;
       try {
         if (this.editedEdge.new) {
@@ -194,10 +196,10 @@ export default {
         console.error("Failed to update edge:", error);
       }
     },
-    addCprob() {
-      this.editedEdge.cprob = 0;
-      this.startEditing("cprob"); // Ensure the input field is shown immediately
-    },
+    // addCprob() {
+    // this.editedEdge.cprob = 0;
+    // this.startEditing("cprob"); // Ensure the input field is shown immediately
+    // },
   },
   watch: {
     edge: {

@@ -1,14 +1,14 @@
-from typing import Annotated
+import warnings
+from typing import Annotated, Dict, Set
 from enum import Enum
-import math
 
-from pydantic import BaseModel, field_validator
-from fastapi import Path, Query
+from pydantic import BaseModel, Field, field_validator, model_validator
+from fastapi import Query
 
 
 NodeId = Annotated[
     int,
-    Path(
+    Field(
         title="the node ID",
         ge=0,
     ),
@@ -36,8 +36,9 @@ class NodeType(str, Enum):
 
 
 class EdgeType(str, Enum):
-    require = "require"
     imply = "imply"
+
+    require = "require"
 
 
 class LikertScale(str, Enum):
@@ -67,24 +68,81 @@ class NodeStatus(str, Enum):
 class NodeBase(BaseModel):
     """Base Node model"""
 
+    # definition
+    node_id: NodeId | None = None  # node id is not created by client
     node_type: NodeType = NodeType.potentiality
     title: str
     scope: str
     status: NodeStatus | None = NodeStatus.unspecified
     description: str | None = None
-    node_id: NodeId | None = None
-    tags: list[str] = []
-    references: list[str] = []
+    tags: list[str] | None = Field(default_factory=list)
+    references: list[str] | None = Field(default_factory=list, alias="references")
+
+    # measures
     support: LikertScale | None = None
 
     # deprecated
-    id_from_ui: int | None = None
-    gradable: bool | None = False
-    proponents: list[str] = []
+    grade: LikertScale | None = Field(None, deprecated=True)
+    gradable: bool | None = Field(None, deprecated=True)
+    proponents: list[str] | None = Field(default_factory=list, deprecated=True)
+
+    @model_validator(mode="before")
+    def handle_deprecated_fields(cls, values):
+        if "grade" in values:
+            warnings.warn(
+                "`grade` field is deprecated and will be removed in future versions. "
+                "Please use `support` instead.",
+                DeprecationWarning,
+            )
+            if "support" in values:
+                warnings.warn("Both `grade` and `support` fields are present.")
+            if values["grade"] is not None:
+                values["support"] = values.pop("grade")
+        return values
+
+    @field_validator("gradable")
+    def convert_gradable(cls, v):
+        return None
+
+    @field_validator("proponents")
+    def convert_proponents(cls, v):
+        return v
+
+    @classmethod
+    def get_single_field_types(cls) -> Dict[str, type]:
+        """List of fields encoded as properties with 'single' cardinality in the graph.
+        These do not include ID or index related fields: node_id"""
+        return {
+            "node_type": str,
+            "title": str,
+            "scope": str,
+            "status": str,
+            "description": str,
+            "support": str,
+            # deprecated
+            "gradable": bool,
+        }
+
+    @classmethod
+    def get_list_field_types(cls) -> Dict[str, type]:
+        """List of fields encoded as properties with 'list' cardinality in the graph."""
+        return {
+            "references": list[str],
+            "tags": list[str],
+            # deprecated
+            "proponents": list[str],
+        }
+
+    @classmethod
+    def get_field_types(cls) -> Dict[str, type]:
+        """List of fields to be encoded as properties in the graph."""
+        return cls.get_single_field_types() | cls.get_list_field_types()
 
 
 class PartialNodeBase(NodeBase):
-    """Partial Node model"""
+    """Partial Node model
+    None here might mean that the field is not present in the request
+    """
 
     node_id: NodeId
     node_type: NodeType | None = None
@@ -94,25 +152,83 @@ class PartialNodeBase(NodeBase):
     tags: list[str] | None = None
     references: list[str] | None = None
     description: str | None = None
+    support: LikertScale | None = None
 
 
 class EdgeBase(BaseModel):
     """Base Edge model"""
 
+    # definition
     edge_type: EdgeType
     source: NodeId
     target: NodeId
-    cprob: Proba | None = None
-    source_from_ui: int | None = None
-    target_from_ui: int | None = None
-    references: list[str] = []
+    references: list[str] | None = Field(default_factory=list)
     description: str | None = None
 
-    @field_validator("cprob")
-    def convert_nan_to_none(cls, v):
-        if v is None or (isinstance(v, float) and math.isnan(v)):
-            return None
-        return v
+    # measures
+    causal_strength: Proba | None = None
+    causal_strength_rating: LikertScale | None = None
+    necessity: Proba | None = None
+    neccessity_rating: LikertScale | None = None
+    sufficiency: Proba | None = None
+    sufficiency_rating: LikertScale | None = None
+
+    # deprecated
+    # now in sufficiency for 'imply' and necessity for 'require'
+    cprob: Proba | None = Field(None, deprecated=True)
+    source_from_ui: int | None = Field(None, deprecated=True)
+    target_from_ui: int | None = Field(None, deprecated=True)
+
+    @model_validator(mode="before")
+    def convert_cprob(cls, values):
+        edge_type = values.get("edge_type")
+        cprob = values.get("cprob")
+        if cprob is not None:
+            if edge_type == EdgeType.require:
+                values["necessity"] = cprob
+                values["source"], values["target"] = values["target"], values["source"]
+                values["edge_type"] = EdgeType.imply
+            elif edge_type == EdgeType.imply:
+                values["sufficiency"] = cprob
+            # Optionally remove the deprecated field
+            del values["cprob"]
+        return values  # Return the modified values
+
+    @classmethod
+    def get_single_field_types(cls) -> Dict[str, type]:
+        """List of fields encoded as properties with 'single' cardinality in the graph.
+        These do not include ID or index related fields: source, target, edge_type
+        """
+        return {
+            "description": str,
+            "causal_strength": float,
+            "causal_strength_rating": str,
+            "necessity": float,
+            "neccessity_rating": str,
+            "sufficiency": float,
+            "sufficiency_rating": str,
+            # deprecated
+            "cprob": float,
+            "source_from_ui": int,
+            "target_from_ui": int,
+        }
+
+    @classmethod
+    def get_list_field_types(cls) -> Dict[str, type]:
+        """List of fields encoded as properties with 'list' cardinality in the graph."""
+        return {
+            "references": list[str],
+        }
+
+    @classmethod
+    def get_field_types(cls) -> Dict[str, type]:
+        """List of fields to be encoded as properties in the graph."""
+        return cls.get_single_field_types() | cls.get_list_field_types()
+
+
+class PartialEdgeBase(EdgeBase):
+    references: list[str] | None = None
+    edge_type: EdgeType | None = None
 
 
 class Subnet(BaseModel):

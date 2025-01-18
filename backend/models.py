@@ -88,14 +88,6 @@ class NodeBase(BaseModel):
         default_factory=list, deprecated=True, exclude=True
     )
 
-    def model_dump(self, **kwargs):
-        data = super().model_dump(**kwargs)
-        for field in self.get_deprecated_fields():
-            value = data.get(field)
-            if value is None or (isinstance(value, list) and not value):
-                data.pop(field, None)
-        return data
-
     @model_validator(mode="before")
     def handle_deprecated_fields(cls, values):
         if "grade" in values:
@@ -106,7 +98,9 @@ class NodeBase(BaseModel):
             )
             if "support" in values:
                 warnings.warn("Both `grade` and `support` fields are present.")
-            if values["grade"] is not None and values["support"] is None:
+            if values["grade"] is not None and (
+                "support" not in values or values["support"] is None
+            ):
                 values["support"] = values["grade"]
         return values
 
@@ -193,15 +187,6 @@ class EdgeBase(BaseModel):
     source_from_ui: int | None = Field(None, deprecated=True, exclude=True)
     target_from_ui: int | None = Field(None, deprecated=True, exclude=True)
 
-    def model_dump(self, **kwargs):
-        data = super().model_dump(**kwargs)
-        for field in self._deprecated_fields:
-            value = data.get(field)
-            print("deprecated:", field, value)
-            if value is None or (isinstance(value, list) and not value):
-                data.pop(field, None)
-        return data
-
     @model_validator(mode="before")
     def convert_cprob(cls, values):
         edge_type = values.get("edge_type")
@@ -213,8 +198,6 @@ class EdgeBase(BaseModel):
                 values["edge_type"] = EdgeType.imply
             elif edge_type == EdgeType.imply:
                 values["sufficiency"] = cprob
-            # Optionally remove the deprecated field
-            del values["cprob"]
         return values  # Return the modified values
 
     @classmethod

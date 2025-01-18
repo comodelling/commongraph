@@ -1,4 +1,5 @@
 import pytest
+import warnings
 from pydantic import ValidationError
 
 from models import NodeBase, EdgeBase, EdgeType
@@ -79,37 +80,69 @@ def test_node_optional_fields():
 def test_edge_optional_fields():
     # Edge without deprecated cprob
     edge = EdgeBase(edge_type="imply", source=1, target=2)
-    assert edge.cprob is None
     assert edge.sufficiency is None
     assert edge.necessity is None
     assert edge.references == []
     assert edge.description is None
 
-    # Edge with deprecated cprob for 'imply'
     edge_with_cprob_imply = EdgeBase(
         edge_type="imply",
         source=1,
         target=2,
-        cprob=0.75,
+        sufficiency=0.75,
         references=["ref1"],
         description="A test edge",
     )
-    assert edge_with_cprob_imply.cprob is None
     assert edge_with_cprob_imply.sufficiency == 0.75
     assert edge_with_cprob_imply.necessity is None
     assert edge_with_cprob_imply.references == ["ref1"]
     assert edge_with_cprob_imply.description == "A test edge"
 
-    # Edge with deprecated cprob for 'require'
     edge_with_cprob_require = EdgeBase(
-        edge_type="require",
-        source=1,
-        target=2,
-        cprob=0.5,
+        edge_type="imply", source=1, target=2, necessity=0.5
     )
-    assert edge_with_cprob_require.cprob is None
     assert edge_with_cprob_require.necessity == 0.5
     assert edge_with_cprob_require.sufficiency is None
     assert edge_with_cprob_require.edge_type == EdgeType.imply
-    assert edge_with_cprob_require.source == 2  # Swapped
-    assert edge_with_cprob_require.target == 1  # Swapped
+    assert edge_with_cprob_require.source == 1  # Swapped
+    assert edge_with_cprob_require.target == 2  # Swapped
+
+
+def test_node_deprecated_fields():
+    warnings.filterwarnings("ignore", category=DeprecationWarning)
+
+    node = NodeBase(
+        node_type="objective",
+        title="test",
+        scope="test scope",
+        grade="A",
+        gradable=True,
+        proponents=["proponent1", "proponent2"],
+    )
+    assert node.grade == "A"
+    assert node.gradable
+    assert node.proponents == ["proponent1", "proponent2"]
+
+    serialised_node = node.model_dump()
+    assert "grade" not in serialised_node
+    assert "gradable" not in serialised_node
+    assert "proponents" not in serialised_node
+
+
+def test_edge_deprecated_fields():
+    warnings.filterwarnings("ignore", category=DeprecationWarning)
+
+    edge = EdgeBase(edge_type="imply", source=1, target=2, cprob=0.5)
+    assert edge.cprob == 0.5
+    assert edge.sufficiency == 0.5
+
+    edge = EdgeBase(edge_type="require", source=1, target=2, cprob=0.5)
+    assert edge.cprob == 0.5
+    assert edge.necessity == 0.5
+    assert edge.target == 1
+    assert edge.source == 2
+
+    serialised_edge = edge.model_dump()
+    assert "cprob" not in serialised_edge
+    assert "source_from_ui" not in serialised_edge
+    assert "target_from_ui" not in serialised_edge

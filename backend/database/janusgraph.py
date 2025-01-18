@@ -402,7 +402,7 @@ class JanusGraphDB(DatabaseInterface):
     def migrate_label_to_property(self, property_name: str) -> None:
         try:
             with self.connection() as g:
-                vertices = g.V().toList()
+                vertices = g.V().to_list()
                 print(f"Found {len(vertices)} vertices to migrate.")
                 for vertex in vertices:
                     print(f"Processing vertex: {vertex}")

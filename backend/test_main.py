@@ -1,4 +1,5 @@
 import os
+import warnings
 
 import pytest
 import json
@@ -50,6 +51,7 @@ def client(override_get_db_connection):
 
 @pytest.fixture(scope="module")
 def initial_node(db, client):
+    warnings.filterwarnings("ignore", category=UserWarning)
     client.delete("/network")
 
     result = client.post(
@@ -64,7 +66,7 @@ def initial_node(db, client):
     node_dict = json.loads(result.decode("utf-8"))
 
     yield node_dict
-
+    warnings.filterwarnings("ignore", category=UserWarning)
     client.delete("/network")
 
 
@@ -89,6 +91,7 @@ def test_reset_whole_network(db, client):
     #         "description": "test",
     #     },
     # )
+    warnings.filterwarnings("ignore", category=UserWarning)
     response = client.delete("/network")
     assert response.status_code == 205
 
@@ -152,6 +155,7 @@ def test_create_and_delete_node(db, client):
     response = client.get(f"/nodes/{node_id}")
     assert response.status_code == 200, print(response.json())
 
+    warnings.filterwarnings("ignore", category=UserWarning)
     response = client.delete(f"/nodes/{node_id}")
     assert response.status_code == 200, print(response.json())
     assert (

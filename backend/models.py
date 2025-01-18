@@ -1,8 +1,8 @@
 import warnings
-from typing import Annotated, Dict, Set
+from typing import Annotated, Dict
 from enum import Enum
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, model_validator
 from fastapi import Query
 
 
@@ -81,10 +81,20 @@ class NodeBase(BaseModel):
     # measures
     support: LikertScale | None = None
 
-    # deprecated
-    grade: LikertScale | None = Field(None, deprecated=True)
-    gradable: bool | None = Field(None, deprecated=True)
-    proponents: list[str] | None = Field(default_factory=list, deprecated=True)
+    # deprecated fields
+    grade: LikertScale | None = Field(None, deprecated=True, exclude=True)
+    gradable: bool | None = Field(None, deprecated=True, exclude=True)
+    proponents: list[str] | None = Field(
+        default_factory=list, deprecated=True, exclude=True
+    )
+
+    def model_dump(self, **kwargs):
+        data = super().model_dump(**kwargs)
+        for field in self.get_deprecated_fields():
+            value = data.get(field)
+            if value is None or (isinstance(value, list) and not value):
+                data.pop(field, None)
+        return data
 
     @model_validator(mode="before")
     def handle_deprecated_fields(cls, values):
@@ -96,47 +106,51 @@ class NodeBase(BaseModel):
             )
             if "support" in values:
                 warnings.warn("Both `grade` and `support` fields are present.")
-            if values["grade"] is not None:
-                values["support"] = values.pop("grade")
+            if values["grade"] is not None and values["support"] is None:
+                values["support"] = values["grade"]
         return values
 
-    @field_validator("gradable")
-    def convert_gradable(cls, v):
-        return None
-
-    @field_validator("proponents")
-    def convert_proponents(cls, v):
-        return v
-
     @classmethod
-    def get_single_field_types(cls) -> Dict[str, type]:
+    def get_single_field_types(cls, deprecated: bool = False) -> Dict[str, type]:
         """List of fields encoded as properties with 'single' cardinality in the graph.
         These do not include ID or index related fields: node_id"""
-        return {
+        fields = {
             "node_type": str,
             "title": str,
             "scope": str,
             "status": str,
             "description": str,
             "support": str,
-            # deprecated
             "gradable": bool,
         }
+        if not deprecated:
+            for field in cls.get_deprecated_fields():
+                fields.pop(field, None)
+        return fields
 
     @classmethod
-    def get_list_field_types(cls) -> Dict[str, type]:
+    def get_list_field_types(cls, deprecated: bool = False) -> Dict[str, type]:
         """List of fields encoded as properties with 'list' cardinality in the graph."""
-        return {
+        fields = {
             "references": list[str],
             "tags": list[str],
-            # deprecated
             "proponents": list[str],
         }
+        if not deprecated:
+            for field in cls.get_deprecated_fields():
+                fields.pop(field, None)
+        return fields
 
     @classmethod
-    def get_field_types(cls) -> Dict[str, type]:
+    def get_field_types(cls, deprecated: bool = False) -> Dict[str, type]:
         """List of fields to be encoded as properties in the graph."""
-        return cls.get_single_field_types() | cls.get_list_field_types()
+        return cls.get_single_field_types(deprecated) | cls.get_list_field_types(
+            deprecated
+        )
+
+    @classmethod
+    def get_deprecated_fields(cls) -> list[str]:
+        return [name for name, field in cls.model_fields.items() if field.exclude]
 
 
 class PartialNodeBase(NodeBase):
@@ -175,9 +189,18 @@ class EdgeBase(BaseModel):
 
     # deprecated
     # now in sufficiency for 'imply' and necessity for 'require'
-    cprob: Proba | None = Field(None, deprecated=True)
-    source_from_ui: int | None = Field(None, deprecated=True)
-    target_from_ui: int | None = Field(None, deprecated=True)
+    cprob: Proba | None = Field(None, deprecated=True, exclude=True)
+    source_from_ui: int | None = Field(None, deprecated=True, exclude=True)
+    target_from_ui: int | None = Field(None, deprecated=True, exclude=True)
+
+    def model_dump(self, **kwargs):
+        data = super().model_dump(**kwargs)
+        for field in self._deprecated_fields:
+            value = data.get(field)
+            print("deprecated:", field, value)
+            if value is None or (isinstance(value, list) and not value):
+                data.pop(field, None)
+        return data
 
     @model_validator(mode="before")
     def convert_cprob(cls, values):
@@ -195,11 +218,11 @@ class EdgeBase(BaseModel):
         return values  # Return the modified values
 
     @classmethod
-    def get_single_field_types(cls) -> Dict[str, type]:
+    def get_single_field_types(cls, deprecated: bool = False) -> Dict[str, type]:
         """List of fields encoded as properties with 'single' cardinality in the graph.
         These do not include ID or index related fields: source, target, edge_type
         """
-        return {
+        fields = {
             "description": str,
             "causal_strength": float,
             "causal_strength_rating": str,
@@ -207,23 +230,36 @@ class EdgeBase(BaseModel):
             "neccessity_rating": str,
             "sufficiency": float,
             "sufficiency_rating": str,
-            # deprecated
             "cprob": float,
             "source_from_ui": int,
             "target_from_ui": int,
         }
+        if not deprecated:
+            for field in cls.get_deprecated_fields():
+                fields.pop(field, None)
+        return fields
 
     @classmethod
-    def get_list_field_types(cls) -> Dict[str, type]:
+    def get_list_field_types(cls, deprecated: bool = False) -> Dict[str, type]:
         """List of fields encoded as properties with 'list' cardinality in the graph."""
-        return {
+        fields = {
             "references": list[str],
         }
+        if not deprecated:
+            for field in cls.get_deprecated_fields():
+                fields.pop(field, None)
+        return fields
 
     @classmethod
-    def get_field_types(cls) -> Dict[str, type]:
+    def get_field_types(cls, deprecated: bool = False) -> Dict[str, type]:
         """List of fields to be encoded as properties in the graph."""
-        return cls.get_single_field_types() | cls.get_list_field_types()
+        return cls.get_single_field_types(deprecated) | cls.get_list_field_types(
+            deprecated
+        )
+
+    @classmethod
+    def get_deprecated_fields(cls) -> list[str]:
+        return [name for name, field in cls.model_fields.items() if field.exclude]
 
 
 class PartialEdgeBase(EdgeBase):
@@ -234,5 +270,5 @@ class PartialEdgeBase(EdgeBase):
 class Subnet(BaseModel):
     """Subnet model"""
 
-    nodes: list[NodeBase]
-    edges: list[EdgeBase]
+    nodes: list[NodeBase | dict]
+    edges: list[EdgeBase | dict]

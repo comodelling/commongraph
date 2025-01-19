@@ -40,7 +40,7 @@ export default {
       default: undefined,
     },
   },
-
+  emits: ["update-edge-from-editor"],
   data() {
     return {
       currentTab: this.$route.path.endsWith("/edit") ? "edit" : "view",

@@ -1,7 +1,7 @@
 services:
-  fastapi:
+  backend:
     build: ./backend
-    container_name: objnet-fastapi
+    container_name: objnet-backend
     ports:
       - "8000:8000"
     environment:
@@ -22,5 +22,5 @@ services:
     volumes:
       - ./frontend:/app
     depends_on:
-      fastapi:
+      backend:
         condition: service_started

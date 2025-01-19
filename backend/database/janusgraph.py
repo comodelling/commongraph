@@ -164,9 +164,9 @@ class JanusGraphDB(DatabaseInterface):
             trav = g.V()
             if node_type is not None:
                 if isinstance(node_type, list):
-                    trav = trav.has_label(P.within(node_type))
+                    trav = trav.has("node_type", P.within(node_type))
                 elif isinstance(node_type, NodeType):
-                    trav = trav.has_label(node_type)
+                    trav = trav.has("node_type", node_type)
             if title:
                 for word in title.split(" "):
                     trav = trav.has("title", Text.text_contains_fuzzy(word))
@@ -402,7 +402,7 @@ class JanusGraphDB(DatabaseInterface):
     def migrate_label_to_property(self, property_name: str) -> None:
         try:
             with self.connection() as g:
-                vertices = g.V().toList()
+                vertices = g.V().to_list()
                 print(f"Found {len(vertices)} vertices to migrate.")
                 for vertex in vertices:
                     print(f"Processing vertex: {vertex}")

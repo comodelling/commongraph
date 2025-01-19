@@ -98,6 +98,7 @@ export default {
   props: {
     edge: Object,
   },
+  emits: ["publish-edge"],
   data() {
     const editedEdge = _.cloneDeep(this.edge);
     // editedEdge.cprob =

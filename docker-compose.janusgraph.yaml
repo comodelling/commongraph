@@ -20,7 +20,7 @@ services:
       start_period: 120s
       start_interval: 10s
 
-  fastapi:
+  backend:
     depends_on:
       janusgraph:
         condition: service_healthy

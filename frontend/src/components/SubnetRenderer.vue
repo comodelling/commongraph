@@ -126,6 +126,7 @@ watch(
             selected: true,
             position: node.position,
           };
+          delete formattedNode.new;
           const edge = getEdges.value.find(
             (edge) => edge.target === "new" || edge.source === "new",
           );
@@ -179,12 +180,14 @@ watch(
     console.log("Edge update detected:", newUpdatedEdge);
     if (newUpdatedEdge) {
       let updatedEdge = formatFlowEdgeProps(newUpdatedEdge);
+      updatedEdge.new = false;
       let edge = findEdge(updatedEdge.id);
       console.log("found edge", edge);
       if (edge) {
         Object.assign(edge, updatedEdge); // Update each field from updatedEdge
         edge.selected = true;
       }
+
       // console.log('updatedNode', updatedNode)
       // edge = updatedEdge;
     }
@@ -245,9 +248,10 @@ function exportSubnet() {
     ...node.data,
   }));
 
-  const edges = getEdges.value.map((edge) => ({
+  let edges = getEdges.value.map((edge) => ({
     ...edge.data,
   }));
+  edges = edges.filter((edge) => edge.source && edge.target);
 
   const subnetData = { nodes, edges };
   console.log("Exporting subnet data:", subnetData);

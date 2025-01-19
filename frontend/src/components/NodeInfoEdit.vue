@@ -304,8 +304,6 @@ export default {
           );
           const target = response.data.node_id;
 
-          response.data.new = true; // mark as new to replace it in the graph
-
           if (fromConnection) {
             // create edge if node was created from a connection
             try {

@@ -6,7 +6,7 @@ backups/
 
 *.sqlite*
 
-scripts/
+./scripts/
 data/
 
 !.gitkeep

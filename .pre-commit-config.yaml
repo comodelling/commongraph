@@ -36,3 +36,9 @@ repos:
         language: system
         pass_filenames: false
         always_run: false
+    -   id: update-version
+        name: update version from file
+        entry: node frontend/scripts/updateVersion.cjs
+        language: system
+        files: ^VERSION$
+        pass_filenames: false

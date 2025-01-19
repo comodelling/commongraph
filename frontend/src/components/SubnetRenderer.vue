@@ -126,7 +126,7 @@ watch(
             selected: true,
             position: node.position,
           };
-          formattedNode.new = false;
+          delete formattedNode.new;
           const edge = getEdges.value.find(
             (edge) => edge.target === "new" || edge.source === "new",
           );

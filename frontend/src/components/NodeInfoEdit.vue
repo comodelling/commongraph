@@ -298,11 +298,14 @@ export default {
           delete this.editedNode.new;
           delete this.editedNode.node_id;
           console.log("Submitting node for creation:", this.editedNode);
-          let response = await axios.post(
+          const response = await axios.post(
             `${import.meta.env.VITE_BACKEND_URL}/nodes`,
             this.editedNode,
           );
-          const target = response.data.node_id;
+          const nodeReturned = response.data;
+          const target = nodeReturned.node_id;
+
+          nodeReturned.new = true;
 
           if (fromConnection) {
             // create edge if node was created from a connection
@@ -332,7 +335,7 @@ export default {
           // console.log("new node back from backend", response.data);
           // await
 
-          this.$emit("publish-node", response.data);
+          this.$emit("publish-node", nodeReturned);
           this.$router.push({
             name: "NodeView",
             params: { id: target.toString() },

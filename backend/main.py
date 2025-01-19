@@ -23,15 +23,14 @@ from database.base import DatabaseInterface
 from database.janusgraph import JanusGraphDB
 from database.sqlite import SQLiteDB
 
-app = FastAPI(title="ObjectiveNet API", version="v0.3.0")
 
-env_path = PathlibPath("/app/.env") if os.getenv("DOCKER_ENV") else PathlibPath(".env")
+_env_path = PathlibPath("/app/.env") if os.getenv("DOCKER_ENV") else PathlibPath(".env")
 
-if env_path.exists():
-    load_dotenv(dotenv_path=env_path)
+if _env_path.exists():
+    load_dotenv(dotenv_path=_env_path)
 else:
     warnings.warn(
-        f".env file not found at {env_path}, using default environment variables"
+        f".env file not found at {_env_path}, using default environment variables"
     )
 
 origins = (
@@ -39,6 +38,19 @@ origins = (
     if os.getenv("ALLOWED_ORIGINS")
     else []
 )
+
+if os.getenv("DOCKER_ENV"):
+    _version_path = PathlibPath("/app/VERSION")
+elif os.getcwd().endswith("backend"):
+    _version_path = PathlibPath("../VERSION")
+elif os.getcwd().endswith("objectivenet"):
+    _version_path = PathlibPath("VERSION")
+else:
+    raise FileNotFoundError("VERSION file not found")
+with open(_version_path) as f:
+    __version__ = f.read().strip()
+
+app = FastAPI(title="ObjectiveNet API", version=__version__)
 
 app.add_middleware(
     CORSMiddleware,

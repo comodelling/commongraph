@@ -45,7 +45,7 @@ You can also contribute to ObjectiveNet by:
 
 It is recommended to install dev requirements within a virtual environment when contributing to the code: `pip install -r requirements-dev.txt` (this includes the main requirements).
 
-Run `pre-commit install` to set up the git hook scripts. It'll perform some formatting, linting and unit tests before any commit.
+Run `pre-commit install` to set up the git hook scripts. It'll perform some formatting, linting, unit tests, and version sync before any commit.
 
 To generate new *.txt* requirements files after updating *.in* requirements files, you can run: ```pip-compile backend/requirements.in``` or ```pip-compile backend/requirements-dev.in```.
 

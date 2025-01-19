@@ -249,6 +249,14 @@ function exportSubnet() {
     return;
   }
 
+  if (route.name === "NodeEdit" || route.name === "EdgeEdit") {
+    const confirmExport = confirm(
+      "Exporting while editing may lose unsaved changes. Export anyway?",
+    );
+    if (!confirmExport) {
+      return;
+    }
+  }
   const nodes = getNodes.value.map((node) => ({
     ...node.data,
   }));

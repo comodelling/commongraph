@@ -244,6 +244,11 @@ async function layoutSubnet(direction) {
 }
 
 function exportSubnet() {
+  if (!getNodes.value.length) {
+    console.warn("No nodes to export");
+    return;
+  }
+
   const nodes = getNodes.value.map((node) => ({
     ...node.data,
   }));

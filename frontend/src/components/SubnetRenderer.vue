@@ -248,9 +248,10 @@ function exportSubnet() {
     ...node.data,
   }));
 
-  const edges = getEdges.value.map((edge) => ({
+  let edges = getEdges.value.map((edge) => ({
     ...edge.data,
   }));
+  edges = edges.filter((edge) => edge.source && edge.target);
 
   const subnetData = { nodes, edges };
   console.log("Exporting subnet data:", subnetData);

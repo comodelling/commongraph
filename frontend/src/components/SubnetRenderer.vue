@@ -244,6 +244,19 @@ async function layoutSubnet(direction) {
 }
 
 function exportSubnet() {
+  if (!getNodes.value.length) {
+    console.warn("No nodes to export");
+    return;
+  }
+
+  if (route.name === "NodeEdit" || route.name === "EdgeEdit") {
+    const confirmExport = confirm(
+      "Exporting while editing may lose unsaved changes. Export anyway?",
+    );
+    if (!confirmExport) {
+      return;
+    }
+  }
   const nodes = getNodes.value.map((node) => ({
     ...node.data,
   }));
@@ -258,7 +271,22 @@ function exportSubnet() {
   const blob = new Blob([JSON.stringify(subnetData, null, 2)], {
     type: "application/json",
   });
-  saveAs(blob, "export.json");
+  const currentDate = new Date();
+  const formattedDate = `${currentDate.getFullYear()}${(
+    currentDate.getMonth() + 1
+  )
+    .toString()
+    .padStart(
+      2,
+      "0",
+    )}${currentDate.getDate().toString().padStart(2, "0")}-${currentDate
+    .getHours()
+    .toString()
+    .padStart(
+      2,
+      "0",
+    )}${currentDate.getMinutes().toString().padStart(2, "0")}${currentDate.getSeconds().toString().padStart(2, "0")}`;
+  saveAs(blob, `objnet-export-${formattedDate}.json`);
 }
 
 onNodeClick(({ node }) => {

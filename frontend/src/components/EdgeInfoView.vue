@@ -50,7 +50,7 @@ export default {
       return;
     },
     targetLink() {
-      return `/nodes/${this.localEdge.target}`;
+      return `/node/${this.localEdge.target}`;
     },
     edgeTypeTooltip() {
       return this.tooltips.edge[this.edge.edge_type] || this.tooltips.edge.type;

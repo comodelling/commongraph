@@ -338,7 +338,7 @@ const onNodesChange = async (changes) => {
         const node_id = change.id;
         try {
           const response = await axios.delete(
-            `${import.meta.env.VITE_BACKEND_URL}/nodes/${node_id}`,
+            `${import.meta.env.VITE_BACKEND_URL}/node/${node_id}`,
           );
         } catch (error) {
           console.error("Failed to delete node:", error);
@@ -381,7 +381,7 @@ const onEdgesChange = async (changes) => {
         const edge_type = edge.data.edge_type;
         try {
           const response = await axios.delete(
-            `${import.meta.env.VITE_BACKEND_URL}/edges/${source_id}/${target_id}`,
+            `${import.meta.env.VITE_BACKEND_URL}/edge/${source_id}/${target_id}`,
             { edge_type: edge_type },
           );
         } catch (error) {

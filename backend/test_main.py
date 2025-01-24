@@ -55,7 +55,7 @@ def initial_node(db, client):
     client.delete("/network")
 
     result = client.post(
-        "/nodes",
+        "/node",
         json={
             "title": "test",
             "node_type": "objective",
@@ -83,7 +83,7 @@ def test_get_whole_network(db, client):
 def test_reset_whole_network(db, client):
     # Ensure there are nodes and edges before reset
     # client.post(
-    #     "/nodes",
+    #     "/node",
     #     json={
     #         "title": "test",
     #         "node_type": "objective",
@@ -141,7 +141,7 @@ def test_create_and_delete_node(db, client):
         "nodes"
     ]
     response = client.post(
-        "/nodes",
+        "/node",
         json={"title": "test", "scope": "unscoped", "description": "test"},
     )
     assert response.status_code == 201, print(response.json())
@@ -152,11 +152,11 @@ def test_create_and_delete_node(db, client):
 
     node_id = json.loads(response.content.decode("utf-8"))["node_id"]
 
-    response = client.get(f"/nodes/{node_id}")
+    response = client.get(f"/node/{node_id}")
     assert response.status_code == 200, print(response.json())
 
     warnings.filterwarnings("ignore", category=UserWarning)
-    response = client.delete(f"/nodes/{node_id}")
+    response = client.delete(f"/node/{node_id}")
     assert response.status_code == 200, print(response.json())
     assert (
         json.loads(client.get("/network/summary").content.decode("utf-8"))["nodes"]
@@ -167,7 +167,7 @@ def test_create_and_delete_node(db, client):
 @pytest.mark.skip
 def test_create_node_specific_id(db, client):
     response = client.post(
-        "/nodes",
+        "/node",
         json={
             "title": "test",
             "node_type": "objective",
@@ -177,13 +177,13 @@ def test_create_node_specific_id(db, client):
         },
     )
     assert response.status_code == 201, print(response.json())
-    response = client.get(f"/nodes/777777")
+    response = client.get(f"/node/777777")
     assert response.status_code == 200, print(response.json())
 
 
 def test_create_node_with_missing_fields(client):
     response = client.post(
-        "/nodes",
+        "/node",
         json={
             "node_type": "objective",
             "scope": "test scope",
@@ -196,7 +196,7 @@ def test_create_node_with_missing_fields(client):
 
 def create_node_concurrently(client, title, results, index):
     response = client.post(
-        "/nodes",
+        "/node",
         json={
             "title": title,
             "node_type": "objective",
@@ -224,15 +224,15 @@ def test_concurrent_node_creations(client):
 
 
 def test_get_random_node(db, client):
-    response = client.get("/nodes/random")
+    response = client.get("/node/random")
     assert response.status_code == 200, print(response.json())
 
 
 def test_get_node_wrong_id(initial_node, client):
-    response = client.get(f"/nodes/{initial_node['node_id']}")
+    response = client.get(f"/node/{initial_node['node_id']}")
     assert response.status_code == 200, print(response.json())
 
-    response = client.get("/nodes/999999999")
+    response = client.get("/node/999999999")
     assert response.status_code == 404, print(response.json())
 
 
@@ -246,7 +246,7 @@ def test_search_nodes(db, client):
 
 def test_search_nodes_with_node_type(db, client):
     client.post(
-        "/nodes",
+        "/node",
         json={
             "title": "Objective Node",
             "node_type": "objective",
@@ -254,11 +254,11 @@ def test_search_nodes_with_node_type(db, client):
         },
     )
     client.post(
-        "/nodes",
+        "/node",
         json={"title": "Action Node", "node_type": "action", "scope": "test scope"},
     )
     client.post(
-        "/nodes",
+        "/node",
         json={
             "title": "Potentiality Node",
             "node_type": "potentiality",
@@ -284,7 +284,7 @@ def test_search_nodes_with_node_type(db, client):
 
 def test_update_node(initial_node, client):
     response = client.put(
-        "/nodes",
+        "/node",
         json={
             "node_id": initial_node["node_id"],
             "title": "test modified",
@@ -294,12 +294,12 @@ def test_update_node(initial_node, client):
     assert response.status_code == 200, print(response.json())
     assert json.loads(response.content.decode("utf-8"))["title"] == "test modified"
 
-    response = client.put("/nodes", json={"title": "test", "description": "test"})
+    response = client.put("/node", json={"title": "test", "description": "test"})
     assert response.status_code == 422, print(response.json())
 
 
 def test_delete_node_wrong_id(db, client):
-    response = client.delete("/nodes/999999999")
+    response = client.delete("/node/999999999")
     assert response.status_code == 404, print(response.json())
 
 
@@ -313,7 +313,7 @@ def test_create_update_and_delete_edge(initial_node, client):
         "edges"
     ]
     response = client.post(
-        "/edges",
+        "/edge",
         json={
             "edge_type": "imply",
             "source": initial_node["node_id"],
@@ -327,7 +327,7 @@ def test_create_update_and_delete_edge(initial_node, client):
     )
 
     response = client.put(
-        "/edges",
+        "/edge",
         json={
             "edge_type": "imply",
             "source": initial_node["node_id"],
@@ -342,18 +342,18 @@ def test_create_update_and_delete_edge(initial_node, client):
     ), f"Response JSON: sufficiency = {response_data['sufficiency']} cprob = {response_data['cprob']}"
 
     response = client.delete(
-        f"/edges/{initial_node['node_id']}/{initial_node['node_id']}",
+        f"/edge/{initial_node['node_id']}/{initial_node['node_id']}",
         params={"edge_type": "imply"},
     )
     assert response.status_code == 200, print(response.json())
 
-    response = client.get(f"/edges/{initial_node['node_id']}/{initial_node['node_id']}")
+    response = client.get(f"/edge/{initial_node['node_id']}/{initial_node['node_id']}")
     assert response.status_code == 404, print(response.json())
 
 
 def test_create_edge_with_nonexistent_nodes(db, client):
     response = client.post(
-        "/edges",
+        "/edge",
         json={
             "edge_type": "imply",
             "source": 999999,  # Nonexistent source
@@ -373,7 +373,7 @@ def test_find_edges(db, client):
 
 def test_create_node_with_references(db, client):
     response = client.post(
-        "/nodes",
+        "/node",
         json={
             "title": "test node with references",
             "description": "test description",
@@ -390,7 +390,7 @@ def test_create_node_with_references(db, client):
 
 def test_update_node_with_references(db, client):
     response = client.post(
-        "/nodes",
+        "/node",
         json={
             "title": "test node for update",
             "node_type": "potentiality",
@@ -404,7 +404,7 @@ def test_update_node_with_references(db, client):
     node_id = node["node_id"]
 
     response = client.put(
-        "/nodes",
+        "/node",
         json={
             "node_id": node_id,
             "title": "updated title",
@@ -421,7 +421,7 @@ def test_update_node_with_references(db, client):
 
 def test_create_edge_with_references(initial_node, client):
     response = client.post(
-        "/edges",
+        "/edge",
         json={
             "edge_type": "imply",
             "source": initial_node["node_id"],
@@ -439,7 +439,7 @@ def test_create_edge_with_references(initial_node, client):
 def test_update_edge_with_references(initial_node, client):
 
     response = client.post(
-        "/edges",
+        "/edge",
         json={
             "edge_type": "require",
             "source": initial_node["node_id"],
@@ -451,7 +451,7 @@ def test_update_edge_with_references(initial_node, client):
     edge = json.loads(response.content.decode("utf-8"))
 
     response = client.put(
-        "/edges",
+        "/edge",
         json={
             "edge_type": "imply",
             "source": initial_node["node_id"],

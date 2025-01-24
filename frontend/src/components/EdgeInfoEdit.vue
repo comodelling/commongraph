@@ -181,13 +181,13 @@ export default {
         if (this.editedEdge.new) {
           delete this.edge.new;
           response = await axios.post(
-            `${import.meta.env.VITE_BACKEND_URL}/edges/`,
+            `${import.meta.env.VITE_BACKEND_URL}/edge/`,
             this.editedEdge,
           );
           console.log("Created edge returned:", response.data);
         } else {
           response = await axios.put(
-            `${import.meta.env.VITE_BACKEND_URL}/edges`,
+            `${import.meta.env.VITE_BACKEND_URL}/edge`,
             this.editedEdge,
           );
           console.log("Updated edge returned:", response.data);

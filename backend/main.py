@@ -16,6 +16,7 @@ from models import (
     NodeId,
     EdgeType,
     PartialNodeBase,
+    MigrateLabelRequest,
 )
 
 
@@ -105,6 +106,9 @@ def reset_whole_network(db: DatabaseInterface = Depends(get_db_connection)) -> N
     db.reset_whole_network()
 
 
+### /subnet/ ###
+
+
 @app.put("/subnet")
 def update_subnet(
     subnet: Subnet, db: DatabaseInterface = Depends(get_db_connection)
@@ -123,6 +127,9 @@ def get_induced_subnet(
     If no neighbour is found, a singleton subnet with a single node is returned from the provided ID.
     """
     return db.get_induced_subnet(node_id, levels)
+
+
+### /nodes/ ###
 
 
 @app.get("/nodes")
@@ -146,7 +153,10 @@ def search_nodes(
     )
 
 
-@app.get("/nodes/random")
+### /node/ ###
+
+
+@app.get("/node/random")
 def get_random_node(
     node_type: NodeType | None = None,
     db: DatabaseInterface = Depends(get_db_connection),
@@ -155,7 +165,7 @@ def get_random_node(
     return db.get_random_node(node_type)
 
 
-@app.get("/nodes/{node_id}")
+@app.get("/node/{node_id}")
 def get_node(
     node_id: NodeId, db: DatabaseInterface = Depends(get_db_connection)
 ) -> NodeBase:
@@ -163,7 +173,7 @@ def get_node(
     return db.get_node(node_id)
 
 
-@app.post("/nodes", status_code=status.HTTP_201_CREATED)
+@app.post("/node", status_code=status.HTTP_201_CREATED)
 def create_node(
     node: NodeBase, db: DatabaseInterface = Depends(get_db_connection)
 ) -> NodeBase:
@@ -171,13 +181,13 @@ def create_node(
     return db.create_node(node)
 
 
-@app.delete("/nodes/{node_id}")
+@app.delete("/node/{node_id}")
 def delete_node(node_id: NodeId, db: DatabaseInterface = Depends(get_db_connection)):
     """Delete the node with provided ID."""
     db.delete_node(node_id)
 
 
-@app.put("/nodes")
+@app.put("/node")
 def update_node(
     node: PartialNodeBase, db: DatabaseInterface = Depends(get_db_connection)
 ) -> NodeBase:
@@ -194,16 +204,6 @@ def get_edge_list(db: DatabaseInterface = Depends(get_db_connection)) -> list[Ed
     return db.get_edge_list()
 
 
-@app.get("/edges/{source_id}/{target_id}")
-def get_edge(
-    source_id: NodeId,
-    target_id: NodeId,
-    db: DatabaseInterface = Depends(get_db_connection),
-) -> EdgeBase:
-    """Return the edge associated with the provided ID."""
-    return db.get_edge(source_id, target_id)
-
-
 @app.post("/edges/find")
 def find_edges(
     source_id: NodeId = None,
@@ -215,7 +215,20 @@ def find_edges(
     return db.find_edges(source_id=source_id, target_id=target_id, edge_type=edge_type)
 
 
-@app.post("/edges", status_code=201)
+### /edge/ ###
+
+
+@app.get("/edge/{source_id}/{target_id}")
+def get_edge(
+    source_id: NodeId,
+    target_id: NodeId,
+    db: DatabaseInterface = Depends(get_db_connection),
+) -> EdgeBase:
+    """Return the edge associated with the provided ID."""
+    return db.get_edge(source_id, target_id)
+
+
+@app.post("/edge", status_code=201)
 def create_edge(
     edge: EdgeBase, db: DatabaseInterface = Depends(get_db_connection)
 ) -> EdgeBase:
@@ -223,7 +236,7 @@ def create_edge(
     return db.create_edge(edge)
 
 
-@app.delete("/edges/{source_id}/{target_id}")
+@app.delete("/edge/{source_id}/{target_id}")
 def delete_edge(
     source_id: NodeId,
     target_id: NodeId,
@@ -234,7 +247,7 @@ def delete_edge(
     db.delete_edge(source_id, target_id, edge_type)
 
 
-@app.put("/edges")
+@app.put("/edge")
 def update_edge(
     edge: EdgeBase, db: DatabaseInterface = Depends(get_db_connection)
 ) -> EdgeBase:
@@ -242,11 +255,7 @@ def update_edge(
     return db.update_edge(edge)
 
 
-from pydantic import BaseModel
-
-
-class MigrateLabelRequest(BaseModel):
-    property_name: str
+### others ###
 
 
 @app.post("/migrate_label_to_property")

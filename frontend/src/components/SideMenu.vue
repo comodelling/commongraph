@@ -19,7 +19,7 @@ export default {
     const fetchRandomNode = async () => {
       try {
         const response = await axios.get(
-          `${import.meta.env.VITE_BACKEND_URL}/nodes/random`,
+          `${import.meta.env.VITE_BACKEND_URL}/node/random`,
         );
         const node = response.data;
         const path = router.currentRoute.value.path;

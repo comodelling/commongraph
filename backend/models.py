@@ -255,3 +255,7 @@ class Subnet(BaseModel):
 
     nodes: list[NodeBase | dict]
     edges: list[EdgeBase | dict]
+
+
+class MigrateLabelRequest(BaseModel):
+    property_name: str

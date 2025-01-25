@@ -1,10 +1,8 @@
 <template>
   <div class="search-page">
     <div class="content">
-      <SearchBar
-        :initialQuery="searchQuery"
-        @search="(query) => search(query)"
-      />
+      <!-- <h1>Search Results</h1> -->
+      <SearchBar :initialQuery="title" @search="search" />
       <div class="filters">
         <strong> Type: </strong>
 
@@ -49,8 +47,8 @@
         <input type="text" v-model="tagFilter" placeholder="e.g. tag1, tag2" />
       </div>
       <h2>Search Results</h2>
-      <div v-if="!nodes.length && searchQuery">
-        <p>No results found for "{{ searchQuery }}"</p>
+      <div v-if="!nodes.length && title">
+        <p>No results found for "{{ title }}"</p>
       </div>
       <div v-if="groupedNodes">
         <div
@@ -82,7 +80,7 @@ export default {
   },
   data() {
     return {
-      searchQuery: "",
+      title: "",
       nodes: [],
       nodeTypes: {
         objective: true,
@@ -114,60 +112,82 @@ export default {
     },
   },
   watch: {
-    "$route.params.searchQuery": {
+    "$route.query": {
       immediate: true,
       handler(newQuery) {
-        if (newQuery !== this.searchQuery) {
-          this.searchQuery = newQuery || "";
-          this.search(this.searchQuery);
+        console.log("new query:", newQuery);
+        if (!newQuery) return;
+        const { title, nodeTypes, nodeStatus, tags } = newQuery;
+        if (title !== this.title) {
+          this.title = title || "";
+          this.nodeTypes = nodeTypes ? JSON.parse(nodeTypes) : this.nodeTypes;
+          this.nodeStatus = nodeStatus
+            ? JSON.parse(nodeStatus)
+            : this.nodeStatus;
+          this.tagFilter = tags || "";
+          this.performSearch();
         }
       },
     },
   },
   methods: {
     async search(query) {
+      console.log("searching for nodes with query:", query);
       const nodeTypes = Object.keys(this.nodeTypes).filter(
         (type) => this.nodeTypes[type],
       );
       const nodeStatus = Object.keys(this.nodeStatus).filter(
         (type) => this.nodeStatus[type],
       );
-      if (!nodeTypes.length) {
-        console.warn("Select a node type to search");
-        this.nodes = [];
-        return;
-      }
-      this.searchQuery = query;
-      if (!this.searchQuery.trim()) {
-        console.warn("Empty search query, will fetch all objectives");
-      }
+      const tags = this.tagFilter
+        .split(",")
+        .map((tag) => tag.trim())
+        .filter((tag) => tag);
+
+      const params = {};
+      if (query.trim()) params.title = query;
+      if (
+        nodeTypes.length &&
+        nodeTypes.length !== Object.keys(this.nodeTypes).length
+      )
+        params.node_type = nodeTypes.join(",");
+      if (
+        nodeStatus.length &&
+        nodeStatus.length !== Object.keys(this.nodeStatus).length
+      )
+        params.status = nodeStatus.join(",");
+      if (tags.length) params.tags = tags.join(",");
+
+      this.$router.push({
+        name: "SearchPage",
+        query: params,
+      });
+    },
+    async performSearch() {
       try {
-        if (this.searchQuery !== this.$route.params.searchQuery) {
-          this.$router.push({
-            name: "SearchPage",
-            params: { searchQuery: this.searchQuery },
-          });
-        }
-        const tags = this.tagFilter
-          .split(",")
-          .map((tag) => tag.trim())
-          .filter((tag) => tag);
-        console.log("searching for nodes with title:", this.searchQuery);
+        const { title, nodeTypes, nodeStatus, tags } = this.$route.query;
+        const tagsArray = tags
+          ? tags
+              .split(",")
+              .map((tag) => tag.trim())
+              .filter((tag) => tag)
+          : [];
+
+        console.log("searching for nodes with title:", title);
         console.log("searching for nodes with types:", nodeTypes);
         console.log("searching for nodes with status:", nodeStatus);
-        console.log("searching for nodes with tags:", tags);
+        console.log("searching for nodes with tags:", tagsArray);
 
-        // Measure search time
         const startTime = performance.now();
 
         const response = await axios.get(
           `${import.meta.env.VITE_BACKEND_URL}/nodes`,
           {
             params: {
-              title: this.searchQuery,
+              title: title,
               node_type: nodeTypes,
               status: nodeStatus,
-              tags: tags.length ? tags : undefined,
+              tags: tagsArray.length ? tagsArray : undefined,
             },
             paramsSerializer: (params) => {
               return qs.stringify(params, { arrayFormat: "repeat" });

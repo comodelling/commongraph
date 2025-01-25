@@ -299,7 +299,7 @@ export default {
           delete this.editedNode.node_id;
           console.log("Submitting node for creation:", this.editedNode);
           const response = await axios.post(
-            `${import.meta.env.VITE_BACKEND_URL}/nodes`,
+            `${import.meta.env.VITE_BACKEND_URL}/node`,
             this.editedNode,
           );
           const nodeReturned = response.data;
@@ -323,7 +323,7 @@ export default {
               };
               console.log("Submitting edge for creation:", newEdge);
               await axios.post(
-                `${import.meta.env.VITE_BACKEND_URL}/edges`,
+                `${import.meta.env.VITE_BACKEND_URL}/edge`,
                 newEdge,
               );
             } catch (error) {

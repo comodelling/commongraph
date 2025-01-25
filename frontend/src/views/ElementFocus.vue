@@ -128,12 +128,11 @@ export default {
           },
         );
         console.timeEnd("axiosRequest");
-        const fetched_nodes = response.data.nodes;
-        const fetched_edges = response.data.edges;
+        const fetched_nodes = response.data.nodes || [];
+        const fetched_edges = response.data.edges || [];
 
         this.node =
-          fetched_nodes.find((node) => node.node_id === parseInt(seed)) ||
-          undefined;
+          fetched_nodes.find((node) => node.node_id === parseInt(seed)) || null;
 
         if (this.sourceId && this.targetId) {
           this.edge =
@@ -141,7 +140,7 @@ export default {
               (edge) =>
                 edge.source === parseInt(this.sourceId) &&
                 edge.target === parseInt(this.targetId),
-            ) || undefined;
+            ) || null;
         }
 
         this.subnetData = {
@@ -156,6 +155,9 @@ export default {
         };
       } catch (error) {
         console.error("Error fetching induced subnet:", error);
+        this.node = null;
+        this.edge = null;
+        this.subnetData = { nodes: [], edges: [] };
       }
     },
     async updateNodeFromBackend(node_id) {

@@ -1,6 +1,8 @@
 services:
   backend:
-    build: ./backend
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
     container_name: objnet-backend
     ports:
       - "8000:8000"
@@ -8,10 +10,10 @@ services:
       - DB_TYPE=${DB_TYPE}
       - DOCKER_ENV=true
     volumes:
-      - ./backend:/app
-      - ./backend/.env:/app/.env
-      - ./VERSION:/app/VERSION
-    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+      - ./backend:/app/backend/
+      - ./backend/.env:/app/backend/.env
+      # Ensure VERSION file is not overwritten by volume mappings
+    command: uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
 
   frontend:
     image: node:latest

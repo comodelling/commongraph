@@ -25,7 +25,22 @@ from database.janusgraph import JanusGraphDB
 from database.sqlite import SQLiteDB
 
 
-_env_path = PathlibPath("/app/.env") if os.getenv("DOCKER_ENV") else PathlibPath(".env")
+#  if os.getenv("DOCKER_ENV") else PathlibPath(".env")
+
+
+if os.getenv("DOCKER_ENV"):
+    _version_path = PathlibPath("/app/VERSION")
+    _env_path = PathlibPath("/app/backend/.env")
+elif os.getcwd().endswith("backend"):
+    _version_path = PathlibPath("../VERSION")
+    _env_path = PathlibPath(".env")
+elif os.getcwd().endswith("objectivenet"):
+    _version_path = PathlibPath("VERSION")
+    _env_path = PathlibPath("backend/.env")
+else:
+    raise FileNotFoundError("VERSION file not found")
+with open(_version_path) as f:
+    __version__ = f.read().strip()
 
 if _env_path.exists():
     load_dotenv(dotenv_path=_env_path)
@@ -40,16 +55,6 @@ origins = (
     else []
 )
 
-if os.getenv("DOCKER_ENV"):
-    _version_path = PathlibPath("/app/VERSION")
-elif os.getcwd().endswith("backend"):
-    _version_path = PathlibPath("../VERSION")
-elif os.getcwd().endswith("objectivenet"):
-    _version_path = PathlibPath("VERSION")
-else:
-    raise FileNotFoundError("VERSION file not found")
-with open(_version_path) as f:
-    __version__ = f.read().strip()
 
 app = FastAPI(title="ObjectiveNet API", version=__version__)
 

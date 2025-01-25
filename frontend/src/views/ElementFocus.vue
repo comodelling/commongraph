@@ -1,15 +1,19 @@
 <template>
   <div class="focus">
     <NodeInfo
-      v-if="!targetId"
+      v-if="nodeId && node"
       :node="node"
       @update-node-from-editor="updateNodeFromEditor"
     />
+    <div v-else-if="nodeId" class="error-message">Node not found</div>
     <EdgeInfo
-      v-if="targetId && edge && Object.keys(edge).length"
+      v-if="sourceId && targetId && edge"
       :edge="edge"
       @update-edge-from-editor="updateEdgeFromEditor"
     />
+    <div v-else-if="sourceId && targetId" class="error-message">
+      Edge not found
+    </div>
     <SubnetRenderer
       :data="subnetData"
       @nodeClick="updateNodeFromBackend"
@@ -51,7 +55,7 @@ export default {
   },
   computed: {
     nodeId() {
-      return this.$route.params.id || this.$route.params.source_id;
+      return this.$route.params.id;
     },
     sourceId() {
       return this.$route.params.source_id;
@@ -112,8 +116,11 @@ export default {
       console.log("fetchElementAndSubnetData");
       try {
         console.time("axiosRequest");
+
+        const seed = this.nodeId || this.sourceId || this.targetId;
+        //TODO: allow fetching subnet from two seeds instead of one
         const response = await axios.get(
-          `${import.meta.env.VITE_BACKEND_URL}/subnet/${this.nodeId}`,
+          `${import.meta.env.VITE_BACKEND_URL}/subnet/${seed}`,
           {
             params: {
               levels: 10,
@@ -125,11 +132,10 @@ export default {
         const fetched_edges = response.data.edges;
 
         this.node =
-          fetched_nodes.find(
-            (node) => node.node_id === parseInt(this.nodeId),
-          ) || undefined;
+          fetched_nodes.find((node) => node.node_id === parseInt(seed)) ||
+          undefined;
 
-        if (this.sourceId !== undefined && this.targetId !== undefined) {
+        if (this.sourceId && this.targetId) {
           this.edge =
             fetched_edges.find(
               (edge) =>
@@ -235,5 +241,11 @@ export default {
 .focus {
   display: flex;
   flex-grow: 1;
+}
+.error-message {
+  /* border: 1px solid black; */
+  font-weight: bold;
+  margin: auto;
+  padding: 30px 50px;
 }
 </style>

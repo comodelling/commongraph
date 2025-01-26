@@ -3,7 +3,7 @@ import axios from "axios";
 import { saveAs } from "file-saver";
 import { nextTick, ref, warn, watch, computed } from "vue";
 import { useRouter, useRoute } from "vue-router";
-import { Panel, VueFlow, useVueFlow } from "@vue-flow/core";
+import { Panel, VueFlow, useVueFlow, ConnectionMode } from "@vue-flow/core";
 import { Background } from "@vue-flow/background";
 import { ControlButton, Controls } from "@vue-flow/controls";
 import { MiniMap } from "@vue-flow/minimap";
@@ -396,6 +396,11 @@ const onEdgesChange = async (changes) => {
   applyEdgeChanges(nextChanges);
 };
 
+function onConnectStart({ nodeId, handleType }) {
+  console.log("on connect start", { nodeId, handleType });
+  connectionInfo.value = { nodeId, handleType };
+}
+
 /**
  * onConnect is called when a new connection is created.
  *
@@ -403,39 +408,19 @@ const onEdgesChange = async (changes) => {
  */
 function onConnect(connection) {
   console.log("on connect", connection);
-  addEdges(connection);
-}
-
-function onConnectStart({ nodeId, handleType }) {
-  console.log("on connect start", { nodeId, handleType });
-  connectionInfo.value = { nodeId, handleType };
+  // addEdges(connection);
+  const newEdgeData = createEdgeOnConnection(connection.target);
+  nextTick(() => {
+    emit("newEdgeCreated", newEdgeData);
+  });
+  addEdges(newEdgeData);
+  connectionInfo.value = null;
 }
 
 function onConnectEnd(event) {
   console.log("on connect end", event);
-  if (!connectionInfo.value) {
-    console.error("No connection info available");
-    return;
-  }
-  connectionInfo.value.position = { x: event.clientX, y: event.clientY };
 
-  // Check if the connection is to an existing node handle
-  const targetElement = event.target;
-  const isConnectedToHandle =
-    targetElement && targetElement.classList.contains("vue-flow__handle");
-  let targetId = null;
-  const { nodeId, handleType } = connectionInfo.value;
-
-  if (isConnectedToHandle) {
-    console.log("Connected to an existing node handle");
-    targetId = targetElement.getAttribute("data-nodeid");
-    const newEdgeData = createEdgeOnConnection(targetId);
-    nextTick(() => {
-      emit("newEdgeCreated", newEdgeData);
-    });
-    addEdges(newEdgeData);
-    connectionInfo.value = null;
-  } else {
+  if (connectionInfo.value) {
     console.log("Connected to an empty space");
     searchBarPosition.value = determinePositionWithinWindow(event);
     setTimeout(() => {
@@ -739,6 +724,7 @@ onEdgeMouseLeave(({ edge }) => {
       :min-zoom="0.2"
       :max-zoom="4"
       :apply-default="false"
+      :connection-mode="ConnectionMode.Strict"
       @nodes-initialized="selectDirection(selectedDirection)"
       @nodes-change="onNodesChange"
       @edges-change="onEdgesChange"

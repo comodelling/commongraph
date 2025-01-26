@@ -1,8 +1,10 @@
 import warnings
 from typing import Annotated, Dict
 from enum import Enum
+from sqlmodel import SQLModel, Field
 
-from pydantic import BaseModel, Field, model_validator
+# from pydantic import BaseModel, Field,
+from pydantic import model_validator
 from fastapi import Query
 
 
@@ -65,7 +67,7 @@ class NodeStatus(str, Enum):
         raise ValueError(f"{value} is not a valid {cls.__name__}")
 
 
-class NodeBase(BaseModel):
+class NodeBase(SQLModel):
     """Base Node model"""
 
     # definition
@@ -82,11 +84,9 @@ class NodeBase(BaseModel):
     support: LikertScale | None = None
 
     # deprecated fields
-    grade: LikertScale | None = Field(None, deprecated=True, exclude=True)
-    gradable: bool | None = Field(None, deprecated=True, exclude=True)
-    proponents: list[str] | None = Field(
-        default_factory=list, deprecated=True, exclude=True
-    )
+    grade: LikertScale | None = Field(None, exclude=True)
+    gradable: bool | None = Field(None, exclude=True)
+    proponents: list[str] | None = Field(default_factory=list, exclude=True)
 
     @model_validator(mode="before")
     def handle_deprecated_fields(cls, values):
@@ -163,7 +163,7 @@ class PartialNodeBase(NodeBase):
     support: LikertScale | None = None
 
 
-class EdgeBase(BaseModel):
+class EdgeBase(SQLModel):
     """Base Edge model"""
 
     # definition
@@ -183,9 +183,9 @@ class EdgeBase(BaseModel):
 
     # deprecated
     # now in sufficiency for 'imply' and necessity for 'require'
-    cprob: Proba | None = Field(None, deprecated=True, exclude=True)
-    source_from_ui: int | None = Field(None, deprecated=True, exclude=True)
-    target_from_ui: int | None = Field(None, deprecated=True, exclude=True)
+    cprob: Proba | None = Field(None, exclude=True)
+    source_from_ui: int | None = Field(None, exclude=True)
+    target_from_ui: int | None = Field(None, exclude=True)
 
     @model_validator(mode="before")
     def convert_cprob(cls, values):
@@ -250,12 +250,12 @@ class PartialEdgeBase(EdgeBase):
     edge_type: EdgeType | None = None
 
 
-class Subnet(BaseModel):
+class Subnet(SQLModel):
     """Subnet model"""
 
     nodes: list[NodeBase | dict]
     edges: list[EdgeBase | dict]
 
 
-class MigrateLabelRequest(BaseModel):
+class MigrateLabelRequest(SQLModel):
     property_name: str

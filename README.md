@@ -13,7 +13,7 @@ To start ObjectiveNet:
 
 ### Database configuration
 
-You can choose between different types of databases to store the underlying graph by modifying the value of `DB_TYPE` inside `backend/.env` configuration file.
+You can choose between different types of databases to store the underlying graph by modifying the value of `GRAPH_DB_TYPE` inside `backend/.env` configuration file.
 Currently supported database types are: `janusgraph`, `sqlite`.
 
 *Note*: there is no synchronisation between those different databases, and switching between them will not import the content of the other. For this, you will need to export and import the content using the `network` API.

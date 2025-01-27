@@ -4,7 +4,7 @@ from pathlib import Path as PathlibPath
 from typing import Annotated
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, status, Query, Depends, Body, HTTPException
+from fastapi import FastAPI, status, Query, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from models import (
@@ -17,15 +17,14 @@ from models import (
     EdgeType,
     PartialNodeBase,
     MigrateLabelRequest,
+    User,
 )
 
 
-from database.base import DatabaseInterface
+from database.base import GraphDatabaseInterface, UserDatabaseInterface
 from database.janusgraph import JanusGraphDB
 from database.sqlite import SQLiteDB
-
-
-#  if os.getenv("DOCKER_ENV") else PathlibPath(".env")
+from database.postgresql import PostgreSQLDB
 
 
 if os.getenv("DOCKER_ENV"):
@@ -67,7 +66,9 @@ app.add_middleware(
 )
 
 
-def get_db_connection(db_type: str = os.getenv("DB_TYPE")) -> DatabaseInterface:
+def get_graph_db_connection(
+    db_type: str = os.getenv("GRAPH_DB_TYPE"),
+) -> GraphDatabaseInterface:
     if db_type == "janusgraph":
         janusgraph_host = os.getenv("JANUSGRAPH_HOST", "localhost")
         traversal_source = os.getenv("TRAVERSAL_SOURCE", "g_test")
@@ -77,7 +78,18 @@ def get_db_connection(db_type: str = os.getenv("DB_TYPE")) -> DatabaseInterface:
         print(f"Using SQLite database at {db_path}")
         return SQLiteDB(db_path)
     else:
-        raise ValueError(f"Unsupported DB_TYPE: {db_type}")
+        raise ValueError(f"Unsupported GRAPH_DB_TYPE: {db_type}")
+
+
+def get_user_db_connection(
+    db_type: str = os.getenv("USER_DB_TYPE"),
+) -> UserDatabaseInterface:
+    if db_type == "postgresql":
+        database_url = os.getenv("POSTGRES_DB_URL")
+        print(f"Using PostgreSQL database at {database_url}")
+        return PostgreSQLDB(database_url)
+    else:
+        raise ValueError(f"Unsupported USER_DB_TYPE: {db_type}")
 
 
 ### root ###
@@ -88,25 +100,51 @@ async def root():
     return {"message": "Welcome to ObjectiveNet!"}
 
 
+### /user/ ###
+
+
+@app.post("/users", status_code=201)
+def create_user(
+    user: User, db: UserDatabaseInterface = Depends(get_user_db_connection)
+) -> User:
+    """Create a new user."""
+    return db.create_user(user)
+
+
+@app.get("/users/{username}")
+def get_user(
+    username: str, db: UserDatabaseInterface = Depends(get_user_db_connection)
+) -> User:
+    """Get a user by username."""
+    user = db.get_user(username)
+    if user:
+        return user
+    raise HTTPException(status_code=404, detail="User not found")
+
+
 ### /network/ ###
 
 
 @app.get("/network")
-def get_whole_network(db: DatabaseInterface = Depends(get_db_connection)) -> Subnet:
+def get_whole_network(
+    db: GraphDatabaseInterface = Depends(get_graph_db_connection),
+) -> Subnet:
     """Return full network of nodes and edges from the database."""
     return db.get_whole_network()
 
 
 @app.get("/network/summary")
 def get_network_summary(
-    db: DatabaseInterface = Depends(get_db_connection),
+    db: GraphDatabaseInterface = Depends(get_graph_db_connection),
 ) -> dict[str, int]:
     """Count nodes and edges."""
     return db.get_network_summary()
 
 
 @app.delete("/network", status_code=status.HTTP_205_RESET_CONTENT)
-def reset_whole_network(db: DatabaseInterface = Depends(get_db_connection)) -> None:
+def reset_whole_network(
+    db: GraphDatabaseInterface = Depends(get_graph_db_connection),
+) -> None:
     """Delete all nodes and edges. Be careful!"""
     db.reset_whole_network()
 
@@ -116,7 +154,7 @@ def reset_whole_network(db: DatabaseInterface = Depends(get_db_connection)) -> N
 
 @app.put("/subnet")
 def update_subnet(
-    subnet: Subnet, db: DatabaseInterface = Depends(get_db_connection)
+    subnet: Subnet, db: GraphDatabaseInterface = Depends(get_graph_db_connection)
 ) -> Subnet:
     """Add missing nodes and edges and update existing ones (given IDs)."""
     return db.update_subnet(subnet)
@@ -126,7 +164,7 @@ def update_subnet(
 def get_induced_subnet(
     node_id: NodeId,
     levels: Annotated[int, Query(get=0)] = 2,
-    db: DatabaseInterface = Depends(get_db_connection),
+    db: GraphDatabaseInterface = Depends(get_graph_db_connection),
 ) -> Subnet:
     """Return the subnet induced from a particular element with an optional limit number of connections.
     If no neighbour is found, a singleton subnet with a single node is returned from the provided ID.
@@ -145,7 +183,7 @@ def search_nodes(
     status: list[NodeStatus] | NodeStatus = Query(None),
     tags: list[str] | None = Query(None),
     description: str | None = None,
-    db: DatabaseInterface = Depends(get_db_connection),
+    db: GraphDatabaseInterface = Depends(get_graph_db_connection),
 ) -> list[NodeBase]:
     """Search in nodes on a field by field level."""
     return db.search_nodes(
@@ -164,7 +202,7 @@ def search_nodes(
 @app.get("/node/random")
 def get_random_node(
     node_type: NodeType | None = None,
-    db: DatabaseInterface = Depends(get_db_connection),
+    db: GraphDatabaseInterface = Depends(get_graph_db_connection),
 ) -> NodeBase:
     """Return a random node with optional node_type."""
     return db.get_random_node(node_type)
@@ -172,7 +210,7 @@ def get_random_node(
 
 @app.get("/node/{node_id}")
 def get_node(
-    node_id: NodeId, db: DatabaseInterface = Depends(get_db_connection)
+    node_id: NodeId, db: GraphDatabaseInterface = Depends(get_graph_db_connection)
 ) -> NodeBase:
     """Return the node associated with the provided ID."""
     return db.get_node(node_id)
@@ -180,21 +218,23 @@ def get_node(
 
 @app.post("/node", status_code=status.HTTP_201_CREATED)
 def create_node(
-    node: NodeBase, db: DatabaseInterface = Depends(get_db_connection)
+    node: NodeBase, db: GraphDatabaseInterface = Depends(get_graph_db_connection)
 ) -> NodeBase:
     """Create a node."""
     return db.create_node(node)
 
 
 @app.delete("/node/{node_id}")
-def delete_node(node_id: NodeId, db: DatabaseInterface = Depends(get_db_connection)):
+def delete_node(
+    node_id: NodeId, db: GraphDatabaseInterface = Depends(get_graph_db_connection)
+):
     """Delete the node with provided ID."""
     db.delete_node(node_id)
 
 
 @app.put("/node")
 def update_node(
-    node: PartialNodeBase, db: DatabaseInterface = Depends(get_db_connection)
+    node: PartialNodeBase, db: GraphDatabaseInterface = Depends(get_graph_db_connection)
 ) -> NodeBase:
     """Update the properties of an existing node."""
     return db.update_node(node)
@@ -204,7 +244,9 @@ def update_node(
 
 
 @app.get("/edges")
-def get_edge_list(db: DatabaseInterface = Depends(get_db_connection)) -> list[EdgeBase]:
+def get_edge_list(
+    db: GraphDatabaseInterface = Depends(get_graph_db_connection),
+) -> list[EdgeBase]:
     """Return all edges in the database."""
     return db.get_edge_list()
 
@@ -214,7 +256,7 @@ def find_edges(
     source_id: NodeId = None,
     target_id: NodeId = None,
     edge_type: EdgeType = None,
-    db: DatabaseInterface = Depends(get_db_connection),
+    db: GraphDatabaseInterface = Depends(get_graph_db_connection),
 ) -> list[EdgeBase]:
     """Return the edge associated with the provided ID."""
     return db.find_edges(source_id=source_id, target_id=target_id, edge_type=edge_type)
@@ -227,7 +269,7 @@ def find_edges(
 def get_edge(
     source_id: NodeId,
     target_id: NodeId,
-    db: DatabaseInterface = Depends(get_db_connection),
+    db: GraphDatabaseInterface = Depends(get_graph_db_connection),
 ) -> EdgeBase:
     """Return the edge associated with the provided ID."""
     return db.get_edge(source_id, target_id)
@@ -235,7 +277,7 @@ def get_edge(
 
 @app.post("/edge", status_code=201)
 def create_edge(
-    edge: EdgeBase, db: DatabaseInterface = Depends(get_db_connection)
+    edge: EdgeBase, db: GraphDatabaseInterface = Depends(get_graph_db_connection)
 ) -> EdgeBase:
     """Create an edge."""
     return db.create_edge(edge)
@@ -246,7 +288,7 @@ def delete_edge(
     source_id: NodeId,
     target_id: NodeId,
     edge_type: EdgeType | None = None,
-    db: DatabaseInterface = Depends(get_db_connection),
+    db: GraphDatabaseInterface = Depends(get_graph_db_connection),
 ):
     """Delete the edge between two nodes and for an optional edge_type."""
     db.delete_edge(source_id, target_id, edge_type)
@@ -254,7 +296,7 @@ def delete_edge(
 
 @app.put("/edge")
 def update_edge(
-    edge: EdgeBase, db: DatabaseInterface = Depends(get_db_connection)
+    edge: EdgeBase, db: GraphDatabaseInterface = Depends(get_graph_db_connection)
 ) -> EdgeBase:
     """Update the properties of an edge."""
     return db.update_edge(edge)
@@ -265,7 +307,7 @@ def update_edge(
 
 @app.post("/migrate_label_to_property")
 def migrate_label_to_property(
-    request: MigrateLabelRequest, db: JanusGraphDB = Depends(get_db_connection)
+    request: MigrateLabelRequest, db: JanusGraphDB = Depends(get_graph_db_connection)
 ):
     """Migrate the label of each vertex to a property called 'property_name'."""
     property_name = request.property_name

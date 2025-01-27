@@ -25,6 +25,8 @@ async-timeout==4.0.3
     # via gremlinpython
 attrs==24.2.0
     # via aiohttp
+bcrypt==4.2.1
+    # via -r backend/requirements.in
 certifi==2024.8.30
     # via
     #   httpcore
@@ -89,8 +91,12 @@ multidict==6.1.0
     #   yarl
 nest-asyncio==1.6.0
     # via gremlinpython
+passlib==1.7.4
+    # via -r backend/requirements.in
 propcache==0.2.0
     # via yarl
+psycopg2-binary==2.9.10
+    # via -r backend/requirements.in
 pydantic==2.9.2
     # via
     #   -r backend/requirements.in

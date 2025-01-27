@@ -1,11 +1,11 @@
 import warnings
-from typing import Annotated, Dict
+from typing import Annotated, Dict, Any
 from enum import Enum
-from sqlmodel import SQLModel, Field
 
-# from pydantic import BaseModel, Field,
 from pydantic import model_validator
 from fastapi import Query
+from sqlalchemy import JSON, Column
+from sqlmodel import SQLModel, Field
 
 
 NodeId = Annotated[
@@ -259,3 +259,34 @@ class Subnet(SQLModel):
 
 class MigrateLabelRequest(SQLModel):
     property_name: str
+
+
+class User(SQLModel, table=True):
+    """
+    User model for handling user data in the relational database.
+    """
+
+    username: str = Field(
+        ...,
+        primary_key=True,
+        index=True,
+        description="Unique username for the user",
+        min_length=3,
+    )
+    password: str = Field(..., description="Hashed password for the user", min_length=6)
+    preferences: Dict[str, Any] | None = Field(
+        default_factory=dict,
+        sa_column=Column(JSON),
+        description="User's personal preferences",
+    )
+
+
+class UserCreate(SQLModel):
+    username: str = Field(..., min_length=3)
+    password: str = Field(..., min_length=6)
+    preferences: Dict[str, Any] | None = Field(default_factory=dict)
+
+
+class UserRead(SQLModel):
+    username: str
+    preferences: Dict[str, Any] | None = Field(default_factory=dict)

@@ -23,10 +23,10 @@ from models import (
     PartialNodeBase,
     EdgeBase,
 )
-from .base import DatabaseInterface
+from .base import GraphDatabaseInterface
 
 
-class JanusGraphDB(DatabaseInterface):
+class JanusGraphDB(GraphDatabaseInterface):
     def __init__(self, host: str, traversal_source: str):
         super().__init__()
         self.host = host

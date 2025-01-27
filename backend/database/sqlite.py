@@ -7,7 +7,7 @@ from fastapi import HTTPException
 from pydantic import BaseModel
 
 from models import NodeBase, EdgeBase, Subnet, PartialNodeBase, PartialEdgeBase
-from .base import DatabaseInterface
+from .base import GraphDatabaseInterface
 
 
 def map_field_type_to_sqlite(field_type: type) -> str:
@@ -22,7 +22,7 @@ def map_field_type_to_sqlite(field_type: type) -> str:
     return type_mapping.get(field_type, "TEXT")
 
 
-class SQLiteDB(DatabaseInterface):
+class SQLiteDB(GraphDatabaseInterface):
     def __init__(self, db_path: str):
         super().__init__()
         self.db_path = db_path

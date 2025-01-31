@@ -1,0 +1,10 @@
+site_name: ObjectiveNet Documentation
+nav:
+  - Introduction: index.md
+  - Model:
+    - Causal Graph: graph.md
+    - Democratic Modelling: democracy.md
+theme: readthedocs
+markdown_extensions:
+  - admonition
+docs_dir: docs

@@ -349,7 +349,7 @@ export default {
       } else {
         try {
           const response = await axios.put(
-            `${import.meta.env.VITE_BACKEND_URL}/nodes`,
+            `${import.meta.env.VITE_BACKEND_URL}/node`,
             this.editedNode,
           );
           this.$emit("publish-node", response.data);

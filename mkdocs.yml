@@ -1,5 +1,10 @@
 site_name: ObjectiveNet Documentation
 nav:
-  - Intro: index.md
-  - Concepts: concepts.md
+  - Introduction: index.md
+  - Model:
+    - Causal Graph: graph.md
+    - Democratic Modelling: democracy.md
 theme: readthedocs
+markdown_extensions:
+  - def_list
+docs_dir: docs

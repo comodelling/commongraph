@@ -36,3 +36,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+
+# Documentation
+site/

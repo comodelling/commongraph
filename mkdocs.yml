@@ -6,5 +6,5 @@ nav:
     - Democratic Modelling: democracy.md
 theme: readthedocs
 markdown_extensions:
-  - def_list
+  - admonition
 docs_dir: docs

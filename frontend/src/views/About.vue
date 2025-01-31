@@ -2,14 +2,15 @@
   <div class="about">
     <h1>About ObjectiveNet</h1>
     <p>
-      ObjectiveNet is an open source software to help people build causal
-      networks of objectives, actions, and potentialities.
+      ObjectiveNet is a free and open source software to help model networks of
+      possible changes. It aims to foster open, inclusive, collaborative and
+      objective-based decision-making processes.
     </p>
 
     <p>Looking to contribute? You can:</p>
     <ul>
       <li>
-        <a href="https://github.com/planningcommons/objectivenet/issues"
+        <a href="https://github.com/comodelling/objectivenet/issues"
           >File a bug report or a feature request</a
         >,
       </li>
@@ -19,7 +20,7 @@
       </li>
       <li>
         Improve the code by creating feature/fix branches and
-        <a href="https://github.com/planningcommons/objectivenet/pulls"
+        <a href="https://github.com/comodelling/objectivenet/pulls"
           >opening pull requests</a
         >.
       </li>

@@ -1,6 +1,6 @@
 # ObjectiveNet
 
-ObjectiveNet is a free software for collaboratively curating networks of objectives and actions.
+ObjectiveNet is a free software for modelling possible changes as nodes in a causal network. It aims to foster open, inclusive, collaborative and objective-based decision-making processes.
 
 ## Usage
 

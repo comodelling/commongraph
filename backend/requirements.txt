@@ -106,6 +106,8 @@ pydantic-core==2.23.4
     # via pydantic
 pygments==2.18.0
     # via rich
+pyjwt==2.10.1
+    # via -r backend/requirements.in
 python-dotenv==1.0.1
     # via uvicorn
 python-multipart==0.0.20

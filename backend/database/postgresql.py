@@ -29,23 +29,19 @@ class PostgreSQLDB(UserDatabaseInterface):
             session.add(db_user)
             try:
                 session.commit()
+                session.refresh(db_user)
             except IntegrityError:
                 session.rollback()
-                raise HTTPException(status_code=400, detail="Username already exists")
-            session.refresh(db_user)
+                raise HTTPException(status_code=400, detail="User already exists")
             return UserRead(username=db_user.username, preferences=db_user.preferences)
 
-    def get_user(self, username: str) -> Optional[UserRead]:
+    def get_user(self, username: str) -> Optional[User]:
         with Session(self.engine) as session:
             statement = select(User).where(User.username == username)
             result = session.exec(statement).first()
-            if result:
-                return UserRead(
-                    username=result.username, preferences=result.preferences
-                )
-            return None
+            return result
 
-    def reset_whole_network(self):
+    def reset_user_table(self):
         """Reset the database by dropping all tables and recreating them."""
         SQLModel.metadata.drop_all(self.engine)
         SQLModel.metadata.create_all(self.engine)

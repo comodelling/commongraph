@@ -19,12 +19,11 @@ from models import (
     MigrateLabelRequest,
     User,
 )
-
-
 from database.base import GraphDatabaseInterface, UserDatabaseInterface
 from database.janusgraph import JanusGraphDB
 from database.sqlite import SQLiteDB
 from database.postgresql import PostgreSQLDB
+from auth import router as auth_router
 
 
 if os.getenv("DOCKER_ENV"):
@@ -56,6 +55,7 @@ origins = (
 
 
 app = FastAPI(title="ObjectiveNet API", version=__version__)
+app.include_router(auth_router)
 
 app.add_middleware(
     CORSMiddleware,

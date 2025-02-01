@@ -5,6 +5,20 @@ import "./assets/styles.css";
 
 const app = createApp(App);
 
-app.use(router); // Use the router with the application
+const applyTheme = (theme) => {
+  if (theme === "system") {
+    const systemPrefersDark = window.matchMedia(
+      "(prefers-color-scheme: dark)",
+    ).matches;
+    document.body.classList.toggle("dark", systemPrefersDark);
+  } else {
+    document.body.classList.toggle("dark", theme === "dark");
+  }
+};
 
-app.mount("#app"); // Mount the app
+// Fetch the user's theme preference from localStorage or default to system
+const userTheme = localStorage.getItem("theme") || "system";
+applyTheme(userTheme);
+
+app.use(router);
+app.mount("#app");

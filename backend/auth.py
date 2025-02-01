@@ -85,6 +85,13 @@ def read_current_user(current_user: UserRead = Depends(get_current_user)):
     return current_user
 
 
+@router.patch("/user/preferences", response_model=UserRead)
+def update_preferences(prefs: dict, current_user: UserRead = Depends(get_current_user)):
+    db = get_user_db()
+    updated_user = db.update_preferences(current_user.username, prefs)
+    return updated_user
+
+
 @router.post("/auth/logout")
 def logout():
     # With JWT, logout is managed on the client side by simply deleting the token.

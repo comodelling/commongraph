@@ -15,6 +15,12 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+body.dark {
+  color-scheme: dark;
+  background-color: #121212;
+  color: #ffffff;
+}
+
 html,
 body,
 #app {
@@ -92,6 +98,10 @@ button:focus-visible {
   gap: 15px;
   min-width: 150px;
   max-width: 250px;
+}
+
+body.dark .vue-flow__node-special {
+  color: black; /* Desired font color for dark mode */
 }
 
 .vue-flow__node-special :hover {
@@ -177,6 +187,13 @@ button:focus-visible {
   font-size: 12px;
 }
 
+body.dark .add-reference-button,
+body.dark .add-description-button,
+body.dark .add-cprob-button {
+  background: #333;
+  color: white;
+}
+
 .add-cprob-button {
   width: auto;
   margin: 10px 0;
@@ -246,14 +263,29 @@ button:focus-visible {
   align-items: center;
 }
 
+body.dark .tag {
+  background-color: #333;
+  color: white;
+}
+
 .tag-input {
   padding: 5px 10px;
   font-size: 12px;
   border-radius: 3px;
-  border: 1px solid #ccc;
+  border: 1px solid;
   background-color: #e0e0e0;
   max-width: 100px;
 }
+
+body.dark .tag-input {
+  background-color: #333;
+  color: white;
+}
+
+/* body.dark .tag-input {
+  background-color: #333;
+  color: white;
+} */
 
 .add-tag-button {
   background-color: #007bff;

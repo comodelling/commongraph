@@ -12,11 +12,11 @@
       <form @submit.prevent="verifySecurityQuestion" v-else>
         <label>
           Security Question:
-          <input v-model="securityQuestion" disabled />
+          <input v-model="securityQuestion" disabled class="wide-input" />
         </label>
         <label>
           Answer:
-          <input v-model="answer" required />
+          <input v-model="answer" required type="password" />
         </label>
         <button type="submit">Verify</button>
       </form>
@@ -112,5 +112,9 @@ form {
 
 label {
   text-align: left;
+}
+
+.wide-input {
+  width: 100%;
 }
 </style>

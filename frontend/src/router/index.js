@@ -9,6 +9,7 @@ import Signup from "../views/Signup.vue";
 import UserSettings from "../views/UserSettings.vue";
 import ResetPassword from "../views/ResetPassword.vue";
 import VerifySecurityQuestion from "../views/VerifySecurityQuestion.vue";
+import UpdateSecurityQuestion from "../views/UpdateSecurityQuestion.vue";
 
 const routes = [
   {
@@ -50,6 +51,11 @@ const routes = [
         path: "/verify-security-question",
         name: "VerifySecurityQuestion",
         component: VerifySecurityQuestion,
+      },
+      {
+        path: "/update-security-question",
+        name: "UpdateSecurityQuestion",
+        component: UpdateSecurityQuestion,
       },
       {
         path: "/reset-password",

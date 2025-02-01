@@ -19,6 +19,7 @@
 import { ref } from "vue";
 import axios from "axios";
 import { useRoute } from "vue-router";
+import { useRouter } from "vue-router";
 
 export default {
   setup() {

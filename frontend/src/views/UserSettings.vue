@@ -20,6 +20,10 @@
           Dark
         </label>
       </div>
+      <button @click="navigateToUpdateSecurityQuestion">
+        Update Security Question
+      </button>
+      <br /><br />
       <button @click="logout">Logout</button>
     </div>
   </div>
@@ -94,6 +98,10 @@ export default {
       router.push("/login");
     };
 
+    const navigateToUpdateSecurityQuestion = () => {
+      router.push("/update-security-question");
+    };
+
     onMounted(() => {
       if (token) {
         fetchUser();
@@ -105,7 +113,14 @@ export default {
       }
     });
 
-    return { user, loading, error, logout, preferredTheme };
+    return {
+      user,
+      loading,
+      error,
+      logout,
+      preferredTheme,
+      navigateToUpdateSecurityQuestion: navigateToUpdateSecurityQuestion,
+    };
   },
 };
 </script>

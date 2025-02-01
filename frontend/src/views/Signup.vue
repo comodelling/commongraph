@@ -1,31 +1,33 @@
 <template>
-  <div>
-    <h2>Sign Up</h2>
-    <form @submit.prevent="signup">
-      <label>
-        Username:
-        <input v-model="username" required />
-      </label>
-      <label>
-        Email (optional):
-        <input v-model="email" type="email" />
-      </label>
-      <label>
-        Display Name (optional):
-        <input v-model="displayName" />
-      </label>
-      <label>
-        Password:
-        <input type="password" v-model="password" required />
-      </label>
-      <label>
-        Confirm Password:
-        <input type="password" v-model="confirmPassword" required />
-      </label>
-      <button type="submit">Sign Up</button>
-    </form>
-    <p v-if="error" style="color: red">{{ error }}</p>
-    <p v-if="success" style="color: green">{{ success }}</p>
+  <div class="container">
+    <div class="form-wrapper">
+      <h2>Sign Up</h2>
+      <form @submit.prevent="signup">
+        <label>
+          Username:
+          <input v-model="username" required />
+        </label>
+        <label>
+          Email (optional):
+          <input v-model="email" type="email" />
+        </label>
+        <label>
+          Display Name (optional):
+          <input v-model="displayName" />
+        </label>
+        <label>
+          Password:
+          <input type="password" v-model="password" required />
+        </label>
+        <label>
+          Confirm Password:
+          <input type="password" v-model="confirmPassword" required />
+        </label>
+        <button type="submit">Sign Up</button>
+      </form>
+      <p v-if="error" style="color: red">{{ error }}</p>
+      <p v-if="success" style="color: green">{{ success }}</p>
+    </div>
   </div>
 </template>
 
@@ -43,7 +45,7 @@ export default {
     const confirmPassword = ref("");
     const error = ref(null);
     const success = ref(null);
-    const minPasswordLength = 8; // minimum required characters
+    const minPasswordLength = 8;
 
     const signup = async () => {
       error.value = null;
@@ -75,7 +77,6 @@ export default {
           path: "/login",
           query: { message: "Signup successful. Please log in." },
         });
-        // }, 500);
       } catch (err) {
         error.value =
           "Signup failed. " + (err.response?.data.detail || "Try again later.");
@@ -97,13 +98,27 @@ export default {
 </script>
 
 <style scoped>
+.container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100vw; /* ensures full width for left/right centering */
+  height: 80vh;
+}
+
+.form-wrapper {
+  width: 350;
+  text-align: center;
+}
+
 form {
   display: flex;
   flex-direction: column;
+  gap: 1rem;
+  margin-top: 1rem;
 }
 
 label {
-  display: block;
-  margin-bottom: 1rem;
+  text-align: left;
 }
 </style>

@@ -8,7 +8,8 @@
     <br /><br />
     <div class="title">User</div>
     <div v-if="!isLoggedIn">
-      <router-link to="/login">Log in/Sign up</router-link><br />
+      <router-link to="/login">Log in</router-link><br />
+      <router-link to="/signup">Sign up</router-link><br />
     </div>
     <div v-else>
       <router-link to="/settings">Settings</router-link><br />
@@ -19,7 +20,6 @@
 
 <script>
 import axios from "axios";
-import { computed } from "vue";
 import { useRouter } from "vue-router";
 import { useAuth } from "../composables/useAuth";
 
@@ -78,7 +78,7 @@ export default {
   padding: 10px;
   font-size: 12px;
   margin-left: 10px;
-  margin-top: 20px;
+  margin-top: 10px;
   padding-top: 50px;
 }
 .side-menu .title {

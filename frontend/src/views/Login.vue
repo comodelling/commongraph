@@ -1,23 +1,25 @@
 <template>
-  <div>
-    <h2>Login</h2>
-    <div v-if="infoMessage" style="color: green">{{ infoMessage }}</div>
-    <form @submit.prevent="login">
-      <label>
-        Username:
-        <input v-model="username" required />
-      </label>
-      <label>
-        Password:
-        <input type="password" v-model="password" required />
-      </label>
-      <button type="submit">Login</button>
-    </form>
-    <p v-if="error" style="color: red">{{ error }}</p>
-    <div class="links">
-      <router-link to="/signup">Sign Up</router-link>
-      |
-      <router-link to="/reset-password">Reset Password</router-link>
+  <div class="container">
+    <div class="form-wrapper">
+      <h2>Login</h2>
+      <div v-if="infoMessage" style="color: green">{{ infoMessage }}</div>
+      <form @submit.prevent="login">
+        <label>
+          Username:
+          <input v-model="username" required />
+        </label>
+        <label>
+          Password:
+          <input type="password" v-model="password" required />
+        </label>
+        <button type="submit">Login</button>
+      </form>
+      <p v-if="error" style="color: red">{{ error }}</p>
+      <div class="links">
+        <router-link to="/signup">Sign Up</router-link>
+        |
+        <router-link to="/reset-password">Reset Password</router-link>
+      </div>
     </div>
   </div>
 </template>
@@ -68,17 +70,31 @@ export default {
 </script>
 
 <style scoped>
+.container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100vw; /* ensures full width for left/right centering */
+  height: 80vh; /* centers vertically */
+}
+
+.form-wrapper {
+  width: 300px;
+  text-align: center;
+}
+
 form {
   display: flex;
   flex-direction: column;
+  gap: 1rem;
+  margin-top: 1rem;
 }
 
 label {
-  display: block;
-  margin-bottom: 1rem;
+  text-align: left;
 }
 
 .links {
-  margin-top: 1rem;
+  font-size: 13px;
 }
 </style>

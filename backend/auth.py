@@ -4,14 +4,13 @@ import jwt
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from pydantic import BaseModel
 
 from models import UserCreate, UserRead
 from database.base import UserDatabaseInterface
 from database.postgresql import PostgreSQLDB
-from utils.security import (
-    verify_password,
-    hash_password,
-)  # Add or implement verify_password if not already present
+from utils.security import verify_password, hash_password
+
 
 router = APIRouter()
 
@@ -90,6 +89,78 @@ def update_preferences(prefs: dict, current_user: UserRead = Depends(get_current
     db = get_user_db()
     updated_user = db.update_preferences(current_user.username, prefs)
     return updated_user
+
+
+@router.get("/auth/security-question")
+def get_security_question(
+    username: str, db: UserDatabaseInterface = Depends(get_user_db)
+):
+    user = db.get_user(username)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {"security_question": user.security_question}
+
+
+class VerifySecurityQuestionRequest(BaseModel):
+    username: str
+    answer: str
+
+
+@router.post("/auth/verify-security-question")
+def verify_security_question(
+    request: VerifySecurityQuestionRequest,
+    db: UserDatabaseInterface = Depends(get_user_db),
+):
+    user = db.get_user(request.username)
+    if not user or user.security_answer.lower() != request.answer.lower():
+        raise HTTPException(
+            status_code=400, detail="Incorrect answer to the security question"
+        )
+    reset_token = create_access_token(
+        data={"sub": user.username}, expires_delta=timedelta(minutes=15)
+    )
+    return {"reset_token": reset_token}
+
+
+@router.patch("/user/security-settings", response_model=UserRead)
+def update_security_settings(
+    security_settings: dict,
+    current_user: UserRead = Depends(get_current_user),
+    db: UserDatabaseInterface = Depends(get_user_db),
+):
+    user = db.get_user(current_user.username)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    user.security_question = security_settings.get("security_question")
+    user.security_answer = security_settings.get("security_answer")
+    updated_user = db.update_user(user)
+    return updated_user
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str
+
+
+@router.post("/auth/reset-password")
+def reset_password(
+    request: ResetPasswordRequest, db: UserDatabaseInterface = Depends(get_user_db)
+):
+    try:
+        payload = jwt.decode(request.token, SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload.get("sub")
+        if username is None:
+            raise HTTPException(status_code=400, detail="Invalid token")
+    except jwt.PyJWTError:
+        raise HTTPException(status_code=400, detail="Invalid token")
+
+    user = db.get_user(username)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    user.password = hash_password(request.new_password)
+    db.update_user(user)
+    return {"msg": "Password reset successful"}
 
 
 @router.post("/auth/logout")

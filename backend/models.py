@@ -279,12 +279,24 @@ class User(SQLModel, table=True):
         sa_column=Column(JSON),
         description="User's personal preferences",
     )
+    security_question: str | None = Field(
+        ..., description="Security question for password reset"
+    )
+    security_answer: str | None = Field(
+        ..., description="Answer to the security question"
+    )
 
 
 class UserCreate(SQLModel):
     username: str = Field(..., min_length=3)
     password: str = Field(..., min_length=6)
     preferences: Dict[str, Any] | None = Field(default_factory=dict)
+    security_question: str | None = Field(
+        ..., description="Security question for password reset"
+    )
+    security_answer: str | None = Field(
+        ..., description="Answer to the security question"
+    )
 
 
 class UserRead(SQLModel):

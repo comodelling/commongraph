@@ -7,6 +7,8 @@ import About from "../views/About.vue";
 import Login from "../views/Login.vue";
 import Signup from "../views/Signup.vue";
 import UserSettings from "../views/UserSettings.vue";
+import ResetPassword from "../views/ResetPassword.vue";
+import VerifySecurityQuestion from "../views/VerifySecurityQuestion.vue";
 
 const routes = [
   {
@@ -30,19 +32,29 @@ const routes = [
         component: SearchPage,
       },
       {
-        path: "login",
+        path: "/login",
         name: "Login",
         component: Login,
       },
       {
-        path: "signup",
+        path: "/signup",
         name: "Signup",
         component: Signup,
       },
       {
-        path: "settings",
+        path: "/settings",
         name: "UserSettings",
         component: UserSettings,
+      },
+      {
+        path: "/verify-security-question",
+        name: "VerifySecurityQuestion",
+        component: VerifySecurityQuestion,
+      },
+      {
+        path: "/reset-password",
+        name: "ResetPassword",
+        component: ResetPassword,
       },
       {
         path: "/node/:id",

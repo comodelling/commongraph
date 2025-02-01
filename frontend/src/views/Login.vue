@@ -18,7 +18,7 @@
       <div class="links">
         <router-link to="/signup">Sign Up</router-link>
         |
-        <router-link to="/reset-password">Reset Password</router-link>
+        <router-link to="/verify-security-question">Reset Password</router-link>
       </div>
     </div>
   </div>

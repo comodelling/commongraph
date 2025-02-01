@@ -26,6 +26,8 @@ class PostgreSQLDB(UserDatabaseInterface):
                 username=user.username,
                 password=hashed_password,
                 preferences=user.preferences,
+                security_question=user.security_question,
+                security_answer=user.security_answer,
             )
             session.add(db_user)
             try:
@@ -42,10 +44,12 @@ class PostgreSQLDB(UserDatabaseInterface):
             result = session.exec(statement).first()
             return result
 
-    def reset_user_table(self):
-        """Reset the database by dropping all tables and recreating them."""
-        SQLModel.metadata.drop_all(self.engine)
-        SQLModel.metadata.create_all(self.engine)
+    def update_user(self, user: User) -> UserRead:
+        with Session(self.engine) as session:
+            session.add(user)
+            session.commit()
+            session.refresh(user)
+            return UserRead(username=user.username, preferences=user.preferences)
 
     def update_preferences(self, username: str, new_prefs: dict) -> UserRead:
         with Session(self.engine) as session:
@@ -68,3 +72,8 @@ class PostgreSQLDB(UserDatabaseInterface):
                 f"Final preferences in database after commit: {user.preferences}"
             )
             return UserRead(username=user.username, preferences=user.preferences)
+
+    def reset_user_table(self):
+        """Reset the database by dropping all tables and recreating them."""
+        SQLModel.metadata.drop_all(self.engine)
+        SQLModel.metadata.create_all(self.engine)

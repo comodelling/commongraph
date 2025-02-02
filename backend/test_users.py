@@ -26,6 +26,8 @@ def test_signup():
         "username": "testuser",
         "password": "securepassword",
         "preferences": {"theme": "dark"},
+        "security_question": "What is your favorite color?",
+        "security_answer": "Blue",
     }
     response = client.post("/auth/signup", json=user_data)
     assert response.status_code == 200
@@ -35,6 +37,16 @@ def test_signup():
 
 
 def test_login():
+    # Ensure the user is created
+    user_data = {
+        "username": "testuser",
+        "password": "securepassword",
+        "preferences": {"theme": "dark"},
+        "security_question": "What is your favorite color?",
+        "security_answer": "Blue",
+    }
+    client.post("/auth/signup", json=user_data)
+
     # Use form data since OAuth2PasswordRequestForm expects application/x-www-form-urlencoded
     login_data = {"username": "testuser", "password": "securepassword"}
     response = client.post("/auth/login", data=login_data)
@@ -44,8 +56,20 @@ def test_login():
 
 
 def test_get_current_user():
+    # Ensure the user is created
+    user_data = {
+        "username": "testuser",
+        "password": "securepassword",
+        "preferences": {"theme": "dark"},
+        "security_question": "What is your favorite color?",
+        "security_answer": "Blue",
+    }
+    client.post("/auth/signup", json=user_data)
+
+    # Log in to get the access token
     login_data = {"username": "testuser", "password": "securepassword"}
     login_resp = client.post("/auth/login", data=login_data)
+    assert login_resp.status_code == 200
     token = login_resp.json()["access_token"]
     headers = {"Authorization": f"Bearer {token}"}
     me_resp = client.get("/user/me", headers=headers)

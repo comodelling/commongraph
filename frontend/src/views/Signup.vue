@@ -5,23 +5,65 @@
       <form @submit.prevent="signup">
         <label>
           Username:
-          <input v-model="username" required />
-        </label>
-        <label>
-          Email (optional):
-          <input v-model="email" type="email" />
-        </label>
-        <label>
-          Display Name (optional):
-          <input v-model="displayName" />
+          <input
+            v-model="username"
+            placeholder="Enter your username"
+            required
+          />
         </label>
         <label>
           Password:
-          <input type="password" v-model="password" required />
+          <input
+            type="password"
+            v-model="password"
+            placeholder="Enter your password"
+            required
+          />
         </label>
         <label>
           Confirm Password:
-          <input type="password" v-model="confirmPassword" required />
+          <input
+            type="password"
+            v-model="confirmPassword"
+            placeholder="Confirm your password"
+            required
+          />
+        </label>
+        <label title="Recommended for password reset">
+          Security Question (recommended):
+          <select v-model="securityQuestion">
+            <option value="">Please select a security question</option>
+            <option value="What is your mother's maiden name?">
+              What is your mother's maiden name?
+            </option>
+            <option value="What was the name of your first pet?">
+              What was the name of your first pet?
+            </option>
+            <option value="What was the make and model of your first car?">
+              What was the make and model of your first car?
+            </option>
+            <option value="What town where you were born in?">
+              What town where you were born in?
+            </option>
+            <option value="What was your favorite subject in school?">
+              What was your favorite subject in school?
+            </option>
+          </select>
+          <br />
+          <input
+            v-model="securityAnswer"
+            type="password"
+            placeholder="Enter your answer"
+            required
+          />
+        </label>
+        <label>
+          Email (optional):
+          <input v-model="email" type="email" placeholder="Enter your email" />
+        </label>
+        <label>
+          Display Name (optional):
+          <input v-model="displayName" placeholder="Enter your display name" />
         </label>
         <button type="submit">Sign Up</button>
       </form>
@@ -43,9 +85,12 @@ export default {
     const displayName = ref("");
     const password = ref("");
     const confirmPassword = ref("");
+    const securityQuestion = ref("");
+    const securityAnswer = ref("");
     const error = ref(null);
     const success = ref(null);
     const minPasswordLength = 8;
+    const minAnswerLength = 3;
 
     const signup = async () => {
       error.value = null;
@@ -61,10 +106,32 @@ export default {
         return;
       }
 
+      if (
+        (securityQuestion.value && !securityAnswer.value) ||
+        (!securityQuestion.value && securityAnswer.value)
+      ) {
+        error.value = "Both security question and answer must be provided.";
+        return;
+      }
+
+      if (
+        securityAnswer.value &&
+        securityAnswer.value.length < minAnswerLength
+      ) {
+        error.value = `Security answer must be at least ${minAnswerLength} characters long.`;
+        return;
+      }
+
       try {
         const user_data = {
           username: username.value,
           password: password.value,
+          ...(securityQuestion.value && {
+            security_question: securityQuestion.value,
+          }),
+          ...(securityAnswer.value && {
+            security_answer: securityAnswer.value,
+          }),
           ...(email.value && { email: email.value }),
           ...(displayName.value && { display_name: displayName.value }),
         };
@@ -89,6 +156,8 @@ export default {
       displayName,
       password,
       confirmPassword,
+      securityQuestion,
+      securityAnswer,
       signup,
       error,
       success,
@@ -107,7 +176,7 @@ export default {
 }
 
 .form-wrapper {
-  width: 350;
+  width: 400px;
   text-align: center;
 }
 

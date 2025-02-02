@@ -36,13 +36,16 @@ export default {
 
 .content {
   display: flex;
-  flex-grow: 1; /* Allow content to expand */
-  margin-left: 30px;
-  margin-top: 20px;
+  /* Allow content to expand */
+  flex-grow: 1;
+  margin-left: 10px;
+  margin-right: 10px;
+  margin-top: 10px;
   padding: 20px;
   border: 1px solid #ccc;
   max-height: 100%;
-  overflow-y: auto; /* Enable vertical scrolling */
+  /* Enable vertical scrolling */
+  overflow-y: auto;
 }
 
 .full-width {

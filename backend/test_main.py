@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 import tempfile
 import threading
 
-from main import app, get_db_connection
+from main import app, get_graph_db_connection
 from database.janusgraph import JanusGraphDB
 from database.sqlite import SQLiteDB
 
@@ -29,7 +29,7 @@ def db(request):
         os.close(fd)
         db = SQLiteDB(path)
     else:
-        raise ValueError(f"Unsupported DB_TYPE: {db_type}")
+        raise ValueError(f"Unsupported GRAPH_DB_TYPE: {db_type}")
 
     yield db
     db.reset_whole_network()
@@ -39,9 +39,9 @@ def db(request):
 
 @pytest.fixture(autouse=True, scope="module")
 def override_get_db_connection(db):
-    app.dependency_overrides[get_db_connection] = lambda: db
+    app.dependency_overrides[get_graph_db_connection] = lambda: db
     yield
-    app.dependency_overrides.pop(get_db_connection, None)
+    app.dependency_overrides.pop(get_graph_db_connection, None)
 
 
 @pytest.fixture(scope="module")

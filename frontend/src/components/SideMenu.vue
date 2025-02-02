@@ -5,16 +5,28 @@
     <a href="#" @click="createNewNode">New node</a><br />
     <a href="#" @click="fetchRandomNode">Random node</a><br />
     <router-link to="/about">About ObjectiveNet</router-link>
+    <br /><br />
+    <div class="title">User</div>
+    <div v-if="!isLoggedIn">
+      <router-link to="/login">Log in</router-link><br />
+      <router-link to="/signup">Sign up</router-link><br />
+    </div>
+    <div v-else>
+      <router-link to="/settings">Settings</router-link><br />
+      <a href="#" @click="logout">Log out</a>
+    </div>
   </div>
 </template>
 
 <script>
 import axios from "axios";
 import { useRouter } from "vue-router";
+import { useAuth } from "../composables/useAuth";
 
 export default {
   setup() {
     const router = useRouter();
+    const { isLoggedIn, clearToken } = useAuth();
 
     const fetchRandomNode = async () => {
       try {
@@ -37,14 +49,21 @@ export default {
       const path = router.currentRoute.value.path;
       if (path.startsWith("/node") || path.startsWith("/edge")) {
         window.location.href = `/node/new`;
-        // router.push(`/node/new`);
       } else {
         router.push({ name: "NodeEdit", params: { id: "new" } });
       }
     };
+
+    const logout = () => {
+      clearToken();
+      router.push("/login");
+    };
+
     return {
-      fetchRandomNode: fetchRandomNode,
+      fetchRandomNode,
       createNewNode,
+      logout,
+      isLoggedIn,
     };
   },
 };
@@ -59,7 +78,7 @@ export default {
   padding: 10px;
   font-size: 12px;
   margin-left: 10px;
-  margin-top: 20px;
+  margin-top: 10px;
   padding-top: 50px;
 }
 .side-menu .title {

@@ -2,10 +2,10 @@ import logging
 from abc import ABC, ABCMeta, abstractmethod
 from functools import wraps
 
-from models import NodeBase, EdgeBase, Subnet
+from models import NodeBase, EdgeBase, Subnet, User
 
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 
 def log_method(func):
@@ -33,7 +33,20 @@ class LogMeta(ABCMeta):
         return super().__new__(cls, name, bases, attrs)
 
 
-class DatabaseInterface(ABC, metaclass=LogMeta):
+class UserDatabaseInterface(ABC):
+    def __init__(self):
+        self.logger = logging.getLogger(self.__class__.__name__)
+
+    @abstractmethod
+    def create_user(self, user: User):
+        pass
+
+    @abstractmethod
+    def get_user(self, username: str) -> User:
+        pass
+
+
+class GraphDatabaseInterface(ABC, metaclass=LogMeta):
     def __init__(self):
         self.logger = logging.getLogger(self.__class__.__name__)
 

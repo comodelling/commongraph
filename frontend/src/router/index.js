@@ -4,6 +4,9 @@ import MainPage from "../views/MainPage.vue";
 import SearchPage from "../views/SearchPage.vue";
 import Focus from "../views/ElementFocus.vue";
 import About from "../views/About.vue";
+import Login from "../views/Login.vue";
+import Signup from "../views/Signup.vue";
+import UserSettings from "../views/UserSettings.vue";
 
 const routes = [
   {
@@ -25,6 +28,21 @@ const routes = [
         path: "search",
         name: "SearchPage",
         component: SearchPage,
+      },
+      {
+        path: "login",
+        name: "Login",
+        component: Login,
+      },
+      {
+        path: "signup",
+        name: "Signup",
+        component: Signup,
+      },
+      {
+        path: "settings",
+        name: "UserSettings",
+        component: UserSettings,
       },
       {
         path: "/node/:id",

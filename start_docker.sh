@@ -32,10 +32,10 @@ if [ "$HELP" = true ] || [ "$INVALID_OPTION" = true ]; then
 fi
 
 DOCKER_COMPOSE_CMD="docker compose -f docker-compose.yaml"
-if [ "$DB_TYPE" = "janusgraph" ]; then
+if [ "$GRAPH_DB_TYPE" = "janusgraph" ]; then
     DOCKER_COMPOSE_CMD="$DOCKER_COMPOSE_CMD -f docker-compose.janusgraph.yaml"
 elif [ "$DB_TYPE" != "sqlite" ]; then
-    echo "Error: Invalid DB_TYPE specified. Use 'janusgraph' or 'sqlite'."
+    echo "Error: Invalid GRAPH_DB_TYPE specified. Use 'janusgraph' or 'sqlite'."
     exit 1
 fi
 

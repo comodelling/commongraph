@@ -13,12 +13,17 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  --border-color: #ccc;
+  --background-color: white;
+  --text-color: black;
 }
 
 body.dark {
   color-scheme: dark;
   background-color: #121212;
   color: #ffffff;
+  --border-color: #333;
+  --text-color: white;
 }
 
 html,
@@ -69,8 +74,25 @@ button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
 
-.border-style {
-  border: 1px solid #ccc;
+/* .border-style {
+  border: 1px solid var(--border-color);
+} */
+
+.container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 80vh;
+}
+
+.form-wrapper {
+  width: 300px;
+  text-align: center;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 20px;
+  /* background-color: var(--background-color); */
+  color: var(--text-color);
 }
 
 .vue-flow__minimap {
@@ -87,7 +109,7 @@ button:focus-visible {
 }
 
 .vue-flow__node-special {
-  border: 1px solid #777;
+  border: 1px solid var(--border-color);
   padding: 10px;
   border-radius: 10px;
   background: #f5f5f5;
@@ -122,10 +144,11 @@ body.dark .vue-flow__node-special {
 
 .element-info {
   width: 350px;
-  border: 1px solid #ccc;
-  margin: 5px;
+  border: 1px solid var(--border-color);
+  margin: 1px;
   padding: 20px;
   font-size: 13px;
+  border-radius: 5px;
   position: relative;
 }
 
@@ -142,7 +165,7 @@ body.dark .vue-flow__node-special {
   cursor: pointer;
   background: none;
   border-radius: 3px;
-  border-bottom: 1px solid #ccc;
+  border-bottom: 1px solid var(--border-color);
   font-size: 11px;
 }
 
@@ -180,7 +203,7 @@ body.dark .vue-flow__node-special {
   margin: 10px auto;
   padding: 5px 10px;
   background: #f9f9f9;
-  border: 1px solid #ccc;
+  border: 1px solid var(--border-color);
   cursor: pointer;
   width: 30%;
   text-align: center;
@@ -220,7 +243,7 @@ body.dark .add-cprob-button {
   /* min-height: 30px; */
   flex: 1;
   margin-left: 10px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--border-color);
   padding: 1px;
   border-radius: 2px;
   display: flex; /* Ensure content is displayed inline */

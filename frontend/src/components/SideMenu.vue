@@ -73,12 +73,15 @@ export default {
 .side-menu {
   width: 150px;
   min-width: 150px;
-  height: 90vh;
-  border: 1px solid #ccc;
+  height: calc(100vh - 4px);
+  box-sizing: border-box;
+  /* box-sizing: border-box; */
+  overflow-y: auto;
+  border: 1px solid var(--border-color);
+  border-radius: 5px;
   padding: 10px;
   font-size: 12px;
-  margin-left: 10px;
-  margin-top: 10px;
+  margin: 2px;
   padding-top: 50px;
 }
 .side-menu .title {

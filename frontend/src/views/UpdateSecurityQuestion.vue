@@ -100,17 +100,8 @@ export default {
 </script>
 
 <style scoped>
-.container {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100vw;
-  height: 80vh;
-}
-
 .form-wrapper {
   width: 400px;
-  text-align: center;
 }
 
 form {

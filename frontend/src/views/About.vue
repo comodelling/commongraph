@@ -34,8 +34,7 @@ export default {};
 
 <style scoped>
 .about {
-  border: 1px solid #ccc;
-  padding: 20px;
-  padding-left: 100px;
+  padding: 30px 120px;
+  /* padding-left: 100px; */
 }
 </style>

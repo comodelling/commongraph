@@ -245,7 +245,6 @@ export default {
   flex-grow: 1;
 }
 .error-message {
-  /* border: 1px solid black; */
   font-weight: bold;
   margin: auto;
   padding: 30px 50px;

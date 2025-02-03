@@ -867,14 +867,15 @@ onEdgeMouseLeave(({ edge }) => {
 <style>
 .subnet-renderer {
   flex-grow: 1;
-  border: 1px solid #ccc;
-  margin: 5px;
+  border: 1px solid var(--border-color);
+  margin: 1px;
+  border-radius: 5px;
 }
 
 .search-bar-container {
   position: absolute;
   background: white;
-  border: 1px solid #ccc;
+  border: 1px solid var(--border-color);
   border-radius: 5px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   padding: 5px;
@@ -948,7 +949,7 @@ onEdgeMouseLeave(({ edge }) => {
   justify-content: center;
   align-items: center;
   background: white;
-  border: 1px solid #ccc; /* Ensure buttons are visible */
+  border: 1px solid var(--border-color); /* Ensure buttons are visible */
   padding: 0;
   line-height: 0px; /* Center the icon vertically */
   text-align: center; /* Center the icon horizontally */

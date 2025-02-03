@@ -61,6 +61,8 @@ export default {
 .form-wrapper {
   width: 300px;
   text-align: center;
+  border-radius: 8px;
+  padding: 20px;
 }
 
 form {

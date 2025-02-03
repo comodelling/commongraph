@@ -24,10 +24,7 @@ export default {
 
 <style scoped>
 .main-page {
-  padding: 20px;
-  padding-left: 100px;
-  display: flex;
-  flex-grow: 1;
-  text-align: left;
+  padding: 30px 120px;
+  /* padding-left: 100px; */
 }
 </style>

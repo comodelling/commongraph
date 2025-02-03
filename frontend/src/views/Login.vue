@@ -70,17 +70,9 @@ export default {
 </script>
 
 <style scoped>
-.container {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100vw; /* ensures full width for left/right centering */
-  height: 80vh; /* centers vertically */
-}
-
-.form-wrapper {
-  width: 300px;
-  text-align: center;
+.body.dark .form-wrapper {
+  background-color: black;
+  /* color: white; */
 }
 
 form {

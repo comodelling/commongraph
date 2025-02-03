@@ -213,13 +213,13 @@ export default {
 </script>
 
 <style scoped>
-.search-page {
+/* .search-page {
   padding: 20px;
   padding-left: 100px;
   display: flex;
   flex-grow: 1;
   text-align: left;
-}
+} */
 
 .filters {
   margin-bottom: 5px;

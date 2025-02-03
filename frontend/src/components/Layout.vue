@@ -28,24 +28,26 @@ export default {
 <style scoped>
 .layout {
   display: flex;
-  max-width: 1200px;
-  margin: 0 auto;
-  border: 1px solid black;
-  height: 100%;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
 }
 
 .content {
   display: flex;
-  /* Allow content to expand */
   flex-grow: 1;
-  margin-left: 10px;
-  margin-right: 10px;
-  margin-top: 10px;
-  padding: 20px;
-  border: 1px solid #ccc;
+  margin: 2px auto;
+  padding: 3px;
+  border: 1px solid var(--border-color);
+  border-radius: 5px;
   max-height: 100%;
   /* Enable vertical scrolling */
   overflow-y: auto;
+
+  /* align-items: center; */
+  justify-content: center;
+  /* width: 70vw; ensures full width for left/right centering */
+  /* height: 80vh; */
 }
 
 .full-width {

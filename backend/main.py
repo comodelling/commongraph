@@ -22,7 +22,7 @@ from models import (
     UserRead,
     GraphHistoryEvent,
     EntityState,
-    EntityType
+    EntityType,
 )
 from database.base import (
     GraphDatabaseInterface,
@@ -31,7 +31,11 @@ from database.base import (
 )
 from database.janusgraph import JanusGraphDB
 from database.sqlite import SQLiteDB
-from database.postgresql import UserPostgreSQLDB, GraphHistoryPostgreSQLDB
+from database.postgresql import (
+    UserPostgreSQLDB,
+    GraphHistoryPostgreSQLDB,
+    GraphPostgreSQLDB,
+)
 from auth import router as auth_router
 from auth import get_current_user
 
@@ -80,7 +84,11 @@ app.add_middleware(
 def get_graph_db_connection(
     db_type: str = os.getenv("GRAPH_DB_TYPE"),
 ) -> GraphDatabaseInterface:
-    if db_type == "janusgraph":
+    if db_type == "postgresql":
+        database_url = os.getenv("POSTGRES_DB_URL")
+        print(f"Using Graph PostgreSQL database at {database_url}")
+        return GraphPostgreSQLDB(database_url)
+    elif db_type == "janusgraph":
         janusgraph_host = os.getenv("JANUSGRAPH_HOST", "localhost")
         traversal_source = os.getenv("TRAVERSAL_SOURCE", "g_test")
         return JanusGraphDB(janusgraph_host, traversal_source)
@@ -262,15 +270,16 @@ def create_node(
     """Create a node."""
     node_out = db_graph.create_node(node)
     # logger.info(f"User {user.username} created node {node_out.node_id}")
-    db_history.log_event(
-        GraphHistoryEvent(
-            username=user.username,
-            state=EntityState.created,
-            entity_type=EntityType.node,
-            node_id=node.node_id,
-            payload=node_out.model_dump(),
+    if not isinstance(db_graph, GraphPostgreSQLDB):
+        db_history.log_event(
+            GraphHistoryEvent(
+                username=user.username,
+                state=EntityState.created,
+                entity_type=EntityType.node,
+                node_id=node.node_id,
+                payload=node_out.model_dump(),
+            )
         )
-    )
     return node_out
 
 
@@ -285,11 +294,15 @@ def delete_node(
 ):
     """Delete the node with provided ID."""
     db_graph.delete_node(node_id)
-    db_history.log_event(
-        GraphHistoryEvent(
-            username=user.username, state=EntityState.deleted, entity_type=EntityType.node, node_id=node_id
+    if not isinstance(db_graph, GraphPostgreSQLDB):
+        db_history.log_event(
+            GraphHistoryEvent(
+                username=user.username,
+                state=EntityState.deleted,
+                entity_type=EntityType.node,
+                node_id=node_id,
+            )
         )
-    )
 
 
 @app.put("/node")
@@ -303,15 +316,16 @@ def update_node(
 ) -> NodeBase:
     """Update the properties of an existing node."""
     node_out = db_graph.update_node(node)
-    db_history.log_event(
-        GraphHistoryEvent(
-            username=user.username,
-            state=EntityState.updated,
-            entity_type=EntityType.node,
-            node_id=node.node_id,
-            payload=node_out.model_dump(),
+    if not isinstance(db_graph, GraphPostgreSQLDB):
+        db_history.log_event(
+            GraphHistoryEvent(
+                username=user.username,
+                state=EntityState.updated,
+                entity_type=EntityType.node,
+                node_id=node.node_id,
+                payload=node_out.model_dump(),
+            )
         )
-    )
     return node_out
 
 
@@ -361,16 +375,17 @@ def create_edge(
 ) -> EdgeBase:
     """Create an edge."""
     out_edge = db_graph.create_edge(edge)
-    db_history.log_event(
-        GraphHistoryEvent(
-            username=user.username,
-            state=EntityState.created,
-            entity_type=EntityType.edge,
-            source_id=edge.source,
-            target_id=edge.target,
-            payload=out_edge.model_dump(),
+    if not isinstance(db_graph, GraphPostgreSQLDB):
+        db_history.log_event(
+            GraphHistoryEvent(
+                username=user.username,
+                state=EntityState.created,
+                entity_type=EntityType.edge,
+                source_id=edge.source,
+                target_id=edge.target,
+                payload=out_edge.model_dump(),
+            )
         )
-    )
     return out_edge
 
 
@@ -387,15 +402,16 @@ def delete_edge(
 ):
     """Delete the edge between two nodes and for an optional edge_type."""
     db_graph.delete_edge(source_id, target_id, edge_type)
-    db_history.log_event(
-        GraphHistoryEvent(
-            username=user.username,
-            state=EntityState.deleted,
-            entity_type=EntityType.edge,
-            source_id=source_id,
-            target_id=target_id,
+    if not isinstance(db_graph, GraphPostgreSQLDB):
+        db_history.log_event(
+            GraphHistoryEvent(
+                username=user.username,
+                state=EntityState.deleted,
+                entity_type=EntityType.edge,
+                source_id=source_id,
+                target_id=target_id,
+            )
         )
-    )
 
 
 @app.put("/edge")
@@ -409,16 +425,17 @@ def update_edge(
 ) -> EdgeBase:
     """Update the properties of an edge."""
     out_edge = db_graph.update_edge(edge)
-    db_history.log_event(
-        GraphHistoryEvent(
-            username=user.username,
-            state=EntityState.updated,
-            entity_type=EntityType.edge,
-            source_id=edge.source,
-            target_id=edge.target,
-            payload=out_edge.model_dump(),
+    if not isinstance(db_graph, GraphPostgreSQLDB):
+        db_history.log_event(
+            GraphHistoryEvent(
+                username=user.username,
+                state=EntityState.updated,
+                entity_type=EntityType.edge,
+                source_id=edge.source,
+                target_id=edge.target,
+                payload=out_edge.model_dump(),
+            )
         )
-    )
     return out_edge
 
 

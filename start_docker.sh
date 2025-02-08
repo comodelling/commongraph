@@ -34,8 +34,8 @@ fi
 DOCKER_COMPOSE_CMD="docker compose -f docker-compose.yaml"
 if [ "$GRAPH_DB_TYPE" = "janusgraph" ]; then
     DOCKER_COMPOSE_CMD="$DOCKER_COMPOSE_CMD -f docker-compose.janusgraph.yaml"
-elif [ "$DB_TYPE" != "sqlite" ]; then
-    echo "Error: Invalid GRAPH_DB_TYPE specified. Use 'janusgraph' or 'sqlite'."
+elif [ "$GRAPH_DB_TYPE" != "postgresql" ]; then
+    echo "Error: Invalid GRAPH_DB_TYPE specified. Use 'janusgraph' or 'postgresql'."
     exit 1
 fi
 

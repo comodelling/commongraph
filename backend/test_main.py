@@ -11,12 +11,16 @@ import threading
 from main import app, get_graph_db_connection
 from database.janusgraph import JanusGraphDB
 from database.sqlite import SQLiteDB
+from database.postgresql import GraphPostgreSQLDB
 
+POSTGRES_TEST_DB_URL = "postgresql://postgres:postgres@localhost/testdb"
+os.environ["POSTGRES_DB_URL"] = POSTGRES_TEST_DB_URL
+os.environ["SECRET_KEY"] = "testsecret"
 
 logger = logging.getLogger(__name__)
 
 
-@pytest.fixture(scope="module", params=["janusgraph", "sqlite"])
+@pytest.fixture(scope="module", params=["janusgraph", "sqlite", "postgresql"])
 def db(request):
     db_type = request.param
     if db_type == "janusgraph":
@@ -32,6 +36,8 @@ def db(request):
         fd, path = tempfile.mkstemp()
         os.close(fd)
         db = SQLiteDB(path)
+    elif db_type == "postgresql":
+        db = GraphPostgreSQLDB(POSTGRES_TEST_DB_URL)
     else:
         raise ValueError(f"Unsupported GRAPH_DB_TYPE: {db_type}")
 
@@ -83,6 +89,9 @@ def test_read_main(client):
 def test_get_whole_network(db, client):
     response = client.get("/network")
     assert response.status_code == 200, print(response.json())
+    assert "nodes" in response.json()
+    assert "edges" in response.json()
+    # assert len(response.json()["nodes"])
 
 
 def test_reset_whole_network(db, client):
@@ -139,6 +148,7 @@ def test_network_summary(db, client):
 def test_get_nodes_list(db, client):
     response = client.get("/nodes")
     assert response.status_code == 200, print(response.json())
+    # assert len(json.loads(response.content.decode("utf-8")))
 
 
 def test_create_and_delete_node(db, client):
@@ -242,11 +252,27 @@ def test_get_node_wrong_id(initial_node, client):
 
 
 def test_search_nodes(db, client):
-    response = client.get("/nodes?title=test")
-    assert response.status_code == 200, print(response.json())
-    assert len(json.loads(response.content.decode("utf-8"))) == 1, print(
-        response.json()
+    # Ensure the node with title "test" exists
+    response = client.post(
+        "/node",
+        json={
+            "title": "testtesttest",
+            "node_type": "objective",
+            "scope": "test scope",
+            "description": "test",
+        },
     )
+    assert response.status_code == 201, print(response.json())
+
+    # Log the entire node list before searching
+    all_nodes_response = client.get("/nodes")
+    print("DEBUG: All nodes after creation:", all_nodes_response.json())
+
+    # Perform the search
+    response = client.get("/nodes?title=testtesttest")
+    print("DEBUG: Search response:", response.json())
+    assert response.status_code == 200, print(response.json())
+    assert len(response.json()) == 1, print(response.json())
 
 
 def test_search_nodes_with_node_type(db, client):
@@ -274,16 +300,19 @@ def test_search_nodes_with_node_type(db, client):
     response = client.get("/nodes?node_type=objective")
     assert response.status_code == 200, print(response.json())
     nodes = json.loads(response.content.decode("utf-8"))
+    assert len(nodes) >= 1
     assert all(node["node_type"] == "objective" for node in nodes)
 
     response = client.get("/nodes?node_type=action")
     assert response.status_code == 200, print(response.json())
     nodes = json.loads(response.content.decode("utf-8"))
+    assert len(nodes) == 1
     assert all(node["node_type"] == "action" for node in nodes)
 
     response = client.get("/nodes?node_type=potentiality")
     assert response.status_code == 200, print(response.json())
     nodes = json.loads(response.content.decode("utf-8"))
+    assert len(nodes) == 1
     assert all(node["node_type"] == "potentiality" for node in nodes)
 
 
@@ -391,6 +420,8 @@ def test_create_node_with_references(db, client):
     assert "references" in node
     assert len(node["references"]) == 3
     assert set(node["references"]) == {"ref1", "ref2", "ref3"}
+
+    response = client.get("/network")
 
 
 def test_update_node_with_references(db, client):

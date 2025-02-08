@@ -266,7 +266,7 @@ def create_node(
             username=user.username,
             event_type=OperationType.create,
             node_id=node.node_id,
-            payload=node.model_dump(),
+            payload=node_out.model_dump(),
         )
     )
     return node_out
@@ -300,16 +300,16 @@ def update_node(
     user: UserRead = Depends(get_current_user),
 ) -> NodeBase:
     """Update the properties of an existing node."""
-    out_node = db_graph.update_node(node)
+    node_out = db_graph.update_node(node)
     db_history.log_event(
         GraphHistoryEvent(
             username=user.username,
             event_type=OperationType.update,
             node_id=node.node_id,
-            payload=node.model_dump(),
+            payload=node_out.model_dump(),
         )
     )
-    return out_node
+    return node_out
 
 
 ### /edges/ ###
@@ -364,7 +364,7 @@ def create_edge(
             event_type=OperationType.create,
             source_id=edge.source,
             target_id=edge.target,
-            payload=edge.model_dump(),
+            payload=out_edge.model_dump(),
         )
     )
     return out_edge
@@ -410,7 +410,7 @@ def update_edge(
             event_type=OperationType.create,
             source_id=edge.source,
             target_id=edge.target,
-            payload=edge.model_dump(),
+            payload=out_edge.model_dump(),
         )
     )
     return out_edge

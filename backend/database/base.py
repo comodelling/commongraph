@@ -2,7 +2,17 @@ import logging
 from abc import ABC, ABCMeta, abstractmethod
 from functools import wraps
 
-from models import NodeBase, EdgeBase, Subnet, User, UserRead, UserCreate
+from models import (
+    NodeBase,
+    EdgeBase,
+    Subnet,
+    User,
+    UserRead,
+    UserCreate,
+    NodeId,
+    NodeType,
+    EdgeType,
+)
 
 
 logging.basicConfig(level=logging.INFO)
@@ -79,7 +89,7 @@ class GraphDatabaseInterface(ABC, metaclass=LogMeta):
         pass
 
     @abstractmethod
-    def get_induced_subnet(self, node_id: int, levels: int) -> Subnet:
+    def get_induced_subnet(self, node_id: NodeId, levels: NodeId) -> Subnet:
         pass
 
     @abstractmethod
@@ -87,11 +97,11 @@ class GraphDatabaseInterface(ABC, metaclass=LogMeta):
         pass
 
     @abstractmethod
-    def get_random_node(self, node_type: str = None) -> NodeBase:
+    def get_random_node(self, node_type: NodeType = None) -> NodeBase:
         pass
 
     @abstractmethod
-    def get_node(self, node_id: int) -> NodeBase:
+    def get_node(self, node_id: NodeId) -> NodeBase:
         pass
 
     @abstractmethod
@@ -99,7 +109,7 @@ class GraphDatabaseInterface(ABC, metaclass=LogMeta):
         pass
 
     @abstractmethod
-    def delete_node(self, node_id: int) -> None:
+    def delete_node(self, node_id: NodeId) -> None:
         pass
 
     @abstractmethod
@@ -111,7 +121,7 @@ class GraphDatabaseInterface(ABC, metaclass=LogMeta):
         pass
 
     @abstractmethod
-    def get_edge(self, source_id: int, target_id: int) -> EdgeBase:
+    def get_edge(self, source_id: NodeId, target_id: NodeId) -> EdgeBase:
         pass
 
     @abstractmethod
@@ -124,7 +134,7 @@ class GraphDatabaseInterface(ABC, metaclass=LogMeta):
 
     @abstractmethod
     def delete_edge(
-        self, source_id: int, target_id: int, edge_type: str = None
+        self, source_id: NodeId, target_id: NodeId, edge_type: EdgeType = None
     ) -> None:
         pass
 

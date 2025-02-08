@@ -4,7 +4,7 @@ import random
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import SQLModel, Session, select
-from fastapi import HTTPException
+from fastapi import HTTPException, Query
 
 from .base import (
     UserDatabaseInterface,
@@ -14,7 +14,10 @@ from .base import (
 from models import (
     NodeBase,
     EdgeBase,
+    NodeId,
     NodeType,
+    NodeStatus,
+    EdgeType,
     User,
     UserRead,
     UserCreate,
@@ -271,7 +274,7 @@ class GraphPostgreSQLDB(GraphDatabaseInterface):
 
         return Subnet(nodes=nodes_out, edges=edges_out)
 
-    def get_induced_subnet(self, node_id: int, levels: int) -> Subnet:
+    def get_induced_subnet(self, node_id: NodeId, levels: int) -> Subnet:
         """
         Reconstruct an induced subnet starting from node_id by performing a BFS.
         """
@@ -305,32 +308,50 @@ class GraphPostgreSQLDB(GraphDatabaseInterface):
         ]
         return Subnet(nodes=list(induced_nodes.values()), edges=induced_edges)
 
-    def search_nodes(self, **filters) -> list[NodeBase]:
+    def search_nodes(
+        self,
+        node_type: list[NodeType] | NodeType = Query(None),
+        title: str | None = None,
+        scope: str | None = None,
+        status: list[NodeStatus] | NodeStatus = Query(None),
+        tags: list[str] | None = Query(None),
+        description: str | None = None,
+    ) -> list[NodeBase]:
         """
         Retrieve nodes matching the given filters.
-        For keys like title, scope, description, etc., perform case‑insensitive
+        For keys like title, scope, description, etc., perform case-insensitive
         substring matches. For node_type or status, accept single values or lists.
         """
         subnet = self.get_whole_network()
         results = []
-        filters = {k: v for k, v in filters.items() if v is not None}
+
+        # Build a dict of non-null filters:
+        all_filters = {
+            "node_type": node_type,
+            "title": title,
+            "scope": scope,
+            "status": status,
+            "tags": tags,
+            "description": description,
+        }
+        active_filters = {k: v for k, v in all_filters.items() if v is not None}
+
         for node in subnet.nodes:
             self.logger.info(
                 f"Checking node {node.node_id} with title: {getattr(node, 'title', None)}"
             )
             match = True
-            for key, value in filters.items():
+            for key, value in active_filters.items():
                 node_value = getattr(node, key, None)
                 self.logger.info(f"Node {node.node_id} attribute {key}: {node_value}")
 
+                # If the node has no corresponding attribute value, it can't match
                 if node_value is None:
                     match = False
                     break
 
-                # Handle lists vs. single values for certain fields:
+                # Handle lists vs. single values (e.g., node_type or status)
                 if key in {"node_type", "status"}:
-                    # If the filter is a list, check membership; else compare directly
-                    self.logger.info(f"Comparing {node_value} with {value}")
                     if isinstance(value, list):
                         if node_value not in value:
                             match = False
@@ -340,7 +361,21 @@ class GraphPostgreSQLDB(GraphDatabaseInterface):
                             match = False
                             break
 
-                # For text fields, continue using the multi-word, case-insensitive match
+                # Handle array of tags by checking if all are contained in node's tags
+                elif key == "tags":
+                    # node_value should be a list of strings
+                    if not isinstance(node_value, list):
+                        match = False
+                        break
+                    # Ensure each requested tag is in the node's tags
+                    for tag in value:
+                        if tag.lower() not in [t.lower() for t in node_value]:
+                            match = False
+                            break
+                    if not match:
+                        break
+
+                # For text fields (title, scope, description), check for multi-word substring
                 elif key in {"title", "scope", "description"} and isinstance(
                     value, str
                 ):
@@ -351,23 +386,26 @@ class GraphPostgreSQLDB(GraphDatabaseInterface):
                     if not match:
                         break
 
-                # Fallback: if both sides are strings, do a containment check
+                # Fallback: if both are strings, do basic substring check
                 elif isinstance(node_value, str) and isinstance(value, str):
                     if value.lower() not in node_value.lower():
                         match = False
                         break
                 else:
-                    # Otherwise do strict equality
+                    # Otherwise do exact equality
                     if node_value != value:
                         match = False
                         break
 
             if match:
                 results.append(node)
-        self.logger.info(f"Search filter {filters} returned {len(results)} nodes")
+
+        self.logger.info(
+            f"Search filter {active_filters} returned {len(results)} nodes"
+        )
         return results
 
-    def get_random_node(self, node_type: str = None) -> NodeBase:
+    def get_random_node(self, node_type: NodeType = None) -> NodeBase:
         nodes = self.get_whole_network().nodes
         if node_type is not None:
             nodes = [
@@ -379,7 +417,7 @@ class GraphPostgreSQLDB(GraphDatabaseInterface):
             )
         return random.choice(nodes)
 
-    def get_node(self, node_id: int) -> NodeBase:
+    def get_node(self, node_id: NodeId) -> NodeBase:
         with Session(self.engine) as session:
             stmt = (
                 select(GraphHistoryEvent)
@@ -418,7 +456,7 @@ class GraphPostgreSQLDB(GraphDatabaseInterface):
             self.logger.info(f"Created node event: {event}")
         return self._to_node(event.payload)
 
-    def delete_node(self, node_id: int) -> None:
+    def delete_node(self, node_id: NodeId) -> None:
         # Verify node exists.
         try:
             self.get_node(node_id)
@@ -476,7 +514,7 @@ class GraphPostgreSQLDB(GraphDatabaseInterface):
                     edge_latest[key] = event
             return [self._to_edge(event.payload) for event in edge_latest.values()]
 
-    def get_edge(self, source_id: int, target_id: int) -> EdgeBase:
+    def get_edge(self, source_id: NodeId, target_id: NodeId) -> EdgeBase:
         with Session(self.engine) as session:
             stmt = (
                 select(GraphHistoryEvent)
@@ -535,7 +573,7 @@ class GraphPostgreSQLDB(GraphDatabaseInterface):
         return self._to_edge(event.payload)
 
     def delete_edge(
-        self, source_id: int, target_id: int, edge_type: str = None
+        self, source_id: NodeId, target_id: NodeId, edge_type: EdgeType = None
     ) -> None:
         event = GraphHistoryEvent(
             state=EntityState.deleted,

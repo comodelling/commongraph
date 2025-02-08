@@ -82,6 +82,11 @@ const routes = [
         name: "EdgeEdit",
         component: Focus,
       },
+      {
+        path: "/node/:id/history",
+        name: "NodeHistory",
+        component: Focus,
+      },
     ],
   },
 ];

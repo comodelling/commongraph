@@ -13,12 +13,18 @@
       >
         Edit
       </button>
+      <button
+        :class="{ active: currentTab === 'history' }"
+        @click="switchTab('history')"
+      >
+        History
+      </button>
     </div>
-    <!-- <h2>Node Information</h2> -->
     <div v-if="node">
       <component
         :is="currentTabComponent"
         :node="node"
+        :nodeId="node.node_id"
         @publish-node="updateNodeFromEditor"
       />
     </div>
@@ -31,6 +37,7 @@
 <script>
 import NodeInfoView from "./NodeInfoView.vue";
 import NodeInfoEdit from "./NodeInfoEdit.vue";
+import NodeHistoryView from "./NodeHistory.vue";
 
 export default {
   props: {
@@ -42,36 +49,53 @@ export default {
   },
   data() {
     return {
-      currentTab: this.$route.path.endsWith("/edit") ? "edit" : "view",
+      currentTab: this.$route.path.endsWith("/edit")
+        ? "edit"
+        : this.$route.path.endsWith("/history")
+          ? "history"
+          : "view",
     };
   },
   computed: {
     currentTabComponent() {
-      return this.currentTab === "view" ? NodeInfoView : NodeInfoEdit;
+      if (this.currentTab === "view") return NodeInfoView;
+      if (this.currentTab === "edit") return NodeInfoEdit;
+      if (this.currentTab === "history") return NodeHistoryView;
     },
   },
   watch: {
     "$route.path"(newPath) {
-      // Ensure it only watches for node routes updates
       if (newPath.includes("/node")) {
-        this.currentTab = newPath.endsWith("/edit") ? "edit" : "view";
+        if (newPath.endsWith("/edit")) {
+          this.currentTab = "edit";
+        } else if (newPath.endsWith("/history")) {
+          this.currentTab = "history";
+        } else {
+          this.currentTab = "view";
+        }
       }
     },
   },
   methods: {
+    getCurrentTab() {
+      if (this.$route.path.endsWith("/edit")) return "edit";
+      if (this.$route.path.endsWith("/history")) return "history";
+      return "view";
+    },
     switchTab(tab) {
       if (this.currentTab === tab) return;
       this.currentTab = tab;
+      const basePath = this.$route.path.split("/edit")[0].split("/history")[0];
       if (tab === "edit") {
-        this.$router.push(`${this.$route.path}/edit`);
+        this.$router.push(`${basePath}/edit`);
+      } else if (tab === "history") {
+        this.$router.push(`${basePath}/history`);
       } else {
-        const path = this.$route.path.split("/edit")[0];
-        this.$router.push(path);
+        this.$router.push(basePath);
       }
     },
     updateNodeFromEditor(updatedNode) {
-      console.log("updateNodeFromEditor", updatedNode);
-      this.$emit("update-node-from-editor", updatedNode); // Ensure this line is present
+      this.$emit("update-node-from-editor", updatedNode);
       this.switchTab("view");
     },
   },

@@ -327,6 +327,15 @@ def update_node(
     return node_out
 
 
+@app.get("/node/{node_id}/history")
+def get_node_history(
+    node_id: NodeId,
+    db: GraphHistoryDatabaseInterface = Depends(get_graph_history_db_connection),
+) -> list[GraphHistoryEvent]:
+    """Return the history of the node associated with the provided ID."""
+    return db.get_node_history(node_id)
+
+
 ### /edges/ ###
 
 

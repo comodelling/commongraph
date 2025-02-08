@@ -8,13 +8,13 @@ from fastapi import HTTPException
 from .base import UserDatabaseInterface, GraphHistoryDatabaseInterface
 from models import User, UserRead, UserCreate, GraphHistoryEvent
 from utils.security import hash_password
+from database.config import get_engine
 
 
 class UserPostgreSQLDB(UserDatabaseInterface):
     def __init__(self, database_url: str):
         super().__init__()
-        self.engine = create_engine(database_url)
-        SQLModel.metadata.create_all(self.engine)
+        self.engine = get_engine(database_url)
         self.SessionLocal = sessionmaker(
             autocommit=False, autoflush=False, bind=self.engine
         )
@@ -82,8 +82,7 @@ class UserPostgreSQLDB(UserDatabaseInterface):
 class GraphHistoryPostgreSQLDB(GraphHistoryDatabaseInterface):
     def __init__(self, database_url: str):
         super().__init__()
-        self.engine = create_engine(database_url)
-        SQLModel.metadata.create_all(self.engine)
+        self.engine = get_engine(database_url)
         self.SessionLocal = sessionmaker(
             autocommit=False, autoflush=False, bind=self.engine
         )

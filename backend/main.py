@@ -446,6 +446,16 @@ def update_edge(
     return out_edge
 
 
+@app.get("/edge/{source_id}/{target_id}/history")
+def get_edge_history(
+    source_id: NodeId,
+    target_id: NodeId,
+    db: GraphHistoryDatabaseInterface = Depends(get_graph_history_db_connection),
+) -> list[GraphHistoryEvent]:
+    """Return the history of the edge associated with the provided source and target IDs."""
+    return db.get_edge_history(source_id, target_id)
+
+
 ### others ###
 
 

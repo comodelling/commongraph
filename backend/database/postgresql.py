@@ -114,7 +114,7 @@ class GraphHistoryPostgreSQLDB(GraphHistoryDatabaseInterface):
             self.logger.info(f"Logged event: {event.event_id}")
             return event
 
-    def get_node_history(self, node_id: int) -> List[GraphHistoryEvent]:
+    def get_node_history(self, node_id: NodeId) -> List[GraphHistoryEvent]:
         with Session(self.engine) as session:
             statement = select(GraphHistoryEvent).where(
                 GraphHistoryEvent.node_id == node_id
@@ -124,7 +124,7 @@ class GraphHistoryPostgreSQLDB(GraphHistoryDatabaseInterface):
             return events
 
     def get_edge_history(
-        self, source_id: int, target_id: int
+        self, source_id: NodeId, target_id: NodeId
     ) -> List[GraphHistoryEvent]:
         with Session(self.engine) as session:
             statement = select(GraphHistoryEvent).where(

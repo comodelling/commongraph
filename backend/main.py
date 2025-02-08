@@ -178,7 +178,7 @@ def reset_whole_network(
     user: UserRead = Depends(get_current_user),
 ) -> None:
     """Delete all nodes and edges. Be careful!"""
-    db_graph.reset_whole_network()
+    db_graph.reset_whole_network(username=user.username)
     # TODO: add graph history logging
 
 
@@ -195,8 +195,8 @@ def update_subnet(
     user: UserRead = Depends(get_current_user),
 ) -> Subnet:
     """Add missing nodes and edges and update existing ones (given IDs)."""
-    out_subnet = db_graph.update_subnet(subnet)
-    # TODO: add graph history logging
+    out_subnet = db_graph.update_subnet(subnet, username=user.username)
+    # TODO: add graph history logging in case of Janusgraph DB
     return out_subnet
 
 
@@ -266,7 +266,7 @@ def create_node(
     user: UserRead = Depends(get_current_user),
 ) -> NodeBase:
     """Create a node."""
-    node_out = db_graph.create_node(node)
+    node_out = db_graph.create_node(node, username=user.username)
     # logger.info(f"User {user.username} created node {node_out.node_id}")
     if not isinstance(db_graph, GraphPostgreSQLDB):
         db_history.log_event(
@@ -291,7 +291,7 @@ def delete_node(
     user: UserRead = Depends(get_current_user),
 ):
     """Delete the node with provided ID."""
-    db_graph.delete_node(node_id)
+    db_graph.delete_node(node_id, username=user.username)
     if not isinstance(db_graph, GraphPostgreSQLDB):
         db_history.log_event(
             GraphHistoryEvent(
@@ -313,7 +313,7 @@ def update_node(
     user: UserRead = Depends(get_current_user),
 ) -> NodeBase:
     """Update the properties of an existing node."""
-    node_out = db_graph.update_node(node)
+    node_out = db_graph.update_node(node, username=user.username)
     if not isinstance(db_graph, GraphPostgreSQLDB):
         db_history.log_event(
             GraphHistoryEvent(
@@ -381,7 +381,7 @@ def create_edge(
     user: UserRead = Depends(get_current_user),
 ) -> EdgeBase:
     """Create an edge."""
-    out_edge = db_graph.create_edge(edge)
+    out_edge = db_graph.create_edge(edge, username=user.username)
     if not isinstance(db_graph, GraphPostgreSQLDB):
         db_history.log_event(
             GraphHistoryEvent(
@@ -408,7 +408,7 @@ def delete_edge(
     user: UserRead = Depends(get_current_user),
 ):
     """Delete the edge between two nodes and for an optional edge_type."""
-    db_graph.delete_edge(source_id, target_id, edge_type)
+    db_graph.delete_edge(source_id, target_id, edge_type, username=user.username)
     if not isinstance(db_graph, GraphPostgreSQLDB):
         db_history.log_event(
             GraphHistoryEvent(
@@ -431,7 +431,7 @@ def update_edge(
     user: UserRead = Depends(get_current_user),
 ) -> EdgeBase:
     """Update the properties of an edge."""
-    out_edge = db_graph.update_edge(edge)
+    out_edge = db_graph.update_edge(edge, username=user.username)
     if not isinstance(db_graph, GraphPostgreSQLDB):
         db_history.log_event(
             GraphHistoryEvent(

@@ -4,7 +4,7 @@
     <ul>
       <li v-for="event in history" :key="event.event_id">
         {{ formatTimestamp(event.timestamp) }}:
-        {{ formatState(event.state) }} by user {{ event.username }}.
+        {{ formatState(event.state) }} by {{ event.username }}.
       </li>
     </ul>
   </div>

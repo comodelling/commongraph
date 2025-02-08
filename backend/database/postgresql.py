@@ -227,7 +227,7 @@ class GraphPostgreSQLDB(GraphDatabaseInterface):
         subnet = self.get_whole_network()
         return {"nodes": len(subnet.nodes), "edges": len(subnet.edges)}
 
-    def reset_whole_network(self) -> None:
+    def reset_whole_network(self, username: str = "system") -> None:
         """Reset the network by clearing all history events."""
         from sqlalchemy import delete
 
@@ -235,7 +235,7 @@ class GraphPostgreSQLDB(GraphDatabaseInterface):
             session.exec(delete(GraphHistoryEvent))
             session.commit()
 
-    def update_subnet(self, subnet: Subnet) -> Subnet:
+    def update_subnet(self, subnet: Subnet, username: str = "system") -> Subnet:
         """
         Update the subnet by iterating over nodes and edges.
         For each node, if it exists (by node_id), update it; otherwise, create it.
@@ -248,10 +248,10 @@ class GraphPostgreSQLDB(GraphDatabaseInterface):
             try:
                 # Check if the node exists
                 existing_node = self.get_node(node.node_id)
-                updated_node = self.update_node(node)
+                updated_node = self.update_node(node, username=username)
             except HTTPException:
                 # Node does not exist; create it.
-                created_node = self.create_node(node)
+                created_node = self.create_node(node, username=username)
                 mapping[node.node_id] = created_node.node_id
                 updated_node = created_node
             nodes_out.append(updated_node)
@@ -266,10 +266,10 @@ class GraphPostgreSQLDB(GraphDatabaseInterface):
             try:
                 # Check if edge already exists
                 existing_edge = self.get_edge(edge.source, edge.target)
-                updated_edge = self.update_edge(edge)
+                updated_edge = self.update_edge(edge, username=username)
             except HTTPException:
                 # Edge does not exist; create it.
-                updated_edge = self.create_edge(edge)
+                updated_edge = self.create_edge(edge, username=username)
             edges_out.append(updated_edge)
 
         return Subnet(nodes=nodes_out, edges=edges_out)
@@ -433,7 +433,7 @@ class GraphPostgreSQLDB(GraphDatabaseInterface):
                 raise HTTPException(status_code=404, detail="Node not found")
             return self._to_node(event.payload)
 
-    def create_node(self, node: NodeBase) -> NodeBase:
+    def create_node(self, node: NodeBase, username: str = "system") -> NodeBase:
         """
         Create a node by logging a creation event.
         'node' is a NodeBase instance, or convertible via .dict().
@@ -446,7 +446,7 @@ class GraphPostgreSQLDB(GraphDatabaseInterface):
             entity_type=EntityType.node,
             node_id=node_dict.get("node_id"),
             payload=node_dict,
-            username="system",
+            username=username,
         )
         with Session(self.engine) as session:
             session.add(event)
@@ -456,7 +456,7 @@ class GraphPostgreSQLDB(GraphDatabaseInterface):
             self.logger.info(f"Created node event: {event}")
         return self._to_node(event.payload)
 
-    def delete_node(self, node_id: NodeId) -> None:
+    def delete_node(self, node_id: NodeId, username: str = "system") -> None:
         # Verify node exists.
         try:
             self.get_node(node_id)
@@ -467,13 +467,13 @@ class GraphPostgreSQLDB(GraphDatabaseInterface):
             entity_type=EntityType.node,
             node_id=node_id,
             payload={},  # empty payload for deletion
-            username="system",
+            username=username,
         )
         with Session(self.engine) as session:
             session.add(event)
             session.commit()
 
-    def update_node(self, node: NodeBase) -> NodeBase:
+    def update_node(self, node: NodeBase, username: str = "system") -> NodeBase:
         """
         Update a node by merging new fields with the existing node so that
         required fields (e.g. node_type or scope) are preserved.
@@ -489,7 +489,7 @@ class GraphPostgreSQLDB(GraphDatabaseInterface):
             entity_type=EntityType.node,
             node_id=merged.get("node_id"),
             payload=merged,
-            username="system",
+            username=username,
         )
         with Session(self.engine) as session:
             session.add(event)
@@ -544,7 +544,7 @@ class GraphPostgreSQLDB(GraphDatabaseInterface):
                 results.append(edge)
         return results
 
-    def create_edge(self, edge: EdgeBase) -> EdgeBase:
+    def create_edge(self, edge: EdgeBase, username: str = "system") -> EdgeBase:
         """
         Create an edge by logging a creation event.
         Validate that both source and target nodes exist.
@@ -564,7 +564,7 @@ class GraphPostgreSQLDB(GraphDatabaseInterface):
             source_id=edge_dict.get("source"),
             target_id=edge_dict.get("target"),
             payload=edge_dict,
-            username="system",
+            username=username,
         )
         with Session(self.engine) as session:
             session.add(event)
@@ -573,7 +573,11 @@ class GraphPostgreSQLDB(GraphDatabaseInterface):
         return self._to_edge(event.payload)
 
     def delete_edge(
-        self, source_id: NodeId, target_id: NodeId, edge_type: EdgeType = None
+        self,
+        source_id: NodeId,
+        target_id: NodeId,
+        edge_type: EdgeType = None,
+        username: str = "system",
     ) -> None:
         event = GraphHistoryEvent(
             state=EntityState.deleted,
@@ -582,13 +586,13 @@ class GraphPostgreSQLDB(GraphDatabaseInterface):
             source_id=source_id,
             target_id=target_id,
             payload={},
-            username="system",
+            username=username,
         )
         with Session(self.engine) as session:
             session.add(event)
             session.commit()
 
-    def update_edge(self, edge: EdgeBase) -> EdgeBase:
+    def update_edge(self, edge: EdgeBase, username: str = "system") -> EdgeBase:
         """
         Update an edge by logging an update event.
         'edge' is an EdgeBase instance.
@@ -601,7 +605,7 @@ class GraphPostgreSQLDB(GraphDatabaseInterface):
             source_id=edge_dict.get("source"),
             target_id=edge_dict.get("target"),
             payload=edge_dict,
-            username="system",
+            username=username,
         )
         with Session(self.engine) as session:
             session.add(event)

@@ -3,7 +3,7 @@
 ## Database configuration
 
 You can choose between different types of databases to store the underlying graph by modifying the value of `DB_TYPE` inside `backend/.env` configuration file.
-Currently supported database types are: `janusgraph`, `sqlite`.
+Currently supported database types are: `janusgraph`, `postgresql`.
 
 !!! note
 
@@ -19,7 +19,7 @@ You can find its API schema at: [http://localhost:8000/docs](http://localhost:80
 ## Development
 
 This project uses:
-- [FastAPI](https://fastapi.tiangolo.com/) framework and a [JanusGraph](https://janusgraph.org/) graph database on the backend (or relational alternatives such as [SQlite](https://www.sqlite.org)),
+- [FastAPI](https://fastapi.tiangolo.com/) framework, [JanusGraph](https://janusgraph.org/) graph and  [PostgreSQL](https://www.postgresql.org/) relational databases on the backend,
 - [Vue.js](https://vuejs.org/), [Vite](https://vite.dev/), and [Vue Flow](https://vueflow.dev/) on the frontend.
 
 

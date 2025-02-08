@@ -10,7 +10,6 @@ import threading
 
 from main import app, get_graph_db_connection
 from database.janusgraph import JanusGraphDB
-from database.sqlite import SQLiteDB
 from database.postgresql import GraphPostgreSQLDB
 
 POSTGRES_TEST_DB_URL = "postgresql://postgres:postgres@localhost/testdb"
@@ -20,7 +19,7 @@ os.environ["SECRET_KEY"] = "testsecret"
 logger = logging.getLogger(__name__)
 
 
-@pytest.fixture(scope="module", params=["janusgraph", "sqlite", "postgresql"])
+@pytest.fixture(scope="module", params=["janusgraph", "postgresql"])
 def db(request):
     db_type = request.param
     if db_type == "janusgraph":
@@ -32,10 +31,6 @@ def db(request):
                 db.get_network_summary()
         except Exception:
             pytest.skip("JanusGraph server not running.")
-    elif db_type == "sqlite":
-        fd, path = tempfile.mkstemp()
-        os.close(fd)
-        db = SQLiteDB(path)
     elif db_type == "postgresql":
         db = GraphPostgreSQLDB(POSTGRES_TEST_DB_URL)
     else:
@@ -43,8 +38,6 @@ def db(request):
 
     yield db
     db.reset_whole_network()
-    if db_type == "sqlite":
-        os.remove(path)
 
 
 @pytest.fixture(autouse=True, scope="module")

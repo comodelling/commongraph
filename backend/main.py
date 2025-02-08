@@ -30,7 +30,6 @@ from database.base import (
     GraphHistoryDatabaseInterface,
 )
 from database.janusgraph import JanusGraphDB
-from database.sqlite import SQLiteDB
 from database.postgresql import (
     UserPostgreSQLDB,
     GraphHistoryPostgreSQLDB,
@@ -40,6 +39,7 @@ from auth import router as auth_router
 from auth import get_current_user
 
 logger = logging.getLogger(__name__)
+
 
 if os.getenv("DOCKER_ENV"):
     _version_path = PathlibPath("/app/VERSION")
@@ -93,33 +93,31 @@ def get_graph_db_connection(
         traversal_source = os.getenv("TRAVERSAL_SOURCE", "g_test")
         return JanusGraphDB(janusgraph_host, traversal_source)
     elif db_type == "sqlite":
-        db_path = os.getenv("SQLITE_DB_PATH", "objectivenet-db.sqlite3")
-        print(f"Using SQLite database at {db_path}")
-        return SQLiteDB(db_path)
+        logger.error("SQLite database is not supported.")
     else:
-        raise ValueError(f"Unsupported GRAPH_DB_TYPE: {db_type}")
+        raise ValueError(f"Unsupported graph db type: {db_type}")
 
 
 def get_user_db_connection(
-    db_type: str = os.getenv("RELATIONAL_DB_TYPE"),
+    db_type: str = "postgresql",
 ) -> UserDatabaseInterface:
     if db_type == "postgresql":
         database_url = os.getenv("POSTGRES_DB_URL")
         print(f"Using User PostgreSQL database at {database_url}")
         return UserPostgreSQLDB(database_url)
     else:
-        raise ValueError(f"Unsupported RELATIONAL_DB_TYPE: {db_type}")
+        raise ValueError(f"Unsupported db type: {db_type} for user_db")
 
 
 def get_graph_history_db_connection(
-    db_type: str = os.getenv("RELATIONAL_DB_TYPE"),
+    db_type: str = "postgresql",
 ) -> GraphHistoryDatabaseInterface:
     if db_type == "postgresql":
         database_url = os.getenv("POSTGRES_DB_URL")
         print(f"Using Graph History PostgreSQL database at {database_url}")
         return GraphHistoryPostgreSQLDB(database_url)
     else:
-        raise ValueError(f"Unsupported RELATIONAL_DB_TYPE: {db_type}")
+        raise ValueError(f"Unsupported db type: {db_type} for graph_history_db")
 
 
 ### root ###

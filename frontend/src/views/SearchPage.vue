@@ -150,13 +150,13 @@ export default {
         nodeTypes.length &&
         nodeTypes.length !== Object.keys(this.nodeTypes).length
       )
-        params.node_type = nodeTypes.join(",");
+        params.node_type = nodeTypes;
       if (
         nodeStatus.length &&
         nodeStatus.length !== Object.keys(this.nodeStatus).length
       )
-        params.status = nodeStatus.join(",");
-      if (tags.length) params.tags = tags.join(",");
+        params.status = nodeStatus;
+      if (tags.length) params.tags = tags;
 
       this.$router.push({
         name: "SearchPage",

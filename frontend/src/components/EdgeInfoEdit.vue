@@ -176,6 +176,8 @@ export default {
         this.editedEdge.causal_strength_rating = null;
       }
 
+      const token = localStorage.getItem("token");
+
       let response;
       try {
         if (this.editedEdge.new) {
@@ -183,12 +185,14 @@ export default {
           response = await axios.post(
             `${import.meta.env.VITE_BACKEND_URL}/edge/`,
             this.editedEdge,
+            token ? { headers: { Authorization: `Bearer ${token}` } } : {},
           );
           console.log("Created edge returned:", response.data);
         } else {
           response = await axios.put(
             `${import.meta.env.VITE_BACKEND_URL}/edge`,
             this.editedEdge,
+            token ? { headers: { Authorization: `Bearer ${token}` } } : {},
           );
           console.log("Updated edge returned:", response.data);
         }

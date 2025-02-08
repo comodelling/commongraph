@@ -1,6 +1,7 @@
 import warnings
 from typing import Annotated, Dict, Any
 from enum import Enum
+import datetime
 
 from pydantic import model_validator
 from fastapi import Query
@@ -287,6 +288,11 @@ class User(SQLModel, table=True):
     )
 
 
+class UserRead(SQLModel):
+    username: str
+    preferences: Dict[str, Any] | None = Field(default_factory=dict)
+
+
 class UserCreate(SQLModel):
     username: str = Field(..., min_length=3)
     password: str = Field(..., min_length=6)
@@ -299,6 +305,36 @@ class UserCreate(SQLModel):
     )
 
 
-class UserRead(SQLModel):
-    username: str
-    preferences: Dict[str, Any] | None = Field(default_factory=dict)
+class OperationType(str, Enum):
+    create = "create"
+    update = "update"
+    delete = "delete"
+
+
+class EntityType(str, Enum):
+    node = "node"
+    edge = "edge"
+
+
+class GraphHistoryEvent(SQLModel, table=True):
+    event_id: int | None = Field(default=None, primary_key=True)
+    event_type: OperationType = Field(..., description="Type of operation")
+    username: str = Field(
+        ..., description="Username of the user who initiated the event"
+    )
+    node_id: NodeId | None = Field(..., description="ID of the node or edge")
+    source_id: NodeId | None = Field(
+        None, description="Source node ID for an edge event"
+    )
+    target_id: NodeId | None = Field(
+        None, description="Target node ID for an edge event"
+    )
+    timestamp: datetime.datetime = Field(
+        default_factory=lambda: datetime.datetime.now(datetime.timezone.utc),
+        description="Timestamp of the event",
+    )
+    payload: dict | None = Field(
+        default_factory=dict,
+        sa_column=Column(JSON),
+        description="Payload of the event - for create and update operations",
+    )

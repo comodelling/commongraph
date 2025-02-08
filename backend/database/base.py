@@ -2,7 +2,7 @@ import logging
 from abc import ABC, ABCMeta, abstractmethod
 from functools import wraps
 
-from models import NodeBase, EdgeBase, Subnet, User
+from models import NodeBase, EdgeBase, Subnet, User, UserRead, UserCreate
 
 
 logging.basicConfig(level=logging.INFO)
@@ -38,11 +38,23 @@ class UserDatabaseInterface(ABC):
         self.logger = logging.getLogger(self.__class__.__name__)
 
     @abstractmethod
-    def create_user(self, user: User):
+    def create_user(self, user: UserCreate) -> UserRead:
         pass
 
     @abstractmethod
-    def get_user(self, username: str) -> User:
+    def get_user(self, username: str) -> User | None:
+        pass
+
+    @abstractmethod
+    def update_user(self, user: User) -> UserRead:
+        pass
+
+    @abstractmethod
+    def update_preferences(self, username: str, new_prefs: dict) -> UserRead:
+        pass
+
+    @abstractmethod
+    def reset_user_table(self):
         pass
 
 
@@ -118,4 +130,37 @@ class GraphDatabaseInterface(ABC, metaclass=LogMeta):
 
     @abstractmethod
     def update_edge(self, edge: EdgeBase) -> EdgeBase:
+        pass
+
+
+class GraphHistoryDatabaseInterface(ABC):
+    def __init__(self):
+        self.logger = logging.getLogger(self.__class__.__name__)
+
+    @abstractmethod
+    def log_event(self, event) -> object:
+        """
+        Log an event (create, update, delete) for an entity.
+        """
+        pass
+
+    @abstractmethod
+    def get_node_history(self, node_id: int) -> list:
+        """
+        Retrieve all events for a given entity.
+        """
+        pass
+
+    @abstractmethod
+    def get_edge_history(self, source_id: int, target_id: int) -> list:
+        """
+        Retrieve all events for a given entity.
+        """
+        pass
+
+    @abstractmethod
+    def revert_to_event(self, event_id: int) -> None:
+        """
+        Revert the entity state to a given event.
+        """
         pass

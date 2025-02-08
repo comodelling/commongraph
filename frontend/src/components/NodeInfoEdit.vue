@@ -298,9 +298,12 @@ export default {
           delete this.editedNode.new;
           delete this.editedNode.node_id;
           console.log("Submitting node for creation:", this.editedNode);
+
+          const token = localStorage.getItem("token");
           const response = await axios.post(
             `${import.meta.env.VITE_BACKEND_URL}/node`,
             this.editedNode,
+            token ? { headers: { Authorization: `Bearer ${token}` } } : {},
           );
           const nodeReturned = response.data;
           const target = nodeReturned.node_id;
@@ -325,6 +328,7 @@ export default {
               await axios.post(
                 `${import.meta.env.VITE_BACKEND_URL}/edge`,
                 newEdge,
+                token ? { headers: { Authorization: `Bearer ${token}` } } : {},
               );
             } catch (error) {
               console.error("Failed to create edge:", error);

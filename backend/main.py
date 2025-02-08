@@ -2,6 +2,7 @@ import os
 import warnings
 from pathlib import Path as PathlibPath
 from typing import Annotated
+import logging
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, status, Query, Depends, HTTPException
@@ -18,13 +19,22 @@ from models import (
     PartialNodeBase,
     MigrateLabelRequest,
     User,
+    UserRead,
+    GraphHistoryEvent,
+    OperationType,
 )
-from database.base import GraphDatabaseInterface, UserDatabaseInterface
+from database.base import (
+    GraphDatabaseInterface,
+    UserDatabaseInterface,
+    GraphHistoryDatabaseInterface,
+)
 from database.janusgraph import JanusGraphDB
 from database.sqlite import SQLiteDB
-from database.postgresql import PostgreSQLDB
+from database.postgresql import UserPostgreSQLDB, GraphHistoryPostgreSQLDB
 from auth import router as auth_router
+from auth import get_current_user
 
+logger = logging.getLogger(__name__)
 
 if os.getenv("DOCKER_ENV"):
     _version_path = PathlibPath("/app/VERSION")
@@ -82,14 +92,25 @@ def get_graph_db_connection(
 
 
 def get_user_db_connection(
-    db_type: str = os.getenv("USER_DB_TYPE"),
+    db_type: str = os.getenv("RELATIONAL_DB_TYPE"),
 ) -> UserDatabaseInterface:
     if db_type == "postgresql":
         database_url = os.getenv("POSTGRES_DB_URL")
-        print(f"Using PostgreSQL database at {database_url}")
-        return PostgreSQLDB(database_url)
+        print(f"Using User PostgreSQL database at {database_url}")
+        return UserPostgreSQLDB(database_url)
     else:
-        raise ValueError(f"Unsupported USER_DB_TYPE: {db_type}")
+        raise ValueError(f"Unsupported RELATIONAL_DB_TYPE: {db_type}")
+
+
+def get_graph_history_db_connection(
+    db_type: str = os.getenv("RELATIONAL_DB_TYPE"),
+) -> GraphHistoryDatabaseInterface:
+    if db_type == "postgresql":
+        database_url = os.getenv("POSTGRES_DB_URL")
+        print(f"Using Graph History PostgreSQL database at {database_url}")
+        return GraphHistoryPostgreSQLDB(database_url)
+    else:
+        raise ValueError(f"Unsupported RELATIONAL_DB_TYPE: {db_type}")
 
 
 ### root ###
@@ -143,10 +164,15 @@ def get_network_summary(
 
 @app.delete("/network", status_code=status.HTTP_205_RESET_CONTENT)
 def reset_whole_network(
-    db: GraphDatabaseInterface = Depends(get_graph_db_connection),
+    db_graph: GraphDatabaseInterface = Depends(get_graph_db_connection),
+    db_history: GraphHistoryDatabaseInterface = Depends(
+        get_graph_history_db_connection
+    ),
+    user: UserRead = Depends(get_current_user),
 ) -> None:
     """Delete all nodes and edges. Be careful!"""
-    db.reset_whole_network()
+    db_graph.reset_whole_network()
+    # TODO: add graph history logging
 
 
 ### /subnet/ ###
@@ -154,10 +180,17 @@ def reset_whole_network(
 
 @app.put("/subnet")
 def update_subnet(
-    subnet: Subnet, db: GraphDatabaseInterface = Depends(get_graph_db_connection)
+    subnet: Subnet,
+    db_graph: GraphDatabaseInterface = Depends(get_graph_db_connection),
+    db_history: GraphHistoryDatabaseInterface = Depends(
+        get_graph_history_db_connection
+    ),
+    user: UserRead = Depends(get_current_user),
 ) -> Subnet:
     """Add missing nodes and edges and update existing ones (given IDs)."""
-    return db.update_subnet(subnet)
+    out_subnet = db_graph.update_subnet(subnet)
+    # TODO: add graph history logging
+    return out_subnet
 
 
 @app.get("/subnet/{node_id}")
@@ -218,26 +251,65 @@ def get_node(
 
 @app.post("/node", status_code=status.HTTP_201_CREATED)
 def create_node(
-    node: NodeBase, db: GraphDatabaseInterface = Depends(get_graph_db_connection)
+    node: NodeBase,
+    db_graph: GraphDatabaseInterface = Depends(get_graph_db_connection),
+    db_history: GraphHistoryDatabaseInterface = Depends(
+        get_graph_history_db_connection
+    ),
+    user: UserRead = Depends(get_current_user),
 ) -> NodeBase:
     """Create a node."""
-    return db.create_node(node)
+    node_out = db_graph.create_node(node)
+    # logger.info(f"User {user.username} created node {node_out.node_id}")
+    db_history.log_event(
+        GraphHistoryEvent(
+            username=user.username,
+            event_type=OperationType.create,
+            node_id=node.node_id,
+            payload=node.model_dump(),
+        )
+    )
+    return node_out
 
 
 @app.delete("/node/{node_id}")
 def delete_node(
-    node_id: NodeId, db: GraphDatabaseInterface = Depends(get_graph_db_connection)
+    node_id: NodeId,
+    db_graph: GraphDatabaseInterface = Depends(get_graph_db_connection),
+    db_history: GraphHistoryDatabaseInterface = Depends(
+        get_graph_history_db_connection
+    ),
+    user: UserRead = Depends(get_current_user),
 ):
     """Delete the node with provided ID."""
-    db.delete_node(node_id)
+    db_graph.delete_node(node_id)
+    db_history.log_event(
+        GraphHistoryEvent(
+            username=user.username, event_type=OperationType.delete, node_id=node_id
+        )
+    )
 
 
 @app.put("/node")
 def update_node(
-    node: PartialNodeBase, db: GraphDatabaseInterface = Depends(get_graph_db_connection)
+    node: PartialNodeBase,
+    db_graph: GraphDatabaseInterface = Depends(get_graph_db_connection),
+    db_history: GraphHistoryDatabaseInterface = Depends(
+        get_graph_history_db_connection
+    ),
+    user: UserRead = Depends(get_current_user),
 ) -> NodeBase:
     """Update the properties of an existing node."""
-    return db.update_node(node)
+    out_node = db_graph.update_node(node)
+    db_history.log_event(
+        GraphHistoryEvent(
+            username=user.username,
+            event_type=OperationType.update,
+            node_id=node.node_id,
+            payload=node.model_dump(),
+        )
+    )
+    return out_node
 
 
 ### /edges/ ###
@@ -277,10 +349,25 @@ def get_edge(
 
 @app.post("/edge", status_code=201)
 def create_edge(
-    edge: EdgeBase, db: GraphDatabaseInterface = Depends(get_graph_db_connection)
+    edge: EdgeBase,
+    db_graph: GraphDatabaseInterface = Depends(get_graph_db_connection),
+    db_history: GraphHistoryDatabaseInterface = Depends(
+        get_graph_history_db_connection
+    ),
+    user: UserRead = Depends(get_current_user),
 ) -> EdgeBase:
     """Create an edge."""
-    return db.create_edge(edge)
+    out_edge = db_graph.create_edge(edge)
+    db_history.log_event(
+        GraphHistoryEvent(
+            username=user.username,
+            event_type=OperationType.create,
+            source_id=edge.source,
+            target_id=edge.target,
+            payload=edge.model_dump(),
+        )
+    )
+    return out_edge
 
 
 @app.delete("/edge/{source_id}/{target_id}")
@@ -288,18 +375,45 @@ def delete_edge(
     source_id: NodeId,
     target_id: NodeId,
     edge_type: EdgeType | None = None,
-    db: GraphDatabaseInterface = Depends(get_graph_db_connection),
+    db_graph: GraphDatabaseInterface = Depends(get_graph_db_connection),
+    db_history: GraphHistoryDatabaseInterface = Depends(
+        get_graph_history_db_connection
+    ),
+    user: UserRead = Depends(get_current_user),
 ):
     """Delete the edge between two nodes and for an optional edge_type."""
-    db.delete_edge(source_id, target_id, edge_type)
+    db_graph.delete_edge(source_id, target_id, edge_type)
+    db_history.log_event(
+        GraphHistoryEvent(
+            username=user.username,
+            event_type=OperationType.create,
+            source_id=source_id,
+            target_id=target_id,
+        )
+    )
 
 
 @app.put("/edge")
 def update_edge(
-    edge: EdgeBase, db: GraphDatabaseInterface = Depends(get_graph_db_connection)
+    edge: EdgeBase,
+    db_graph: GraphDatabaseInterface = Depends(get_graph_db_connection),
+    db_history: GraphHistoryDatabaseInterface = Depends(
+        get_graph_history_db_connection
+    ),
+    user: UserRead = Depends(get_current_user),
 ) -> EdgeBase:
     """Update the properties of an edge."""
-    return db.update_edge(edge)
+    out_edge = db_graph.update_edge(edge)
+    db_history.log_event(
+        GraphHistoryEvent(
+            username=user.username,
+            event_type=OperationType.create,
+            source_id=edge.source,
+            target_id=edge.target,
+            payload=edge.model_dump(),
+        )
+    )
+    return out_edge
 
 
 ### others ###

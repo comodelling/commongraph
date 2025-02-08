@@ -1,5 +1,6 @@
 import os
 import warnings
+import logging
 
 import pytest
 import json
@@ -10,6 +11,9 @@ import threading
 from main import app, get_graph_db_connection
 from database.janusgraph import JanusGraphDB
 from database.sqlite import SQLiteDB
+
+
+logger = logging.getLogger(__name__)
 
 
 @pytest.fixture(scope="module", params=["janusgraph", "sqlite"])
@@ -64,6 +68,7 @@ def initial_node(db, client):
         },
     ).content
     node_dict = json.loads(result.decode("utf-8"))
+    logger.info(f"Initial node: {node_dict}")
 
     yield node_dict
     warnings.filterwarnings("ignore", category=UserWarning)

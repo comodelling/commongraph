@@ -1,16 +1,16 @@
-from typing import Optional
+from typing import List
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import SQLModel, Session, select
 from fastapi import HTTPException
 
-from .base import UserDatabaseInterface
-from models import User, UserRead, UserCreate
+from .base import UserDatabaseInterface, GraphHistoryDatabaseInterface
+from models import User, UserRead, UserCreate, GraphHistoryEvent
 from utils.security import hash_password
 
 
-class PostgreSQLDB(UserDatabaseInterface):
+class UserPostgreSQLDB(UserDatabaseInterface):
     def __init__(self, database_url: str):
         super().__init__()
         self.engine = create_engine(database_url)
@@ -38,7 +38,7 @@ class PostgreSQLDB(UserDatabaseInterface):
                 raise HTTPException(status_code=400, detail="User already exists")
             return UserRead(username=db_user.username, preferences=db_user.preferences)
 
-    def get_user(self, username: str) -> Optional[User]:
+    def get_user(self, username: str) -> User | None:
         with Session(self.engine) as session:
             statement = select(User).where(User.username == username)
             result = session.exec(statement).first()
@@ -77,3 +77,51 @@ class PostgreSQLDB(UserDatabaseInterface):
         """Reset the database by dropping all tables and recreating them."""
         SQLModel.metadata.drop_all(self.engine)
         SQLModel.metadata.create_all(self.engine)
+
+
+class GraphHistoryPostgreSQLDB(GraphHistoryDatabaseInterface):
+    def __init__(self, database_url: str):
+        super().__init__()
+        self.engine = create_engine(database_url)
+        SQLModel.metadata.create_all(self.engine)
+        self.SessionLocal = sessionmaker(
+            autocommit=False, autoflush=False, bind=self.engine
+        )
+
+    def log_event(self, event: GraphHistoryEvent) -> GraphHistoryEvent:
+        with Session(self.engine) as session:
+            session.add(event)
+            session.commit()
+            session.refresh(event)
+            self.logger.info(f"Logged event: {event.event_id}")
+            return event
+
+    def get_node_history(self, node_id: int) -> List[GraphHistoryEvent]:
+        with Session(self.engine) as session:
+            statement = select(GraphHistoryEvent).where(
+                GraphHistoryEvent.node_id == node_id
+            )
+            events = session.exec(statement).all()
+            self.logger.info(f"Found {len(events)} events for node: {node_id}")
+            return events
+
+    def get_edge_history(
+        self, source_id: int, target_id: int
+    ) -> List[GraphHistoryEvent]:
+        with Session(self.engine) as session:
+            statement = select(GraphHistoryEvent).where(
+                GraphHistoryEvent.source_id == source_id,
+                GraphHistoryEvent.target_id == target_id,
+            )
+            events = session.exec(statement).all()
+            self.logger.info(
+                f"Found {len(events)} events for edge: {source_id} -> {target_id}"
+            )
+            return events
+
+    def revert_to_event(self, event_id: int) -> None:
+        # Implementation would depend on your event-sourcing mechanism.
+        self.logger.info(f"Requested revert to event {event_id}")
+        raise HTTPException(
+            status_code=501, detail="Revert functionality not implemented yet."
+        )

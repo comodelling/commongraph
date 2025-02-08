@@ -21,7 +21,8 @@ from models import (
     User,
     UserRead,
     GraphHistoryEvent,
-    OperationType,
+    EntityState,
+    EntityType
 )
 from database.base import (
     GraphDatabaseInterface,
@@ -264,7 +265,8 @@ def create_node(
     db_history.log_event(
         GraphHistoryEvent(
             username=user.username,
-            event_type=OperationType.create,
+            state=EntityState.created,
+            entity_type=EntityType.node,
             node_id=node.node_id,
             payload=node_out.model_dump(),
         )
@@ -285,7 +287,7 @@ def delete_node(
     db_graph.delete_node(node_id)
     db_history.log_event(
         GraphHistoryEvent(
-            username=user.username, event_type=OperationType.delete, node_id=node_id
+            username=user.username, state=EntityState.deleted, entity_type=EntityType.node, node_id=node_id
         )
     )
 
@@ -304,7 +306,8 @@ def update_node(
     db_history.log_event(
         GraphHistoryEvent(
             username=user.username,
-            event_type=OperationType.update,
+            state=EntityState.updated,
+            entity_type=EntityType.node,
             node_id=node.node_id,
             payload=node_out.model_dump(),
         )
@@ -361,7 +364,8 @@ def create_edge(
     db_history.log_event(
         GraphHistoryEvent(
             username=user.username,
-            event_type=OperationType.create,
+            state=EntityState.created,
+            entity_type=EntityType.edge,
             source_id=edge.source,
             target_id=edge.target,
             payload=out_edge.model_dump(),
@@ -386,7 +390,8 @@ def delete_edge(
     db_history.log_event(
         GraphHistoryEvent(
             username=user.username,
-            event_type=OperationType.create,
+            state=EntityState.deleted,
+            entity_type=EntityType.edge,
             source_id=source_id,
             target_id=target_id,
         )
@@ -407,7 +412,8 @@ def update_edge(
     db_history.log_event(
         GraphHistoryEvent(
             username=user.username,
-            event_type=OperationType.create,
+            state=EntityState.updated,
+            entity_type=EntityType.edge,
             source_id=edge.source,
             target_id=edge.target,
             payload=out_edge.model_dump(),

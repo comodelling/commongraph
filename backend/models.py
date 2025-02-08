@@ -305,10 +305,10 @@ class UserCreate(SQLModel):
     )
 
 
-class OperationType(str, Enum):
-    create = "create"
-    update = "update"
-    delete = "delete"
+class EntityState(str, Enum):
+    created = "created"
+    updated = "updated"
+    deleted = "deleted"
 
 
 class EntityType(str, Enum):
@@ -318,23 +318,25 @@ class EntityType(str, Enum):
 
 class GraphHistoryEvent(SQLModel, table=True):
     event_id: int | None = Field(default=None, primary_key=True)
-    event_type: OperationType = Field(..., description="Type of operation")
-    username: str = Field(
-        ..., description="Username of the user who initiated the event"
-    )
-    node_id: NodeId | None = Field(..., description="ID of the node or edge")
-    source_id: NodeId | None = Field(
-        None, description="Source node ID for an edge event"
-    )
-    target_id: NodeId | None = Field(
-        None, description="Target node ID for an edge event"
-    )
     timestamp: datetime.datetime = Field(
         default_factory=lambda: datetime.datetime.now(datetime.timezone.utc),
         description="Timestamp of the event",
     )
+    state: EntityState = Field(..., description="State of the entity (created, updated, deleted)")
+    entity_type: EntityType = Field(..., description="Type of entity (node or edge)")
+    node_id: NodeId | None = Field(..., description="ID of the node")
+    source_id: NodeId | None = Field(
+        None, description="Edge's source node ID"
+    )
+    target_id: NodeId | None = Field(
+        None, description="Edge's rarget node ID"
+    )
     payload: dict | None = Field(
         default_factory=dict,
         sa_column=Column(JSON),
-        description="Payload of the event - for create and update operations",
+        description="Payload containing the entity's full state",
     )
+    username: str = Field(
+        ..., description="Username of the user who initiated the event"
+    )
+

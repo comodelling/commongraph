@@ -336,9 +336,11 @@ const onNodesChange = async (changes) => {
       if (isConfirmed) {
         nextChanges.push(change);
         const node_id = change.id;
+        const token = localStorage.getItem("token");
         try {
           const response = await axios.delete(
             `${import.meta.env.VITE_BACKEND_URL}/node/${node_id}`,
+            token ? { headers: { Authorization: `Bearer ${token}` } } : {},
           );
         } catch (error) {
           console.error("Failed to delete node:", error);
@@ -379,10 +381,12 @@ const onEdgesChange = async (changes) => {
         const source_id = edge.data.source;
         const target_id = edge.data.target;
         const edge_type = edge.data.edge_type;
+        const token = localStorage.getItem("token");
         try {
           const response = await axios.delete(
             `${import.meta.env.VITE_BACKEND_URL}/edge/${source_id}/${target_id}`,
             { edge_type: edge_type },
+            token ? { headers: { Authorization: `Bearer ${token}` } } : {},
           );
         } catch (error) {
           console.error("Failed to delete edge:", error);

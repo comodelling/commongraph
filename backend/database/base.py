@@ -2,7 +2,17 @@ import logging
 from abc import ABC, ABCMeta, abstractmethod
 from functools import wraps
 
-from models import NodeBase, EdgeBase, Subnet, User
+from models import (
+    NodeBase,
+    EdgeBase,
+    Subnet,
+    User,
+    UserRead,
+    UserCreate,
+    NodeId,
+    NodeType,
+    EdgeType,
+)
 
 
 logging.basicConfig(level=logging.INFO)
@@ -38,11 +48,23 @@ class UserDatabaseInterface(ABC):
         self.logger = logging.getLogger(self.__class__.__name__)
 
     @abstractmethod
-    def create_user(self, user: User):
+    def create_user(self, user: UserCreate) -> UserRead:
         pass
 
     @abstractmethod
-    def get_user(self, username: str) -> User:
+    def get_user(self, username: str) -> User | None:
+        pass
+
+    @abstractmethod
+    def update_user(self, user: User) -> UserRead:
+        pass
+
+    @abstractmethod
+    def update_preferences(self, username: str, new_prefs: dict) -> UserRead:
+        pass
+
+    @abstractmethod
+    def reset_user_table(self):
         pass
 
 
@@ -67,7 +89,7 @@ class GraphDatabaseInterface(ABC, metaclass=LogMeta):
         pass
 
     @abstractmethod
-    def get_induced_subnet(self, node_id: int, levels: int) -> Subnet:
+    def get_induced_subnet(self, node_id: NodeId, levels: NodeId) -> Subnet:
         pass
 
     @abstractmethod
@@ -75,11 +97,11 @@ class GraphDatabaseInterface(ABC, metaclass=LogMeta):
         pass
 
     @abstractmethod
-    def get_random_node(self, node_type: str = None) -> NodeBase:
+    def get_random_node(self, node_type: NodeType = None) -> NodeBase:
         pass
 
     @abstractmethod
-    def get_node(self, node_id: int) -> NodeBase:
+    def get_node(self, node_id: NodeId) -> NodeBase:
         pass
 
     @abstractmethod
@@ -87,7 +109,7 @@ class GraphDatabaseInterface(ABC, metaclass=LogMeta):
         pass
 
     @abstractmethod
-    def delete_node(self, node_id: int) -> None:
+    def delete_node(self, node_id: NodeId) -> None:
         pass
 
     @abstractmethod
@@ -99,7 +121,7 @@ class GraphDatabaseInterface(ABC, metaclass=LogMeta):
         pass
 
     @abstractmethod
-    def get_edge(self, source_id: int, target_id: int) -> EdgeBase:
+    def get_edge(self, source_id: NodeId, target_id: NodeId) -> EdgeBase:
         pass
 
     @abstractmethod
@@ -112,10 +134,79 @@ class GraphDatabaseInterface(ABC, metaclass=LogMeta):
 
     @abstractmethod
     def delete_edge(
-        self, source_id: int, target_id: int, edge_type: str = None
+        self, source_id: NodeId, target_id: NodeId, edge_type: EdgeType = None
     ) -> None:
         pass
 
     @abstractmethod
     def update_edge(self, edge: EdgeBase) -> EdgeBase:
+        pass
+
+
+class GraphHistoryRelationalInterface(GraphDatabaseInterface):
+    def __init__(self):
+        self.logger = logging.getLogger(self.__class__.__name__)
+
+    ### some inherited methods have added parameter username
+    @abstractmethod
+    def reset_whole_network(self, username: str) -> None:
+        pass
+
+    @abstractmethod
+    def update_subnet(self, subnet: Subnet, username: str) -> Subnet:
+        pass
+
+    @abstractmethod
+    def create_node(self, node: NodeBase, username: str) -> NodeBase:
+        pass
+
+    @abstractmethod
+    def delete_node(self, node_id: NodeId, username: str) -> None:
+        pass
+
+    @abstractmethod
+    def update_node(self, node: NodeBase, username: str) -> NodeBase:
+        pass
+
+    @abstractmethod
+    def create_edge(self, edge: EdgeBase, username: str) -> EdgeBase:
+        pass
+
+    @abstractmethod
+    def delete_edge(
+        self, source_id: NodeId, target_id: NodeId, edge_type: EdgeType, username: str
+    ) -> None:
+        pass
+
+    @abstractmethod
+    def update_edge(self, edge: EdgeBase, username: str) -> EdgeBase:
+        pass
+
+    ### history-specific methods
+    @abstractmethod
+    def log_event(self, event) -> object:
+        """
+        Log an event (create, update, delete) for an entity.
+        """
+        pass
+
+    @abstractmethod
+    def get_node_history(self, node_id: NodeId) -> list:
+        """
+        Retrieve all events for a given entity.
+        """
+        pass
+
+    @abstractmethod
+    def get_edge_history(self, source_id: NodeId, target_id: NodeId) -> list:
+        """
+        Retrieve all events for a given entity.
+        """
+        pass
+
+    @abstractmethod
+    def revert_to_event(self, event_id: NodeId) -> None:
+        """
+        Revert the entity state to a given event.
+        """
         pass

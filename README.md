@@ -11,13 +11,12 @@ To start ObjectiveNet:
 - run ```bash start_docker.sh``` from the cloned `objectivenet/` directory,
 - wait for it to start...and that's it! you can access it at [http://localhost:5173/](http://localhost:5173/) from a browser.
 
-### Database configuration
 
-You can choose between different types of databases to store the underlying graph by modifying the value of `GRAPH_DB_TYPE` inside `backend/.env` configuration file.
-Currently supported database types are: `janusgraph`, `sqlite`.
+## Development
 
-*Note*: there is no synchronisation between those different databases, and switching between them will not import the content of the other. For this, you will need to export and import the content using the `network` API.
-
+This project uses:
+- [FastAPI](https://fastapi.tiangolo.com/) framework, [JanusGraph](https://janusgraph.org/) graph database and [PostgreSQL](https://www.postgresql.org/) relational database on the backend,
+- [Vue.js](https://vuejs.org/), [Vite](https://vite.dev/), and [Vue Flow](https://vueflow.dev/) on the frontend.
 
 ### Backend API
 
@@ -25,16 +24,17 @@ ObjectiveNet's graph database can also be queried directly using its backend API
 You can find its API schema at: [http://localhost:8000/docs](http://localhost:8000/docs) (generated automatically using Swagger).
 
 
-## Development
+### Database configuration
 
-This project uses:
-- [FastAPI](https://fastapi.tiangolo.com/) framework and a [JanusGraph](https://janusgraph.org/) graph database on the backend (or relational alternatives such as [SQlite](https://www.sqlite.org)),
-- [Vue.js](https://vuejs.org/), [Vite](https://vite.dev/), and [Vue Flow](https://vueflow.dev/) on the frontend.
+By default, the app can run simply using a postgresql relational database.
+However, you can also enable a janusgraph graph database on top of the relational database to speed up some queries.
+To do so, just set `ENABLE_GRAPH_DB` to `true` in `backend/.env` configuration file.
 
+*Note*: switching between graph database enabled or not might lead to inconsistencies.
 
 ### Contributing
 
-Looking to file a bug report or a feature request? https://github.com/comodelling/objectivenet/issues
+Looking to file a bug report or a feature request? [https://github.com/comodelling/objectivenet/issues](https://github.com/comodelling/objectivenet/)
 
 You can also contribute to ObjectiveNet by:
 - experimenting with the software and directly [sending feedback via email](mailto:mario.morvan@ucl.ac.uk),

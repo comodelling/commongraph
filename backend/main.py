@@ -2,6 +2,7 @@ import os
 import warnings
 from pathlib import Path as PathlibPath
 from typing import Annotated
+import logging
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, status, Query, Depends, HTTPException
@@ -18,12 +19,20 @@ from models import (
     PartialNodeBase,
     MigrateLabelRequest,
     User,
+    UserRead,
+    GraphHistoryEvent,
 )
-from database.base import GraphDatabaseInterface, UserDatabaseInterface
+from database.base import (
+    GraphDatabaseInterface,
+    UserDatabaseInterface,
+    GraphHistoryRelationalInterface,
+)
 from database.janusgraph import JanusGraphDB
-from database.sqlite import SQLiteDB
-from database.postgresql import PostgreSQLDB
+from database.postgresql import UserPostgreSQLDB, GraphHistoryPostgreSQLDB
 from auth import router as auth_router
+from auth import get_current_user
+
+logger = logging.getLogger(__name__)
 
 
 if os.getenv("DOCKER_ENV"):
@@ -67,29 +76,37 @@ app.add_middleware(
 
 
 def get_graph_db_connection(
-    db_type: str = os.getenv("GRAPH_DB_TYPE"),
+    enable_graph_db: str = os.getenv("ENABLE_GRAPH_DB"),
 ) -> GraphDatabaseInterface:
-    if db_type == "janusgraph":
+    enable_graph_db = enable_graph_db.lower() in ["true", "True"]
+    if enable_graph_db:
+        logger.info("Using JanusGraph database")
         janusgraph_host = os.getenv("JANUSGRAPH_HOST", "localhost")
         traversal_source = os.getenv("TRAVERSAL_SOURCE", "g_test")
         return JanusGraphDB(janusgraph_host, traversal_source)
-    elif db_type == "sqlite":
-        db_path = os.getenv("SQLITE_DB_PATH", "objectivenet-db.sqlite3")
-        print(f"Using SQLite database at {db_path}")
-        return SQLiteDB(db_path)
-    else:
-        raise ValueError(f"Unsupported GRAPH_DB_TYPE: {db_type}")
+    return None
 
 
 def get_user_db_connection(
-    db_type: str = os.getenv("USER_DB_TYPE"),
+    db_type: str = "postgresql",
 ) -> UserDatabaseInterface:
     if db_type == "postgresql":
         database_url = os.getenv("POSTGRES_DB_URL")
-        print(f"Using PostgreSQL database at {database_url}")
-        return PostgreSQLDB(database_url)
+        print(f"Using User PostgreSQL database at {database_url}")
+        return UserPostgreSQLDB(database_url)
     else:
-        raise ValueError(f"Unsupported USER_DB_TYPE: {db_type}")
+        raise ValueError(f"Unsupported db type: {db_type} for user_db")
+
+
+def get_graph_history_db_connection(
+    db_type: str = "postgresql",
+) -> GraphHistoryRelationalInterface:
+    if db_type == "postgresql":
+        database_url = os.getenv("POSTGRES_DB_URL")
+        print(f"Using Graph History PostgreSQL database at {database_url}")
+        return GraphHistoryPostgreSQLDB(database_url)
+    else:
+        raise ValueError(f"Unsupported db type: {db_type} for graph_history_db")
 
 
 ### root ###
@@ -127,26 +144,36 @@ def get_user(
 
 @app.get("/network")
 def get_whole_network(
-    db: GraphDatabaseInterface = Depends(get_graph_db_connection),
+    db_history: GraphHistoryRelationalInterface = Depends(
+        get_graph_history_db_connection
+    ),
 ) -> Subnet:
     """Return full network of nodes and edges from the database."""
-    return db.get_whole_network()
+    return db_history.get_whole_network()
 
 
 @app.get("/network/summary")
 def get_network_summary(
-    db: GraphDatabaseInterface = Depends(get_graph_db_connection),
+    db_history: GraphHistoryRelationalInterface = Depends(
+        get_graph_history_db_connection
+    ),
 ) -> dict[str, int]:
     """Count nodes and edges."""
-    return db.get_network_summary()
+    return db_history.get_network_summary()
 
 
 @app.delete("/network", status_code=status.HTTP_205_RESET_CONTENT)
 def reset_whole_network(
-    db: GraphDatabaseInterface = Depends(get_graph_db_connection),
+    db_graph: GraphDatabaseInterface | None = Depends(get_graph_db_connection),
+    db_history: GraphHistoryRelationalInterface = Depends(
+        get_graph_history_db_connection
+    ),
+    user: UserRead = Depends(get_current_user),
 ) -> None:
     """Delete all nodes and edges. Be careful!"""
-    db.reset_whole_network()
+    db_history.reset_whole_network(username=user.username)
+    if db_graph is not None:
+        db_graph.reset_whole_network()
 
 
 ### /subnet/ ###
@@ -154,22 +181,35 @@ def reset_whole_network(
 
 @app.put("/subnet")
 def update_subnet(
-    subnet: Subnet, db: GraphDatabaseInterface = Depends(get_graph_db_connection)
+    subnet: Subnet,
+    db_graph: GraphDatabaseInterface | None = Depends(get_graph_db_connection),
+    db_history: GraphHistoryRelationalInterface = Depends(
+        get_graph_history_db_connection
+    ),
+    user: UserRead = Depends(get_current_user),
 ) -> Subnet:
     """Add missing nodes and edges and update existing ones (given IDs)."""
-    return db.update_subnet(subnet)
+    out_subnet = db_history.update_subnet(subnet, username=user.username)
+    if db_graph is not None:
+        db_graph.update_subnet(subnet)
+    return out_subnet
 
 
 @app.get("/subnet/{node_id}")
 def get_induced_subnet(
     node_id: NodeId,
     levels: Annotated[int, Query(get=0)] = 2,
-    db: GraphDatabaseInterface = Depends(get_graph_db_connection),
+    db_graph: GraphDatabaseInterface | None = Depends(get_graph_db_connection),
+    db_history: GraphHistoryRelationalInterface = Depends(
+        get_graph_history_db_connection
+    ),
 ) -> Subnet:
     """Return the subnet induced from a particular element with an optional limit number of connections.
     If no neighbour is found, a singleton subnet with a single node is returned from the provided ID.
     """
-    return db.get_induced_subnet(node_id, levels)
+    if db_graph is not None:
+        return db_graph.get_induced_subnet(node_id, levels)
+    return db_history.get_induced_subnet(node_id, levels)
 
 
 ### /nodes/ ###
@@ -183,10 +223,22 @@ def search_nodes(
     status: list[NodeStatus] | NodeStatus = Query(None),
     tags: list[str] | None = Query(None),
     description: str | None = None,
-    db: GraphDatabaseInterface = Depends(get_graph_db_connection),
+    db_graph: GraphDatabaseInterface | None = Depends(get_graph_db_connection),
+    db_history: GraphHistoryRelationalInterface = Depends(
+        get_graph_history_db_connection
+    ),
 ) -> list[NodeBase]:
     """Search in nodes on a field by field level."""
-    return db.search_nodes(
+    if db_graph is not None:
+        return db_graph.search_nodes(
+            node_type=node_type,
+            title=title,
+            scope=scope,
+            status=status,
+            tags=tags,
+            description=description,
+        )
+    return db_history.search_nodes(
         node_type=node_type,
         title=title,
         scope=scope,
@@ -202,42 +254,88 @@ def search_nodes(
 @app.get("/node/random")
 def get_random_node(
     node_type: NodeType | None = None,
-    db: GraphDatabaseInterface = Depends(get_graph_db_connection),
+    db: GraphDatabaseInterface | None = Depends(get_graph_db_connection),
+    db_history: GraphHistoryRelationalInterface = Depends(
+        get_graph_history_db_connection
+    ),
 ) -> NodeBase:
     """Return a random node with optional node_type."""
-    return db.get_random_node(node_type)
+    if isinstance(db, JanusGraphDB):
+        return db.get_random_node(node_type)
+    return db_history.get_random_node(node_type)
 
 
 @app.get("/node/{node_id}")
 def get_node(
-    node_id: NodeId, db: GraphDatabaseInterface = Depends(get_graph_db_connection)
+    node_id: NodeId,
+    db_history: GraphHistoryRelationalInterface = Depends(
+        get_graph_history_db_connection
+    ),
 ) -> NodeBase:
     """Return the node associated with the provided ID."""
-    return db.get_node(node_id)
+    return db_history.get_node(node_id)
 
 
 @app.post("/node", status_code=status.HTTP_201_CREATED)
 def create_node(
-    node: NodeBase, db: GraphDatabaseInterface = Depends(get_graph_db_connection)
+    node: NodeBase,
+    db_graph: GraphDatabaseInterface | None = Depends(get_graph_db_connection),
+    db_history: GraphHistoryRelationalInterface = Depends(
+        get_graph_history_db_connection
+    ),
+    user: UserRead = Depends(get_current_user),
 ) -> NodeBase:
     """Create a node."""
-    return db.create_node(node)
+    if db_graph is not None:
+        node = db_graph.create_node(node)
+        # logger.info(f"User {user.username} created node {node_out.node_id} in graph database too")
+
+    node_out = db_history.create_node(
+        node, username=user.username
+    )  # reuse the ID allocated from the graph database
+    return node_out
 
 
 @app.delete("/node/{node_id}")
 def delete_node(
-    node_id: NodeId, db: GraphDatabaseInterface = Depends(get_graph_db_connection)
+    node_id: NodeId,
+    db_graph: GraphDatabaseInterface | None = Depends(get_graph_db_connection),
+    db_history: GraphHistoryRelationalInterface = Depends(
+        get_graph_history_db_connection
+    ),
+    user: UserRead = Depends(get_current_user),
 ):
     """Delete the node with provided ID."""
-    db.delete_node(node_id)
+    db_history.delete_node(node_id, username=user.username)
+    if db_graph is not None:
+        db_graph.delete_node(node_id)
 
 
 @app.put("/node")
 def update_node(
-    node: PartialNodeBase, db: GraphDatabaseInterface = Depends(get_graph_db_connection)
+    node: PartialNodeBase,
+    db_graph: GraphDatabaseInterface | None = Depends(get_graph_db_connection),
+    db_history: GraphHistoryRelationalInterface = Depends(
+        get_graph_history_db_connection
+    ),
+    user: UserRead = Depends(get_current_user),
 ) -> NodeBase:
     """Update the properties of an existing node."""
-    return db.update_node(node)
+    node_out = db_history.update_node(node, username=user.username)
+    if db_graph is not None:
+        db_graph.update_node(node)
+    return node_out
+
+
+@app.get("/node/{node_id}/history")
+def get_node_history(
+    node_id: NodeId,
+    db_history: GraphHistoryRelationalInterface = Depends(
+        get_graph_history_db_connection
+    ),
+) -> list[GraphHistoryEvent]:
+    """Return the history of the node associated with the provided ID."""
+    return db_history.get_node_history(node_id)
 
 
 ### /edges/ ###
@@ -245,10 +343,12 @@ def update_node(
 
 @app.get("/edges")
 def get_edge_list(
-    db: GraphDatabaseInterface = Depends(get_graph_db_connection),
+    db_history: GraphHistoryRelationalInterface = Depends(
+        get_graph_history_db_connection
+    ),
 ) -> list[EdgeBase]:
     """Return all edges in the database."""
-    return db.get_edge_list()
+    return db_history.get_edge_list()
 
 
 @app.post("/edges/find")
@@ -256,10 +356,14 @@ def find_edges(
     source_id: NodeId = None,
     target_id: NodeId = None,
     edge_type: EdgeType = None,
-    db: GraphDatabaseInterface = Depends(get_graph_db_connection),
+    db_history: GraphHistoryRelationalInterface = Depends(
+        get_graph_history_db_connection
+    ),
 ) -> list[EdgeBase]:
     """Return the edge associated with the provided ID."""
-    return db.find_edges(source_id=source_id, target_id=target_id, edge_type=edge_type)
+    return db_history.find_edges(
+        source_id=source_id, target_id=target_id, edge_type=edge_type
+    )
 
 
 ### /edge/ ###
@@ -269,18 +373,28 @@ def find_edges(
 def get_edge(
     source_id: NodeId,
     target_id: NodeId,
-    db: GraphDatabaseInterface = Depends(get_graph_db_connection),
+    db_history: GraphHistoryRelationalInterface = Depends(
+        get_graph_history_db_connection
+    ),
 ) -> EdgeBase:
     """Return the edge associated with the provided ID."""
-    return db.get_edge(source_id, target_id)
+    return db_history.get_edge(source_id, target_id)
 
 
 @app.post("/edge", status_code=201)
 def create_edge(
-    edge: EdgeBase, db: GraphDatabaseInterface = Depends(get_graph_db_connection)
+    edge: EdgeBase,
+    db_graph: GraphDatabaseInterface | None = Depends(get_graph_db_connection),
+    db_history: GraphHistoryRelationalInterface = Depends(
+        get_graph_history_db_connection
+    ),
+    user: UserRead = Depends(get_current_user),
 ) -> EdgeBase:
     """Create an edge."""
-    return db.create_edge(edge)
+    out_edge = db_history.create_edge(edge, username=user.username)
+    if db_graph is not None:
+        db_graph.create_edge(edge)
+    return out_edge
 
 
 @app.delete("/edge/{source_id}/{target_id}")
@@ -288,18 +402,44 @@ def delete_edge(
     source_id: NodeId,
     target_id: NodeId,
     edge_type: EdgeType | None = None,
-    db: GraphDatabaseInterface = Depends(get_graph_db_connection),
+    db_graph: GraphDatabaseInterface | None = Depends(get_graph_db_connection),
+    db_history: GraphHistoryRelationalInterface = Depends(
+        get_graph_history_db_connection
+    ),
+    user: UserRead = Depends(get_current_user),
 ):
     """Delete the edge between two nodes and for an optional edge_type."""
-    db.delete_edge(source_id, target_id, edge_type)
+    db_history.delete_edge(source_id, target_id, edge_type, username=user.username)
+    if db_graph is not None:
+        db_graph.delete_edge(source_id, target_id, edge_type)
 
 
 @app.put("/edge")
 def update_edge(
-    edge: EdgeBase, db: GraphDatabaseInterface = Depends(get_graph_db_connection)
+    edge: EdgeBase,
+    db_graph: GraphDatabaseInterface | None = Depends(get_graph_db_connection),
+    db_history: GraphHistoryRelationalInterface = Depends(
+        get_graph_history_db_connection
+    ),
+    user: UserRead = Depends(get_current_user),
 ) -> EdgeBase:
     """Update the properties of an edge."""
-    return db.update_edge(edge)
+    out_edge = db_history.update_edge(edge, username=user.username)
+    if db_graph is not None:
+        db_graph.update_edge(edge)
+    return out_edge
+
+
+@app.get("/edge/{source_id}/{target_id}/history")
+def get_edge_history(
+    source_id: NodeId,
+    target_id: NodeId,
+    db_history: GraphHistoryRelationalInterface = Depends(
+        get_graph_history_db_connection
+    ),
+) -> list[GraphHistoryEvent]:
+    """Return the history of the edge associated with the provided source and target IDs."""
+    return db_history.get_edge_history(source_id, target_id)
 
 
 ### others ###

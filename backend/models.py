@@ -1,6 +1,7 @@
 import warnings
 from typing import Annotated, Dict, Any
 from enum import Enum
+import datetime
 
 from pydantic import model_validator
 from fastapi import Query
@@ -287,6 +288,11 @@ class User(SQLModel, table=True):
     )
 
 
+class UserRead(SQLModel):
+    username: str
+    preferences: Dict[str, Any] | None = Field(default_factory=dict)
+
+
 class UserCreate(SQLModel):
     username: str = Field(..., min_length=3)
     password: str = Field(..., min_length=6)
@@ -299,6 +305,38 @@ class UserCreate(SQLModel):
     )
 
 
-class UserRead(SQLModel):
-    username: str
-    preferences: Dict[str, Any] | None = Field(default_factory=dict)
+class EntityState(str, Enum):
+    created = "created"
+    updated = "updated"
+    deleted = "deleted"
+
+
+class EntityType(str, Enum):
+    node = "node"
+    edge = "edge"
+
+
+class GraphHistoryEvent(SQLModel, table=True):
+    event_id: int | None = Field(default=None, primary_key=True)
+    timestamp: datetime.datetime = Field(
+        default_factory=lambda: datetime.datetime.now(datetime.timezone.utc),
+        description="Timestamp of the event",
+    )
+    state: EntityState = Field(..., description="State of the entity (created, updated, deleted)")
+    entity_type: EntityType = Field(..., description="Type of entity (node or edge)")
+    node_id: NodeId | None = Field(..., description="ID of the node")
+    source_id: NodeId | None = Field(
+        None, description="Edge's source node ID"
+    )
+    target_id: NodeId | None = Field(
+        None, description="Edge's rarget node ID"
+    )
+    payload: dict | None = Field(
+        default_factory=dict,
+        sa_column=Column(JSON),
+        description="Payload containing the entity's full state",
+    )
+    username: str = Field(
+        ..., description="Username of the user who initiated the event"
+    )
+

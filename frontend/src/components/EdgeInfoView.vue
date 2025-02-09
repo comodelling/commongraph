@@ -37,6 +37,8 @@ import tooltips from "../assets/tooltips.json"; // Add this line
 export default {
   props: {
     edge: Object,
+    sourceId: Number,
+    targetId: Number,
   },
   emits: ["publish-edge"],
   data() {

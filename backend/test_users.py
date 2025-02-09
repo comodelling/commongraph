@@ -3,7 +3,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from main import app
-from database.postgresql import PostgreSQLDB
+from database.postgresql import UserPostgreSQLDB
 
 # Configure test database and secret key
 TEST_DB_URL = "postgresql://postgres:postgres@localhost/testdb"
@@ -15,7 +15,7 @@ client = TestClient(app)
 
 @pytest.fixture(scope="module", autouse=True)
 def reset_db():
-    db = PostgreSQLDB(TEST_DB_URL)
+    db = UserPostgreSQLDB(TEST_DB_URL)
     db.reset_user_table()
     yield
     db.reset_user_table()

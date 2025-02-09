@@ -7,7 +7,6 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - GRAPH_DB_TYPE=${GRAPH_DB_TYPE}
       - DOCKER_ENV=true
       - POSTGRES_DB_URL=postgresql://postgres:postgres@postgres:5432/objectivenet_db
     volumes:

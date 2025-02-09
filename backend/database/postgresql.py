@@ -8,7 +8,7 @@ from fastapi import HTTPException, Query
 
 from .base import (
     UserDatabaseInterface,
-    GraphHistoryDatabaseInterface,
+    GraphHistoryRelationalInterface,
     GraphDatabaseInterface,
 )
 from models import (
@@ -98,7 +98,7 @@ class UserPostgreSQLDB(UserDatabaseInterface):
         SQLModel.metadata.create_all(self.engine)
 
 
-class GraphHistoryPostgreSQLDB(GraphHistoryDatabaseInterface):
+class GraphHistoryPostgreSQLDB(GraphHistoryRelationalInterface):
     def __init__(self, database_url: str):
         super().__init__()
         self.engine = get_engine(database_url)
@@ -142,15 +142,6 @@ class GraphHistoryPostgreSQLDB(GraphHistoryDatabaseInterface):
         self.logger.info(f"Requested revert to event {event_id}")
         raise HTTPException(
             status_code=501, detail="Revert functionality not implemented yet."
-        )
-
-
-class GraphPostgreSQLDB(GraphDatabaseInterface):
-    def __init__(self, database_url: str):
-        super().__init__()
-        self.engine = get_engine(database_url)
-        self.SessionLocal = sessionmaker(
-            autocommit=False, autoflush=False, bind=self.engine
         )
 
     def _to_dict(self, obj) -> dict:

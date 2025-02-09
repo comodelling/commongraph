@@ -2,12 +2,15 @@
 
 ## Database configuration
 
-You can choose between different types of databases to store the underlying graph by modifying the value of `DB_TYPE` inside `backend/.env` configuration file.
-Currently supported database types are: `janusgraph`, `postgresql`.
+
+By default, the app can run simply using a postgresql relational database.
+However, you can also enable a janusgraph graph database on top of the relational database to speed up some queries.
+To do so, just set `ENABLE_GRAPH_DB` to `true` in `backend/.env` configuration file.
+
 
 !!! note
 
-    there is no synchronisation between those different databases, and switching between them will not import the content of the other. For this, you will need to export and import the content using the `network` API.
+    switching between graph database enabled or not might lead to inconsistencies.
 
 
 ## Backend API
@@ -25,7 +28,7 @@ This project uses:
 
 ## Contributing
 
-Looking to file a bug report or a feature request? https://github.com/comodelling/objectivenet/issues
+Looking to file a bug report or a feature request? [https://github.com/comodelling/objectivenet/issues](https://github.com/comodelling/objectivenet/)
 
 You can also contribute to ObjectiveNet by:
 

@@ -32,11 +32,10 @@ if [ "$HELP" = true ] || [ "$INVALID_OPTION" = true ]; then
 fi
 
 DOCKER_COMPOSE_CMD="docker compose -f docker-compose.yaml"
-if [ "$GRAPH_DB_TYPE" = "janusgraph" ]; then
+
+if [ "$ENABLE_GRAPH_DB" = true ]; then
     DOCKER_COMPOSE_CMD="$DOCKER_COMPOSE_CMD -f docker-compose.janusgraph.yaml"
-elif [ "$GRAPH_DB_TYPE" != "postgresql" ]; then
-    echo "Error: Invalid GRAPH_DB_TYPE specified. Use 'janusgraph' or 'postgresql'."
-    exit 1
+    echo "Enabling JanusGraph"
 fi
 
 if [ "$BUILD" = true ]; then

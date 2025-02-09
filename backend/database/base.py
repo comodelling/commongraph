@@ -143,10 +143,46 @@ class GraphDatabaseInterface(ABC, metaclass=LogMeta):
         pass
 
 
-class GraphHistoryDatabaseInterface(ABC):
+class GraphHistoryRelationalInterface(GraphDatabaseInterface):
     def __init__(self):
         self.logger = logging.getLogger(self.__class__.__name__)
 
+    ### some inherited methods have added parameter username
+    @abstractmethod
+    def reset_whole_network(self, username: str) -> None:
+        pass
+
+    @abstractmethod
+    def update_subnet(self, subnet: Subnet, username: str) -> Subnet:
+        pass
+
+    @abstractmethod
+    def create_node(self, node: NodeBase, username: str) -> NodeBase:
+        pass
+
+    @abstractmethod
+    def delete_node(self, node_id: NodeId, username: str) -> None:
+        pass
+
+    @abstractmethod
+    def update_node(self, node: NodeBase, username: str) -> NodeBase:
+        pass
+
+    @abstractmethod
+    def create_edge(self, edge: EdgeBase, username: str) -> EdgeBase:
+        pass
+
+    @abstractmethod
+    def delete_edge(
+        self, source_id: NodeId, target_id: NodeId, edge_type: EdgeType, username: str
+    ) -> None:
+        pass
+
+    @abstractmethod
+    def update_edge(self, edge: EdgeBase, username: str) -> EdgeBase:
+        pass
+
+    ### history-specific methods
     @abstractmethod
     def log_event(self, event) -> object:
         """
@@ -155,21 +191,21 @@ class GraphHistoryDatabaseInterface(ABC):
         pass
 
     @abstractmethod
-    def get_node_history(self, node_id: int) -> list:
+    def get_node_history(self, node_id: NodeId) -> list:
         """
         Retrieve all events for a given entity.
         """
         pass
 
     @abstractmethod
-    def get_edge_history(self, source_id: int, target_id: int) -> list:
+    def get_edge_history(self, source_id: NodeId, target_id: NodeId) -> list:
         """
         Retrieve all events for a given entity.
         """
         pass
 
     @abstractmethod
-    def revert_to_event(self, event_id: int) -> None:
+    def revert_to_event(self, event_id: NodeId) -> None:
         """
         Revert the entity state to a given event.
         """

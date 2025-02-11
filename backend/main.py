@@ -3,6 +3,7 @@ import warnings
 from pathlib import Path as PathlibPath
 from typing import Annotated
 import logging
+import datetime
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, status, Query, Depends, HTTPException
@@ -12,6 +13,7 @@ from models import (
     NodeBase,
     EdgeBase,
     Subnet,
+    NetworkExport,
     NodeType,
     NodeStatus,
     NodeId,
@@ -147,9 +149,12 @@ def get_whole_network(
     db_history: GraphHistoryRelationalInterface = Depends(
         get_graph_history_db_connection
     ),
-) -> Subnet:
+) -> NetworkExport:
     """Return full network of nodes and edges from the database."""
-    return db_history.get_whole_network()
+    out = db_history.get_whole_network().model_dump()
+    out["objectivenet_version"] = __version__
+    out["timestamp"] = datetime.datetime.now().isoformat()
+    return out
 
 
 @app.get("/network/summary")

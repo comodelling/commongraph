@@ -258,6 +258,15 @@ class Subnet(SQLModel):
     edges: list[EdgeBase | dict]
 
 
+class NetworkExport(SQLModel):
+    """Network Export model"""
+
+    objectivenet_version: str
+    timestamp: datetime.datetime
+    nodes: list[NodeBase | dict]
+    edges: list[EdgeBase | dict]
+
+
 class MigrateLabelRequest(SQLModel):
     property_name: str
 
@@ -322,15 +331,13 @@ class GraphHistoryEvent(SQLModel, table=True):
         default_factory=lambda: datetime.datetime.now(datetime.timezone.utc),
         description="Timestamp of the event",
     )
-    state: EntityState = Field(..., description="State of the entity (created, updated, deleted)")
+    state: EntityState = Field(
+        ..., description="State of the entity (created, updated, deleted)"
+    )
     entity_type: EntityType = Field(..., description="Type of entity (node or edge)")
     node_id: NodeId | None = Field(..., description="ID of the node")
-    source_id: NodeId | None = Field(
-        None, description="Edge's source node ID"
-    )
-    target_id: NodeId | None = Field(
-        None, description="Edge's rarget node ID"
-    )
+    source_id: NodeId | None = Field(None, description="Edge's source node ID")
+    target_id: NodeId | None = Field(None, description="Edge's rarget node ID")
     payload: dict | None = Field(
         default_factory=dict,
         sa_column=Column(JSON),
@@ -339,4 +346,3 @@ class GraphHistoryEvent(SQLModel, table=True):
     username: str = Field(
         ..., description="Username of the user who initiated the event"
     )
-

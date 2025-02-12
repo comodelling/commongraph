@@ -236,6 +236,9 @@ class GraphHistoryPostgreSQLDB(GraphHistoryRelationalInterface):
         mapping: dict[int, int] = {}
         nodes_out = []
         for node in subnet.nodes:
+            if not isinstance(node, NodeBase):
+                self.logger.error(f"Invalid node: {node}, ignoring it.")
+                continue
             try:
                 # Check if the node exists
                 existing_node = self.get_node(node.node_id)
@@ -249,7 +252,13 @@ class GraphHistoryPostgreSQLDB(GraphHistoryRelationalInterface):
 
         edges_out = []
         for edge in subnet.edges:
-            # If the source or target was created and mapped, update them.
+            if (
+                not isinstance(edge, EdgeBase)
+                or not hasattr(edge, "source")
+                or not hasattr(edge, "target")
+            ):
+                self.logger.error(f"Invalid edge: {edge}, ignoring it.")
+                continue
             if edge.source in mapping:
                 edge.source = mapping[edge.source]
             if edge.target in mapping:

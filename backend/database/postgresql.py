@@ -286,6 +286,8 @@ class GraphHistoryPostgreSQLDB(GraphHistoryRelationalInterface):
             tgt = edge.target
             if src in adjacency:
                 adjacency[src].add(tgt)
+            if tgt in adjacency:
+                adjacency[tgt].add(src)  # Add reverse direction
 
         visited = set()
         queue = [(node_id, 0)]

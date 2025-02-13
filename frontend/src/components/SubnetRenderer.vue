@@ -990,4 +990,12 @@ onEdgeMouseLeave(({ edge }) => {
   width: 10px; /* Icon size */
   height: 10px;
 }
+.subnet-renderer {
+  width: 100%; /* Ensure it fits inside the parent */
+  height: 99.5%;
+  min-height: 300px;
+  min-width: 300px;
+  /* overflow-y: hidden; */
+  overflow-x: auto;
+}
 </style>

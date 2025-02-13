@@ -77,11 +77,6 @@ export default {
     },
   },
   methods: {
-    getCurrentTab() {
-      if (this.$route.path.endsWith("/edit")) return "edit";
-      if (this.$route.path.endsWith("/history")) return "history";
-      return "view";
-    },
     switchTab(tab) {
       if (this.currentTab === tab) return;
       this.currentTab = tab;

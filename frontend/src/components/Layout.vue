@@ -4,6 +4,10 @@
     <div class="content">
       <router-view></router-view>
     </div>
+    <!-- New pane for rating -->
+    <div class="rating-pane">
+      <router-view name="rating"></router-view>
+    </div>
   </div>
 </template>
 
@@ -11,12 +15,9 @@
 import SideMenu from "./SideMenu.vue";
 
 export default {
-  components: {
-    SideMenu,
-  },
+  components: { SideMenu },
   computed: {
     isFocused() {
-      // Uses a condition to determine if we're in a focused state
       return ["NodeView", "NodeEdit", "EdgeView", "EdgeEdit"].includes(
         this.$route.name,
       );
@@ -34,20 +35,14 @@ export default {
 }
 
 .content {
-  display: flex;
-  flex-grow: 1;
+  flex: 1;
   margin: 2px auto;
   padding: 3px;
   border: 1px solid var(--border-color);
   border-radius: 5px;
-  max-height: 100%;
-  /* Enable vertical scrolling */
-  overflow-y: auto;
-
-  /* align-items: center; */
+  /* max-height: 90%; */
+  /* overflow-y: auto; */
   justify-content: center;
-  /* width: 70vw; ensures full width for left/right centering */
-  /* height: 80vh; */
 }
 
 .full-width {

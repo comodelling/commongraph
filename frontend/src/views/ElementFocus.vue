@@ -25,7 +25,11 @@
 
       <template v-if="isNode && !isBrandNewNode">
         <div class="card">
-          <ElementRating :element="{ node_id: nodeId }" property="support" />
+          <ElementRating
+            :key="node ? node.node_id : nodeId"
+            :element="{ node_id: node ? node.node_id : nodeId }"
+            property="support"
+          />
         </div>
       </template>
       <template v-else-if="isEdge">
@@ -35,18 +39,30 @@
               property="causal_strength"
             />
           </div> -->
-        <div class="card">
-          <ElementRating
-            :element="{ edge: { source: sourceId, target: targetId } }"
-            property="necessity"
-          />
-        </div>
-        <div class="card">
-          <ElementRating
-            :element="{ edge: { source: sourceId, target: targetId } }"
-            property="sufficiency"
-          />
-        </div>
+        <ElementRating
+          :key="
+            edge ? `${edge.source}-${edge.target}` : `${sourceId}-${targetId}`
+          "
+          :element="{
+            edge: edge
+              ? { source: edge.source, target: edge.target }
+              : { source: sourceId, target: targetId },
+          }"
+          property="necessity"
+        />
+        <ElementRating
+          :key="
+            edge
+              ? `${edge.source}-${edge.target}-sufficiency`
+              : `${sourceId}-${targetId}-sufficiency`
+          "
+          :element="{
+            edge: edge
+              ? { source: edge.source, target: edge.target }
+              : { source: sourceId, target: targetId },
+          }"
+          property="sufficiency"
+        />
       </template>
     </div>
 

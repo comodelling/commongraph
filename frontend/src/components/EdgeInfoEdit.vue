@@ -140,7 +140,7 @@ export default {
       // this.editedEdge.cprob = this.editedEdge.cprob / 100;
       console.log("submitting ", this.editedEdge);
 
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("authToken");
 
       let response;
       try {

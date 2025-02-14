@@ -275,7 +275,7 @@ export default {
           delete this.editedNode.node_id;
           console.log("Submitting node for creation:", this.editedNode);
 
-          const token = localStorage.getItem("token");
+          const token = localStorage.getItem("authToken");
           const response = await axios.post(
             `${import.meta.env.VITE_BACKEND_URL}/node`,
             this.editedNode,

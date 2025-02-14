@@ -81,10 +81,8 @@ class NodeBase(SQLModel):
     tags: list[str] | None = Field(default_factory=list)
     references: list[str] | None = Field(default_factory=list, alias="references")
 
-    # measures
-    support: LikertScale | None = None
-
     # deprecated fields
+    support: LikertScale | None = Field(None, exclude=True)
     grade: LikertScale | None = Field(None, exclude=True)
     gradable: bool | None = Field(None, exclude=True)
     proponents: list[str] | None = Field(default_factory=list, exclude=True)
@@ -174,16 +172,13 @@ class EdgeBase(SQLModel):
     references: list[str] | None = Field(default_factory=list)
     description: str | None = None
 
-    # measures
-    causal_strength: Proba | None = None
-    causal_strength_rating: LikertScale | None = None
-    necessity: Proba | None = None
-    neccessity_rating: LikertScale | None = None
-    sufficiency: Proba | None = None
-    sufficiency_rating: LikertScale | None = None
-
     # deprecated
-    # now in sufficiency for 'imply' and necessity for 'require'
+    causal_strength: Proba | None = Field(None, exclude=True)
+    causal_strength_rating: LikertScale | None = Field(None, exclude=True)
+    necessity: Proba | None = Field(None, exclude=True)
+    neccessity_rating: LikertScale | None = Field(None, exclude=True)
+    sufficiency: Proba | None = Field(None, exclude=True)
+    sufficiency_rating: LikertScale | None = Field(None, exclude=True)
     cprob: Proba | None = Field(None, exclude=True)
     source_from_ui: int | None = Field(None, exclude=True)
     target_from_ui: int | None = Field(None, exclude=True)
@@ -276,6 +271,7 @@ class User(SQLModel, table=True):
     User model for handling user data in the relational database.
     """
 
+    __table_args__ = {"extend_existing": True}
     username: str = Field(
         ...,
         primary_key=True,
@@ -343,6 +339,55 @@ class GraphHistoryEvent(SQLModel, table=True):
         sa_column=Column(JSON),
         description="Payload containing the entity's full state",
     )
-    username: str = Field(
-        ..., description="Username of the user who initiated the event"
+    username: str = Field(..., description="Username of the user who rated the entity")
+
+    @model_validator(mode="after")
+    def check_entity_type_fields(
+        cls, values: "GraphHistoryEvent"
+    ) -> "GraphHistoryEvent":
+        if values.entity_type == EntityType.node and values.node_id is None:
+            raise ValueError("For entity_type 'node', node_id must be provided.")
+        if values.entity_type == EntityType.edge and (
+            values.source_id is None or values.target_id is None
+        ):
+            raise ValueError(
+                "For entity_type 'edge', both source_id and target_id must be provided."
+            )
+        return values
+
+
+class RatingType(str, Enum):
+    support = "support"
+    causal_strength = "causal_strength"
+    necessity = "necessity"
+    sufficiency = "sufficiency"
+
+
+class RatingEvent(SQLModel, table=True):
+    """RatingEvent model"""
+
+    __table_args__ = {"extend_existing": True}
+    event_id: int | None = Field(default=None, primary_key=True)
+    entity_type: EntityType = Field(..., description="Type of entity (node or edge)")
+    node_id: NodeId | None = Field(..., description="ID of the node")
+    source_id: NodeId | None = Field(None, description="Edge's source node ID")
+    target_id: NodeId | None = Field(None, description="Edge's rarget node ID")
+    rating_type: str = Field(..., description="Type of rating")
+    rating: LikertScale = Field(..., description="Rating value")
+    timestamp: datetime.datetime = Field(
+        default_factory=lambda: datetime.datetime.now(datetime.timezone.utc),
+        description="Timestamp of the rating",
     )
+    username: str = Field(..., description="Username of the user who rated the entity")
+
+    @model_validator(mode="after")
+    def check_entity_type_fields(cls, values: "RatingEvent") -> "RatingEvent":
+        if values.entity_type == EntityType.node and values.node_id is None:
+            raise ValueError("For entity_type 'node', node_id must be provided.")
+        if values.entity_type == EntityType.edge and (
+            values.source_id is None or values.target_id is None
+        ):
+            raise ValueError(
+                "For entity_type 'edge', both source_id and target_id must be provided."
+            )
+        return values

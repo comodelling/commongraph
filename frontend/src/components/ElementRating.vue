@@ -70,7 +70,9 @@
 </template>
 
 <script>
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
+import axios from "axios";
+
 export default {
   props: {
     element: {
@@ -85,15 +87,93 @@ export default {
   },
   setup(props) {
     const currentRating = ref(null);
-    const rate = (val) => {
-      currentRating.value = val;
-      // Emitting or API call can go here if needed.
+    // Retrieve auth token from localStorage or from your auth store
+    const token = localStorage.getItem("authToken"); // adjust as needed
+
+    // Fetch user's rating when component mounts
+    const fetchRating = async () => {
+      if (!token) return; // not logged in
+      try {
+        let response;
+        if (props.element && props.element.node_id) {
+          response = await axios.get(
+            `${import.meta.env.VITE_BACKEND_URL}/rating/node/${props.element.node_id}`,
+
+            {
+              params: { rating_type: props.property },
+              headers: { Authorization: `Bearer ${token}` },
+            },
+          );
+        } else if (
+          props.element &&
+          props.element.edge &&
+          props.element.edge.source &&
+          props.element.edge.target
+        ) {
+          response = await axios.get(
+            `${import.meta.env.VITE_BACKEND_URL}/rating/edge`,
+            {
+              params: {
+                source_id: props.element.edge.source,
+                target_id: props.element.edge.target,
+                rating_type: props.property,
+              },
+              headers: { Authorization: `Bearer ${token}` },
+            },
+          );
+        }
+        if (response && response.data) {
+          currentRating.value = response.data.rating;
+        }
+      } catch (error) {
+        console.error("Failed to fetch rating:", error);
+      }
     };
-    return {
-      currentRating,
-      rate,
-      property: props.property,
+
+    // Log rating when a button is clicked
+    const rate = async (val) => {
+      currentRating.value = val; // update local state optimistically
+      if (!token) {
+        alert("You must be logged in to rate.");
+        return;
+      }
+      try {
+        const ratingData = {
+          rating_type: props.property,
+          rating: val,
+        };
+        // Add element identifiers
+        if (props.element && props.element.node_id) {
+          ratingData.node_id = props.element.node_id;
+          ratingData.entity_type = "node";
+        } else if (
+          props.element &&
+          props.element.edge &&
+          props.element.edge.source &&
+          props.element.edge.target
+        ) {
+          ratingData.source_id = props.element.edge.source;
+          ratingData.target_id = props.element.edge.target;
+          ratingData.entity_type = "edge";
+          ratingData.rating_type = props.property; // necessity or sufficiency
+        }
+        const response = await axios.post(
+          `${import.meta.env.VITE_BACKEND_URL}/rating/log`,
+          ratingData,
+          { headers: { Authorization: `Bearer ${token}` } },
+        );
+        // Update rating state with backend response
+        currentRating.value = response.data.rating;
+      } catch (error) {
+        console.error("Failed to submit rating:", error);
+      }
     };
+
+    onMounted(() => {
+      fetchRating();
+    });
+
+    return { currentRating, rate, property: props.property };
   },
 };
 </script>

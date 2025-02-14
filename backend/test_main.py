@@ -373,10 +373,6 @@ def test_create_update_and_delete_edge(initial_node, client):
         },
     )
     assert response.status_code == 200, print(response.json())
-    response_data = response.json()
-    assert (
-        response_data["sufficiency"] == 0.5
-    ), f"Response JSON: sufficiency = {response_data['sufficiency']} cprob = {response_data['cprob']}"
 
     response = client.delete(
         f"/edge/{initial_node['node_id']}/{initial_node['node_id']}",

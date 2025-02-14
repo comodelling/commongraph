@@ -12,6 +12,8 @@ from models import (
     NodeId,
     NodeType,
     EdgeType,
+    RatingEvent,
+    LikertScale,
 )
 
 
@@ -65,6 +67,46 @@ class UserDatabaseInterface(ABC):
 
     @abstractmethod
     def reset_user_table(self):
+        pass
+
+
+class RatingHistoryRelationalInterface(ABC):
+    def __init__(self):
+        self.logger = logging.getLogger(self.__class__.__name__)
+
+    @abstractmethod
+    def log_rating(self, rating: RatingEvent) -> RatingEvent:
+        """
+        Log a rating for a given entity and user.
+        """
+        pass
+
+    def get_node_rating(self, node_id: NodeId, username: str) -> RatingEvent | None:
+        """
+        Retrieve the rating of a given node by a given user.
+        """
+        pass
+
+    def get_edge_rating(
+        self, source_id: NodeId, target_id: NodeId, username: str
+    ) -> RatingEvent | None:
+        """
+        Retrieve the rating of a given edge by a given user.
+        """
+        pass
+
+    def get_node_median_rating(self, node_id: NodeId) -> LikertScale | None:
+        """
+        Retrieve the median rating (LikertScale) of a given node.
+        """
+        pass
+
+    def get_edge_median_rating(
+        self, source_id: NodeId, target_id: NodeId
+    ) -> LikertScale | None:
+        """
+        Retrieve the median rating (LikertScale) of a given edge.
+        """
         pass
 
 
@@ -147,7 +189,7 @@ class GraphHistoryRelationalInterface(GraphDatabaseInterface):
     def __init__(self):
         self.logger = logging.getLogger(self.__class__.__name__)
 
-    ### some inherited methods have added parameter username
+    # some inherited methods have added parameter username
     @abstractmethod
     def reset_whole_network(self, username: str) -> None:
         pass
@@ -182,7 +224,7 @@ class GraphHistoryRelationalInterface(GraphDatabaseInterface):
     def update_edge(self, edge: EdgeBase, username: str) -> EdgeBase:
         pass
 
-    ### history-specific methods
+    # history-specific methods
     @abstractmethod
     def log_event(self, event) -> object:
         """

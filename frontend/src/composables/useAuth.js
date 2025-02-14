@@ -1,7 +1,7 @@
 import { reactive, computed } from "vue";
 
 const state = reactive({
-  token: localStorage.getItem("token") || null,
+  token: localStorage.getItem("authToken") || null,
 });
 
 export function useAuth() {
@@ -9,12 +9,12 @@ export function useAuth() {
 
   const setToken = (token) => {
     state.token = token;
-    localStorage.setItem("token", token);
+    localStorage.setItem("authToken", token);
   };
 
   const clearToken = () => {
     state.token = null;
-    localStorage.removeItem("token");
+    localStorage.removeItem("authToken");
   };
 
   return { isLoggedIn, setToken, clearToken };

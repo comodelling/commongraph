@@ -59,32 +59,6 @@
       + Description
     </button>
 
-    <div class="field">
-      <strong :title="tooltips.edge.causal_strength_rating"
-        >Causal Strength:</strong
-      >
-      <div class="field-content">
-        <select v-model="editedEdge.causal_strength_rating" ref="causalInput">
-          <option value="" :title="tooltips.edge.unrated"></option>
-          <option value="A" :title="tooltips.edge.A">
-            A ({{ tooltips.edge.A }})
-          </option>
-          <option value="B" :title="tooltips.edge.B">
-            B ({{ tooltips.edge.B }})
-          </option>
-          <option value="C" :title="tooltips.edge.C">
-            C ({{ tooltips.edge.C }})
-          </option>
-          <option value="D" :title="tooltips.edge.D">
-            D ({{ tooltips.edge.D }})
-          </option>
-          <option value="E" :title="tooltips.edge.E">
-            E ({{ tooltips.edge.E }})
-          </option>
-        </select>
-      </div>
-    </div>
-
     <button class="submit-button" @click="submit">Submit</button>
   </div>
 </template>
@@ -165,16 +139,6 @@ export default {
       );
       // this.editedEdge.cprob = this.editedEdge.cprob / 100;
       console.log("submitting ", this.editedEdge);
-
-      console.log(
-        "current edited support:",
-        this.editedEdge.causal_strength_rating,
-      );
-      this.editedEdge.causal_strength_rating =
-        this.editedEdge.causal_strength_rating || null;
-      if (this.editedEdge.causal_strength_rating === "") {
-        this.editedEdge.causal_strength_rating = null;
-      }
 
       const token = localStorage.getItem("token");
 

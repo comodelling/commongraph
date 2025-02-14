@@ -20,15 +20,6 @@
     <strong :title="tooltips.edge.description">Description:</strong><br />
     <p>{{ localEdge.description ? localEdge.description : "" }}</p>
   </div>
-
-  <strong :title="tooltips.edge.causal_strength_rating">
-    Causal Strength:</strong
-  >
-  {{
-    localEdge.causal_strength_rating
-      ? localEdge.causal_strength_rating + " (" + edgeCausalRatingTooltip + ")"
-      : ""
-  }}<br />
 </template>
 
 <script>
@@ -56,12 +47,6 @@ export default {
     },
     edgeTypeTooltip() {
       return this.tooltips.edge[this.edge.edge_type] || this.tooltips.edge.type;
-    },
-    edgeCausalRatingTooltip() {
-      return (
-        this.tooltips.edge[this.edge.causal_strength_rating] ||
-        this.tooltips.edge.causal_strength_rating
-      );
     },
   },
   watch: {

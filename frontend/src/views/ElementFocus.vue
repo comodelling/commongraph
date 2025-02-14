@@ -22,17 +22,32 @@
       </div>
 
       <!-- Second card: show rating for node or edge -->
-      <div class="card">
-        <template v-if="isNode">
-          <ElementRating :element="{ node_id: nodeId }" />
-        </template>
-        <template v-else-if="isEdge">
-          <!-- For example, pass an object for edge rating -->
+
+      <template v-if="isNode && !isBrandNewNode">
+        <div class="card">
+          <ElementRating :element="{ node_id: nodeId }" property="support" />
+        </div>
+      </template>
+      <template v-else-if="isEdge">
+        <!-- <div class="card">
+            <ElementRating
+              :element="{ edge: { source: sourceId, target: targetId } }"
+              property="causal_strength"
+            />
+          </div> -->
+        <div class="card">
           <ElementRating
             :element="{ edge: { source: sourceId, target: targetId } }"
+            property="necessity"
           />
-        </template>
-      </div>
+        </div>
+        <div class="card">
+          <ElementRating
+            :element="{ edge: { source: sourceId, target: targetId } }"
+            property="sufficiency"
+          />
+        </div>
+      </template>
     </div>
 
     <div class="right-panel">
@@ -238,7 +253,7 @@ export default {
   display: flex;
   height: 100%;
   /* flex-grow: 1; */
-  border: 1px solid blue;
+  /* border: 1px solid blue; */
 }
 
 /* Left panel holds the info and rating cards */

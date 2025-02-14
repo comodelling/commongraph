@@ -16,6 +16,12 @@
   --border-color: #ccc;
   --background-color: white;
   --text-color: black;
+
+  --rating-A-color: #006d2c;
+  --rating-B-color: #74c476;
+  --rating-C-color: #777;
+  --rating-D-color: #fb6a4a;
+  --rating-E-color: #a50f15;
 }
 
 body.dark {

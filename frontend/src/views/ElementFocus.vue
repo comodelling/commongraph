@@ -39,30 +39,34 @@
               property="causal_strength"
             />
           </div> -->
-        <ElementRating
-          :key="
-            edge ? `${edge.source}-${edge.target}` : `${sourceId}-${targetId}`
-          "
-          :element="{
-            edge: edge
-              ? { source: edge.source, target: edge.target }
-              : { source: sourceId, target: targetId },
-          }"
-          property="necessity"
-        />
-        <ElementRating
-          :key="
-            edge
-              ? `${edge.source}-${edge.target}-sufficiency`
-              : `${sourceId}-${targetId}-sufficiency`
-          "
-          :element="{
-            edge: edge
-              ? { source: edge.source, target: edge.target }
-              : { source: sourceId, target: targetId },
-          }"
-          property="sufficiency"
-        />
+        <div class="card">
+          <ElementRating
+            :key="
+              edge ? `${edge.source}-${edge.target}` : `${sourceId}-${targetId}`
+            "
+            :element="{
+              edge: edge
+                ? { source: edge.source, target: edge.target }
+                : { source: sourceId, target: targetId },
+            }"
+            property="necessity"
+          />
+        </div>
+        <div class="card">
+          <ElementRating
+            :key="
+              edge
+                ? `${edge.source}-${edge.target}-sufficiency`
+                : `${sourceId}-${targetId}-sufficiency`
+            "
+            :element="{
+              edge: edge
+                ? { source: edge.source, target: edge.target }
+                : { source: sourceId, target: targetId },
+            }"
+            property="sufficiency"
+          />
+        </div>
       </template>
     </div>
 

@@ -64,9 +64,10 @@
 </template>
 
 <script>
-import axios from "axios";
+import api from "../axios";
 import _ from "lodash";
 import tooltips from "../assets/tooltips.json"; // Add this line
+import { useAuth } from "../composables/useAuth";
 
 export default {
   props: {
@@ -75,10 +76,6 @@ export default {
   emits: ["publish-edge"],
   data() {
     const editedEdge = _.cloneDeep(this.edge);
-    // editedEdge.cprob =
-    //   this.edge.cprob !== undefined && this.edge.cprob !== null
-    //     ? this.edge.cprob * 100
-    //     : undefined;
     return {
       editingField: null,
       editedEdge: editedEdge,
@@ -134,26 +131,27 @@ export default {
       });
     },
     async submit() {
+      const { getAccessToken } = useAuth();
+      const token = getAccessToken();
+
       this.editedEdge.references = this.editedEdge.references.filter(
         (ref) => ref.trim() !== "",
       );
       // this.editedEdge.cprob = this.editedEdge.cprob / 100;
       console.log("submitting ", this.editedEdge);
 
-      const token = localStorage.getItem("authToken");
-
       let response;
       try {
         if (this.editedEdge.new) {
           delete this.edge.new;
-          response = await axios.post(
+          response = await api.post(
             `${import.meta.env.VITE_BACKEND_URL}/edge/`,
             this.editedEdge,
             token ? { headers: { Authorization: `Bearer ${token}` } } : {},
           );
           console.log("Created edge returned:", response.data);
         } else {
-          response = await axios.put(
+          response = await api.put(
             `${import.meta.env.VITE_BACKEND_URL}/edge`,
             this.editedEdge,
             token ? { headers: { Authorization: `Bearer ${token}` } } : {},

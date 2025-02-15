@@ -1,21 +1,35 @@
 import { reactive, computed } from "vue";
 
 const state = reactive({
-  token: localStorage.getItem("authToken") || null,
+  accessToken: localStorage.getItem("accessToken") || null,
+  refreshToken: localStorage.getItem("refreshToken") || null,
 });
 
 export function useAuth() {
-  const isLoggedIn = computed(() => !!state.token);
+  const isLoggedIn = computed(() => !!state.accessToken);
 
-  const setToken = (token) => {
-    state.token = token;
-    localStorage.setItem("authToken", token);
+  const setTokens = ({ accessToken, refreshToken }) => {
+    state.accessToken = accessToken;
+    state.refreshToken = refreshToken;
+    localStorage.setItem("accessToken", accessToken);
+    localStorage.setItem("refreshToken", refreshToken);
   };
 
-  const clearToken = () => {
-    state.token = null;
-    localStorage.removeItem("authToken");
+  const clearTokens = () => {
+    state.accessToken = null;
+    state.refreshToken = null;
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
   };
 
-  return { isLoggedIn, setToken, clearToken };
+  const getAccessToken = () => state.accessToken;
+  const getRefreshToken = () => state.refreshToken;
+
+  return {
+    isLoggedIn,
+    setTokens,
+    clearTokens,
+    getAccessToken,
+    getRefreshToken,
+  };
 }

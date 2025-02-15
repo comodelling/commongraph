@@ -17,7 +17,7 @@
 
 <script>
 import { ref } from "vue";
-import axios from "axios";
+import api from "../axios";
 import { useRoute } from "vue-router";
 import { useRouter } from "vue-router";
 
@@ -33,7 +33,7 @@ export default {
     const resetPassword = async () => {
       error.value = null;
       try {
-        const response = await axios.post(
+        const response = await api.post(
           `${import.meta.env.VITE_BACKEND_URL}/auth/reset-password`,
           { token, new_password: newPassword.value },
         );

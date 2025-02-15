@@ -71,7 +71,8 @@
 
 <script>
 import { ref, onMounted } from "vue";
-import axios from "axios";
+import api from "../axios";
+import { useAuth } from "../composables/useAuth";
 
 export default {
   props: {
@@ -88,7 +89,9 @@ export default {
   setup(props) {
     const currentRating = ref(null);
     // Retrieve auth token from localStorage or from your auth store
-    const token = localStorage.getItem("authToken"); // adjust as needed
+    const { getAccessToken } = useAuth();
+
+    const token = getAccessToken(); // adjust as needed
 
     // Fetch user's rating when component mounts
     const fetchRating = async () => {
@@ -96,7 +99,7 @@ export default {
       try {
         let response;
         if (props.element && props.element.node_id) {
-          response = await axios.get(
+          response = await api.get(
             `${import.meta.env.VITE_BACKEND_URL}/rating/node/${props.element.node_id}`,
 
             {
@@ -110,7 +113,7 @@ export default {
           props.element.edge.source &&
           props.element.edge.target
         ) {
-          response = await axios.get(
+          response = await api.get(
             `${import.meta.env.VITE_BACKEND_URL}/rating/edge`,
             {
               params: {
@@ -157,7 +160,7 @@ export default {
           ratingData.entity_type = "edge";
           ratingData.rating_type = props.property; // necessity or sufficiency
         }
-        const response = await axios.post(
+        const response = await api.post(
           `${import.meta.env.VITE_BACKEND_URL}/rating/log`,
           ratingData,
           { headers: { Authorization: `Bearer ${token}` } },

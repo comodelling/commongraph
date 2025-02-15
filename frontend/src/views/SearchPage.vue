@@ -69,7 +69,7 @@
 </template>
 
 <script>
-import axios from "axios";
+import api from "../axios";
 import qs from "qs";
 import { useRouter, useRoute } from "vue-router";
 import SearchBar from "../components/SearchBar.vue";
@@ -180,7 +180,7 @@ export default {
 
         const startTime = performance.now();
 
-        const response = await axios.get(
+        const response = await api.get(
           `${import.meta.env.VITE_BACKEND_URL}/nodes`,
           {
             params: {

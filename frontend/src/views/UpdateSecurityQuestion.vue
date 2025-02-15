@@ -43,8 +43,9 @@
 
 <script>
 import { ref } from "vue";
-import axios from "axios";
+import api from "../axios";
 import { useRouter } from "vue-router";
+import { useAuth } from "../composables/useAuth";
 
 export default {
   setup() {
@@ -53,7 +54,8 @@ export default {
     const error = ref(null);
     const success = ref(null);
     const router = useRouter();
-    const token = localStorage.getItem("authToken");
+    const { getAccessToken } = useAuth();
+    const token = getAccessToken();
 
     const updateSecurityQuestion = async () => {
       error.value = null;
@@ -74,7 +76,7 @@ export default {
           security_question: securityQuestion.value,
           security_answer: securityAnswer.value,
         };
-        const response = await axios.patch(
+        const response = await api.patch(
           `${import.meta.env.VITE_BACKEND_URL}/user/security-settings`,
           security_settings,
           { headers: { Authorization: `Bearer ${token}` } },

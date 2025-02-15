@@ -26,23 +26,24 @@
 
 <script>
 import { ref, onMounted } from "vue";
-import axios from "axios";
+import api from "../axios";
 import router from "../router";
 import { useAuth } from "../composables/useAuth";
 
 export default {
-  setup(props, { attrs }) {
-    const { setToken } = useAuth();
+  setup() {
+    const { setTokens } = useAuth();
     const username = ref("");
     const password = ref("");
     const error = ref(null);
     const infoMessage = ref(null);
+    const { getAccessToken } = useAuth();
 
     onMounted(() => {
       if (router.currentRoute.value.query.message) {
         infoMessage.value = router.currentRoute.value.query.message;
       }
-      if (localStorage.getItem("authToken")) {
+      if (getAccessToken()) {
         router.push("/settings");
       }
     });
@@ -50,14 +51,20 @@ export default {
     const login = async () => {
       error.value = null;
       try {
-        const response = await axios.post(
+        const response = await api.post(
           `${import.meta.env.VITE_BACKEND_URL}/auth/login`,
           new URLSearchParams({
             username: username.value,
             password: password.value,
           }),
         );
-        setToken(response.data.access_token);
+        // assuming response.data contains both tokens returned from the backend
+        console.log("Login response:", response.data);
+        setTokens({
+          accessToken: response.data.access_token,
+          refreshToken: response.data.refresh_token,
+        });
+        console.log("Access token:", getAccessToken());
         router.push("/settings");
       } catch (err) {
         error.value = "Login failed. Check your credentials.";

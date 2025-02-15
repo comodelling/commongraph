@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import os
 import jwt
 import logging
@@ -19,18 +19,30 @@ router = APIRouter()
 SECRET_KEY = os.getenv("SECRET_KEY", "yourSecretKey")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
+REFRESH_TOKEN_EXPIRE_DAYS = 7
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
 
 
 def create_access_token(data: dict, expires_delta: timedelta = None):
     to_encode = data.copy()
-    expire = datetime.utcnow() + (
+    expire = datetime.now(timezone.utc) + (
         expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     )
     to_encode.update({"exp": expire})
     token = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     logger.debug(f"Access token created for data: {data}")
+    return token
+
+
+def create_refresh_token(data: dict, expires_delta: timedelta = None):
+    to_encode = data.copy()
+    expire = datetime.now(timezone.utc) + (
+        expires_delta or timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+    )
+    to_encode.update({"exp": expire})
+    token = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    logger.debug(f"Refresh token created for data: {data}")
     return token
 
 
@@ -41,6 +53,32 @@ def get_user_db() -> UserDatabaseInterface:
         raise HTTPException(status_code=500, detail="Database URL not configured")
     logger.debug("Creating UserPostgreSQLDB instance")
     return UserPostgreSQLDB(database_url)
+
+
+@router.post("/auth/refresh")
+def refresh_token(
+    token: str = Depends(oauth2_scheme),  # send refresh token as bearer token
+    db: UserDatabaseInterface = Depends(get_user_db),
+):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload.get("sub")
+        if username is None:
+            logger.warning("Refresh token payload does not contain username")
+            raise HTTPException(status_code=401, detail="Invalid token")
+    except jwt.PyJWTError:
+        logger.warning("JWT decode failed during refresh")
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    user = db.get_user(username)
+    if not user:
+        logger.warning(f"User not found during token refresh: {username}")
+        raise HTTPException(status_code=401, detail="User not found")
+
+    new_access_token = create_access_token(data={"sub": username})
+    new_refresh_token = create_refresh_token(data={"sub": username})
+    logger.info(f"New tokens issued for user: {username}")
+    return {"access_token": new_access_token, "refresh_token": new_refresh_token}
 
 
 async def get_current_user(
@@ -92,8 +130,13 @@ def login(
         logger.warning(f"Failed login for user: {form_data.username}")
         raise HTTPException(status_code=400, detail="Incorrect username or password")
     access_token = create_access_token(data={"sub": full_user.username})
-    logger.info(f"Access token issued for user: {full_user.username}")
-    return {"access_token": access_token, "token_type": "bearer"}
+    refresh_token = create_refresh_token(data={"sub": full_user.username})
+    logger.info(f"Access and refresh tokens issued for user: {full_user.username}")
+    return {
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "token_type": "bearer",
+    }
 
 
 @router.get("/user/me", response_model=UserRead)

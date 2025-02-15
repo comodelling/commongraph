@@ -31,7 +31,7 @@
 
 <script>
 import { ref, onMounted, watch } from "vue";
-import axios from "axios";
+import api from "../axios";
 import router from "../router";
 import { useAuth } from "../composables/useAuth";
 
@@ -40,9 +40,9 @@ export default {
     const user = ref({});
     const loading = ref(true);
     const error = ref(null);
-    const { clearToken } = useAuth();
-    const token = localStorage.getItem("authToken");
+    const { getAccessToken, clearTokens } = useAuth();
     const preferredTheme = ref("system");
+    const token = getAccessToken();
 
     const applyTheme = (theme) => {
       if (theme === "system") {
@@ -58,9 +58,10 @@ export default {
     watch(preferredTheme, async (newTheme) => {
       applyTheme(newTheme);
       localStorage.setItem("theme", newTheme);
+
       if (token) {
         try {
-          const response = await axios.patch(
+          const response = await api.patch(
             `${import.meta.env.VITE_BACKEND_URL}/user/preferences`,
             { theme: newTheme },
             { headers: { Authorization: `Bearer ${token}` } },
@@ -76,7 +77,7 @@ export default {
       loading.value = true;
       error.value = null;
       try {
-        const response = await axios.get(
+        const response = await api.get(
           `${import.meta.env.VITE_BACKEND_URL}/user/me`,
           { headers: { Authorization: `Bearer ${token}` } },
         );
@@ -94,7 +95,7 @@ export default {
     };
 
     const logout = () => {
-      clearToken();
+      clearTokens();
       router.push("/login");
     };
 

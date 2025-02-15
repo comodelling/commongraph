@@ -19,18 +19,19 @@
 </template>
 
 <script>
-import axios from "axios";
+import api from "../axios";
 import { useRouter } from "vue-router";
 import { useAuth } from "../composables/useAuth";
 
 export default {
   setup() {
     const router = useRouter();
-    const { isLoggedIn, clearToken } = useAuth();
+    const { isLoggedIn, clearTokens } = useAuth();
+    console.log("isLoggedIn", isLoggedIn);
 
     const fetchRandomNode = async () => {
       try {
-        const response = await axios.get(
+        const response = await api.get(
           `${import.meta.env.VITE_BACKEND_URL}/node/random`,
         );
         const node = response.data;
@@ -55,7 +56,7 @@ export default {
     };
 
     const logout = () => {
-      clearToken();
+      clearTokens();
       router.push("/login");
     };
 

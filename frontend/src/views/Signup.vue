@@ -75,7 +75,7 @@
 
 <script>
 import { ref } from "vue";
-import axios from "axios";
+import api from "../axios";
 import router from "../router";
 
 export default {
@@ -135,7 +135,7 @@ export default {
           ...(email.value && { email: email.value }),
           ...(displayName.value && { display_name: displayName.value }),
         };
-        const response = await axios.post(
+        const response = await api.post(
           `${import.meta.env.VITE_BACKEND_URL}/auth/signup`,
           user_data,
         );

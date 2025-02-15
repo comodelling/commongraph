@@ -85,7 +85,6 @@
 </template>
 
 <script>
-import axios from "axios";
 import NodeInfo from "../components/NodeInfo.vue";
 import EdgeInfo from "../components/EdgeInfo.vue";
 import ElementRating from "../components/ElementRating.vue";
@@ -94,6 +93,11 @@ import {
   formatFlowEdgeProps,
   formatFlowNodeProps,
 } from "../composables/formatFlowComponents";
+import api from "../axios";
+
+// api.get("/user/me")
+//   .then(response => { /* handle response */ })
+//   .catch(error => { /* handle error */ });
 
 export default {
   components: {
@@ -166,7 +170,7 @@ export default {
       console.log("fetchElementAndSubnetData");
       try {
         const seed = this.nodeId || this.sourceId || this.targetId;
-        const response = await axios.get(
+        const response = await api.get(
           `${import.meta.env.VITE_BACKEND_URL}/subnet/${seed}`,
           { params: { levels: 10 } },
         );
@@ -195,7 +199,7 @@ export default {
     },
     async updateNodeFromBackend(node_id) {
       try {
-        const response = await axios.get(
+        const response = await api.get(
           `${import.meta.env.VITE_BACKEND_URL}/node/${node_id}`,
         );
         this.node = response.data || undefined;
@@ -206,7 +210,7 @@ export default {
     },
     async updateEdgeFromBackend(source_id, target_id) {
       try {
-        const response = await axios.get(
+        const response = await api.get(
           `${import.meta.env.VITE_BACKEND_URL}/edge/${source_id}/${target_id}`,
         );
         this.edge = response.data || undefined;

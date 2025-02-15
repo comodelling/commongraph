@@ -1,5 +1,6 @@
 <script setup>
-import axios from "axios";
+import api from "../axios";
+import { useAuth } from "../composables/useAuth";
 import { saveAs } from "file-saver";
 import { nextTick, ref, warn, watch, computed } from "vue";
 import { useRouter, useRoute } from "vue-router";
@@ -18,6 +19,8 @@ import {
   formatFlowEdgeProps,
   formatFlowNodeProps,
 } from "../composables/formatFlowComponents";
+
+const { getAccessToken } = useAuth();
 
 const {
   onInit,
@@ -336,9 +339,9 @@ const onNodesChange = async (changes) => {
       if (isConfirmed) {
         nextChanges.push(change);
         const node_id = change.id;
-        const token = localStorage.getItem("authToken");
+        const token = getAccessToken();
         try {
-          const response = await axios.delete(
+          const response = await api.delete(
             `${import.meta.env.VITE_BACKEND_URL}/node/${node_id}`,
             token ? { headers: { Authorization: `Bearer ${token}` } } : {},
           );
@@ -381,9 +384,9 @@ const onEdgesChange = async (changes) => {
         const source_id = edge.data.source;
         const target_id = edge.data.target;
         const edge_type = edge.data.edge_type;
-        const token = localStorage.getItem("authToken");
+        const token = getAccessToken();
         try {
-          const response = await axios.delete(
+          const response = await api.delete(
             `${import.meta.env.VITE_BACKEND_URL}/edge/${source_id}/${target_id}`,
             { edge_type: edge_type },
             token ? { headers: { Authorization: `Bearer ${token}` } } : {},
@@ -471,7 +474,7 @@ function handleSearch(query) {
     return;
   }
   try {
-    axios
+    api
       .get(`${import.meta.env.VITE_BACKEND_URL}/nodes/`, {
         params: { title: query },
       })

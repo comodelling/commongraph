@@ -157,9 +157,10 @@
 </template>
 
 <script>
-import axios from "axios";
+import api from "../axios";
 import _ from "lodash";
 import tooltips from "../assets/tooltips.json";
+import { useAuth } from "../composables/useAuth";
 
 export default {
   props: {
@@ -224,6 +225,9 @@ export default {
       });
     },
     async submit() {
+      const { getAccessToken } = useAuth();
+      const token = getAccessToken();
+
       const trimmedTitle = this.editedNode.title.trim();
       const trimmedScope = this.editedNode.scope.trim();
       this.editedNode.title = trimmedTitle;
@@ -275,8 +279,7 @@ export default {
           delete this.editedNode.node_id;
           console.log("Submitting node for creation:", this.editedNode);
 
-          const token = localStorage.getItem("authToken");
-          const response = await axios.post(
+          const response = await api.post(
             `${import.meta.env.VITE_BACKEND_URL}/node`,
             this.editedNode,
             token ? { headers: { Authorization: `Bearer ${token}` } } : {},
@@ -301,7 +304,7 @@ export default {
                 edge_type: "imply",
               };
               console.log("Submitting edge for creation:", newEdge);
-              await axios.post(
+              await api.post(
                 `${import.meta.env.VITE_BACKEND_URL}/edge`,
                 newEdge,
                 token ? { headers: { Authorization: `Bearer ${token}` } } : {},
@@ -328,7 +331,7 @@ export default {
         }
       } else {
         try {
-          const response = await axios.put(
+          const response = await api.put(
             `${import.meta.env.VITE_BACKEND_URL}/node`,
             this.editedNode,
           );

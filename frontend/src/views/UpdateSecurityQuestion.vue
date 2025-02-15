@@ -53,7 +53,7 @@ export default {
     const error = ref(null);
     const success = ref(null);
     const router = useRouter();
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("authToken");
 
     const updateSecurityQuestion = async () => {
       error.value = null;

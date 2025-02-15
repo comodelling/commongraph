@@ -1,28 +1,86 @@
 <template>
   <div class="focus">
-    <NodeInfo
-      v-if="nodeId && node"
-      :node="node"
-      @update-node-from-editor="updateNodeFromEditor"
-    />
-    <div v-else-if="nodeId" class="error-message">Node not found</div>
-    <EdgeInfo
-      v-if="sourceId && targetId && edge"
-      :edge="edge"
-      @update-edge-from-editor="updateEdgeFromEditor"
-    />
-    <div v-else-if="sourceId && targetId" class="error-message">
-      Edge not found
+    <div class="left-panel">
+      <!-- Top card: show node info or edge info -->
+      <div class="card">
+        <template v-if="isNode">
+          <NodeInfo
+            v-if="node"
+            :node="node"
+            @update-node-from-editor="updateNodeFromEditor"
+          />
+          <div v-else class="error-message">Node not found</div>
+        </template>
+        <template v-else-if="isEdge">
+          <EdgeInfo
+            v-if="edge"
+            :edge="edge"
+            @update-edge-from-editor="updateEdgeFromEditor"
+          />
+          <div v-else class="error-message">Edge not found</div>
+        </template>
+      </div>
+
+      <!-- Second card: show rating for node or edge -->
+
+      <template v-if="isNode && !isBrandNewNode">
+        <div class="card">
+          <ElementRating
+            :key="node ? node.node_id : nodeId"
+            :element="{ node_id: node ? node.node_id : nodeId }"
+            property="support"
+          />
+        </div>
+      </template>
+      <template v-else-if="isEdge">
+        <!-- <div class="card">
+            <ElementRating
+              :element="{ edge: { source: sourceId, target: targetId } }"
+              property="causal_strength"
+            />
+          </div> -->
+        <div class="card">
+          <ElementRating
+            :key="
+              edge ? `${edge.source}-${edge.target}` : `${sourceId}-${targetId}`
+            "
+            :element="{
+              edge: edge
+                ? { source: edge.source, target: edge.target }
+                : { source: sourceId, target: targetId },
+            }"
+            property="necessity"
+          />
+        </div>
+        <div class="card">
+          <ElementRating
+            :key="
+              edge
+                ? `${edge.source}-${edge.target}-sufficiency`
+                : `${sourceId}-${targetId}-sufficiency`
+            "
+            :element="{
+              edge: edge
+                ? { source: edge.source, target: edge.target }
+                : { source: sourceId, target: targetId },
+            }"
+            property="sufficiency"
+          />
+        </div>
+      </template>
     </div>
-    <SubnetRenderer
-      :data="subnetData"
-      @nodeClick="updateNodeFromBackend"
-      @edgeClick="updateEdgeFromBackend"
-      @newNodeCreated="openNewlyCreatedNode"
-      @newEdgeCreated="openNewlyCreatedEdge"
-      :updatedNode="updatedNode"
-      :updatedEdge="updatedEdge"
-    />
+
+    <div class="right-panel">
+      <SubnetRenderer
+        :data="subnetData"
+        @nodeClick="updateNodeFromBackend"
+        @edgeClick="updateEdgeFromBackend"
+        @newNodeCreated="openNewlyCreatedNode"
+        @newEdgeCreated="openNewlyCreatedEdge"
+        :updatedNode="updatedNode"
+        :updatedEdge="updatedEdge"
+      />
+    </div>
   </div>
 </template>
 
@@ -30,18 +88,19 @@
 import axios from "axios";
 import NodeInfo from "../components/NodeInfo.vue";
 import EdgeInfo from "../components/EdgeInfo.vue";
+import ElementRating from "../components/ElementRating.vue";
 import SubnetRenderer from "../components/SubnetRenderer.vue";
 import {
   formatFlowEdgeProps,
   formatFlowNodeProps,
 } from "../composables/formatFlowComponents";
-import _ from "lodash";
 
 export default {
   components: {
     NodeInfo,
     EdgeInfo,
-    SubnetRenderer: SubnetRenderer,
+    ElementRating,
+    SubnetRenderer,
   },
   data() {
     return {
@@ -69,10 +128,16 @@ export default {
     isBrandNewNode() {
       return this.nodeId === "new";
     },
+    isNode() {
+      return Boolean(this.nodeId);
+    },
+    isEdge() {
+      return Boolean(this.sourceId && this.targetId);
+    },
   },
   created() {
     if (this.isBrandNewNode) {
-      console.log("opening brand new node in focus");
+      console.log("Opening brand new node in focus");
       this.node = {
         node_id: "new", // temporary id
         node_type: "action",
@@ -84,11 +149,8 @@ export default {
         new: true,
       };
       this.$router.push({ name: "NodeEdit", params: { id: "new" } });
-
-      // console.log('formatFlowNodeProps(this.node)', formatFlowNodeProps(this.node));
       let formattedNode = formatFlowNodeProps(this.node);
       formattedNode.label = "New Node";
-
       setTimeout(() => {
         this.subnetData = {
           nodes: [formattedNode],
@@ -99,41 +161,19 @@ export default {
       this.fetchElementAndSubnetData();
     }
   },
-
   methods: {
-    getBorderWidthByType(nodeType) {
-      const typeToBorderWidthMap = {
-        change: "1px",
-        potentiality: "1px",
-        action: "2px",
-        proposal: "3px",
-        objective: "4px",
-      };
-      return typeToBorderWidthMap[nodeType];
-    },
-
     async fetchElementAndSubnetData() {
       console.log("fetchElementAndSubnetData");
       try {
-        console.time("axiosRequest");
-
         const seed = this.nodeId || this.sourceId || this.targetId;
-        //TODO: allow fetching subnet from two seeds instead of one
         const response = await axios.get(
           `${import.meta.env.VITE_BACKEND_URL}/subnet/${seed}`,
-          {
-            params: {
-              levels: 10,
-            },
-          },
+          { params: { levels: 10 } },
         );
-        console.timeEnd("axiosRequest");
         const fetched_nodes = response.data.nodes || [];
         const fetched_edges = response.data.edges || [];
-
         this.node =
           fetched_nodes.find((node) => node.node_id === parseInt(seed)) || null;
-
         if (this.sourceId && this.targetId) {
           this.edge =
             fetched_edges.find(
@@ -142,16 +182,9 @@ export default {
                 edge.target === parseInt(this.targetId),
             ) || null;
         }
-
         this.subnetData = {
-          nodes: fetched_nodes.map((node) => {
-            const props = formatFlowNodeProps(node);
-            return props;
-          }),
-          edges: fetched_edges.map((edge) => {
-            const props = formatFlowEdgeProps(edge);
-            return props;
-          }),
+          nodes: fetched_nodes.map((node) => formatFlowNodeProps(node)),
+          edges: fetched_edges.map((edge) => formatFlowEdgeProps(edge)),
         };
       } catch (error) {
         console.error("Error fetching induced subnet:", error);
@@ -182,31 +215,27 @@ export default {
         this.edge = undefined;
       }
     },
-    // currently useful to swap between edit and view mode
-    // also to reduce chances of misalignment between backend and frontend data after update
     updateNodeFromEditor(updatedNode) {
-      console.log("updating node from editor", updatedNode);
+      console.log("Updating node from editor", updatedNode);
       try {
-        this.node = { ...updatedNode, new: false }; // node in focus with new set to false
-        this.updatedNode = { ...updatedNode }; // trigger update on graph view with new unchanged
+        this.node = { ...updatedNode, new: false };
+        this.updatedNode = { ...updatedNode };
       } catch (error) {
         console.error("Failed to update node:", error);
       }
     },
-    // currently useful to swap between edit and view mode
-    // also to reduce changes of misalignment between backend and frontend data after update
     updateEdgeFromEditor(updatedEdge) {
-      console.log("updating edge from editor", updatedEdge);
+      console.log("Updating edge from editor", updatedEdge);
       try {
-        this.edge = { ...updatedEdge, new: true }; // edge in focus
-        this.updatedEdge = { ...updatedEdge }; // trigger update on graph view
+        this.edge = { ...updatedEdge, new: true };
+        this.updatedEdge = { ...updatedEdge };
       } catch (error) {
         console.error("Failed to update edge:", error);
       }
     },
     openNewlyCreatedNode(newNode) {
       this.node = {
-        node_id: newNode.id, // temporary id
+        node_id: newNode.id,
         title: "",
         node_type: newNode.data.node_type,
         scope: newNode.data.scope,
@@ -242,11 +271,43 @@ export default {
 <style scoped>
 .focus {
   display: flex;
-  flex-grow: 1;
+  height: 100%;
+  /* flex-grow: 1; */
+  /* border: 1px solid blue; */
+}
+
+/* Left panel holds the info and rating cards */
+.left-panel {
+  width: 400px; /* Adjust width as needed */
+  padding: 10px 10px 5px 10px;
+  box-sizing: border-box;
+  /* border-right: 1px solid green; */
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 15px; /* Space between cards */
+}
+
+/* Card styling for left panel cards */
+.card {
+  border: 1px solid var(--border-color);
+  border-radius: 5px;
+  padding: 10px;
+  /* background-color: var(--background-color); */
+}
+
+/* Right panel for subnet renderer; ensures full available space */
+.right-panel {
+  flex: 1;
+  padding: 10px 10px 10px 5px;
+  box-sizing: border-box; /* Include padding in height calculations */
+  overflow-y: auto;
+  overflow-x: hidden; /* Prevent horizontal scrolling */
+  /* border: 1px solid red; */
 }
 .error-message {
   font-weight: bold;
-  margin: auto;
-  padding: 30px 50px;
+  margin: 30px;
+  text-align: center;
 }
 </style>

@@ -17,36 +17,12 @@ const routes = [
     name: "MainPage",
     component: Layout,
     children: [
-      {
-        path: "",
-        name: "Main Page",
-        component: MainPage,
-      },
-      {
-        path: "about",
-        name: "About",
-        component: About,
-      },
-      {
-        path: "search",
-        name: "SearchPage",
-        component: SearchPage,
-      },
-      {
-        path: "/login",
-        name: "Login",
-        component: Login,
-      },
-      {
-        path: "/signup",
-        name: "Signup",
-        component: Signup,
-      },
-      {
-        path: "/settings",
-        name: "UserSettings",
-        component: UserSettings,
-      },
+      { path: "", name: "Main Page", component: MainPage },
+      { path: "about", name: "About", component: About },
+      { path: "search", name: "SearchPage", component: SearchPage },
+      { path: "/login", name: "Login", component: Login },
+      { path: "/signup", name: "Signup", component: Signup },
+      { path: "/settings", name: "UserSettings", component: UserSettings },
       {
         path: "/verify-security-question",
         name: "VerifySecurityQuestion",
@@ -63,34 +39,41 @@ const routes = [
         component: ResetPassword,
       },
       {
+        // Consolidated Node view (including rating in the left panel)
         path: "/node/:id",
         name: "NodeView",
         component: Focus,
+        props: true,
       },
       {
         path: "/edge/:source_id/:target_id",
         name: "EdgeView",
         component: Focus,
+        props: true,
       },
       {
         path: "/node/:id/edit",
         name: "NodeEdit",
         component: Focus,
+        props: true,
       },
       {
         path: "/edge/:source_id/:target_id/edit",
         name: "EdgeEdit",
         component: Focus,
+        props: true,
       },
       {
         path: "/node/:id/history",
         name: "NodeHistory",
         component: Focus,
+        props: true,
       },
       {
         path: "/edge/:source_id/:target_id/history",
         name: "EdgeHistory",
         component: Focus,
+        props: true,
       },
     ],
   },

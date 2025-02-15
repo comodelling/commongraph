@@ -9,7 +9,7 @@ from fastapi import HTTPException, Query
 from .base import (
     UserDatabaseInterface,
     GraphHistoryRelationalInterface,
-    GraphDatabaseInterface,
+    RatingHistoryRelationalInterface,
 )
 from models import (
     NodeBase,
@@ -18,6 +18,7 @@ from models import (
     NodeType,
     NodeStatus,
     EdgeType,
+    LikertScale,
     User,
     UserRead,
     UserCreate,
@@ -25,6 +26,8 @@ from models import (
     Subnet,
     EntityType,
     EntityState,
+    RatingEvent,
+    RatingType,
 )
 from utils.security import hash_password
 from database.config import get_engine
@@ -96,6 +99,145 @@ class UserPostgreSQLDB(UserDatabaseInterface):
         """Reset the database by dropping all tables and recreating them."""
         SQLModel.metadata.drop_all(self.engine)
         SQLModel.metadata.create_all(self.engine)
+
+
+class RatingHistoryPostgreSQLDB(RatingHistoryRelationalInterface):
+    def __init__(self, database_url: str):
+        super().__init__()
+        self.engine = get_engine(database_url)
+        self.SessionLocal = sessionmaker(
+            autocommit=False, autoflush=False, bind=self.engine
+        )
+
+    def reset_table(self):
+        """Reset the database by dropping all tables and recreating them."""
+        SQLModel.metadata.drop_all(self.engine)
+        SQLModel.metadata.create_all(self.engine)
+
+    def log_rating(self, rating: RatingEvent) -> RatingEvent:
+        """
+        Log a rating for a given entity and user.
+        """
+        with Session(self.engine) as session:
+            session.add(rating)
+            session.commit()
+            session.refresh(rating)
+            if hasattr(self, "logger"):
+                self.logger.info(
+                    f"Logged rating by {rating.username} for {rating.entity_type}"
+                )
+            return rating
+
+    def get_node_rating(
+        self, node_id: int, rating_type: RatingType, username: str
+    ) -> RatingEvent | None:
+        """
+        Retrieve the rating of a given node by a given user.
+        """
+        with Session(self.engine) as session:
+            statement = (
+                select(RatingEvent)
+                .where(
+                    RatingEvent.entity_type == EntityType.node,
+                    RatingEvent.node_id == node_id,
+                    RatingEvent.rating_type == rating_type,
+                    RatingEvent.username == username,
+                )
+                .order_by(RatingEvent.timestamp.desc())
+            )
+
+            rating = session.exec(statement).first()
+            return rating
+
+    def get_edge_rating(
+        self, source_id: int, target_id: int, rating_type: RatingType, username: str
+    ) -> RatingEvent | None:
+        """
+        Retrieve the rating of a given edge by a given user.
+        """
+        with Session(self.engine) as session:
+            statement = (
+                select(RatingEvent)
+                .where(
+                    RatingEvent.entity_type == EntityType.edge,
+                    RatingEvent.source_id == source_id,
+                    RatingEvent.target_id == target_id,
+                    RatingEvent.rating_type == rating_type,
+                    RatingEvent.username == username,
+                )
+                .order_by(RatingEvent.timestamp.desc())
+            )
+            rating = session.exec(statement).first()
+            return rating
+
+    def get_node_median_rating(
+        self, node_id: int, rating_type: RatingType
+    ) -> LikertScale | None:
+        """
+        Retrieve the median rating (LikertScale) of a given node.
+        """
+        with Session(self.engine) as session:
+            statement = select(RatingEvent).where(
+                RatingEvent.entity_type == EntityType.node,
+                RatingEvent.node_id == node_id,
+                RatingEvent.rating_type == rating_type,
+            )
+            ratings = session.exec(statement).all()
+            if not ratings:
+                raise HTTPException(status_code=404, detail="No ratings found for node")
+            scale_order = [
+                LikertScale.a,
+                LikertScale.b,
+                LikertScale.c,
+                LikertScale.d,
+                LikertScale.e,
+            ]
+            # Convert ratings to their index values
+            indices = [scale_order.index(r.rating) for r in ratings]
+            indices.sort()
+            # Compute median index using the lower median in case of even count.
+            mid = len(indices) // 2
+            median_index = indices[mid] if len(indices) % 2 == 1 else indices[mid - 1]
+            median_rating = scale_order[median_index]
+            if hasattr(self, "logger"):
+                self.logger.info(
+                    f"Computed median rating for node {node_id} is {median_rating}"
+                )
+            return median_rating
+
+    def get_edge_median_rating(
+        self, source_id: int, target_id: int, rating_type: RatingType
+    ) -> LikertScale | None:
+        """
+        Retrieve the median rating (LikertScale) of a given edge.
+        """
+        with Session(self.engine) as session:
+            statement = select(RatingEvent).where(
+                RatingEvent.entity_type == EntityType.edge,
+                RatingEvent.source_id == source_id,
+                RatingEvent.target_id == target_id,
+                RatingEvent.rating_type == rating_type,
+            )
+            ratings = session.exec(statement).all()
+            if not ratings:
+                raise HTTPException(status_code=404, detail="No ratings found for edge")
+            scale_order = [
+                LikertScale.a,
+                LikertScale.b,
+                LikertScale.c,
+                LikertScale.d,
+                LikertScale.e,
+            ]
+            indices = [scale_order.index(r.rating) for r in ratings]
+            indices.sort()
+            mid = len(indices) // 2
+            median_index = indices[mid] if len(indices) % 2 == 1 else indices[mid - 1]
+            median_rating = scale_order[median_index]
+            if hasattr(self, "logger"):
+                self.logger.info(
+                    f"Computed median rating for edge {source_id}->{target_id} is {median_rating}"
+                )
+            return median_rating
 
 
 class GraphHistoryPostgreSQLDB(GraphHistoryRelationalInterface):

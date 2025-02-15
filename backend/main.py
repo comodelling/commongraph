@@ -23,14 +23,21 @@ from models import (
     User,
     UserRead,
     GraphHistoryEvent,
+    RatingEvent,
+    RatingType,
 )
 from database.base import (
     GraphDatabaseInterface,
     UserDatabaseInterface,
     GraphHistoryRelationalInterface,
+    RatingHistoryRelationalInterface,
 )
 from database.janusgraph import JanusGraphDB
-from database.postgresql import UserPostgreSQLDB, GraphHistoryPostgreSQLDB
+from database.postgresql import (
+    UserPostgreSQLDB,
+    GraphHistoryPostgreSQLDB,
+    RatingHistoryPostgreSQLDB,
+)
 from auth import router as auth_router
 from auth import get_current_user
 
@@ -107,6 +114,17 @@ def get_graph_history_db_connection(
         database_url = os.getenv("POSTGRES_DB_URL")
         print(f"Using Graph History PostgreSQL database at {database_url}")
         return GraphHistoryPostgreSQLDB(database_url)
+    else:
+        raise ValueError(f"Unsupported db type: {db_type} for graph_history_db")
+
+
+def get_rating_history_db_connection(
+    db_type: str = "postgresql",
+) -> RatingHistoryRelationalInterface:
+    if db_type == "postgresql":
+        database_url = os.getenv("POSTGRES_DB_URL")
+        print(f"Using Rating History PostgreSQL database at {database_url}")
+        return RatingHistoryPostgreSQLDB(database_url)
     else:
         raise ValueError(f"Unsupported db type: {db_type} for graph_history_db")
 
@@ -445,6 +463,76 @@ def get_edge_history(
 ) -> list[GraphHistoryEvent]:
     """Return the history of the edge associated with the provided source and target IDs."""
     return db_history.get_edge_history(source_id, target_id)
+
+
+### ratings ###
+
+
+@app.post("/rating/log", status_code=201)
+def log_rating(
+    rating: RatingEvent,
+    db: RatingHistoryRelationalInterface = Depends(get_rating_history_db_connection),
+    user: UserRead = Depends(get_current_user),
+) -> RatingEvent:
+    """
+    Log a rating event. The username will be set from the authenticated user.
+    """
+    rating.username = user.username
+    return db.log_rating(rating)
+
+
+@app.get("/rating/node/{node_id}")
+def get_node_rating(
+    node_id: int,
+    rating_type: RatingType = RatingType.support,
+    db: RatingHistoryRelationalInterface = Depends(get_rating_history_db_connection),
+    user: UserRead = Depends(get_current_user),
+) -> RatingEvent | None:
+    """
+    Retrieve a user's rating for a node.
+    """
+    return db.get_node_rating(node_id, rating_type, user.username)
+
+
+@app.get("/rating/edge")
+def get_edge_rating(
+    source_id: int,
+    target_id: int,
+    rating_type: RatingType,
+    db: RatingHistoryRelationalInterface = Depends(get_rating_history_db_connection),
+    user: UserRead = Depends(get_current_user),
+) -> RatingEvent | None:
+    """
+    Retrieve a user's rating for an edge.
+    """
+    return db.get_edge_rating(source_id, target_id, rating_type, user.username)
+
+
+@app.get("/rating/node/{node_id}/median")
+def get_node_median_rating(
+    node_id: int,
+    rating_type: RatingType = RatingType.support,
+    db: RatingHistoryRelationalInterface = Depends(get_rating_history_db_connection),
+) -> dict | None:
+    """
+    Retrieve the median rating for a given node.
+    """
+    median = db.get_node_median_rating(node_id, rating_type)
+    return {"median_rating": median}
+
+
+@app.get("/rating/edge/median")
+def get_edge_median_rating(
+    source_id: int,
+    target_id: int,
+    rating_type: RatingType,
+    db: RatingHistoryRelationalInterface = Depends(get_rating_history_db_connection),
+) -> dict | None:
+    """
+    Retrieve the median rating for a given edge.
+    """
+    median = db.get_edge_median_rating(source_id, target_id, rating_type)
+    return {"median_rating": median}
 
 
 ### others ###

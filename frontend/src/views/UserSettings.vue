@@ -41,7 +41,7 @@ export default {
     const loading = ref(true);
     const error = ref(null);
     const { clearToken } = useAuth();
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("authToken");
     const preferredTheme = ref("system");
 
     const applyTheme = (theme) => {

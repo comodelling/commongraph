@@ -27,9 +27,6 @@
     <strong :title="tooltips.node.description">Description:</strong>
     <br />
     <p>{{ node.description ? node.description : "" }}</p>
-    <strong :title="tooltips.node.support">Support Level: </strong>
-    {{ node.support ? node.support + " (" + nodeSupportTooltip + ")" : ""
-    }}<br />
   </div>
 </template>
 
@@ -48,11 +45,6 @@ export default {
   computed: {
     nodeTypeTooltip() {
       return this.tooltips.node[this.node.node_type] || this.tooltips.node.type;
-    },
-    nodeSupportTooltip() {
-      return (
-        this.tooltips.node[this.node.support] || this.tooltips.node.support
-      );
     },
   },
   methods: {

@@ -336,7 +336,7 @@ const onNodesChange = async (changes) => {
       if (isConfirmed) {
         nextChanges.push(change);
         const node_id = change.id;
-        const token = localStorage.getItem("token");
+        const token = localStorage.getItem("authToken");
         try {
           const response = await axios.delete(
             `${import.meta.env.VITE_BACKEND_URL}/node/${node_id}`,
@@ -381,7 +381,7 @@ const onEdgesChange = async (changes) => {
         const source_id = edge.data.source;
         const target_id = edge.data.target;
         const edge_type = edge.data.edge_type;
-        const token = localStorage.getItem("token");
+        const token = localStorage.getItem("authToken");
         try {
           const response = await axios.delete(
             `${import.meta.env.VITE_BACKEND_URL}/edge/${source_id}/${target_id}`,
@@ -989,5 +989,13 @@ onEdgeMouseLeave(({ edge }) => {
 .compass-button svg {
   width: 10px; /* Icon size */
   height: 10px;
+}
+.subnet-renderer {
+  width: 100%; /* Ensure it fits inside the parent */
+  height: 99.5%;
+  min-height: 300px;
+  min-width: 300px;
+  /* overflow-y: hidden; */
+  overflow-x: auto;
 }
 </style>

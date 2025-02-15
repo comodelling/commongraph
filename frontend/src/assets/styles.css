@@ -16,6 +16,12 @@
   --border-color: #ccc;
   --background-color: white;
   --text-color: black;
+
+  --rating-A-color: #006d2c;
+  --rating-B-color: #74c476;
+  --rating-C-color: #777;
+  --rating-D-color: #fb6a4a;
+  --rating-E-color: #a50f15;
 }
 
 body.dark {
@@ -143,25 +149,26 @@ body.dark .vue-flow__node-special {
 /* element-info */
 
 .element-info {
-  width: 350px;
-  border: 1px solid var(--border-color);
-  margin: 1px;
+  /* width: 350px; */
+  /* border: 1px solid var(--border-color); */
+  /* margin: 1px; */
   padding: 20px;
   font-size: 13px;
-  border-radius: 5px;
+  /* border-radius: 5px; */
   position: relative;
 }
 
 .tabs {
-  display: flex;
+  /* display: flex; */
   position: absolute;
-  top: 0px;
-  left: 0px;
+  top: -10px;
+  left: -10px;
+  /* left: 0px; */
 }
 
 .tabs button {
   flex: 1;
-  padding: 3px;
+  padding: 3px 10px;
   cursor: pointer;
   background: none;
   border-radius: 3px;

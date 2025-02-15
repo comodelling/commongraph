@@ -42,7 +42,7 @@ export default {
       if (router.currentRoute.value.query.message) {
         infoMessage.value = router.currentRoute.value.query.message;
       }
-      if (localStorage.getItem("token")) {
+      if (localStorage.getItem("authToken")) {
         router.push("/settings");
       }
     });

@@ -787,8 +787,8 @@ onEdgeMouseLeave(({ edge }) => {
         <SearchBar
           @search="handleSearch"
           :placeholder="'Or search for existing nodes...'"
-          :show-button="false"
-          style="width: 104%"
+          :show-button="true"
+          style="width: 102%"
         />
         <ul
           v-if="searchResults && searchResults.length"

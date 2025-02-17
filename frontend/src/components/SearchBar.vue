@@ -6,7 +6,7 @@
       @keyup.enter="search"
       :placeholder="placeholder"
     />
-    <button v-if="showButton" @click="search">Search</button>
+    <button v-if="showButton" @click="search" class="search-button">🔍</button>
   </div>
 </template>
 
@@ -34,10 +34,8 @@ export default {
   methods: {
     updateSearchQuery(event) {
       this.searchQuery = event.target.value;
-      console.log("Updated searchQuery in SearchBar:", this.searchQuery);
     },
     search() {
-      console.log("Emitting search with query:", this.searchQuery);
       this.$emit("search", this.searchQuery);
     },
   },
@@ -50,15 +48,30 @@ export default {
   align-items: center;
   max-width: 500px;
   min-width: 200px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  overflow: hidden;
 }
+
 .search-bar input {
   flex-grow: 1;
-  margin-right: 10px;
-  padding: 5px;
-  width: 400px;
-  min-width: 100px;
+  padding: 8px;
+  border: none;
+  outline: none;
 }
-.search-bar button {
-  padding: 6px 10px;
+
+.search-button {
+  background-color: rgb(39, 98, 162);
+  border: none;
+  color: white;
+  cursor: pointer;
+  font-size: 16px;
+  border-radius: 1px;
+  padding: 8px 12px;
+  transition: var(--background-color) 0.2s ease;
+}
+
+.search-button:hover {
+  background-color: rgb(39, 98, 162);
 }
 </style>

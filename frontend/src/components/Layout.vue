@@ -42,6 +42,7 @@ export default {
   border-radius: 5px;
   /* max-height: 90%; */
   /* overflow-y: auto; */
+  padding-right: 150px;
   justify-content: center;
 }
 

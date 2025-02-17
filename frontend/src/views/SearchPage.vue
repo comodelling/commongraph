@@ -1,11 +1,10 @@
 <template>
   <div class="search-page">
-    <div class="content">
-      <!-- <h1>Search Results</h1> -->
+    <div class="search-header">
+      <!-- Search bar and parameters stay fixed -->
       <SearchBar :initialQuery="title" @search="search" />
       <div class="filters">
         <strong> Type: </strong>
-
         <label>
           <input type="checkbox" v-model="nodeTypes.objective" /> Objectives
         </label>
@@ -25,7 +24,6 @@
       </div>
       <div class="filters">
         <strong> Status: </strong>
-
         <label>
           <input type="checkbox" v-model="nodeStatus.draft" /> Draft
         </label>
@@ -46,6 +44,8 @@
         <strong> Tags: </strong>
         <input type="text" v-model="tagFilter" placeholder="e.g. tag1, tag2" />
       </div>
+    </div>
+    <div class="results">
       <h2>Search Results</h2>
       <div v-if="!nodes.length && title">
         <p>No results found for "{{ title }}"</p>
@@ -213,13 +213,27 @@ export default {
 </script>
 
 <style scoped>
-/* .search-page {
+.search-page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.search-header {
   padding: 20px;
   padding-left: 100px;
-  display: flex;
-  flex-grow: 1;
-  text-align: left;
-} */
+  /* Make sure header remains visible on scroll */
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.results {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  padding-left: 100px;
+}
 
 .filters {
   margin-bottom: 5px;

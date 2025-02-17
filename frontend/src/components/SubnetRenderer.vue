@@ -12,7 +12,8 @@ import Icon from "./Icon.vue";
 import { useLayout } from "../composables/useLayout";
 import VueSimpleContextMenu from "vue-simple-context-menu";
 import "vue-simple-context-menu/dist/vue-simple-context-menu.css";
-import SearchBar from "./SearchBar.vue"; // Import the SearchBar component
+import SearchBar from "./SearchBar.vue";
+import { parseSearchQuery, buildSearchParams } from "../utils/searchParser.js";
 import SpecialNode from "../components/SpecialNode.vue";
 import SpecialEdge from "./SpecialEdge.vue";
 import {
@@ -466,28 +467,29 @@ function createEdgeOnConnection(targetId) {
 }
 
 function handleSearch(query) {
-  // Perform search and update searchResults
   console.log("Searching for:", query);
-  if (!query.trim()) {
-    searchResults.value = null;
-    console.log("Empty query, not searching");
-    return;
+  let params = {};
+  if (typeof query === "string") {
+    if (!query.trim()) {
+      searchResults.value = null;
+      console.log("Empty query, not searching");
+      return;
+    }
+    // if a raw string is provided, parse it first
+    params = buildSearchParams(parseSearchQuery(query));
+  } else if (typeof query === "object") {
+    params = buildSearchParams(query);
   }
-  try {
-    api
-      .get(`${import.meta.env.VITE_BACKEND_URL}/nodes/`, {
-        params: { title: query },
-      })
-      .then((response) => {
-        console.log("Search results:", response.data);
-        searchResults.value = response.data;
-      })
-      .catch((error) => {
-        console.error("Failed to search nodes:", error);
-      });
-  } catch (error) {
-    console.error("Failed to search nodes:", error);
-  }
+
+  api
+    .get(`${import.meta.env.VITE_BACKEND_URL}/nodes/`, { params })
+    .then((response) => {
+      console.log("Search results:", response.data);
+      searchResults.value = response.data;
+    })
+    .catch((error) => {
+      console.error("Failed to search nodes:", error);
+    });
 }
 
 function createNodeAndEdge(event = null) {

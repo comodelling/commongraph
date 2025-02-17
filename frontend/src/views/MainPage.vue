@@ -14,14 +14,16 @@
 
 <script>
 import SearchBar from "../components/SearchBar.vue";
+import { buildSearchParams } from "../utils/searchParser.js";
 
 export default {
   components: {
     SearchBar,
   },
   methods: {
-    goToSearch(query) {
-      this.$router.push({ name: "SearchPage", query: { title: query } });
+    goToSearch(parsedQuery) {
+      const params = buildSearchParams(parsedQuery);
+      this.$router.push({ name: "SearchPage", query: params });
     },
   },
 };

@@ -11,6 +11,8 @@
 </template>
 
 <script>
+import { parseSearchQuery } from "../utils/searchParser.js";
+
 export default {
   props: {
     initialQuery: {
@@ -36,7 +38,8 @@ export default {
       this.searchQuery = event.target.value;
     },
     search() {
-      this.$emit("search", this.searchQuery);
+      const parsedQuery = parseSearchQuery(this.searchQuery);
+      this.$emit("search", parsedQuery);
     },
   },
 };

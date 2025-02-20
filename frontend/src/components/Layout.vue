@@ -1,7 +1,7 @@
 <template>
   <div :class="['layout', { 'full-width': isFocused }]">
     <SideMenu />
-    <div class="content">
+    <div class="main-content">
       <router-view></router-view>
     </div>
     <!-- New pane for rating -->
@@ -27,24 +27,6 @@ export default {
 </script>
 
 <style scoped>
-.layout {
-  display: flex;
-  width: 100vw;
-  height: 100vh;
-  overflow: hidden;
-}
-
-.content {
-  flex: 1;
-  margin: 2px auto;
-  padding: 3px;
-  border: 1px solid var(--border-color);
-  border-radius: 5px;
-  /* max-height: 90%; */
-  /* overflow-y: auto; */
-  justify-content: center;
-}
-
 .full-width {
   max-width: 100%;
 }

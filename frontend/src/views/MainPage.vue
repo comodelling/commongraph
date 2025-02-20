@@ -2,21 +2,28 @@
   <div class="main-page">
     <div class="content">
       <h1>ObjectiveNet</h1>
-      <SearchBar @search="goToSearch" />
+      <!-- Pass the custom class directly to SearchBar -->
+      <SearchBar
+        class="wide-search"
+        @search="goToSearch"
+        style="max-width: 600px; width: 450px"
+      />
     </div>
   </div>
 </template>
 
 <script>
 import SearchBar from "../components/SearchBar.vue";
+import { buildSearchParams } from "../utils/searchParser.js";
 
 export default {
   components: {
     SearchBar,
   },
   methods: {
-    goToSearch(query) {
-      this.$router.push({ name: "SearchPage", query: { title: query } });
+    goToSearch(parsedQuery) {
+      const params = buildSearchParams(parsedQuery);
+      this.$router.push({ name: "SearchPage", query: params });
     },
   },
 };
@@ -24,7 +31,10 @@ export default {
 
 <style scoped>
 .main-page {
-  padding: 30px 120px;
-  /* padding-left: 100px; */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 80vh;
+  text-align: center;
 }
 </style>

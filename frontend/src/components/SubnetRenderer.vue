@@ -12,7 +12,8 @@ import Icon from "./Icon.vue";
 import { useLayout } from "../composables/useLayout";
 import VueSimpleContextMenu from "vue-simple-context-menu";
 import "vue-simple-context-menu/dist/vue-simple-context-menu.css";
-import SearchBar from "./SearchBar.vue"; // Import the SearchBar component
+import SearchBar from "./SearchBar.vue";
+import { parseSearchQuery, buildSearchParams } from "../utils/searchParser.js";
 import SpecialNode from "../components/SpecialNode.vue";
 import SpecialEdge from "./SpecialEdge.vue";
 import {
@@ -466,28 +467,29 @@ function createEdgeOnConnection(targetId) {
 }
 
 function handleSearch(query) {
-  // Perform search and update searchResults
   console.log("Searching for:", query);
-  if (!query.trim()) {
-    searchResults.value = null;
-    console.log("Empty query, not searching");
-    return;
+  let params = {};
+  if (typeof query === "string") {
+    if (!query.trim()) {
+      searchResults.value = null;
+      console.log("Empty query, not searching");
+      return;
+    }
+    // if a raw string is provided, parse it first
+    params = buildSearchParams(parseSearchQuery(query));
+  } else if (typeof query === "object") {
+    params = buildSearchParams(query);
   }
-  try {
-    api
-      .get(`${import.meta.env.VITE_BACKEND_URL}/nodes/`, {
-        params: { title: query },
-      })
-      .then((response) => {
-        console.log("Search results:", response.data);
-        searchResults.value = response.data;
-      })
-      .catch((error) => {
-        console.error("Failed to search nodes:", error);
-      });
-  } catch (error) {
-    console.error("Failed to search nodes:", error);
-  }
+
+  api
+    .get(`${import.meta.env.VITE_BACKEND_URL}/nodes/`, { params })
+    .then((response) => {
+      console.log("Search results:", response.data);
+      searchResults.value = response.data;
+    })
+    .catch((error) => {
+      console.error("Failed to search nodes:", error);
+    });
 }
 
 function createNodeAndEdge(event = null) {
@@ -518,6 +520,7 @@ function createNodeAndEdge(event = null) {
   } else {
     console.log("No connectionInfo available");
     eventPosition = { x: event.clientX, y: event.clientY };
+    // console.log("Event position:", eventPosition);
   }
   const newNodeData = formatFlowNodeProps({
     node_id: `new`,
@@ -543,13 +546,26 @@ function createNodeAndEdge(event = null) {
   closeSearchBar();
 }
 
-function handleSearchResultClick(id, event) {
+async function handleSearchResultClick(id, event) {
   console.log("search result clicked", id);
+  try {
+    const response = await api.get(
+      `${import.meta.env.VITE_BACKEND_URL}/node/${id}/`,
+    );
+    const node = response.data;
+    // console.log("Fetched node:", node);
+    let eventPosition = { x: event.clientX, y: event.clientY };
+    // console.log("searhcbar position", searchBarPosition.value)  #TODO: maybe could use actual position of the original click not the result click
+    // console.log("Event position:", eventPosition);
+    node.position = screenToFlowCoordinate(eventPosition);
+    const formattedNode = formatFlowNodeProps(node);
+    addNodes(formattedNode);
 
-  //TODO: if id not present in current subnet, fetch node from backend and add it to viz here (question, with its induced subnet or not? )
-
-  // if connected from existing node, create edge
-  if (connectionInfo.value) linkSourceToSearchResult(id);
+    // if connected from existing node, create edge
+    if (connectionInfo.value) linkSourceToSearchResult(id);
+  } catch (error) {
+    console.error("Failed to fetch node:", error);
+  }
 }
 
 function linkSourceToSearchResult(id) {
@@ -771,10 +787,9 @@ onEdgeMouseLeave(({ edge }) => {
         <button
           @click="createNodeAndEdge"
           style="
-            padding: 5px;
-            margin-top: 6px;
+            padding: 7px;
             border-radius: 2px;
-            margin-top: 2px;
+            margin-top: 0px;
             margin-bottom: 3px;
             width: 100%;
             text-align: left;
@@ -787,8 +802,8 @@ onEdgeMouseLeave(({ edge }) => {
         <SearchBar
           @search="handleSearch"
           :placeholder="'Or search for existing nodes...'"
-          :show-button="false"
-          style="width: 104%"
+          :show-button="true"
+          style="width: 100%"
         />
         <ul
           v-if="searchResults && searchResults.length"
@@ -820,7 +835,7 @@ onEdgeMouseLeave(({ edge }) => {
 
       <Background pattern-color="#aaa" :gap="16" />
 
-      <MiniMap />
+      <!-- <MiniMap /> -->
 
       <Panel class="compass-panel" position="top-right">
         <div class="compass-container">
@@ -864,6 +879,7 @@ onEdgeMouseLeave(({ edge }) => {
         style="margin-top: 72px; margin-right: 20px"
       >
         <ControlButton title="Export subnet as JSON" @click="exportSubnet">
+          <!-- style="background-color: var(--node-color); border-color: var(--node-color);" -->
           <Icon name="export" />
         </ControlButton>
       </Controls>
@@ -881,7 +897,7 @@ onEdgeMouseLeave(({ edge }) => {
 
 .search-bar-container {
   position: absolute;
-  background: white;
+  background-color: var(--background-color);
   border: 1px solid var(--border-color);
   border-radius: 5px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
@@ -909,16 +925,16 @@ onEdgeMouseLeave(({ edge }) => {
 }
 
 .search-bar-container li:hover {
-  background-color: #f0f0f0;
+  background-color: var(--border-color);
 }
 
 .search-bar-container .highlight {
-  background-color: #ffff99; /* Highlight color */
+  background-color: var(--highlight-color);
 }
 
 .search-bar-container .close-button {
   position: absolute;
-  top: 0px;
+  top: 1px;
   right: 3px;
   padding: 0;
   background: transparent;
@@ -955,7 +971,7 @@ onEdgeMouseLeave(({ edge }) => {
   /* display: flex; */
   justify-content: center;
   align-items: center;
-  background: white;
+  background-color: var(--node-color);
   border: 1px solid var(--border-color); /* Ensure buttons are visible */
   padding: 0;
   line-height: 0px; /* Center the icon vertically */
@@ -998,6 +1014,7 @@ onEdgeMouseLeave(({ edge }) => {
   height: 99.5%;
   min-height: 300px;
   min-width: 300px;
+  /* border: 1px solid red; */
   /* overflow-y: hidden; */
   overflow-x: auto;
 }

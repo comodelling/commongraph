@@ -77,11 +77,6 @@ export default {
 </script>
 
 <style scoped>
-.body.dark .form-wrapper {
-  background-color: black;
-  /* color: white; */
-}
-
 form {
   display: flex;
   flex-direction: column;

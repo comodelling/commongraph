@@ -1000,6 +1000,7 @@ onEdgeMouseLeave(({ edge }) => {
   height: 99.5%;
   min-height: 300px;
   min-width: 300px;
+  /* border: 1px solid red; */
   /* overflow-y: hidden; */
   overflow-x: auto;
 }

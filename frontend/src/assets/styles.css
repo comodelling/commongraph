@@ -56,14 +56,14 @@ body,
 
 .main-content {
   flex: 1;
-  margin: 2px auto;
-  padding: 3px;
-  border: 1px solid var(--border-color);
+  /* margin: 2px auto; */
+  /* padding: 3px; */
+  /* border: 1px solid var(--border-color); */
   background-color: var(--background-color);
   border-radius: 5px;
   /* max-height: 90%; */
   /* overflow-y: auto; */
-  padding-right: 150px;
+  /* padding-right: 150px; */
   justify-content: center;
 }
 
@@ -233,14 +233,6 @@ button:focus-visible {
 
 .submit-button:hover {
   background-color: #0056b3;
-}
-
-.add-reference-button,
-.add-description-button,
-body.dark .add-reference-button,
-body.dark .add-description-button {
-  /* background-color: #333; */
-  color: white;
 }
 
 .add-cprob-button {

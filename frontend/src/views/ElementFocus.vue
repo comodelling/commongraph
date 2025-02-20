@@ -283,13 +283,14 @@ export default {
 /* Left panel holds the info and rating cards */
 .left-panel {
   width: 400px; /* Adjust width as needed */
-  padding: 10px 10px 5px 10px;
+  padding: 4px 4px 2px 4px;
   box-sizing: border-box;
   /* border-right: 1px solid green; */
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 15px; /* Space between cards */
+  gap: 5px; /* Space between cards */
+  /* border: 1px solid var(--border-color); */
 }
 
 /* Card styling for left panel cards */
@@ -297,13 +298,14 @@ export default {
   border: 1px solid var(--border-color);
   border-radius: 5px;
   padding: 10px;
+  margin: 0px;
   /* background-color: var(--background-color); */
 }
 
 /* Right panel for subnet renderer; ensures full available space */
 .right-panel {
   flex: 1;
-  padding: 10px 10px 10px 5px;
+  padding: 3px 9px 4px 2px;
   box-sizing: border-box; /* Include padding in height calculations */
   overflow-y: auto;
   overflow-x: hidden; /* Prevent horizontal scrolling */

@@ -520,6 +520,7 @@ function createNodeAndEdge(event = null) {
   } else {
     console.log("No connectionInfo available");
     eventPosition = { x: event.clientX, y: event.clientY };
+    // console.log("Event position:", eventPosition);
   }
   const newNodeData = formatFlowNodeProps({
     node_id: `new`,
@@ -545,13 +546,26 @@ function createNodeAndEdge(event = null) {
   closeSearchBar();
 }
 
-function handleSearchResultClick(id, event) {
+async function handleSearchResultClick(id, event) {
   console.log("search result clicked", id);
+  try {
+    const response = await api.get(
+      `${import.meta.env.VITE_BACKEND_URL}/node/${id}/`,
+    );
+    const node = response.data;
+    // console.log("Fetched node:", node);
+    let eventPosition = { x: event.clientX, y: event.clientY };
+    // console.log("searhcbar position", searchBarPosition.value)  #TODO: maybe could use actual position of the original click not the result click
+    // console.log("Event position:", eventPosition);
+    node.position = screenToFlowCoordinate(eventPosition);
+    const formattedNode = formatFlowNodeProps(node);
+    addNodes(formattedNode);
 
-  //TODO: if id not present in current subnet, fetch node from backend and add it to viz here (question, with its induced subnet or not? )
-
-  // if connected from existing node, create edge
-  if (connectionInfo.value) linkSourceToSearchResult(id);
+    // if connected from existing node, create edge
+    if (connectionInfo.value) linkSourceToSearchResult(id);
+  } catch (error) {
+    console.error("Failed to fetch node:", error);
+  }
 }
 
 function linkSourceToSearchResult(id) {

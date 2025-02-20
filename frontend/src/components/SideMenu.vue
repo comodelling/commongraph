@@ -79,6 +79,7 @@ export default {
   /* box-sizing: border-box; */
   overflow-y: auto;
   border: 1px solid var(--border-color);
+  background-color: var(--background-color);
   border-radius: 5px;
   padding: 10px;
   font-size: 12px;

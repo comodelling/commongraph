@@ -773,10 +773,9 @@ onEdgeMouseLeave(({ edge }) => {
         <button
           @click="createNodeAndEdge"
           style="
-            padding: 5px;
-            margin-top: 6px;
+            padding: 7px;
             border-radius: 2px;
-            margin-top: 2px;
+            margin-top: 0px;
             margin-bottom: 3px;
             width: 100%;
             text-align: left;
@@ -790,7 +789,7 @@ onEdgeMouseLeave(({ edge }) => {
           @search="handleSearch"
           :placeholder="'Or search for existing nodes...'"
           :show-button="true"
-          style="width: 102%"
+          style="width: 100%"
         />
         <ul
           v-if="searchResults && searchResults.length"
@@ -822,7 +821,7 @@ onEdgeMouseLeave(({ edge }) => {
 
       <Background pattern-color="#aaa" :gap="16" />
 
-      <MiniMap />
+      <!-- <MiniMap /> -->
 
       <Panel class="compass-panel" position="top-right">
         <div class="compass-container">
@@ -866,6 +865,7 @@ onEdgeMouseLeave(({ edge }) => {
         style="margin-top: 72px; margin-right: 20px"
       >
         <ControlButton title="Export subnet as JSON" @click="exportSubnet">
+          <!-- style="background-color: var(--node-color); border-color: var(--node-color);" -->
           <Icon name="export" />
         </ControlButton>
       </Controls>
@@ -883,7 +883,7 @@ onEdgeMouseLeave(({ edge }) => {
 
 .search-bar-container {
   position: absolute;
-  background: white;
+  background-color: var(--background-color);
   border: 1px solid var(--border-color);
   border-radius: 5px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
@@ -911,16 +911,16 @@ onEdgeMouseLeave(({ edge }) => {
 }
 
 .search-bar-container li:hover {
-  background-color: #f0f0f0;
+  background-color: var(--border-color);
 }
 
 .search-bar-container .highlight {
-  background-color: #ffff99; /* Highlight color */
+  background-color: var(--highlight-color);
 }
 
 .search-bar-container .close-button {
   position: absolute;
-  top: 0px;
+  top: 1px;
   right: 3px;
   padding: 0;
   background: transparent;
@@ -957,7 +957,7 @@ onEdgeMouseLeave(({ edge }) => {
   /* display: flex; */
   justify-content: center;
   align-items: center;
-  background: white;
+  background-color: var(--node-color);
   border: 1px solid var(--border-color); /* Ensure buttons are visible */
   padding: 0;
   line-height: 0px; /* Center the icon vertically */

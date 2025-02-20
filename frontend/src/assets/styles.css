@@ -16,6 +16,9 @@
   --border-color: #ccc;
   --background-color: white;
   --text-color: black;
+  --node-color: #f0f0f0;
+  --highlight-color: #ffff99;
+  /* --button-color: grey; */
 
   --rating-A-color: #006d2c;
   --rating-B-color: #74c476;
@@ -26,10 +29,13 @@
 
 body.dark {
   color-scheme: dark;
-  background-color: #121212;
   color: #ffffff;
+  --background-color: #121212;
   --border-color: #333;
   --text-color: white;
+  --node-color: darkgrey;
+  --highlight-color: rgb(71, 43, 8); /*slightly oranger colour for dark mode*/
+  /* --button-color: grey */
 }
 
 html,
@@ -38,6 +44,27 @@ body,
   height: 100%;
   margin: 0;
   padding: 0;
+}
+
+.layout {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background-color: var(--background-color);
+}
+
+.main-content {
+  flex: 1;
+  margin: 2px auto;
+  padding: 3px;
+  border: 1px solid var(--border-color);
+  background-color: var(--background-color);
+  border-radius: 5px;
+  /* max-height: 90%; */
+  /* overflow-y: auto; */
+  padding-right: 150px;
+  justify-content: center;
 }
 
 /* anchors */
@@ -67,10 +94,10 @@ button {
   font-weight: 500;
   font-family: inherit;
   cursor: pointer;
-  transition: border-color 0.25s;
+  transition: var(--border-color) 0.25s;
 }
 button.editing {
-  background: #e9e9e9;
+  background-color: var(--background-color);
 }
 button:hover {
   border-color: grey;
@@ -95,6 +122,7 @@ button:focus-visible {
   width: 300px;
   text-align: center;
   border: 1px solid var(--border-color);
+  background-color: var(--background-color);
   border-radius: 8px;
   padding: 20px;
   /* background-color: var(--background-color); */
@@ -110,15 +138,19 @@ button:focus-visible {
   height: 12px;
   width: 12px;
   border-radius: 9px;
+  background-color: var(--border-color);
   border-color: grey;
-  background-color: lightgray;
+  /* background-color: lightgray; */
 }
 
 .vue-flow__node-special {
-  border: 1px solid var(--border-color);
+  /* border: 1px solid var(--border-color); */
   padding: 10px;
   border-radius: 10px;
-  background: #f5f5f5;
+  /* border: red; */
+  background-color: var(--node-color);
+  /* border-color: var(--border-color); */
+  color: black;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -128,9 +160,9 @@ button:focus-visible {
   max-width: 250px;
 }
 
-body.dark .vue-flow__node-special {
-  color: black; /* Desired font color for dark mode */
-}
+/* body.dark .vue-flow__node-special { */
+/* color: black; Desired font color for dark mode */
+/* } */
 
 .vue-flow__node-special :hover {
   cursor: pointer;
@@ -205,22 +237,9 @@ body.dark .vue-flow__node-special {
 
 .add-reference-button,
 .add-description-button,
-.add-cprob-button {
-  display: block;
-  margin: 10px auto;
-  padding: 5px 10px;
-  background: #f9f9f9;
-  border: 1px solid var(--border-color);
-  cursor: pointer;
-  width: 30%;
-  text-align: center;
-  font-size: 12px;
-}
-
 body.dark .add-reference-button,
-body.dark .add-description-button,
-body.dark .add-cprob-button {
-  background: #333;
+body.dark .add-description-button {
+  /* background-color: #333; */
   color: white;
 }
 

@@ -51,26 +51,26 @@ export default {
   align-items: center;
   max-width: 500px;
   min-width: 200px;
-  border: 1px solid #ccc;
-  border-radius: 3px;
   overflow: hidden;
 }
 
 .search-bar input {
   flex-grow: 1;
-  padding: 8px;
+  padding: 10px;
   border: none;
   outline: none;
+  border: 1px solid var(--border-color);
+  padding: 9px;
+  border-radius: 3px 0 0 3px;
 }
 
 .search-button {
   background-color: rgb(39, 98, 162);
   border: none;
-  color: white;
   cursor: pointer;
   font-size: 16px;
-  border-radius: 1px;
-  padding: 8px 12px;
+  border-radius: 0 3px 3px 0;
+  padding: 7px 11px 8px 9px;
   transition: var(--background-color) 0.2s ease;
 }
 

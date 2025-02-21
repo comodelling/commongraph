@@ -581,5 +581,4 @@ def get_random_quote():
         raise HTTPException(status_code=404, detail="No quotes found")
 
     random_quote = random.choice(quotes)
-    logger.info(f"Random quote: {random_quote}")
     return random_quote

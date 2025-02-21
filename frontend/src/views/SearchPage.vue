@@ -1,27 +1,35 @@
+<!-- filepath: /Users/mario/CODE/objectivenet/frontend/src/views/SearchPage.vue -->
 <template>
   <div class="search-page">
     <div class="search-header">
-      <!-- The SearchBar now only accepts the query string -->
-      <SearchBar :initialQuery="title" @search="search" />
-    </div>
-    <div class="results">
-      <h2>Search Results</h2>
-      <div v-if="!nodes.length && title">
-        <p>No results found for "{{ title }}"</p>
+      <!-- Center the search bar -->
+      <div class="centered-search">
+        <SearchBar :initialQuery="title" @search="search" />
       </div>
-      <div v-if="groupedNodes">
-        <div
-          v-for="(nodes, scope) in groupedNodes"
-          :key="scope"
-          class="scope-group"
-        >
-          <h4>{{ scope }}</h4>
-          <ul>
-            <li v-for="node in nodes" :key="node.id" class="node-item">
-              <a :href="`/node/${node.node_id}`">{{ node.title }}</a>
-            </li>
-          </ul>
+    </div>
+    <div class="search-content">
+      <div class="results-column">
+        <h2>Search Results</h2>
+        <div v-if="!nodes.length && title">
+          <p>No results found for "{{ title }}"</p>
         </div>
+        <div v-if="groupedNodes">
+          <div
+            v-for="(nodes, scope) in groupedNodes"
+            :key="scope"
+            class="scope-group"
+          >
+            <h4>{{ scope }}</h4>
+            <ul>
+              <li v-for="node in nodes" :key="node.id" class="node-item">
+                <a :href="`/node/${node.node_id}`">{{ node.title }}</a>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="visualization-column">
+        <SupportView :nodes="nodes" />
       </div>
     </div>
   </div>
@@ -32,9 +40,10 @@ import api from "../axios";
 import qs from "qs";
 import { useRouter, useRoute } from "vue-router";
 import SearchBar from "../components/SearchBar.vue";
+import SupportView from "../components/SupportHistogram.vue";
 
 export default {
-  components: { SearchBar },
+  components: { SearchBar, SupportView },
   data() {
     return {
       title: "",
@@ -66,7 +75,6 @@ export default {
     },
   },
   methods: {
-    // The search method now receives the parsed query object from SearchBar
     search(parsedQuery) {
       console.log("Parsed query:", parsedQuery);
       const params = {};
@@ -85,13 +93,11 @@ export default {
       if (parsedQuery.scope) {
         params.scope = parsedQuery.scope;
       }
-      // Update the route with the query params (which triggers performSearch)
       this.$router.push({ name: "SearchPage", query: params });
     },
     async performSearch() {
       try {
         const { title, node_type, status, tags, scope } = this.$route.query;
-        // Convert tags to an array if necessary
         const tagsArray = tags
           ? typeof tags === "string"
             ? tags
@@ -144,34 +150,64 @@ export default {
   flex-direction: column;
   height: 100vh;
 }
+
 .search-header {
   padding: 20px;
   padding-left: 100px;
   position: sticky;
   top: 0;
   z-index: 10;
+  background: var(--background-color);
 }
-.results {
+
+.centered-search {
+  display: flex;
+  justify-content: center;
+}
+
+.centered-search > * {
+  width: 600px; /* set desired width */
+}
+
+.search-content {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.results-column {
   flex: 1;
   overflow-y: auto;
   padding: 20px;
   padding-left: 100px;
+  border-right: 1px solid #ddd;
 }
+
+.visualization-column {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+}
+
 .scope-group {
   margin-bottom: 20px;
 }
+
 .node-item {
   cursor: pointer;
   transition: background-color 0.3s;
   margin-bottom: 5px;
   font-size: 12px;
 }
+
 .node-item a {
   text-decoration: none;
 }
+
 .node-item a:hover {
   text-decoration: underline;
 }
+
 .node-item:hover {
   background-color: #f0f0f0;
 }

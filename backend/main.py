@@ -539,6 +539,30 @@ def get_edge_median_rating(
     return {"median_rating": median}
 
 
+@app.get("/rating/nodes/median")
+def get_nodes_median_rating(
+    node_ids: list[NodeId] = Query(
+        ..., alias="node_ids[]", description="List of node IDs"
+    ),
+    rating_type: RatingType = RatingType.support,
+    db: RatingHistoryRelationalInterface = Depends(get_rating_history_db_connection),
+) -> dict[int, dict]:
+    """
+    Retrieve the median ratings for multiple nodes.
+    Returns a mapping: { node_id: {'median_rating': <value> } }.
+    If a node doesn't have ratings, the value will be None.
+    """
+    result = {}
+    for node_id in node_ids:
+        try:
+            median = db.get_node_median_rating(node_id, rating_type)
+            result[node_id] = {"median_rating": median}
+        except HTTPException:
+            # Node has no ratings or is not found; set as None
+            result[node_id] = {"median_rating": None}
+    return result
+
+
 ### others ###
 
 

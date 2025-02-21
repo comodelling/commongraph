@@ -13,6 +13,7 @@ from models import (
     NodeType,
     EdgeType,
     RatingEvent,
+    RatingType,
     LikertScale,
 )
 
@@ -81,28 +82,36 @@ class RatingHistoryRelationalInterface(ABC):
         """
         pass
 
-    def get_node_rating(self, node_id: NodeId, username: str) -> RatingEvent | None:
+    def get_node_rating(
+        self, node_id: NodeId, rating_type: RatingType, username: str
+    ) -> RatingEvent | None:
         """
         Retrieve the rating of a given node by a given user.
         """
         pass
 
     def get_edge_rating(
-        self, source_id: NodeId, target_id: NodeId, username: str
+        self,
+        source_id: NodeId,
+        target_id: NodeId,
+        rating_type: RatingType,
+        username: str,
     ) -> RatingEvent | None:
         """
         Retrieve the rating of a given edge by a given user.
         """
         pass
 
-    def get_node_median_rating(self, node_id: NodeId) -> LikertScale | None:
+    def get_node_median_rating(
+        self, node_id: NodeId, rating_type: RatingType
+    ) -> LikertScale | None:
         """
         Retrieve the median rating (LikertScale) of a given node.
         """
         pass
 
     def get_edge_median_rating(
-        self, source_id: NodeId, target_id: NodeId
+        self, source_id: NodeId, target_id: NodeId, rating_type: RatingType
     ) -> LikertScale | None:
         """
         Retrieve the median rating (LikertScale) of a given edge.

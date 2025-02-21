@@ -4,6 +4,8 @@ from pathlib import Path as PathlibPath
 from typing import Annotated
 import logging
 import datetime
+import json
+import random
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, status, Query, Depends, HTTPException
@@ -64,6 +66,8 @@ else:
     warnings.warn(
         f".env file not found at {_env_path}, using default environment variables"
     )
+
+QUOTES_FILE = os.getenv("QUOTES_FILE", "")
 
 origins = (
     [origin.strip() for origin in os.getenv("ALLOWED_ORIGINS", "").split(",")]
@@ -545,10 +549,37 @@ def migrate_label_to_property(
     """Migrate the label of each vertex to a property called 'property_name'."""
     property_name = request.property_name
     try:
-        print(f"Starting migration with property_name: {property_name}")  # Added line
+        # Added line
+        print(f"Starting migration with property_name: {property_name}")
         db.migrate_label_to_property(property_name)
         print("Migration successful.")  # Added line
         return {"message": f"Successfully migrated labels to property {property_name}"}
     except Exception as e:
         print(f"Migration failed with error: {e}")  # Added line
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/quote")
+def get_random_quote():
+    """Return a random quote from the quotes file.
+    The quotes file is specified in the QUOTES_FILE environment variable, which should be a path to a JSON file.
+    The JSON file should contain a list of dictionaries, each with a "quote" key and optional "author" and "where" keys.
+    """
+    if not os.path.exists(QUOTES_FILE):
+        logger.warning("Quotes file not found")
+        raise HTTPException(status_code=404, detail="Quotes file not found")
+
+    with open(QUOTES_FILE, "r", encoding="utf-8") as file:
+        try:
+            quotes = json.load(file)
+        except json.JSONDecodeError as e:
+            logger.error(f"Invalid JSON format: {e}")
+            raise HTTPException(status_code=500, detail="Invalid JSON format")
+
+    if not quotes:
+        logger.error("No quotes found")
+        raise HTTPException(status_code=404, detail="No quotes found")
+
+    random_quote = random.choice(quotes)
+    logger.info(f"Random quote: {random_quote}")
+    return random_quote

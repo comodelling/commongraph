@@ -1,4 +1,5 @@
 # Backend
+.env
 backend/dev/*
 backend/data/*
 backend/scripts/*

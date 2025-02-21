@@ -67,6 +67,7 @@ export default {
 
 .content {
   text-align: center;
+  margin: 0 20px;
 }
 
 .search-container {

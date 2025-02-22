@@ -1,9 +1,9 @@
 <template>
   <div class="support-view">
-    <h3>Support Histogram</h3>
+    <h2>Support Histogram</h2>
     <div v-if="loading">Loading ratings...</div>
     <div v-if="error">{{ error }}</div>
-    <div v-else>
+    <div v-else class="chart-container">
       <canvas ref="chart"></canvas>
     </div>
   </div>
@@ -102,6 +102,8 @@ export default {
             ],
           },
           options: {
+            responsive: true,
+            maintainAspectRatio: false,
             plugins: {
               legend: {
                 display: false,
@@ -158,5 +160,26 @@ export default {
 <style scoped>
 .support-view {
   padding: 20px;
+  text-align: center;
+
+  height: 50%;
+  min-height: 0; /* allow flex children to shrink */
+  display: flex;
+  flex-direction: column;
+  /* border: 1px solid blue; */
+}
+
+.chart-container {
+  flex: 1; /* take available vertical space */
+  min-height: 75px; /* allow shrinking to prevent overflow */
+  min-width: 75px; /* allow flex children to shrink */
+  /* border: 1px solid green; */
+}
+
+/* Make the canvas fill the container */
+canvas {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
 }
 </style>

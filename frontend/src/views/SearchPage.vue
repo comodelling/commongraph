@@ -181,12 +181,15 @@ export default {
   padding: 20px;
   padding-left: 100px;
   border-right: 1px solid #ddd;
+  /* border: 1px solid blue; */
 }
 
 .visualization-column {
   flex: 1;
   overflow-y: auto;
   padding: 20px;
+  /* height: 100vh; */
+  /* border: 1px solid red; */
 }
 
 .scope-group {
@@ -195,7 +198,7 @@ export default {
 
 .node-item {
   cursor: pointer;
-  transition: background-color 0.3s;
+  transition: var(--background-color) 0.3s;
   margin-bottom: 5px;
   font-size: 12px;
 }

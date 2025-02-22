@@ -10,21 +10,23 @@
     <div class="search-content">
       <div class="results-column">
         <h2>Search Results</h2>
-        <div v-if="!nodes.length && title">
-          <p>No results found for "{{ title }}"</p>
-        </div>
-        <div v-if="groupedNodes">
-          <div
-            v-for="(nodes, scope) in groupedNodes"
-            :key="scope"
-            class="scope-group"
-          >
-            <h4>{{ scope }}</h4>
-            <ul>
-              <li v-for="node in nodes" :key="node.id" class="node-item">
-                <a :href="`/node/${node.node_id}`">{{ node.title }}</a>
-              </li>
-            </ul>
+        <div class="results-list">
+          <div v-if="!nodes.length && title">
+            <p>No results found for "{{ title }}"</p>
+          </div>
+          <div v-if="groupedNodes">
+            <div
+              v-for="(nodes, scope) in groupedNodes"
+              :key="scope"
+              class="scope-group"
+            >
+              <h4>{{ scope }}</h4>
+              <ul>
+                <li v-for="node in nodes" :key="node.id" class="node-item">
+                  <a :href="`/node/${node.node_id}`">{{ node.title }}</a>
+                </li>
+              </ul>
+            </div>
           </div>
         </div>
       </div>
@@ -152,8 +154,7 @@ export default {
 }
 
 .search-header {
-  padding: 20px;
-  padding-left: 100px;
+  padding: 5px 0 4px 100px;
   position: sticky;
   top: 0;
   z-index: 10;
@@ -177,19 +178,37 @@ export default {
 
 .results-column {
   flex: 1;
+  padding: 10px 0 5px 100px;
+  /* padding-left: 100px; */
+  /* border-right: 1px solid #ddd; */
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  /* margin:  */
+  margin: 2px 2px 4px 2px;
+}
+
+.results-column h2 {
+  text-align: center;
+  margin: 0px 50px;
+  padding-bottom: 10px;
+  padding-right: 50px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.results-list {
+  flex: 1;
   overflow-y: auto;
-  padding: 20px;
-  padding-left: 100px;
-  border-right: 1px solid #ddd;
-  /* border: 1px solid blue; */
 }
 
 .visualization-column {
   flex: 1;
   overflow-y: auto;
-  padding: 20px;
-  /* height: 100vh; */
-  /* border: 1px solid red; */
+  /* padding: 20px; */
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  margin: 2px 4px 4px 2px;
 }
 
 .scope-group {

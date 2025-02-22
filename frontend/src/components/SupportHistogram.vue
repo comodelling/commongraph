@@ -159,20 +159,32 @@ export default {
 
 <style scoped>
 .support-view {
-  padding: 20px;
+  padding: 10px 0;
   text-align: center;
 
-  height: 50%;
   min-height: 0; /* allow flex children to shrink */
   display: flex;
   flex-direction: column;
-  /* border: 1px solid blue; */
+  /* border: 1px solid var(--border-color); */
+  border-radius: 4px;
+  /* height: 50%; */
+  /* min-height: 200px; */
+  /* flex-shrink: 0; */
+  height: clamp(300px, 50%, 100vh);
+}
+
+.support-view h2 {
+  text-align: center;
+  margin: 0px 30px;
+  padding-bottom: 10px;
+  /* padding-right: 40px; */
+  border-bottom: 1px solid var(--border-color);
 }
 
 .chart-container {
   flex: 1; /* take available vertical space */
-  min-height: 75px; /* allow shrinking to prevent overflow */
-  min-width: 75px; /* allow flex children to shrink */
+  min-height: 50px;
+  min-width: 75px;
   /* border: 1px solid green; */
 }
 

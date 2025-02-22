@@ -132,7 +132,7 @@ class RatingHistoryPostgreSQLDB(RatingHistoryRelationalInterface):
         self, node_id: int, rating_type: RatingType, username: str
     ) -> RatingEvent | None:
         """
-        Retrieve the rating of a given node by a given user.
+        Retrieve the latest rating of a given node by a given user.
         """
         with Session(self.engine) as session:
             statement = (
@@ -153,7 +153,7 @@ class RatingHistoryPostgreSQLDB(RatingHistoryRelationalInterface):
         self, source_id: int, target_id: int, rating_type: RatingType, username: str
     ) -> RatingEvent | None:
         """
-        Retrieve the rating of a given edge by a given user.
+        Retrieve the latest rating of a given edge by a given user.
         """
         with Session(self.engine) as session:
             statement = (
@@ -174,13 +174,17 @@ class RatingHistoryPostgreSQLDB(RatingHistoryRelationalInterface):
         self, node_id: int, rating_type: RatingType
     ) -> LikertScale | None:
         """
-        Retrieve the median rating (LikertScale) of a given node.
+        Retrieve the median of latest ratings (LikertScale) for a given node.
         """
         with Session(self.engine) as session:
-            statement = select(RatingEvent).where(
-                RatingEvent.entity_type == EntityType.node,
-                RatingEvent.node_id == node_id,
-                RatingEvent.rating_type == rating_type,
+            statement = (
+                select(RatingEvent)
+                .where(
+                    RatingEvent.entity_type == EntityType.node,
+                    RatingEvent.node_id == node_id,
+                    RatingEvent.rating_type == rating_type,
+                )
+                .order_by(RatingEvent.timestamp.desc())
             )
             ratings = session.exec(statement).all()
             if not ratings:
@@ -209,14 +213,18 @@ class RatingHistoryPostgreSQLDB(RatingHistoryRelationalInterface):
         self, source_id: int, target_id: int, rating_type: RatingType
     ) -> LikertScale | None:
         """
-        Retrieve the median rating (LikertScale) of a given edge.
+        Retrieve the median of latest ratings (LikertScale) for a given edge.
         """
         with Session(self.engine) as session:
-            statement = select(RatingEvent).where(
-                RatingEvent.entity_type == EntityType.edge,
-                RatingEvent.source_id == source_id,
-                RatingEvent.target_id == target_id,
-                RatingEvent.rating_type == rating_type,
+            statement = (
+                select(RatingEvent)
+                .where(
+                    RatingEvent.entity_type == EntityType.edge,
+                    RatingEvent.source_id == source_id,
+                    RatingEvent.target_id == target_id,
+                    RatingEvent.rating_type == rating_type,
+                )
+                .order_by(RatingEvent.timestamp.desc())
             )
             ratings = session.exec(statement).all()
             if not ratings:

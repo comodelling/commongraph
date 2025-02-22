@@ -27,6 +27,7 @@ from models import (
     GraphHistoryEvent,
     RatingEvent,
     RatingType,
+    LikertScale,
 )
 from database.base import (
     GraphDatabaseInterface,
@@ -540,27 +541,26 @@ def get_edge_median_rating(
 
 
 @app.get("/rating/nodes/median")
-def get_nodes_median_rating(
+def get_nodes_median_ratings(
     node_ids: list[NodeId] = Query(
         ..., alias="node_ids[]", description="List of node IDs"
     ),
     rating_type: RatingType = RatingType.support,
     db: RatingHistoryRelationalInterface = Depends(get_rating_history_db_connection),
-) -> dict[int, dict]:
+) -> dict[int, dict | None]:
     """
     Retrieve the median ratings for multiple nodes.
     Returns a mapping: { node_id: {'median_rating': <value> } }.
     If a node doesn't have ratings, the value will be None.
     """
-    result = {}
-    for node_id in node_ids:
-        try:
-            median = db.get_node_median_rating(node_id, rating_type)
-            result[node_id] = {"median_rating": median}
-        except HTTPException:
-            # Node has no ratings or is not found; set as None
-            result[node_id] = {"median_rating": None}
-    return result
+    time = datetime.datetime.now()
+    medians = db.get_nodes_median_ratings(node_ids, rating_type)
+    duration = datetime.datetime.now() - time
+    logger.info(f"Retrieved median ratings for ({len(node_ids)}) nodes in {duration}s")
+    return {
+        node_id: {"median_rating": (median.value if median is not None else None)}
+        for node_id, median in medians.items()
+    }
 
 
 ### others ###

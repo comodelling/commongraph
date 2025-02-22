@@ -106,7 +106,7 @@ class RatingHistoryRelationalInterface(ABC):
         self, node_id: NodeId, rating_type: RatingType
     ) -> LikertScale | None:
         """
-        Retrieve the median rating (LikertScale) of a given node.
+        Retrieve the latest median rating (LikertScale) of a given node.
         """
         pass
 
@@ -115,6 +115,16 @@ class RatingHistoryRelationalInterface(ABC):
     ) -> LikertScale | None:
         """
         Retrieve the median rating (LikertScale) of a given edge.
+        """
+        pass
+
+    def get_nodes_median_ratings(
+        self, node_ids: list[NodeId], rating_type: RatingType
+    ) -> dict[NodeId, LikertScale | None]:
+        """
+        Retrieve the latest median ratings for multiple nodes.
+        Returns a mapping: { node_id: median_rating }.
+        If a node has no ratings, median_rating is None.
         """
         pass
 

@@ -123,7 +123,7 @@ class RatingHistoryPostgreSQLDB(RatingHistoryRelationalInterface):
             session.commit()
             session.refresh(rating)
             if hasattr(self, "logger"):
-                self.logger.info(
+                self.logger.debug(
                     f"Logged rating by {rating.username} for {rating.entity_type}"
                 )
             return rating
@@ -204,7 +204,7 @@ class RatingHistoryPostgreSQLDB(RatingHistoryRelationalInterface):
             median_index = indices[mid] if len(indices) % 2 == 1 else indices[mid - 1]
             median_rating = scale_order[median_index]
             if hasattr(self, "logger"):
-                self.logger.info(
+                self.logger.debug(
                     f"Computed median rating for node {node_id} is {median_rating}"
                 )
             return median_rating
@@ -242,10 +242,65 @@ class RatingHistoryPostgreSQLDB(RatingHistoryRelationalInterface):
             median_index = indices[mid] if len(indices) % 2 == 1 else indices[mid - 1]
             median_rating = scale_order[median_index]
             if hasattr(self, "logger"):
-                self.logger.info(
+                self.logger.debug(
                     f"Computed median rating for edge {source_id}->{target_id} is {median_rating}"
                 )
             return median_rating
+
+    def get_nodes_median_ratings(
+        self, node_ids: list[NodeId], rating_type: RatingType
+    ) -> dict[NodeId, LikertScale | None]:
+        """
+        Retrieve the latest median ratings for multiple nodes.
+        Returns a mapping: { node_id: median_rating }.
+        If a node has no ratings, median_rating is None.
+        """
+        with Session(self.engine) as session:
+            statement = (
+                select(RatingEvent)
+                .where(
+                    RatingEvent.entity_type == EntityType.node,
+                    RatingEvent.node_id.in_(node_ids),
+                    RatingEvent.rating_type == rating_type,
+                )
+                .order_by(RatingEvent.timestamp.desc())
+            )
+            ratings = session.exec(statement).all()
+
+        # Group the ratings by node_id.
+        groups: dict[int, list[RatingEvent]] = {}
+        for r in ratings:
+            groups.setdefault(r.node_id, []).append(r)
+
+        # Define the order of LikertScale values.
+        scale_order = [
+            LikertScale.a,
+            LikertScale.b,
+            LikertScale.c,
+            LikertScale.d,
+            LikertScale.e,
+        ]
+
+        results = {}
+        for node_id in node_ids:
+            node_ratings = groups.get(node_id)
+            if not node_ratings:
+                results[node_id] = None
+            else:
+                indices = [scale_order.index(r.rating) for r in node_ratings]
+                indices.sort()
+                mid = len(indices) // 2
+                median_index = (
+                    indices[mid] if len(indices) % 2 == 1 else indices[mid - 1]
+                )
+                results[node_id] = scale_order[median_index]
+
+            if hasattr(self, "logger"):
+                self.logger.debug(
+                    f"Computed median rating for node {node_id} is {results[node_id]}"
+                )
+
+        return results
 
 
 class GraphHistoryPostgreSQLDB(GraphHistoryRelationalInterface):
@@ -489,7 +544,7 @@ class GraphHistoryPostgreSQLDB(GraphHistoryRelationalInterface):
         active_filters = {k: v for k, v in all_filters.items() if v is not None}
 
         for node in subnet.nodes:
-            self.logger.info(
+            self.logger.debug(
                 f"Checking node {node.node_id} with title: {getattr(node, 'title', None)}"
             )
             match = True

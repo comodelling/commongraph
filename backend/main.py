@@ -553,10 +553,13 @@ def get_nodes_median_ratings(
     Returns a mapping: { node_id: {'median_rating': <value> } }.
     If a node doesn't have ratings, the value will be None.
     """
-    time = datetime.datetime.now()
+    start_time = datetime.datetime.now()
     medians = db.get_nodes_median_ratings(node_ids, rating_type)
-    duration = datetime.datetime.now() - time
-    logger.info(f"Retrieved median ratings for ({len(node_ids)}) nodes in {duration}s")
+    duration = datetime.datetime.now() - start_time
+    duration_ms = duration.total_seconds() * 1000
+    logger.info(
+        f"Retrieved median ratings for ({len(node_ids)}) nodes in {duration_ms:.2f}ms"
+    )
     return {
         node_id: {"median_rating": (median.value if median is not None else None)}
         for node_id, median in medians.items()

@@ -13,6 +13,7 @@
         class="rating-button rating-E"
         :class="{ selected: currentRating === 'E' }"
         @click="rate('E')"
+        :title="`Not at all`"
       >
         1
       </button>
@@ -20,6 +21,7 @@
         class="rating-button rating-D"
         :class="{ selected: currentRating === 'D' }"
         @click="rate('D')"
+        :title="`Not really`"
       >
         2
       </button>
@@ -27,6 +29,7 @@
         class="rating-button rating-C"
         :class="{ selected: currentRating === 'C' }"
         @click="rate('C')"
+        :title="`Neutral`"
       >
         3
       </button>
@@ -34,6 +37,7 @@
         class="rating-button rating-B"
         :class="{ selected: currentRating === 'B' }"
         @click="rate('B')"
+        :title="`Somewhat`"
       >
         4
       </button>
@@ -41,6 +45,7 @@
         class="rating-button rating-A"
         :class="{ selected: currentRating === 'A' }"
         @click="rate('A')"
+        :title="`Very much`"
       >
         5
       </button>

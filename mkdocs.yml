@@ -1,10 +1,14 @@
 site_name: ObjectiveNet Documentation
 nav:
   - Introduction: index.md
-  - Developers: developers.md
+  - Configuration: configuration.md
   - Modelling:
-    - Causal Graph: graph.md
-    - Democratic Support: democracy.md
+    - Graph of Change: modelling_graph.md
+    - Democratic Support: modelling_support.md
+  - Views:
+    - Browsing: view_browsing.md
+    - Elemental: view_elemental.md
+    - User's: view_user.md
 
 theme: readthedocs
 markdown_extensions:

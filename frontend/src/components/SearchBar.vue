@@ -49,7 +49,8 @@ export default {
 .search-bar {
   display: flex;
   align-items: center;
-  max-width: 500px;
+  max-width: 800px;
+  width: 600px;
   min-width: 200px;
   overflow: hidden;
 }

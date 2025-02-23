@@ -95,10 +95,6 @@ import {
 } from "../composables/formatFlowComponents";
 import api from "../axios";
 
-// api.get("/user/me")
-//   .then(response => { /* handle response */ })
-//   .catch(error => { /* handle error */ });
-
 export default {
   components: {
     NodeInfo,
@@ -113,6 +109,7 @@ export default {
       updatedNode: undefined,
       updatedEdge: undefined,
       subnetData: {},
+      ratings: {},
       causalDirection: "LeftToRight",
     };
   },
@@ -174,8 +171,11 @@ export default {
           `${import.meta.env.VITE_BACKEND_URL}/subnet/${seed}`,
           { params: { levels: 10 } },
         );
-        const fetched_nodes = response.data.nodes || [];
+        let fetched_nodes = response.data.nodes || [];
+        await this.fetchRatings(fetched_nodes.map((node) => node.node_id)); // Wait for ratings to be fetched ...
         const fetched_edges = response.data.edges || [];
+        fetched_nodes = this.updateNodesWithRatings(fetched_nodes);
+        console.log("Fetched nodes:", fetched_nodes);
         this.node =
           fetched_nodes.find((node) => node.node_id === parseInt(seed)) || null;
         if (this.sourceId && this.targetId) {
@@ -186,6 +186,7 @@ export default {
                 edge.target === parseInt(this.targetId),
             ) || null;
         }
+        // Build subnetData using formatted nodes/edges.
         this.subnetData = {
           nodes: fetched_nodes.map((node) => formatFlowNodeProps(node)),
           edges: fetched_edges.map((edge) => formatFlowEdgeProps(edge)),
@@ -196,6 +197,33 @@ export default {
         this.edge = null;
         this.subnetData = { nodes: [], edges: [] };
       }
+    },
+
+    async fetchRatings(nodeIds) {
+      if (!nodeIds.length) return;
+      try {
+        const response = await api.get(
+          `${import.meta.env.VITE_BACKEND_URL}/rating/nodes/median`,
+          { params: { node_ids: nodeIds } },
+        );
+        this.ratings = response.data; // Ratings stored separately
+        console.log("Fetched ratings:", this.ratings);
+        // Once ratings are fetched, update the node colours.
+      } catch (error) {
+        console.error("Error fetching node ratings:", error);
+      }
+    },
+
+    updateNodesWithRatings(rawNodes) {
+      return rawNodes.map((node) => {
+        if (
+          this.ratings[node.node_id] &&
+          this.ratings[node.node_id].median_rating
+        ) {
+          node.support = this.ratings[node.node_id].median_rating;
+        }
+        return node;
+      });
     },
     async updateNodeFromBackend(node_id) {
       try {

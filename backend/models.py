@@ -51,6 +51,14 @@ class LikertScale(str, Enum):
     d = "D"  # disagree
     e = "E"  # strongly disagree
 
+    @classmethod
+    def _missing_(cls, value):
+        if isinstance(value, str):
+            uppercase = value.upper()
+            if uppercase in cls._value2member_map_:
+                return cls._value2member_map_[uppercase]
+        raise ValueError(f"{value} is not a valid {cls.__name__}")
+
 
 class NodeStatus(str, Enum):
     unspecified = "unspecified"  # default

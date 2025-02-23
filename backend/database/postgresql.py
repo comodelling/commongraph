@@ -1,6 +1,7 @@
 from typing import List
 import random
 
+from sqlalchemy import text
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import SQLModel, Session, select
@@ -148,6 +149,32 @@ class RatingHistoryPostgreSQLDB(RatingHistoryRelationalInterface):
 
             rating = session.exec(statement).first()
             return rating
+
+    def get_node_ratings(
+        self, node_id: int, rating_type: RatingType
+    ) -> list[RatingEvent]:
+        """
+        Retrieve the most recent rating per user for a given node using PostgreSQL's DISTINCT ON.
+        """
+        print(RatingEvent.__tablename__)
+        query = text(
+            f"""
+            SELECT DISTINCT ON (username) *
+            FROM {RatingEvent.__tablename__}
+            WHERE entity_type = :entity_type
+              AND node_id = :node_id
+              AND rating_type = :rating_type
+            ORDER BY username, timestamp DESC
+        """
+        )
+        params = {
+            "entity_type": EntityType.node,
+            "node_id": node_id,
+            "rating_type": rating_type,
+        }
+        with Session(self.engine) as session:
+            results = session.exec(query, params=params).fetchall()
+            return [RatingEvent.model_validate(row) for row in results]
 
     def get_edge_rating(
         self, source_id: int, target_id: int, rating_type: RatingType, username: str

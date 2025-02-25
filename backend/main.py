@@ -550,6 +550,7 @@ def get_edge_median_rating(
     """
     Retrieve the median rating for a given edge.
     """
+    logger.warning("Function may not be working as expected")
     median = db.get_edge_median_rating(source_id, target_id, rating_type)
     return {"median_rating": median}
 

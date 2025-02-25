@@ -203,38 +203,30 @@ class RatingHistoryPostgreSQLDB(RatingHistoryRelationalInterface):
         """
         Retrieve the median of latest ratings (LikertScale) for a given node.
         """
-        with Session(self.engine) as session:
-            statement = (
-                select(RatingEvent)
-                .where(
-                    RatingEvent.entity_type == EntityType.node,
-                    RatingEvent.node_id == node_id,
-                    RatingEvent.rating_type == rating_type,
-                )
-                .order_by(RatingEvent.timestamp.desc())
+        # Use get_node_ratings to get the latest ratings per user
+        latest_ratings = self.get_node_ratings(node_id, rating_type)
+        if not latest_ratings:
+            raise HTTPException(status_code=404, detail="No ratings found for node")
+
+        scale_order = [
+            LikertScale.a,
+            LikertScale.b,
+            LikertScale.c,
+            LikertScale.d,
+            LikertScale.e,
+        ]
+        # Convert ratings to their index values
+        indices = [scale_order.index(r.rating) for r in latest_ratings]
+        indices.sort()
+        # Compute median index using the lower median in case of even count.
+        mid = len(indices) // 2
+        median_index = indices[mid] if len(indices) % 2 == 1 else indices[mid - 1]
+        median_rating = scale_order[median_index]
+        if hasattr(self, "logger"):
+            self.logger.debug(
+                f"Computed median rating for node {node_id} is {median_rating}"
             )
-            ratings = session.exec(statement).all()
-            if not ratings:
-                raise HTTPException(status_code=404, detail="No ratings found for node")
-            scale_order = [
-                LikertScale.a,
-                LikertScale.b,
-                LikertScale.c,
-                LikertScale.d,
-                LikertScale.e,
-            ]
-            # Convert ratings to their index values
-            indices = [scale_order.index(r.rating) for r in ratings]
-            indices.sort()
-            # Compute median index using the lower median in case of even count.
-            mid = len(indices) // 2
-            median_index = indices[mid] if len(indices) % 2 == 1 else indices[mid - 1]
-            median_rating = scale_order[median_index]
-            if hasattr(self, "logger"):
-                self.logger.debug(
-                    f"Computed median rating for node {node_id} is {median_rating}"
-                )
-            return median_rating
+        return median_rating
 
     def get_edge_median_rating(
         self, source_id: int, target_id: int, rating_type: RatingType

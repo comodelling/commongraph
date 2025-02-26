@@ -33,7 +33,7 @@ export default {
       default: true,
     },
   },
-  setup(props) {
+  setup(props, { expose }) {
     const ratings = ref(null); // Either an object mapping nodeId->rating or an array of ratings.
     const loading = ref(false);
     const error = ref(null);
@@ -180,13 +180,8 @@ export default {
         fetchRatings();
     });
 
-    return {
-      ratings,
-      loading,
-      error,
-      chart,
-      aggregate: props.aggregate,
-    };
+    expose({ fetchRatings });
+    return { ratings, loading, error, chart, aggregate: props.aggregate };
   },
 };
 </script>

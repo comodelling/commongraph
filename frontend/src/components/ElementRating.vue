@@ -1,8 +1,9 @@
 <template>
   <div class="element-rating">
-    <!-- Histogram above the buttons -->
+    <!-- Histogram above the buttons, with ref -->
     <SupportHistogram
       v-if="element && element.node_id"
+      ref="histogram"
       :node-id="element.node_id"
       :aggregate="false"
     />
@@ -13,7 +14,7 @@
         class="rating-button rating-E"
         :class="{ selected: currentRating === 'E' }"
         @click="rate('E')"
-        :title="`Not at all`"
+        title="Not at all"
       >
         1
       </button>
@@ -21,7 +22,7 @@
         class="rating-button rating-D"
         :class="{ selected: currentRating === 'D' }"
         @click="rate('D')"
-        :title="`Not really`"
+        title="Not really"
       >
         2
       </button>
@@ -29,7 +30,7 @@
         class="rating-button rating-C"
         :class="{ selected: currentRating === 'C' }"
         @click="rate('C')"
-        :title="`Neutral`"
+        title="Neutral"
       >
         3
       </button>
@@ -37,7 +38,7 @@
         class="rating-button rating-B"
         :class="{ selected: currentRating === 'B' }"
         @click="rate('B')"
-        :title="`Somewhat`"
+        title="Somewhat"
       >
         4
       </button>
@@ -45,7 +46,7 @@
         class="rating-button rating-A"
         :class="{ selected: currentRating === 'A' }"
         @click="rate('A')"
-        :title="`Very much`"
+        title="Very much"
       >
         5
       </button>
@@ -100,6 +101,7 @@ export default {
   },
   setup(props) {
     const currentRating = ref(null);
+    const histogram = ref(null);
     const { getAccessToken } = useAuth();
     const token = getAccessToken();
 
@@ -164,7 +166,6 @@ export default {
           ratingData.source_id = props.element.edge.source;
           ratingData.target_id = props.element.edge.target;
           ratingData.entity_type = "edge";
-          ratingData.rating_type = props.property;
         }
         const response = await api.post(
           `${import.meta.env.VITE_BACKEND_URL}/rating/log`,
@@ -172,13 +173,17 @@ export default {
           { headers: { Authorization: `Bearer ${token}` } },
         );
         currentRating.value = response.data.rating;
+        // After updating the rating, refresh the histogram data
+        if (histogram.value && histogram.value.fetchRatings) {
+          histogram.value.fetchRatings();
+        }
       } catch (error) {
         console.error("Failed to submit rating:", error);
       }
     };
 
     onMounted(() => fetchRating());
-    return { currentRating, rate, property: props.property };
+    return { currentRating, rate, property: props.property, histogram };
   },
 };
 </script>
@@ -189,7 +194,6 @@ export default {
   flex-direction: column;
   align-items: center;
   font-size: 14px;
-  /* margin: 0; */
 }
 
 .support-view {
@@ -226,21 +230,6 @@ export default {
 }
 .rating-button.rating-E {
   border-color: var(--rating-E-color);
-}
-.rating-button.rating-A.selected {
-  background-color: var(--rating-A-color);
-}
-.rating-button.rating-B.selected {
-  background-color: var(--rating-B-color);
-}
-.rating-button.rating-C.selected {
-  background-color: var(--rating-C-color);
-}
-.rating-button.rating-D.selected {
-  background-color: var(--rating-D-color);
-}
-.rating-button.rating-E.selected {
-  background-color: var(--rating-E-color);
 }
 .rating-button.selected {
   border-color: #fff;

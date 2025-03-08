@@ -18,13 +18,13 @@ To do so, just set `ENABLE_GRAPH_DB` to `true` in `backend/.env` configuration f
 
 ## Random quotes
 
-For randomly selecting and displaying quotes on your instance's main page, you can specify the path to JSON file of quotes in `backend/.env`.
+For randomly selecting and displaying quotes on the landing page, you can specify the path to JSON file of quotes in `backend/.env`.
 For instance: ```QUOTES_FILE=path_to_your_quotes_file.json```.
 The JSON file should be formatted with a quote, author, and optional "where" field, e.g.:
 ```json
 {
-    "quote": "Being concerned with the way our actions and beliefs now, today, will shape the future, tomorrow, the next generations.",
-    "author": "Adrienne Maree Brown",
-    "where": "Emergent Strategy, p16",
+    "quote": "Learning is an incremental, self-transforming process.",
+    "author": "Elinor Ostrom",
+    "where": "Governing the Commons",
 }
 ```

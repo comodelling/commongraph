@@ -7,7 +7,7 @@ nav:
     - Democratic Support: modelling_support.md
   - Views:
     - Browsing: view_browsing.md
-    - Elemental: view_elemental.md
+    - Focus: view_focus.md
     - User's: view_user.md
 
 theme: readthedocs

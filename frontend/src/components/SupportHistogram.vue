@@ -1,6 +1,7 @@
 <template>
   <div class="support-view">
-    <h2>Support Histogram</h2>
+    <h2 v-if="!aggregate">Suport Ratings</h2>
+    <h2 v-else>Support Ratings</h2>
     <div v-if="loading">Loading ratings...</div>
     <div v-if="error">{{ error }}</div>
     <div v-else class="chart-container">
@@ -15,21 +16,30 @@ import api from "../axios";
 import Chart from "chart.js/auto";
 
 export default {
-  name: "SupportView",
+  name: "SupportHistogram",
   props: {
+    // When aggregate is true, 'nodes' prop is used as before.
     nodes: {
       type: Array,
       default: () => [],
     },
+    // When aggregate is false, we assume a single node is to be visualized.
+    nodeId: {
+      type: Number,
+      default: null,
+    },
+    aggregate: {
+      type: Boolean,
+      default: true,
+    },
   },
-  setup(props) {
-    const ratings = ref({});
+  setup(props, { expose }) {
+    const ratings = ref(null); // Either an object mapping nodeId->rating or an array of ratings.
     const loading = ref(false);
     const error = ref(null);
     const chart = ref(null);
     let chartInstance = null;
 
-    // New mapping: E (lowest = 1) gets bucket index 0, A (highest = 5) gets index 4.
     const scaleMap = {
       A: 4,
       B: 3,
@@ -37,11 +47,8 @@ export default {
       D: 1,
       E: 0,
     };
-
-    // x-axis labels from lowest (1) to highest (5)
     const xLabels = ["1", "2", "3", "4", "5"];
 
-    // Retrieve computed CSS custom property values for bar colours in the correct order.
     const getBarColors = () => {
       const rootStyles = getComputedStyle(document.documentElement);
       return [
@@ -56,33 +63,57 @@ export default {
     const fetchRatings = async () => {
       loading.value = true;
       error.value = null;
-      ratings.value = {};
-
       try {
-        const nodeIds = props.nodes.map((node) => node.node_id);
-        const response = await api.get(
-          `${import.meta.env.VITE_BACKEND_URL}/rating/nodes/median`,
-          { params: { node_ids: nodeIds } },
-        );
-        // Expected response: { <node_id>: { median_rating: "A" } }
-        ratings.value = response.data;
+        if (props.aggregate) {
+          // Aggregated mode: multiple nodes.
+          const nodeIds = props.nodes.map((node) => node.node_id);
+          const response = await api.get(
+            `${import.meta.env.VITE_BACKEND_URL}/rating/nodes/median`,
+            { params: { node_ids: nodeIds } },
+          );
+          ratings.value = response.data; // Expected to be an object mapping node_id -> { median_rating: "X" }
+        } else {
+          // Non-aggregated mode: single node.
+          if (!props.nodeId) {
+            throw new Error(
+              "nodeId prop must be provided when aggregate is false.",
+            );
+          }
+          const response = await api.get(
+            `${import.meta.env.VITE_BACKEND_URL}/ratings/node/`,
+            { params: { node_id: props.nodeId } },
+          );
+          // Expecting response.data.ratings as an array of objects, each with a rating property.
+          ratings.value = response.data.ratings;
+        }
         updateHistogram();
       } catch (e) {
         error.value = "Error fetching ratings";
+        console.error(e);
       } finally {
         loading.value = false;
       }
     };
 
     const updateHistogram = () => {
-      // Initialize buckets for ratings 1 to 5 (bucket 0 for rating "E", bucket 4 for "A")
       const buckets = [0, 0, 0, 0, 0];
-      Object.values(ratings.value).forEach((entry) => {
-        const ratingLetter = entry.median_rating;
-        if (ratingLetter && scaleMap.hasOwnProperty(ratingLetter)) {
-          buckets[scaleMap[ratingLetter]]++;
-        }
-      });
+      if (props.aggregate) {
+        // ratings.value is an object mapping node ids to { median_rating: rating }
+        Object.values(ratings.value || {}).forEach((entry) => {
+          const ratingLetter = entry.median_rating;
+          if (ratingLetter && scaleMap.hasOwnProperty(ratingLetter)) {
+            buckets[scaleMap[ratingLetter]]++;
+          }
+        });
+      } else {
+        // ratings.value is an array of rating objects.
+        (ratings.value || []).forEach((entry) => {
+          const ratingLetter = entry.rating;
+          if (ratingLetter && scaleMap.hasOwnProperty(ratingLetter)) {
+            buckets[scaleMap[ratingLetter]]++;
+          }
+        });
+      }
       const ctx = chart.value.getContext("2d");
       const barColors = getBarColors();
       if (chartInstance) {
@@ -105,23 +136,18 @@ export default {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-              legend: {
-                display: false,
-              },
+              legend: { display: false },
             },
             scales: {
               x: {
                 title: {
-                  display: true,
+                  display: props.aggregate ? true : false,
                   text: "Median Rating",
                 },
               },
               y: {
                 beginAtZero: true,
-                title: {
-                  display: true,
-                  text: "Count",
-                },
+                title: { display: true, text: "Count" },
               },
             },
           },
@@ -129,10 +155,14 @@ export default {
       }
     };
 
+    // In aggregated mode, watch the nodes prop; otherwise watch nodeId.
     watch(
-      () => props.nodes,
+      () => (props.aggregate ? props.nodes : props.nodeId),
       (newVal) => {
-        if (newVal.length) {
+        if (
+          (props.aggregate && newVal.length) ||
+          (!props.aggregate && newVal)
+        ) {
           fetchRatings();
         } else if (chartInstance) {
           chartInstance.destroy();
@@ -142,17 +172,16 @@ export default {
       { immediate: true },
     );
 
-    // In case the component mounts after styles are ready.
     onMounted(() => {
-      if (props.nodes.length) fetchRatings();
+      if (
+        (props.aggregate && props.nodes.length) ||
+        (!props.aggregate && props.nodeId)
+      )
+        fetchRatings();
     });
 
-    return {
-      ratings,
-      loading,
-      error,
-      chart,
-    };
+    expose({ fetchRatings });
+    return { ratings, loading, error, chart, aggregate: props.aggregate };
   },
 };
 </script>
@@ -161,34 +190,23 @@ export default {
 .support-view {
   padding: 10px 0;
   text-align: center;
-
-  min-height: 0; /* allow flex children to shrink */
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  /* border: 1px solid var(--border-color); */
   border-radius: 4px;
-  /* height: 50%; */
-  /* min-height: 200px; */
-  /* flex-shrink: 0; */
-  height: clamp(300px, 50%, 100vh);
+  height: clamp(150px, 30%, 100vh);
 }
 
 .support-view h2 {
-  text-align: center;
   margin: 0px 30px;
   padding-bottom: 10px;
-  /* padding-right: 40px; */
   border-bottom: 1px solid var(--border-color);
 }
 
 .chart-container {
-  flex: 1; /* take available vertical space */
-  min-height: 50px;
-  min-width: 75px;
-  /* border: 1px solid green; */
+  flex: 1;
 }
 
-/* Make the canvas fill the container */
 canvas {
   width: 100% !important;
   height: 100% !important;

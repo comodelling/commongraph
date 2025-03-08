@@ -1,6 +1,7 @@
 from typing import List
 import random
 
+from sqlalchemy import text
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import SQLModel, Session, select
@@ -149,6 +150,66 @@ class RatingHistoryPostgreSQLDB(RatingHistoryRelationalInterface):
             rating = session.exec(statement).first()
             return rating
 
+    def get_node_ratings(
+        self, node_id: int, rating_type: RatingType
+    ) -> list[RatingEvent]:
+        """
+        Retrieve the most recent rating per user for a given node using PostgreSQL's DISTINCT ON.
+        """
+        print(RatingEvent.__tablename__)
+        query = text(
+            f"""
+            SELECT DISTINCT ON (username) *
+            FROM {RatingEvent.__tablename__}
+            WHERE entity_type = :entity_type
+              AND node_id = :node_id
+              AND rating_type = :rating_type
+            ORDER BY username, timestamp DESC
+        """
+        )
+        params = {
+            "entity_type": EntityType.node,
+            "node_id": node_id,
+            "rating_type": rating_type,
+        }
+        with Session(self.engine) as session:
+            results = session.exec(query, params=params).fetchall()
+            return [RatingEvent.model_validate(row) for row in results]
+
+    def get_nodes_ratings(
+        self, node_ids: list[NodeId], rating_type: RatingType
+    ) -> dict[NodeId, list[RatingEvent]]:
+        """
+        Retrieve the most recent rating per user for multiple nodes.
+        Returns a dictionary mapping each node_id to a list of RatingEvent,
+        where each rating represents the latest rating by a user.
+        """
+        query = text(
+            f"""
+            WITH latest AS (
+                SELECT DISTINCT ON (node_id, username) *
+                FROM {RatingEvent.__tablename__}
+                WHERE entity_type = :entity_type
+                AND node_id = ANY(:node_ids)
+                AND rating_type = :rating_type
+                ORDER BY node_id, username, timestamp DESC
+            )
+            SELECT * FROM latest;
+            """
+        )
+        params = {
+            "entity_type": EntityType.node,
+            "node_ids": node_ids,
+            "rating_type": rating_type,
+        }
+        with Session(self.engine) as session:
+            rows = session.exec(query, params=params).fetchall()
+            result: dict[int, list[RatingEvent]] = {}
+            for row in rows:
+                rating = RatingEvent.model_validate(row)
+                result.setdefault(rating.node_id, []).append(rating)
+            return result
+
     def get_edge_rating(
         self, source_id: int, target_id: int, rating_type: RatingType, username: str
     ) -> RatingEvent | None:
@@ -176,38 +237,39 @@ class RatingHistoryPostgreSQLDB(RatingHistoryRelationalInterface):
         """
         Retrieve the median of latest ratings (LikertScale) for a given node.
         """
-        with Session(self.engine) as session:
-            statement = (
-                select(RatingEvent)
-                .where(
-                    RatingEvent.entity_type == EntityType.node,
-                    RatingEvent.node_id == node_id,
-                    RatingEvent.rating_type == rating_type,
-                )
-                .order_by(RatingEvent.timestamp.desc())
+        # Use get_node_ratings to get the latest ratings per user
+        latest_ratings = self.get_node_ratings(node_id, rating_type)
+        if not latest_ratings:
+            raise HTTPException(status_code=404, detail="No ratings found for node")
+
+        scale_order = [
+            LikertScale.a,
+            LikertScale.b,
+            LikertScale.c,
+            LikertScale.d,
+            LikertScale.e,
+        ]
+        # Convert ratings to their index values
+        indices = [scale_order.index(r.rating) for r in latest_ratings]
+        indices.sort()
+        # Compute median index using the lower median in case of even count.
+        mid = len(indices) // 2
+        median_index = indices[mid] if len(indices) % 2 == 1 else indices[mid - 1]
+        median_rating = scale_order[median_index]
+        if hasattr(self, "logger"):
+            self.logger.debug(
+                f"Computed median rating for node {node_id} is {median_rating}"
             )
-            ratings = session.exec(statement).all()
-            if not ratings:
-                raise HTTPException(status_code=404, detail="No ratings found for node")
-            scale_order = [
-                LikertScale.a,
-                LikertScale.b,
-                LikertScale.c,
-                LikertScale.d,
-                LikertScale.e,
-            ]
-            # Convert ratings to their index values
-            indices = [scale_order.index(r.rating) for r in ratings]
-            indices.sort()
-            # Compute median index using the lower median in case of even count.
-            mid = len(indices) // 2
-            median_index = indices[mid] if len(indices) % 2 == 1 else indices[mid - 1]
-            median_rating = scale_order[median_index]
-            if hasattr(self, "logger"):
-                self.logger.debug(
-                    f"Computed median rating for node {node_id} is {median_rating}"
-                )
-            return median_rating
+        return median_rating
+
+    def get_edge_ratings(
+        self, source_id: int, target_id: int, rating_type: RatingType
+    ) -> list[RatingEvent]:
+        """
+        Retrieve the most recent rating per user for a given edge using PostgreSQL's DISTINCT ON.
+        """
+        raise NotImplementedError
+        pass
 
     def get_edge_median_rating(
         self, source_id: int, target_id: int, rating_type: RatingType
@@ -215,6 +277,7 @@ class RatingHistoryPostgreSQLDB(RatingHistoryRelationalInterface):
         """
         Retrieve the median of latest ratings (LikertScale) for a given edge.
         """
+        # TODO: implement and use get_edge_ratings
         with Session(self.engine) as session:
             statement = (
                 select(RatingEvent)
@@ -252,25 +315,11 @@ class RatingHistoryPostgreSQLDB(RatingHistoryRelationalInterface):
     ) -> dict[NodeId, LikertScale | None]:
         """
         Retrieve the latest median ratings for multiple nodes.
-        Returns a mapping: { node_id: median_rating }.
-        If a node has no ratings, median_rating is None.
+        Leverages get_nodes_ratings to group the latest rating per user for each node,
+        then computes the median rating using the defined LikertScale order.
         """
-        with Session(self.engine) as session:
-            statement = (
-                select(RatingEvent)
-                .where(
-                    RatingEvent.entity_type == EntityType.node,
-                    RatingEvent.node_id.in_(node_ids),
-                    RatingEvent.rating_type == rating_type,
-                )
-                .order_by(RatingEvent.timestamp.desc())
-            )
-            ratings = session.exec(statement).all()
-
-        # Group the ratings by node_id.
-        groups: dict[int, list[RatingEvent]] = {}
-        for r in ratings:
-            groups.setdefault(r.node_id, []).append(r)
+        # Get the latest ratings per user for each node
+        ratings_by_node = self.get_nodes_ratings(node_ids, rating_type)
 
         # Define the order of LikertScale values.
         scale_order = [
@@ -281,14 +330,15 @@ class RatingHistoryPostgreSQLDB(RatingHistoryRelationalInterface):
             LikertScale.e,
         ]
 
-        results = {}
+        results: dict[int, LikertScale | None] = {}
         for node_id in node_ids:
-            node_ratings = groups.get(node_id)
+            node_ratings = ratings_by_node.get(node_id, [])
             if not node_ratings:
                 results[node_id] = None
             else:
-                indices = [scale_order.index(r.rating) for r in node_ratings]
-                indices.sort()
+                # Convert ratings to indices per the scale_order,
+                # sort them and compute the median (using lower median in even cases)
+                indices = sorted(scale_order.index(r.rating) for r in node_ratings)
                 mid = len(indices) // 2
                 median_index = (
                     indices[mid] if len(indices) % 2 == 1 else indices[mid - 1]
@@ -301,6 +351,12 @@ class RatingHistoryPostgreSQLDB(RatingHistoryRelationalInterface):
                 )
 
         return results
+
+    def get_edges_ratings(self):
+        raise NotImplementedError
+
+    def get_edges_median_ratings(self):
+        raise NotImplementedError
 
 
 class GraphHistoryPostgreSQLDB(GraphHistoryRelationalInterface):

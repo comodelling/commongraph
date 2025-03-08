@@ -1,18 +1,12 @@
 <template>
   <div class="element-rating">
-    <!-- Rating Prompt -->
-    <template v-if="property === 'support'">
-      <p>How much do you <b>support</b> this change?</p>
-    </template>
-    <template v-else-if="property === 'necessity'">
-      <p>How <b>necessary</b> is C for O to happen?</p>
-    </template>
-    <template v-else-if="property === 'sufficiency'">
-      <p>How <b>sufficient</b> is C for O to happen?</p>
-    </template>
-    <template v-else>
-      <p>No valid property provided: {{ property }}</p>
-    </template>
+    <!-- Histogram above the buttons, with ref -->
+    <SupportHistogram
+      v-if="element && element.node_id"
+      ref="histogram"
+      :node-id="element.node_id"
+      :aggregate="false"
+    />
 
     <!-- Buttons -->
     <div class="buttons-row">
@@ -20,6 +14,7 @@
         class="rating-button rating-E"
         :class="{ selected: currentRating === 'E' }"
         @click="rate('E')"
+        title="Not at all"
       >
         1
       </button>
@@ -27,6 +22,7 @@
         class="rating-button rating-D"
         :class="{ selected: currentRating === 'D' }"
         @click="rate('D')"
+        title="Not really"
       >
         2
       </button>
@@ -34,6 +30,7 @@
         class="rating-button rating-C"
         :class="{ selected: currentRating === 'C' }"
         @click="rate('C')"
+        title="Neutral"
       >
         3
       </button>
@@ -41,6 +38,7 @@
         class="rating-button rating-B"
         :class="{ selected: currentRating === 'B' }"
         @click="rate('B')"
+        title="Somewhat"
       >
         4
       </button>
@@ -48,12 +46,13 @@
         class="rating-button rating-A"
         :class="{ selected: currentRating === 'A' }"
         @click="rate('A')"
+        title="Very much"
       >
         5
       </button>
     </div>
 
-    <!-- Arrow SVG -->
+    <!-- Arrow SVG and rating prompt remain unchanged -->
     <div class="arrow">
       <svg viewBox="0 0 300 10" preserveAspectRatio="none">
         <path
@@ -66,6 +65,18 @@
         />
       </svg>
     </div>
+    <template v-if="property === 'support'">
+      <p>How much do you <b>support</b> this change?</p>
+    </template>
+    <template v-else-if="property === 'necessity'">
+      <p>How <b>necessary</b> is C for O to happen?</p>
+    </template>
+    <template v-else-if="property === 'sufficiency'">
+      <p>How <b>sufficient</b> is C for O to happen?</p>
+    </template>
+    <template v-else>
+      <p>No valid property provided: {{ property }}</p>
+    </template>
   </div>
 </template>
 
@@ -73,8 +84,10 @@
 import { ref, onMounted } from "vue";
 import api from "../axios";
 import { useAuth } from "../composables/useAuth";
+import SupportHistogram from "./SupportHistogram.vue";
 
 export default {
+  components: { SupportHistogram },
   props: {
     element: {
       type: Object,
@@ -88,20 +101,17 @@ export default {
   },
   setup(props) {
     const currentRating = ref(null);
-    // Retrieve auth token from localStorage or from your auth store
+    const histogram = ref(null);
     const { getAccessToken } = useAuth();
+    const token = getAccessToken();
 
-    const token = getAccessToken(); // adjust as needed
-
-    // Fetch user's rating when component mounts
     const fetchRating = async () => {
-      if (!token) return; // not logged in
+      if (!token) return;
       try {
         let response;
         if (props.element && props.element.node_id) {
           response = await api.get(
             `${import.meta.env.VITE_BACKEND_URL}/rating/node/${props.element.node_id}`,
-
             {
               params: { rating_type: props.property },
               headers: { Authorization: `Bearer ${token}` },
@@ -133,9 +143,8 @@ export default {
       }
     };
 
-    // Log rating when a button is clicked
     const rate = async (val) => {
-      currentRating.value = val; // update local state optimistically
+      currentRating.value = val;
       if (!token) {
         alert("You must be logged in to rate.");
         return;
@@ -145,7 +154,6 @@ export default {
           rating_type: props.property,
           rating: val,
         };
-        // Add element identifiers
         if (props.element && props.element.node_id) {
           ratingData.node_id = props.element.node_id;
           ratingData.entity_type = "node";
@@ -158,25 +166,24 @@ export default {
           ratingData.source_id = props.element.edge.source;
           ratingData.target_id = props.element.edge.target;
           ratingData.entity_type = "edge";
-          ratingData.rating_type = props.property; // necessity or sufficiency
         }
         const response = await api.post(
           `${import.meta.env.VITE_BACKEND_URL}/rating/log`,
           ratingData,
           { headers: { Authorization: `Bearer ${token}` } },
         );
-        // Update rating state with backend response
         currentRating.value = response.data.rating;
+        // After updating the rating, refresh the histogram data
+        if (histogram.value && histogram.value.fetchRatings) {
+          histogram.value.fetchRatings();
+        }
       } catch (error) {
         console.error("Failed to submit rating:", error);
       }
     };
 
-    onMounted(() => {
-      fetchRating();
-    });
-
-    return { currentRating, rate, property: props.property };
+    onMounted(() => fetchRating());
+    return { currentRating, rate, property: props.property, histogram };
   },
 };
 </script>
@@ -189,25 +196,26 @@ export default {
   font-size: 14px;
 }
 
+.support-view {
+  padding: 0;
+  width: 100%;
+  margin: 0 10px 0 0;
+}
 .buttons-row {
   display: flex;
   justify-content: center;
-  margin: 2px 0;
+  margin: -27px 0 0 41px;
 }
-
 .rating-button {
-  margin: 0 1px;
+  margin: 0 2px;
   width: 60px;
   font-size: 17px;
   padding: 5px;
   border-radius: 5px;
   border: 3px solid transparent;
-  /* box-sizing: border-box; */
   color: var(--text-color);
   opacity: 0.8;
 }
-
-/* Apply a background based on rating class */
 .rating-button.rating-A {
   border-color: var(--rating-A-color);
 }
@@ -223,31 +231,11 @@ export default {
 .rating-button.rating-E {
   border-color: var(--rating-E-color);
 }
-
-.rating-button.rating-A.selected {
-  background-color: var(--rating-A-color);
-}
-.rating-button.rating-B.selected {
-  background-color: var(--rating-B-color);
-}
-.rating-button.rating-C.selected {
-  background-color: var(--rating-C-color);
-}
-.rating-button.rating-D.selected {
-  background-color: var(--rating-D-color);
-}
-.rating-button.rating-E.selected {
-  background-color: var(--rating-E-color);
-}
-
-/* Optionally, style selected buttons (e.g., add a border or shadow) */
 .rating-button.selected {
   border-color: #fff;
-  /* For example, you might add a box-shadow or adjust opacity */
   box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.5);
   opacity: 1;
 }
-
 .arrow {
   width: 320px;
   height: 10px;
@@ -255,7 +243,6 @@ export default {
   margin-left: 20px;
   opacity: 0.5;
 }
-
 .arrow svg {
   width: 100%;
   height: 100%;

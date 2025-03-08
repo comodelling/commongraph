@@ -499,6 +499,20 @@ def get_node_rating(
     return db.get_node_rating(node_id, rating_type, user.username)
 
 
+@app.get("/ratings/node/")
+def get_node_ratings(
+    node_id: int,
+    rating_type: RatingType = RatingType.support,
+    db: RatingHistoryRelationalInterface = Depends(get_rating_history_db_connection),
+) -> dict:
+    """
+    Retrieve all ratings for a given node.
+    """
+    ratings = db.get_node_ratings(node_id, rating_type)
+    # Convert each RatingEvent to dict.
+    return {"ratings": ratings}
+
+
 @app.get("/rating/edge")
 def get_edge_rating(
     source_id: int,
@@ -536,6 +550,7 @@ def get_edge_median_rating(
     """
     Retrieve the median rating for a given edge.
     """
+    logger.warning("Function may not be working as expected")
     median = db.get_edge_median_rating(source_id, target_id, rating_type)
     return {"median_rating": median}
 

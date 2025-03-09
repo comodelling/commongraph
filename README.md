@@ -36,7 +36,7 @@ You can find its API schema at: [http://localhost:8000/docs](http://localhost:80
 
 ### Dev tools
 
-It is recommended to install dev requirements within a virtual environment when contributing to the code: `pip install -r requirements-dev.txt` (this includes the main requirements).
+It is recommended to install dev requirements within a virtual environment when contributing to the code: `pip install -r requirements.txt -r requirements-dev.txt` (this includes the main requirements).
 
 Run `pre-commit install` to set up the git hook scripts. It'll perform some formatting, linting, unit tests, and version sync before any commit.
 

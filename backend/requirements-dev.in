@@ -1,6 +1,3 @@
-# main reqs
--r requirements.in
-
 # basic software development tools
 black
 pip-tools

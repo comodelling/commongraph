@@ -13,7 +13,7 @@ Filters on the properties can be applied using the following syntax:<br>
 ## Search Results
 
 This pane displays the search results grouped by scope.
-Nodes can be clicked on to link to the [focus view](view/focus.md).
+Nodes can be clicked on to link to the [focus view](focus.md).
 
 ## Support Histogram
 

@@ -1,4 +1,4 @@
-# Causal Graph
+# Graph of Change
 
 In ObjectiveNet, possible changes are modelled as **nodes** in a **graph**, which may be connected together by **edges**.
 
@@ -9,7 +9,7 @@ One can create or edit a node via the node info pane.
 
 Every node must have the following attributes:
 
-- **type**, e.g., *objectives**, *actions**, and *potentialities*
+- **type**, among *objective** (i.e. goal, purpose), *action**, and *potentiality* (i.e. possibility, externality)
 - **title**, to contain a short, one-line summary of the possible change
 - **scope**, which indicates where/to whom the change should apply
 
@@ -19,7 +19,7 @@ Additionally, the following attributes can be added to any node:
 - a list of **tags**,
 - a list of **references**,
 - a longer **description**,
-- a measure of the [**support level**](democracy.md#support-ratings)
+- a measure of the [**support level**](modelling_support.md#support-ratings)
 
 ## Edges
 

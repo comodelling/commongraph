@@ -19,4 +19,4 @@ To start ObjectiveNet:
 - Wait for it to start... and that's it! You can access it at [http://localhost:5173/](http://localhost:5173/) from a browser.
 
 You will be able to create possible changes, relate them together, visualise them, and search for them through the web interface.
-Changes are interconnected as part of a [causal graph](modelling_graph.md), and their [support level](modelling_support.md) may be measured through support ratings.
+Changes are interconnected as part of a [causal graph](modelling/graph.md), and their [support level](modelling/support.md) may be measured through support ratings.

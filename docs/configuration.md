@@ -1,7 +1,7 @@
 # Configuration
 
 Here we go through the different configuration options offered when deploying an instance of ObjectiveNet.
-For user-related settings, see the [user's views](view_user.md) .
+For user-related settings, see the [user's views](view/user.md) .
 
 ## Graph database
 

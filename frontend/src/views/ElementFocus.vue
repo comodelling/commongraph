@@ -122,7 +122,9 @@ export default {
   },
   computed: {
     nodeId() {
-      return this.$route.params.id;
+      return this.$route.params.id === "new"
+        ? "new"
+        : Number(this.$route.params.id);
     },
     sourceId() {
       return this.$route.params.source_id;

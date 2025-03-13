@@ -25,7 +25,7 @@
       </li>
     </ul>
     <strong :title="tooltips.node.description">Description:</strong>
-    <p>{{ node.description ? node.description : "" }}</p>
+    {{ node.description ? node.description : "" }}
   </div>
 </template>
 

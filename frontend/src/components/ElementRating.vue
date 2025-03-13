@@ -63,8 +63,7 @@
         <path
           d="M0 5 H280 M280 5 L270 0 M280 5 L270 10"
           fill="none"
-          stroke="white"
-          stroke-width="2"
+          stroke="var(--text-color)"
           stroke-linecap="round"
           stroke-linejoin="round"
         />

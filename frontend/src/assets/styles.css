@@ -173,9 +173,20 @@ button:focus-visible {
   box-shadow: 0 0 10px; /* Glow effect for selection */
 }
 
+body.dark .vue-flow__node-special.selected {
+  /* Use a white glow for nodes in dark mode */
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+}
+
 .vue-flow__edge.selected .vue-flow__edge-path {
   filter: drop-shadow(0 0 5px rgba(0, 0, 0, 1))
     drop-shadow(0 0 10px rgba(0, 0, 0, 0.5)); /* Add a glow effect when selected */
+}
+
+body.dark .vue-flow__edge.selected .vue-flow__edge-path {
+  /* Use a white drop-shadow for edges in dark mode */
+  filter: drop-shadow(0 0 5px rgba(255, 255, 255, 1))
+    drop-shadow(0 0 10px rgba(255, 255, 255, 0.5));
 }
 
 /* element-info */

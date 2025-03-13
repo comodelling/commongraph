@@ -90,6 +90,14 @@ class RatingHistoryRelationalInterface(ABC):
         """
         pass
 
+    def get_node_ratings(
+        self, node_id: int, rating_type: RatingType
+    ) -> list[RatingEvent]:
+        """
+        Retrieve the most recent rating per user for a given node using PostgreSQL's DISTINCT ON.
+        """
+        pass
+
     def get_edge_rating(
         self,
         source_id: NodeId,
@@ -99,6 +107,14 @@ class RatingHistoryRelationalInterface(ABC):
     ) -> RatingEvent | None:
         """
         Retrieve the rating of a given edge by a given user.
+        """
+        pass
+
+    def get_edge_ratings(
+        self, source_id: int, target_id: int, rating_type: RatingType
+    ) -> list[RatingEvent]:
+        """
+        Retrieve the most recent rating per user for a given edge using PostgreSQL's DISTINCT ON.
         """
         pass
 

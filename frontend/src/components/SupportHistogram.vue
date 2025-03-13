@@ -1,6 +1,12 @@
 <template>
   <div class="support-view">
-    <h2 v-if="!aggregate">Suport Ratings</h2>
+    <h2 v-if="!aggregate">
+      {{
+        edge && property === "causal_strength"
+          ? "Causal Ratings"
+          : "Support Ratings"
+      }}
+    </h2>
     <h2 v-else>Support Ratings</h2>
     <div v-if="loading">Loading ratings...</div>
     <div v-if="error">{{ error }}</div>
@@ -11,7 +17,7 @@
 </template>
 
 <script>
-import { ref, watch, onMounted } from "vue";
+import { ref, watch, onMounted, nextTick } from "vue";
 import api from "../axios";
 import Chart from "chart.js/auto";
 
@@ -23,9 +29,19 @@ export default {
       type: Array,
       default: () => [],
     },
-    // When aggregate is false, we assume a single node is to be visualized.
+    // For node ratings
     nodeId: {
       type: Number,
+      default: null,
+    },
+    // For edge ratings
+    edge: {
+      type: Object,
+      default: null,
+    },
+    // Pass the rating type (e.g. "support" or "causal_strength")
+    property: {
+      type: String,
       default: null,
     },
     aggregate: {
@@ -34,7 +50,7 @@ export default {
     },
   },
   setup(props, { expose }) {
-    const ratings = ref(null); // Either an object mapping nodeId->rating or an array of ratings.
+    const ratings = ref(null);
     const loading = ref(false);
     const error = ref(null);
     const chart = ref(null);
@@ -71,20 +87,31 @@ export default {
             `${import.meta.env.VITE_BACKEND_URL}/rating/nodes/median`,
             { params: { node_ids: nodeIds } },
           );
-          ratings.value = response.data; // Expected to be an object mapping node_id -> { median_rating: "X" }
+          ratings.value = response.data;
         } else {
-          // Non-aggregated mode: single node.
-          if (!props.nodeId) {
-            throw new Error(
-              "nodeId prop must be provided when aggregate is false.",
+          // Non-aggregated mode.
+          if (props.nodeId) {
+            // Node ratings mode
+            const response = await api.get(
+              `${import.meta.env.VITE_BACKEND_URL}/ratings/node/`,
+              { params: { node_id: props.nodeId } },
             );
+            ratings.value = response.data.ratings;
+          } else if (props.edge) {
+            // Edge ratings mode (for causal_strength)
+            const response = await api.get(
+              `${import.meta.env.VITE_BACKEND_URL}/ratings/edge/${props.edge.source}/${props.edge.target}`,
+              {
+                params: {
+                  rating_type: props.property,
+                },
+              },
+            );
+            // console.log("Rating response:", response.data);
+            ratings.value = response.data.ratings;
+          } else {
+            throw new Error("Either nodeId or edge prop must be provided.");
           }
-          const response = await api.get(
-            `${import.meta.env.VITE_BACKEND_URL}/ratings/node/`,
-            { params: { node_id: props.nodeId } },
-          );
-          // Expecting response.data.ratings as an array of objects, each with a rating property.
-          ratings.value = response.data.ratings;
         }
         updateHistogram();
       } catch (e) {
@@ -95,10 +122,15 @@ export default {
       }
     };
 
-    const updateHistogram = () => {
+    const updateHistogram = async () => {
+      await nextTick();
+      if (!chart.value) {
+        console.warn("Chart canvas not rendered yet");
+        // setTimeout(updateHistogram, 10);
+        return;
+      }
       const buckets = [0, 0, 0, 0, 0];
       if (props.aggregate) {
-        // ratings.value is an object mapping node ids to { median_rating: rating }
         Object.values(ratings.value || {}).forEach((entry) => {
           const ratingLetter = entry.median_rating;
           if (ratingLetter && scaleMap.hasOwnProperty(ratingLetter)) {
@@ -106,7 +138,6 @@ export default {
           }
         });
       } else {
-        // ratings.value is an array of rating objects.
         (ratings.value || []).forEach((entry) => {
           const ratingLetter = entry.rating;
           if (ratingLetter && scaleMap.hasOwnProperty(ratingLetter)) {
@@ -135,13 +166,11 @@ export default {
           options: {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: {
-              legend: { display: false },
-            },
+            plugins: { legend: { display: false } },
             scales: {
               x: {
                 title: {
-                  display: props.aggregate ? true : false,
+                  display: props.aggregate,
                   text: "Median Rating",
                 },
               },
@@ -155,9 +184,8 @@ export default {
       }
     };
 
-    // In aggregated mode, watch the nodes prop; otherwise watch nodeId.
     watch(
-      () => (props.aggregate ? props.nodes : props.nodeId),
+      () => (props.aggregate ? props.nodes : props.nodeId || props.edge),
       (newVal) => {
         if (
           (props.aggregate && newVal.length) ||
@@ -175,7 +203,7 @@ export default {
     onMounted(() => {
       if (
         (props.aggregate && props.nodes.length) ||
-        (!props.aggregate && props.nodeId)
+        (!props.aggregate && (props.nodeId || props.edge))
       )
         fetchRatings();
     });

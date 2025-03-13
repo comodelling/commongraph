@@ -3,12 +3,15 @@
 Focus on an element, whether a node or edge.
 The left column contains information about the element, while the flow window depicts its relations with neighbouring elements in the graph.
 
+<img src="../focus_view_example.png" alt="Focus View" style="border: 1px solid grey; border-radius: 4px" />
+
 ## Element-info pane
 
 This pane contains the current version of an element (node or edge) and its properties.
-- The *View* tab is opened by default and simply displays the latest pulled version of the element.
-- The *Edit* tab allows one to edit the element properties
-- The *History* tab displays the history of creation and edits for that node.
+
+* The *View* tab is opened by default and simply displays the latest pulled version of the element.
+* The *Edit* tab allows one to edit the element properties
+* The *History* tab displays the history of creation and edits for that node.
 
 ## Element-ratings pane
 

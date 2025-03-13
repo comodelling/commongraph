@@ -3,7 +3,7 @@
  * backend data is kept as is in the data field
  **/
 export function formatFlowEdgeProps(data) {
-  const { source, target, edge_type, selected, causal_strength_rating } = data;
+  const { source, target, edge_type, selected, causal_strength } = data;
 
   const flowSource =
     edge_type === "imply" ? source.toString() : target.toString();
@@ -35,7 +35,7 @@ export function formatFlowEdgeProps(data) {
       : undefined;
 
   let strokeColor = "#ccc";
-  switch (causal_strength_rating) {
+  switch (causal_strength) {
     case "A":
       strokeColor = "#006d2c";
       break;
@@ -43,7 +43,7 @@ export function formatFlowEdgeProps(data) {
       strokeColor = "#74c476";
       break;
     case "C":
-      strokeColor = "#777";
+      strokeColor = "#e3c100";
       break;
     case "D":
       strokeColor = "#fb6a4a";
@@ -89,7 +89,7 @@ export function formatFlowNodeProps(data) {
       borderColor = "#74c476";
       break;
     case "C":
-      borderColor = "#777";
+      borderColor = "#e3c100";
       break;
     case "D":
       borderColor = "#fb6a4a";
@@ -102,9 +102,9 @@ export function formatFlowNodeProps(data) {
   const style = {
     opacity: status === "completed" ? 0.5 : 0.95,
     borderColor: borderColor,
-    borderWidth: getBorderWidthByType(node_type),
+    borderWidth: "4px", //getBorderWidthByType(node_type),
     borderStyle: status === "draft" ? "dotted" : "solid",
-    borderRadius: "8px",
+    borderRadius: getBorderRadiusByType(node_type),
   };
 
   const nodeProps = {
@@ -129,4 +129,15 @@ function getBorderWidthByType(nodeType) {
     objective: "4px",
   };
   return typeToBorderWidthMap[nodeType];
+}
+
+function getBorderRadiusByType(nodeType) {
+  const typeToBorderRadiusMap = {
+    change: "1px",
+    potentiality: "1px",
+    proposal: "7px",
+    objective: "7px",
+    action: "15px",
+  };
+  return typeToBorderRadiusMap[nodeType];
 }

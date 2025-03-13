@@ -3,6 +3,8 @@
 This view can be entered through the search on the main page, or accessed directly at url: `/search/`.
 It helps browse through the database and can accomodate for multiple visualisation options.
 
+<img src="../browse_view_example.png" alt="Browsing View" style="border: 1px solid grey; border-radius: 4px" />
+
 ## Search Bar
 
 Located at the top, this allows the user to search for nodes in the database.

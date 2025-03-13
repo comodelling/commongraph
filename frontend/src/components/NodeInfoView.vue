@@ -1,9 +1,9 @@
 <template>
   <div>
-    <h2 :title="nodeTypeTooltip">{{ capitalise(node.node_type) }}</h2>
-    <strong :title="tooltips.node.title"> Title: </strong> "{{
-      node.title
-    }}"<br />
+    <!-- :title="tooltips.node.title" -->
+    <h2>{{ node.title }}</h2>
+    <strong :title="nodeTypeTooltip">type:</strong>
+    {{ capitalise(node.node_type) }}<br />
     <strong :title="tooltips.node.scope">Scope: </strong>
     {{ node.scope }}<br />
     <strong :title="tooltips.node.status">Status: </strong>
@@ -25,8 +25,7 @@
       </li>
     </ul>
     <strong :title="tooltips.node.description">Description:</strong>
-    <br />
-    <p>{{ node.description ? node.description : "" }}</p>
+    {{ node.description ? node.description : "" }}
   </div>
 </template>
 

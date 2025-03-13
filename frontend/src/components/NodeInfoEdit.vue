@@ -1,24 +1,6 @@
 <template>
   <div>
     <div class="field">
-      <strong :title="tooltips.node.type">Type:</strong>
-      <div class="field-content">
-        <select v-model="editedNode.node_type" ref="typeInput">
-          <option value="objective" :title="tooltips.node.objective">
-            Objective
-          </option>
-          <option value="action" :title="tooltips.node.action">Action</option>
-          <option value="potentiality" :title="tooltips.node.potentiality">
-            Potentiality
-          </option>
-        </select>
-      </div>
-    </div>
-    <!-- <h2 :title="nodeTypeTooltip" v-else>
-      {{ capitalise(editedNode.node_type) }}
-    </h2> -->
-
-    <div class="field">
       <strong :title="tooltips.node.title">Title:</strong>
       <div class="field-content">
         <span
@@ -37,6 +19,24 @@
         />
       </div>
     </div>
+
+    <div class="field">
+      <strong :title="tooltips.node.type">Type:</strong>
+      <div class="field-content">
+        <select v-model="editedNode.node_type" ref="typeInput">
+          <option value="objective" :title="tooltips.node.objective">
+            Objective
+          </option>
+          <option value="action" :title="tooltips.node.action">Action</option>
+          <option value="potentiality" :title="tooltips.node.potentiality">
+            Potentiality
+          </option>
+        </select>
+      </div>
+    </div>
+    <!-- <h2 :title="nodeTypeTooltip" v-else>
+      {{ capitalise(editedNode.node_type) }}
+    </h2> -->
 
     <div class="field">
       <strong :title="tooltips.node.scope">Scope:</strong>

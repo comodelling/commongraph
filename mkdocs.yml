@@ -2,13 +2,14 @@ site_name: ObjectiveNet Documentation
 nav:
   - Introduction: index.md
   - Configuration: configuration.md
-  - Modelling:
-    - Graph of Change: modelling/graph.md
-    - Democratic Support: modelling/support.md
   - Views:
     - Browsing: view/browsing.md
     - Focus: view/focus.md
     - User's: view/user.md
+  - Modelling:
+    - Graph of Change: modelling/graph.md
+    - Democratic Inputs: modelling/demos.md
+
 
 theme: readthedocs
 markdown_extensions:

@@ -370,11 +370,96 @@ class RatingHistoryPostgreSQLDB(RatingHistoryRelationalInterface):
 
         return results
 
-    def get_edges_ratings(self):
-        raise NotImplementedError
+    def get_edges_ratings(
+        self,
+        edges: list[tuple[int, int]],
+        rating_type: RatingType,
+    ) -> dict[tuple[int, int], list[RatingEvent]]:
+        """
+        Retrieve the most recent rating per user for a set of edges in one query
+        using PostgreSQL's DISTINCT ON. Returns a dict keyed by (source_id, target_id),
+        where each value is a list of the latest RatingEvents by user for that edge.
+        """
+        if not edges:
+            return {}
 
-    def get_edges_median_ratings(self):
-        raise NotImplementedError
+        # Transform list[tuple[int,int]] -> a list of composite pairs. If your DB driver
+        # doesn't allow passing a tuple directly as a parameter, you can adapt to strings
+        # or use a temporary table, etc.
+        # For example, you can pass something like an array of text "source-target" and
+        # parse it in SQL, or try matching in a WHERE (source_id, target_id) IN (...).
+        # Below is a small trick constructing a VALUES list for the edge pairs.
+        edge_values = ", ".join(f"({source},{target})" for (source, target) in edges)
+
+        query = text(
+            f"""
+            WITH latest AS (
+                SELECT DISTINCT ON (source_id, target_id, username) *
+                FROM {RatingEvent.__tablename__}
+                WHERE entity_type = :entity_type
+                  AND rating_type = :rating_type
+                  AND (source_id, target_id) IN (
+                      {edge_values}
+                  )
+                ORDER BY source_id, target_id, username, timestamp DESC
+            )
+            SELECT * FROM latest;
+        """
+        )
+
+        params = {
+            "entity_type": EntityType.edge,
+            "rating_type": rating_type,
+        }
+
+        with Session(self.engine) as session:
+            rows = session.exec(query, params=params).fetchall()
+
+        # Group them by (source_id, target_id)
+        results: dict[tuple[int, int], list[RatingEvent]] = {}
+        for row in rows:
+            rating = RatingEvent.model_validate(row)
+            edge_key = (rating.source_id, rating.target_id)
+            results.setdefault(edge_key, []).append(rating)
+
+        return results
+
+    def get_edges_median_ratings(
+        self,
+        edges: list[tuple[int, int]],
+        rating_type: RatingType,
+    ) -> dict[tuple[int, int], LikertScale | None]:
+        """
+        Retrieve the median rating (LikertScale) for each specified edge.
+        Similar to get_nodes_median_ratings, but grouping by (source_id, target_id).
+        """
+        # Use the batch get_edges_ratings to fetch all distinct-latest ratings at once
+        ratings_by_edge = self.get_edges_ratings(edges, rating_type)
+        scale_order = [
+            LikertScale.a,
+            LikertScale.b,
+            LikertScale.c,
+            LikertScale.d,
+            LikertScale.e,
+        ]
+        medians: dict[tuple[int, int], LikertScale | None] = {}
+
+        for edge_key, ratings_list in ratings_by_edge.items():
+            if not ratings_list:
+                medians[edge_key] = None
+                continue
+            # Convert each rating to its index in [a,b,c,d,e]
+            indices = sorted(scale_order.index(r.rating) for r in ratings_list)
+            mid = len(indices) // 2
+            median_index = indices[mid] if len(indices) % 2 == 1 else indices[mid - 1]
+            medians[edge_key] = scale_order[median_index]
+
+        # For any edges that weren’t returned at all, set to None
+        for edge_key in edges:
+            if edge_key not in medians:
+                medians[edge_key] = None
+
+        return medians
 
 
 class GraphHistoryPostgreSQLDB(GraphHistoryRelationalInterface):

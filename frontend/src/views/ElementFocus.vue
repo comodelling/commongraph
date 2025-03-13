@@ -179,15 +179,21 @@ export default {
           { params: { levels: 10 } },
         );
         let fetched_nodes = response.data.nodes || [];
-        await this.fetchRatings(fetched_nodes.map((node) => node.node_id)); // Wait for ratings to be fetched ...
         const fetched_edges = response.data.edges || [];
+
+        // Fetch and update node ratings as before
+        await this.fetchNodeRatings(fetched_nodes.map((node) => node.node_id));
         fetched_nodes = this.updateNodesWithRatings(fetched_nodes);
+
+        // Now fetch and update edge ratings
+        const updatedEdges = await this.fetchEdgeRatings(fetched_edges);
+
         console.log("Fetched nodes:", fetched_nodes);
         this.node =
           fetched_nodes.find((node) => node.node_id === parseInt(seed)) || null;
         if (this.sourceId && this.targetId) {
           this.edge =
-            fetched_edges.find(
+            updatedEdges.find(
               (edge) =>
                 edge.source === parseInt(this.sourceId) &&
                 edge.target === parseInt(this.targetId),
@@ -196,7 +202,7 @@ export default {
         // Build subnetData using formatted nodes/edges.
         this.subnetData = {
           nodes: fetched_nodes.map((node) => formatFlowNodeProps(node)),
-          edges: fetched_edges.map((edge) => formatFlowEdgeProps(edge)),
+          edges: updatedEdges.map((edge) => formatFlowEdgeProps(edge)),
         };
       } catch (error) {
         console.error("Error fetching induced subnet:", error);
@@ -205,8 +211,7 @@ export default {
         this.subnetData = { nodes: [], edges: [] };
       }
     },
-
-    async fetchRatings(nodeIds) {
+    async fetchNodeRatings(nodeIds) {
       if (!nodeIds.length) return;
       try {
         const response = await api.get(
@@ -221,6 +226,30 @@ export default {
       }
     },
 
+    async fetchEdgeRatings(edges) {
+      if (!edges.length) return edges;
+      try {
+        // Build an array of keys from edges in the form "source-target"
+        const edgeKeys = edges.map((edge) => `${edge.source}-${edge.target}`);
+        const response = await api.get(
+          `${import.meta.env.VITE_BACKEND_URL}/rating/edges/median`,
+          { params: { edge_ids: edgeKeys } },
+        );
+        const edgeRatings = response.data; // Expecting an object keyed by "source-target"
+        // Update each edge with the median rating, stored as causal_strength_rating.
+        return edges.map((edge) => {
+          const key = `${edge.source}-${edge.target}`;
+          edge.causal_strength =
+            edgeRatings[key] && edgeRatings[key].median_rating
+              ? edgeRatings[key].median_rating
+              : null;
+          return edge;
+        });
+      } catch (error) {
+        console.error("Error fetching edge ratings:", error);
+        return edges; // Fallback: return original edges
+      }
+    },
     updateNodesWithRatings(rawNodes) {
       return rawNodes.map((node) => {
         if (

@@ -174,7 +174,7 @@ export default {
           ratingData.target_id = props.element.edge.target;
           ratingData.entity_type = "edge";
         }
-        console.log("Rating data:", ratingData);
+        // console.log("Rating data:", ratingData);
         const response = await api.post(
           `${import.meta.env.VITE_BACKEND_URL}/rating/log`,
           ratingData,

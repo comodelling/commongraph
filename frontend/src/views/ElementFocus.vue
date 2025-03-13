@@ -33,13 +33,20 @@
         </div>
       </template>
       <template v-else-if="isEdge">
-        <!-- <div class="card">
-            <ElementRating
-              :element="{ edge: { source: sourceId, target: targetId } }"
-              property="causal_strength"
-            />
-          </div> -->
         <div class="card">
+          <ElementRating
+            :key="
+              edge ? `${edge.source}-${edge.target}` : `${sourceId}-${targetId}`
+            "
+            :element="{
+              edge: edge
+                ? { source: edge.source, target: edge.target }
+                : { source: sourceId, target: targetId },
+            }"
+            property="causal_strength"
+          />
+        </div>
+        <!-- <div class="card">
           <ElementRating
             :key="
               edge ? `${edge.source}-${edge.target}` : `${sourceId}-${targetId}`
@@ -66,7 +73,7 @@
             }"
             property="sufficiency"
           />
-        </div>
+        </div> -->
       </template>
     </div>
 

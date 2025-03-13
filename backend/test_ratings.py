@@ -115,8 +115,8 @@ def test_log_and_get_edge_rating():
 
     # Retrieve the logged edge rating (explicitly pass rating_type)
     response = client.get(
-        "/rating/edge",
-        params={"source_id": 10, "target_id": 20, "rating_type": "necessity"},
+        "/rating/edge/10/20/",
+        params={"rating_type": "necessity"},
     )
     assert response.status_code == 200
     fetched = response.json()

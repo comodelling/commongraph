@@ -2,9 +2,14 @@
   <div class="element-rating">
     <!-- Histogram above the buttons, with ref -->
     <SupportHistogram
-      v-if="element && element.node_id"
+      v-if="
+        element &&
+        (element.node_id || (element.edge && property === 'causal_strength'))
+      "
       ref="histogram"
       :node-id="element.node_id"
+      :edge="element.edge"
+      :property="property"
       :aggregate="false"
     />
 
@@ -30,7 +35,7 @@
         class="rating-button rating-C"
         :class="{ selected: currentRating === 'C' }"
         @click="rate('C')"
-        title="Neutral"
+        title="Maybe"
       >
         3
       </button>
@@ -46,7 +51,7 @@
         class="rating-button rating-A"
         :class="{ selected: currentRating === 'A' }"
         @click="rate('A')"
-        title="Very much"
+        title="Strongly"
       >
         5
       </button>
@@ -73,6 +78,9 @@
     </template>
     <template v-else-if="property === 'sufficiency'">
       <p>How <b>sufficient</b> is C for O to happen?</p>
+    </template>
+    <template v-else-if="property === 'causal_strength'">
+      <p>To what extent does C <b> contribute </b> to O?</p>
     </template>
     <template v-else>
       <p>No valid property provided: {{ property }}</p>
@@ -124,11 +132,9 @@ export default {
           props.element.edge.target
         ) {
           response = await api.get(
-            `${import.meta.env.VITE_BACKEND_URL}/rating/edge`,
+            `${import.meta.env.VITE_BACKEND_URL}/rating/edge/${props.element.edge.source}/${props.element.edge.target}`,
             {
               params: {
-                source_id: props.element.edge.source,
-                target_id: props.element.edge.target,
                 rating_type: props.property,
               },
               headers: { Authorization: `Bearer ${token}` },
@@ -136,6 +142,7 @@ export default {
           );
         }
         if (response && response.data) {
+          // console.log("Rating response:", response.data);
           currentRating.value = response.data.rating;
         }
       } catch (error) {
@@ -167,6 +174,7 @@ export default {
           ratingData.target_id = props.element.edge.target;
           ratingData.entity_type = "edge";
         }
+        console.log("Rating data:", ratingData);
         const response = await api.post(
           `${import.meta.env.VITE_BACKEND_URL}/rating/log`,
           ratingData,

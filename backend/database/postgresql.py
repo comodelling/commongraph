@@ -268,8 +268,26 @@ class RatingHistoryPostgreSQLDB(RatingHistoryRelationalInterface):
         """
         Retrieve the most recent rating per user for a given edge using PostgreSQL's DISTINCT ON.
         """
-        raise NotImplementedError
-        pass
+        query = text(
+            f"""
+            SELECT DISTINCT ON (username) *
+            FROM {RatingEvent.__tablename__}
+            WHERE entity_type = :entity_type
+              AND source_id = :source_id
+              AND target_id = :target_id
+              AND rating_type = :rating_type
+            ORDER BY username, timestamp DESC
+        """
+        )
+        params = {
+            "entity_type": EntityType.edge,
+            "source_id": source_id,
+            "target_id": target_id,
+            "rating_type": rating_type,
+        }
+        with Session(self.engine) as session:
+            results = session.exec(query, params=params).fetchall()
+            return [RatingEvent.model_validate(row) for row in results]
 
     def get_edge_median_rating(
         self, source_id: int, target_id: int, rating_type: RatingType

@@ -513,7 +513,7 @@ def get_node_ratings(
     return {"ratings": ratings}
 
 
-@app.get("/rating/edge")
+@app.get("/rating/edge/{source_id}/{target_id}")
 def get_edge_rating(
     source_id: int,
     target_id: int,
@@ -525,6 +525,21 @@ def get_edge_rating(
     Retrieve a user's rating for an edge.
     """
     return db.get_edge_rating(source_id, target_id, rating_type, user.username)
+
+
+@app.get("/ratings/edge/{source_id}/{target_id}")
+def get_edge_ratings(
+    source_id: int,
+    target_id: int,
+    rating_type: RatingType = RatingType.causal_strength,
+    db: RatingHistoryRelationalInterface = Depends(get_rating_history_db_connection),
+) -> dict:
+    """
+    Retrieve all ratings for a given edge.
+    """
+    ratings = db.get_edge_ratings(source_id, target_id, rating_type)
+    # Convert each RatingEvent to dict.
+    return {"ratings": ratings}
 
 
 @app.get("/rating/node/{node_id}/median")

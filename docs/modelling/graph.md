@@ -19,7 +19,7 @@ Additionally, the following attributes can be added to any node:
 - a list of **tags**,
 - a list of **references**,
 - a longer **description**,
-- a measure of the [**support level**](support.md#support-ratings)
+- a measure of the [**support level**](demos.md#support-ratings)
 
 ## Edges
 

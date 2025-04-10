@@ -136,10 +136,11 @@ function getBorderRadiusByType(nodeType) {
   const typeToBorderRadiusMap = {
     change: "1px",
     potentiality: "1px",
+    externality: "1px",
+    action: "3px",
     proposal: "7px",
     project: "7px",
-    objective: "7px",
-    action: "15px",
+    objective: "15px",
   };
   return typeToBorderRadiusMap[nodeType];
 }

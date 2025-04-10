@@ -2,7 +2,7 @@
   <div>
     <!-- :title="tooltips.node.title" -->
     <h2>{{ node.title }}</h2>
-    <strong :title="nodeTypeTooltip">type:</strong>
+    <strong :title="nodeTypeTooltip">Type:</strong>
     {{ capitalise(node.node_type) }}<br />
     <strong :title="tooltips.node.scope">Scope: </strong>
     {{ node.scope }}<br />

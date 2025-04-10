@@ -125,6 +125,7 @@ function getBorderWidthByType(nodeType) {
     change: "1px",
     potentiality: "1px",
     action: "2px",
+    project: "3px",
     proposal: "3px",
     objective: "4px",
   };
@@ -136,6 +137,7 @@ function getBorderRadiusByType(nodeType) {
     change: "1px",
     potentiality: "1px",
     proposal: "7px",
+    project: "7px",
     objective: "7px",
     action: "15px",
   };

@@ -27,6 +27,9 @@
           <option value="objective" :title="tooltips.node.objective">
             Objective
           </option>
+          <option value="project" :title="tooltips.node.project">
+            Project
+          </option>
           <option value="action" :title="tooltips.node.action">Action</option>
           <option value="potentiality" :title="tooltips.node.potentiality">
             Potentiality

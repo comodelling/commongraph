@@ -21,12 +21,23 @@
       </button>
     </div>
     <div v-if="node">
-      <component
-        :is="currentTabComponent"
-        :node="node"
-        :nodeId="node.node_id"
-        @publish-node="updateNodeFromEditor"
-      />
+      <template v-if="currentTab === 'edit'">
+        <component
+          ref="nodeEdit"
+          :is="currentTabComponent"
+          :node="node"
+          :nodeId="node.node_id"
+          @publish-node="updateNodeFromEditor"
+        />
+      </template>
+      <template v-else>
+        <component
+          :is="currentTabComponent"
+          :node="node"
+          :nodeId="node.node_id"
+          @publish-node="updateNodeFromEditor"
+        />
+      </template>
     </div>
     <div v-else>
       <p>Node not found</p>
@@ -78,7 +89,17 @@ export default {
   },
   methods: {
     switchTab(tab) {
-      if (this.currentTab === tab) return;
+      // If currently in edit mode, ask for confirmation if there are unsaved edits.
+      if (this.currentTab === "edit" && this.$refs.nodeEdit) {
+        // Ensure our NodeInfoEdit component exposes hasLocalUnsavedChanges
+        if (this.$refs.nodeEdit.hasLocalUnsavedChanges) {
+          if (
+            !window.confirm("You have unsaved edits. Leave without saving?")
+          ) {
+            return; // stay in edit mode
+          }
+        }
+      }
       this.currentTab = tab;
       const basePath = this.$route.path.split("/edit")[0].split("/history")[0];
       if (tab === "edit") {

@@ -10,6 +10,7 @@ import UserSettings from "../views/UserSettings.vue";
 import ResetPassword from "../views/ResetPassword.vue";
 import VerifySecurityQuestion from "../views/VerifySecurityQuestion.vue";
 import UpdateSecurityQuestion from "../views/UpdateSecurityQuestion.vue";
+import { useUnsaved } from "../composables/useUnsaved";
 
 const routes = [
   {
@@ -82,6 +83,33 @@ const routes = [
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes,
+});
+
+router.beforeEach((to, from, next) => {
+  // If leaving the edit view (NodeEdit or EdgeEdit) during submission,
+  // skip the unsaved changes check.
+  if (
+    (from.name === "NodeEdit" || from.name === "EdgeEdit") &&
+    (to.name === "NodeView" ||
+      to.name === "EdgeView" ||
+      to.name === "NodeHistory" ||
+      to.name === "EdgeHistory")
+  ) {
+    next();
+    return;
+  }
+  const { hasUnsavedChanges } = useUnsaved();
+  if (hasUnsavedChanges.value) {
+    if (window.confirm("You have unsaved edits. Leave without saving?")) {
+      const { setUnsaved } = useUnsaved();
+      setUnsaved(false);
+      next();
+    } else {
+      next(false);
+    }
+  } else {
+    next();
+  }
 });
 
 export default router;

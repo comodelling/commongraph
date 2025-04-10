@@ -164,6 +164,7 @@ import api from "../axios";
 import _ from "lodash";
 import tooltips from "../assets/tooltips.json";
 import { useAuth } from "../composables/useAuth";
+import { useUnsaved } from "../composables/useUnsaved";
 
 export default {
   props: {
@@ -177,14 +178,65 @@ export default {
       tooltips,
       titleError: false,
       scopeError: false,
+      isSubmitting: false,
     };
   },
   computed: {
     nodeTypeTooltip() {
       return this.tooltips.node[this.node.node_type] || this.tooltips.node.type;
     },
+    hasLocalUnsavedChanges() {
+      if (this.isSubmitting) return false;
+      return JSON.stringify(this.node) !== JSON.stringify(this.editedNode);
+    },
+  },
+  beforeRouteLeave(to, from, next) {
+    if (this.isSubmitting) {
+      next();
+      return;
+    }
+    if (this.hasLocalUnsavedChanges) {
+      if (!confirm("You have unsaved edits. Leave without saving?")) {
+        next(false);
+        return;
+      }
+    }
+    next();
+  },
+  beforeRouteUpdate(to, from, next) {
+    if (this.isSubmitting) {
+      next();
+      return;
+    }
+    if (this.editedNode.new) {
+      if (
+        !confirm("This new node is not saved. Are you sure you want to leave?")
+      ) {
+        next(false);
+        return;
+      }
+    } else if (this.hasLocalUnsavedChanges) {
+      if (!confirm("You have unsaved edits. Leave without saving?")) {
+        next(false);
+        return;
+      }
+    }
+    next();
+  },
+  mounted() {
+    window.addEventListener("beforeunload", this.onBeforeUnload);
+  },
+  beforeUnmount() {
+    window.removeEventListener("beforeunload", this.onBeforeUnload);
   },
   methods: {
+    onBeforeUnload(e) {
+      if (this.hasLocalUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = "";
+        return "";
+      }
+    },
     capitalise(string) {
       return string.charAt(0).toUpperCase() + string.slice(1);
     },
@@ -228,6 +280,12 @@ export default {
       });
     },
     async submit() {
+      // Ask the user explicitly whether to submit changes.
+      if (!window.confirm("Are you sure you want to submit your changes?")) {
+        // User canceled submission; do nothing.
+        return;
+      }
+
       const { getAccessToken } = useAuth();
       const token = getAccessToken();
 
@@ -251,7 +309,7 @@ export default {
         !this.editedNode.new &&
         this.editedNode.node_type !== this.node.node_type
       ) {
-        const confirmChange = confirm(
+        const confirmChange = window.confirm(
           "Changing the node type may have unintended consequences. Are you sure you want to proceed?",
         );
         if (!confirmChange) {
@@ -260,13 +318,11 @@ export default {
         }
       }
 
-      console.log("current edited support:", this.editedNode.support);
+      // Additional cleanup of support, tags, and references
       this.editedNode.support = this.editedNode.support || null;
       if (this.editedNode.support === "") {
         this.editedNode.support = null;
       }
-
-      // Remove empty references or tags
       this.editedNode.references = this.editedNode.references.filter(
         (ref) => ref.trim() !== "",
       );
@@ -274,14 +330,18 @@ export default {
         (tag) => tag.trim() !== "",
       );
       this.editedNode.status = this.editedNode.status || null;
+
+      // Now process submission – set isSubmitting so that route guards don’t trigger.
+      this.isSubmitting = true;
+      const { setUnsaved } = useUnsaved();
+      setUnsaved(false);
+
       if (this.editedNode.new) {
         try {
           const fromConnection = this.editedNode.fromConnection;
           delete this.editedNode.fromConnection;
           delete this.editedNode.new;
           delete this.editedNode.node_id;
-          console.log("Submitting node for creation:", this.editedNode);
-
           const response = await api.post(
             `${import.meta.env.VITE_BACKEND_URL}/node`,
             this.editedNode,
@@ -289,11 +349,8 @@ export default {
           );
           const nodeReturned = response.data;
           const target = nodeReturned.node_id;
-
           nodeReturned.new = true;
-
           if (fromConnection) {
-            // create edge if node was created from a connection
             try {
               const newEdge = {
                 source:
@@ -306,7 +363,6 @@ export default {
                     : parseInt(fromConnection.id),
                 edge_type: "imply",
               };
-              console.log("Submitting edge for creation:", newEdge);
               await api.post(
                 `${import.meta.env.VITE_BACKEND_URL}/edge`,
                 newEdge,
@@ -316,19 +372,12 @@ export default {
               console.error("Failed to create edge:", error);
             }
           }
-          // window.location.href = `/node/${target}`;
-          // this.$emit("new-node-submitted", response.data);
-          // console.log("new node back from backend", response.data);
-          // await
-
           this.$emit("publish-node", nodeReturned);
+          this.editedNode = _.cloneDeep(nodeReturned);
           this.$router.push({
             name: "NodeView",
             params: { id: target.toString() },
           });
-          // console.log("Route push completed");
-
-          // console.log("Event emitted");
         } catch (error) {
           console.error("Failed to create node:", error);
         }
@@ -339,6 +388,7 @@ export default {
             this.editedNode,
           );
           this.$emit("publish-node", response.data);
+          this.editedNode = _.cloneDeep(response.data);
         } catch (error) {
           console.error("Failed to update node:", error);
         }
@@ -352,16 +402,10 @@ export default {
       },
       deep: true,
     },
-    // editedNode: {
-    //   handler(newEditedNode, oldEditedNode) {
-    //     // console.log("editedNode changed", newEditedNode, oldEditedNode);
-    //     // if (newEditedNode.title !== oldEditedNode.title || newEditedNode.status !== oldEditedNode.status) {
-    //     this.$emit("update-node-on-graph", newEditedNode);
-    //     // console.log("emitted update-node-on-graph");
-    //     // }
-    //   },
-    //   deep: true,
-    // },
+    hasLocalUnsavedChanges(newVal) {
+      const { setUnsaved } = useUnsaved();
+      setUnsaved(newVal);
+    },
   },
 };
 </script>

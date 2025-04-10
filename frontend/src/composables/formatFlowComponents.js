@@ -102,7 +102,7 @@ export function formatFlowNodeProps(data) {
   const style = {
     opacity: status === "completed" ? 0.5 : 0.95,
     borderColor: borderColor,
-    borderWidth: "4px", //getBorderWidthByType(node_type),
+    borderWidth: "5px", //getBorderWidthByType(node_type),
     borderStyle: status === "draft" ? "dotted" : "solid",
     borderRadius: getBorderRadiusByType(node_type),
   };

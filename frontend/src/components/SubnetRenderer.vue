@@ -296,13 +296,17 @@ function exportSubnet() {
 }
 
 onNodeClick(({ node }) => {
+  // if the node is already selected, do nothing
+  const currentNode = findNode(route.params.id);
+  if (currentNode && currentNode.id === node.id) {
+    return;
+  }
   const { hasUnsavedChanges, setUnsaved } = useUnsaved();
   if (hasUnsavedChanges.value) {
     if (!window.confirm("You have unsaved edits. Leave without saving?")) {
       // prevent clicked node from being selected
       updateNode(node.id, { ...node, selected: false });
       // make sure the current element remains selected
-      const currentNode = findNode(route.params.id);
       if (currentNode) {
         updateNode(currentNode.id, { ...currentNode, selected: true });
       } else {
@@ -325,6 +329,12 @@ onNodeClick(({ node }) => {
 });
 
 onEdgeClick(({ edge }) => {
+  const currentEdge = findEdge(
+    `${route.params.source_id}-${route.params.target_id}`,
+  );
+  if (currentEdge && currentEdge.id === edge.id) {
+    return;
+  }
   const { hasUnsavedChanges, setUnsaved } = useUnsaved();
   if (hasUnsavedChanges.value) {
     if (!window.confirm("You have unsaved edits. Leave without saving?")) {

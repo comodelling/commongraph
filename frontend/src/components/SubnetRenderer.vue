@@ -182,19 +182,20 @@ watch(
   () => props.updatedEdge,
   (newUpdatedEdge) => {
     console.log("Edge update detected:", newUpdatedEdge);
-    if (newUpdatedEdge) {
-      let updatedEdge = formatFlowEdgeProps(newUpdatedEdge);
-      updatedEdge.new = false;
-      let edge = findEdge(updatedEdge.id);
-      console.log("found edge", edge);
-      if (edge) {
-        Object.assign(edge, updatedEdge); // Update each field from updatedEdge
-        edge.selected = true;
-      }
+    if (!newUpdatedEdge) return;
 
-      // console.log('updatedNode', updatedNode)
-      // edge = updatedEdge;
+    // Keep the existing causal_strength if missing from the updated edge
+    const oldEdge = getEdges.value.find(
+      (e) => e.id === `${newUpdatedEdge.source}-${newUpdatedEdge.target}`,
+    );
+    if (oldEdge?.data?.causal_strength && !newUpdatedEdge.causal_strength) {
+      newUpdatedEdge.causal_strength = oldEdge.data.causal_strength;
     }
+
+    const formattedEdge = formatFlowEdgeProps(newUpdatedEdge);
+    setEdges((prevEdges) =>
+      prevEdges.map((e) => (e.id === formattedEdge.id ? formattedEdge : e)),
+    );
   },
   { immediate: true },
 );

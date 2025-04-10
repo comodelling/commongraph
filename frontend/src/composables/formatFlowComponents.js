@@ -102,7 +102,7 @@ export function formatFlowNodeProps(data) {
   const style = {
     opacity: status === "completed" ? 0.5 : 0.95,
     borderColor: borderColor,
-    borderWidth: "4px", //getBorderWidthByType(node_type),
+    borderWidth: "5px", //getBorderWidthByType(node_type),
     borderStyle: status === "draft" ? "dotted" : "solid",
     borderRadius: getBorderRadiusByType(node_type),
   };
@@ -125,6 +125,7 @@ function getBorderWidthByType(nodeType) {
     change: "1px",
     potentiality: "1px",
     action: "2px",
+    project: "3px",
     proposal: "3px",
     objective: "4px",
   };
@@ -135,9 +136,11 @@ function getBorderRadiusByType(nodeType) {
   const typeToBorderRadiusMap = {
     change: "1px",
     potentiality: "1px",
+    externality: "1px",
+    action: "3px",
     proposal: "7px",
-    objective: "7px",
-    action: "15px",
+    project: "7px",
+    objective: "15px",
   };
   return typeToBorderRadiusMap[nodeType];
 }

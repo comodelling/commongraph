@@ -9,7 +9,7 @@ One can create or edit a node via the node info pane.
 
 Every node must have the following attributes:
 
-- **type**, among *objective** (i.e. goal, purpose), *action**, and *potentiality* (i.e. possibility, externality)
+- **type**, among **objective** (i.e. goal, purpose), **action**, **project**, and **potentiality** (i.e. possibility, externality)
 - **title**, to contain a short, one-line summary of the possible change
 - **scope**, which indicates where/to whom the change should apply
 

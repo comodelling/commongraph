@@ -1,9 +1,10 @@
 {
     "node": {
       "type": "Node type",
-        "action": "A potential action that can be undertaken within the given scope",
-        "potentiality": "An event or change that is relevant to the network",
-        "objective": "A potential objective to be pursued within the given scope",
+        "action": "A potential action, task, activity... that can be undertaken within the given scope",
+        "potentiality": "An external, potential event or change that is relevant within the given scope",
+        "objective": "A potential objective, aim, goal to be pursued within the given scope",
+        "project": "A potential project or initiative that can be undertaken within the given scope",
       "title": "What is this node about?",
       "scope": "Where/to whom does this node apply?",
       "status": "What stage is this node currently at?",

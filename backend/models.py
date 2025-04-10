@@ -21,8 +21,9 @@ Proba = Annotated[float, Query(title="conditional proba", ge=0, le=1)]
 
 
 class NodeType(str, Enum):
-    objective = "objective"
     action = "action"
+    project = "project"
+    objective = "objective"
     potentiality = "potentiality"
 
     change = "change"  # TODO: migrate and deprecate

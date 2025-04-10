@@ -12,6 +12,7 @@ correct_node_types = [
     "action",
     "objective",
     "potentiality",
+    "project",
 ]
 correct_edge_types = ["require", "imply"]
 

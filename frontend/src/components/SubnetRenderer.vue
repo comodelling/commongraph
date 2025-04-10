@@ -20,6 +20,7 @@ import {
   formatFlowEdgeProps,
   formatFlowNodeProps,
 } from "../composables/formatFlowComponents";
+import { useUnsaved } from "../composables/useUnsaved";
 
 const { getAccessToken } = useAuth();
 
@@ -295,32 +296,61 @@ function exportSubnet() {
 }
 
 onNodeClick(({ node }) => {
-  // get current selection from route.params
-  // route.params.id
+  const { hasUnsavedChanges, setUnsaved } = useUnsaved();
+  if (hasUnsavedChanges.value) {
+    if (!window.confirm("You have unsaved edits. Leave without saving?")) {
+      // prevent clicked node from being selected
+      updateNode(node.id, { ...node, selected: false });
+      // make sure the current element remains selected
+      const currentNode = findNode(route.params.id);
+      if (currentNode) {
+        updateNode(currentNode.id, { ...currentNode, selected: true });
+      } else {
+        // find edge
+        const edge = findEdge(
+          `${route.params.source_id}-${route.params.target_id}`,
+        );
+        if (edge) {
+          edge.selected = true;
+        }
+      }
 
-  // is current node id same as clicked node id?
-  // if (id === node.id) {
-  //   // if yes, do nothing
-  //   return
-  // }
-
-  // is the current element selected?
-  // yes --> extend the selection and uri to the clicked node
-
-  // no --> switch to the clicked node as sole selected element
-
+      return;
+    }
+    setUnsaved(false);
+  }
   router.push({ name: "NodeView", params: { id: node.id } });
   emit("nodeClick", node.id);
-  // window.location.href = `/node/${node.node_id}`  full page reload
   closeSearchBar();
 });
 
 onEdgeClick(({ edge }) => {
+  const { hasUnsavedChanges, setUnsaved } = useUnsaved();
+  if (hasUnsavedChanges.value) {
+    if (!window.confirm("You have unsaved edits. Leave without saving?")) {
+      // prevent clicked edge from being selected
+      edge.selected = false;
+      const currentNode = findNode(route.params.id);
+      if (currentNode) {
+        updateNode(currentNode.id, { ...currentNode, selected: true });
+      } else {
+        // find edge
+        const edge = findEdge(
+          `${route.params.source_id}-${route.params.target_id}`,
+        );
+        if (edge) {
+          edge.selected = true;
+        }
+      }
+      return;
+    }
+    setUnsaved(false);
+  }
   router.push({
     name: "EdgeView",
     params: { source_id: edge.data.source, target_id: edge.data.target },
-  }); // uri follows backend convention
-  emit("edgeClick", edge.data.source, edge.data.target); // emit event to parent component
+  });
+  emit("edgeClick", edge.data.source, edge.data.target);
   closeSearchBar();
 });
 

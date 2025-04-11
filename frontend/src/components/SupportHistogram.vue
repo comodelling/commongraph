@@ -31,7 +31,7 @@ export default {
     },
     // For node ratings
     nodeId: {
-      type: Number,
+      type: [Number, String],
       default: null,
     },
     // For edge ratings
@@ -77,6 +77,10 @@ export default {
     };
 
     const fetchRatings = async () => {
+      if (!props.aggregate && props.nodeId === "new") {
+        console.info("Skipping ratings fetch for new node.");
+        return;
+      }
       loading.value = true;
       error.value = null;
       try {

@@ -289,7 +289,7 @@ export default {
       console.log("Updating node from editor", updatedNode);
       try {
         this.node = { ...this.node, ...updatedNode, new: false };
-        this.updatedNode = { ...this.node };
+        this.updatedNode = { ...updatedNode };
       } catch (error) {
         console.error("Failed to update node:", error);
       }

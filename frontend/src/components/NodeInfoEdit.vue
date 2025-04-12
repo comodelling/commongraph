@@ -155,7 +155,7 @@
       + Description
     </button>
 
-    <button class="submit-button" @click="submit">Submit</button>
+    <button class="submit-button" @click="submit">{{ actionLabel }}</button>
   </div>
 </template>
 
@@ -182,6 +182,9 @@ export default {
     };
   },
   computed: {
+    actionLabel() {
+      return this.editedNode.new ? "Create" : "Submit";
+    },
     nodeTypeTooltip() {
       return this.tooltips.node[this.node.node_type] || this.tooltips.node.type;
     },

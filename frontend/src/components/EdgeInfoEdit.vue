@@ -59,7 +59,7 @@
       + Description
     </button>
 
-    <button class="submit-button" @click="submit">Submit</button>
+    <button class="submit-button" @click="submit">{{ actionLabel }}</button>
   </div>
 </template>
 
@@ -85,6 +85,9 @@ export default {
     };
   },
   computed: {
+    actionLabel() {
+      return this.editedEdge.new ? "Create" : "Submit";
+    },
     edgeTypeTooltip() {
       return this.tooltips.edge[this.edge.edge_type] || this.tooltips.edge.type;
     },

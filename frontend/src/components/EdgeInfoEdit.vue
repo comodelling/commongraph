@@ -68,6 +68,7 @@ import api from "../axios";
 import _ from "lodash";
 import tooltips from "../assets/tooltips.json";
 import { useAuth } from "../composables/useAuth";
+import { useUnsaved } from "../composables/useUnsaved";
 
 export default {
   props: {
@@ -215,6 +216,10 @@ export default {
         this.editedEdge = _.cloneDeep(newEdge);
       },
       deep: true,
+    },
+    hasLocalUnsavedChanges(newVal) {
+      const { setUnsaved } = useUnsaved();
+      setUnsaved(newVal);
     },
   },
 };

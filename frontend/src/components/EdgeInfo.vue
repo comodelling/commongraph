@@ -21,13 +21,26 @@
       </button>
     </div>
     <div v-if="edge">
-      <component
-        :is="currentTabComponent"
-        :edge="edge"
-        :sourceId="edge.source"
-        :targetId="edge.target"
-        @publish-edge="updateEdgeFromEditor"
-      />
+      <template v-if="currentTab === 'edit'">
+        <!-- Add a ref so we can inspect unsaved changes in the edit component -->
+        <component
+          ref="edgeEdit"
+          :is="currentTabComponent"
+          :edge="edge"
+          :sourceId="edge.source"
+          :targetId="edge.target"
+          @publish-edge="updateEdgeFromEditor"
+        />
+      </template>
+      <template v-else>
+        <component
+          :is="currentTabComponent"
+          :edge="edge"
+          :sourceId="edge.source"
+          :targetId="edge.target"
+          @publish-edge="updateEdgeFromEditor"
+        />
+      </template>
     </div>
     <div v-else>
       <p>Edge not found</p>
@@ -74,6 +87,16 @@ export default {
     },
     switchTab(tab) {
       if (this.currentTab === tab) return;
+      // If currently in edit mode, check with the edit component if there are unsaved changes.
+      if (
+        this.currentTab === "edit" &&
+        this.$refs.edgeEdit &&
+        this.$refs.edgeEdit.hasLocalUnsavedChanges
+      ) {
+        if (!window.confirm("You have unsaved edits. Leave without saving?")) {
+          return; // stay in edit mode
+        }
+      }
       this.currentTab = tab;
       const basePath = this.$route.path.split("/edit")[0].split("/history")[0];
       if (tab === "edit") {

@@ -59,15 +59,16 @@
       + Description
     </button>
 
-    <button class="submit-button" @click="submit">Submit</button>
+    <button class="submit-button" @click="submit">{{ actionLabel }}</button>
   </div>
 </template>
 
 <script>
 import api from "../axios";
 import _ from "lodash";
-import tooltips from "../assets/tooltips.json"; // Add this line
+import tooltips from "../assets/tooltips.json";
 import { useAuth } from "../composables/useAuth";
+import { useUnsaved } from "../composables/useUnsaved";
 
 export default {
   props: {
@@ -80,14 +81,67 @@ export default {
       editingField: null,
       editedEdge: editedEdge,
       tooltips,
+      isSubmitting: false,
     };
   },
   computed: {
+    actionLabel() {
+      return this.editedEdge.new ? "Create" : "Submit";
+    },
     edgeTypeTooltip() {
       return this.tooltips.edge[this.edge.edge_type] || this.tooltips.edge.type;
     },
+    hasLocalUnsavedChanges() {
+      if (this.isSubmitting) return false;
+      return JSON.stringify(this.edge) !== JSON.stringify(this.editedEdge);
+    },
+  },
+  beforeRouteLeave(to, from, next) {
+    if (this.isSubmitting) {
+      next();
+      return;
+    }
+    if (this.hasLocalUnsavedChanges) {
+      if (!window.confirm("You have unsaved edits. Leave without saving?")) {
+        next(false);
+        return;
+      }
+    }
+    next();
+  },
+  beforeRouteUpdate(to, from, next) {
+    if (this.isSubmitting) {
+      next();
+      return;
+    }
+    if (this.hasLocalUnsavedChanges) {
+      if (!window.confirm("You have unsaved edits. Leave without saving?")) {
+        next(false);
+        return;
+      }
+    }
+    next();
+  },
+  mounted() {
+    window.addEventListener("beforeunload", this.onBeforeUnload);
+  },
+  beforeUnmount() {
+    window.removeEventListener("beforeunload", this.onBeforeUnload);
   },
   methods: {
+    onBeforeUnload(e) {
+      if (this.hasLocalUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = "";
+        return "";
+      }
+    },
+    confirmDiscardChanges() {
+      if (this.hasLocalUnsavedChanges) {
+        return window.confirm("You have unsaved edits. Leave without saving?");
+      }
+      return true;
+    },
     startEditing(field) {
       this.editingField = field;
       this.$nextTick(() => {
@@ -102,12 +156,6 @@ export default {
     },
     stopEditing(field) {
       if (this.editingField === field) {
-        // if (
-        // field === "cprob" &&
-        // (this.editedEdge.cprob < 0 || this.editedEdge.cprob > 100)
-        // ) {
-        // this.editedEdge.cprob = undefined;
-        // }
         this.editingField = null;
       }
     },
@@ -137,13 +185,12 @@ export default {
       this.editedEdge.references = this.editedEdge.references.filter(
         (ref) => ref.trim() !== "",
       );
-      // this.editedEdge.cprob = this.editedEdge.cprob / 100;
-      console.log("submitting ", this.editedEdge);
-
+      console.log("Submitting edge:", this.editedEdge);
       let response;
       try {
+        this.isSubmitting = true;
         if (this.editedEdge.new) {
-          delete this.edge.new;
+          delete this.editedEdge.new;
           response = await api.post(
             `${import.meta.env.VITE_BACKEND_URL}/edge/`,
             this.editedEdge,
@@ -161,12 +208,10 @@ export default {
         this.$emit("publish-edge", response.data);
       } catch (error) {
         console.error("Failed to update edge:", error);
+      } finally {
+        this.isSubmitting = false;
       }
     },
-    // addCprob() {
-    // this.editedEdge.cprob = 0;
-    // this.startEditing("cprob"); // Ensure the input field is shown immediately
-    // },
   },
   watch: {
     edge: {
@@ -175,12 +220,10 @@ export default {
       },
       deep: true,
     },
-    // editedEdge: {
-    //   handler(newEditedEdge) {
-    //     this.$emit("update-edited-edge", newEditedEdge);  // not handled
-    //   },
-    //   deep: true,
-    // },
+    hasLocalUnsavedChanges(newVal) {
+      const { setUnsaved } = useUnsaved();
+      setUnsaved(newVal);
+    },
   },
 };
 </script>

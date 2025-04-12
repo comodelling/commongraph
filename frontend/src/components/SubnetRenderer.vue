@@ -20,6 +20,7 @@ import {
   formatFlowEdgeProps,
   formatFlowNodeProps,
 } from "../composables/formatFlowComponents";
+import { useUnsaved } from "../composables/useUnsaved";
 
 const { getAccessToken } = useAuth();
 
@@ -182,19 +183,20 @@ watch(
   () => props.updatedEdge,
   (newUpdatedEdge) => {
     console.log("Edge update detected:", newUpdatedEdge);
-    if (newUpdatedEdge) {
-      let updatedEdge = formatFlowEdgeProps(newUpdatedEdge);
-      updatedEdge.new = false;
-      let edge = findEdge(updatedEdge.id);
-      console.log("found edge", edge);
-      if (edge) {
-        Object.assign(edge, updatedEdge); // Update each field from updatedEdge
-        edge.selected = true;
-      }
+    if (!newUpdatedEdge) return;
 
-      // console.log('updatedNode', updatedNode)
-      // edge = updatedEdge;
+    // Keep the existing causal_strength if missing from the updated edge
+    const oldEdge = getEdges.value.find(
+      (e) => e.id === `${newUpdatedEdge.source}-${newUpdatedEdge.target}`,
+    );
+    if (oldEdge?.data?.causal_strength && !newUpdatedEdge.causal_strength) {
+      newUpdatedEdge.causal_strength = oldEdge.data.causal_strength;
     }
+
+    const formattedEdge = formatFlowEdgeProps(newUpdatedEdge);
+    setEdges((prevEdges) =>
+      prevEdges.map((e) => (e.id === formattedEdge.id ? formattedEdge : e)),
+    );
   },
   { immediate: true },
 );
@@ -294,32 +296,71 @@ function exportSubnet() {
 }
 
 onNodeClick(({ node }) => {
-  // get current selection from route.params
-  // route.params.id
+  // if the node is already selected, do nothing
+  const currentNode = findNode(route.params.id);
+  if (currentNode && currentNode.id === node.id) {
+    return;
+  }
+  const { hasUnsavedChanges, setUnsaved } = useUnsaved();
+  if (hasUnsavedChanges.value) {
+    if (!window.confirm("You have unsaved edits. Leave without saving?")) {
+      // prevent clicked node from being selected
+      updateNode(node.id, { ...node, selected: false });
+      // make sure the current element remains selected
+      if (currentNode) {
+        updateNode(currentNode.id, { ...currentNode, selected: true });
+      } else {
+        // find edge
+        const edge = findEdge(
+          `${route.params.source_id}-${route.params.target_id}`,
+        );
+        if (edge) {
+          edge.selected = true;
+        }
+      }
 
-  // is current node id same as clicked node id?
-  // if (id === node.id) {
-  //   // if yes, do nothing
-  //   return
-  // }
-
-  // is the current element selected?
-  // yes --> extend the selection and uri to the clicked node
-
-  // no --> switch to the clicked node as sole selected element
-
+      return;
+    }
+    setUnsaved(false);
+  }
   router.push({ name: "NodeView", params: { id: node.id } });
   emit("nodeClick", node.id);
-  // window.location.href = `/node/${node.node_id}`  full page reload
   closeSearchBar();
 });
 
 onEdgeClick(({ edge }) => {
+  const currentEdge = findEdge(
+    `${route.params.source_id}-${route.params.target_id}`,
+  );
+  if (currentEdge && currentEdge.id === edge.id) {
+    return;
+  }
+  const { hasUnsavedChanges, setUnsaved } = useUnsaved();
+  if (hasUnsavedChanges.value) {
+    if (!window.confirm("You have unsaved edits. Leave without saving?")) {
+      // prevent clicked edge from being selected
+      edge.selected = false;
+      const currentNode = findNode(route.params.id);
+      if (currentNode) {
+        updateNode(currentNode.id, { ...currentNode, selected: true });
+      } else {
+        // find edge
+        const edge = findEdge(
+          `${route.params.source_id}-${route.params.target_id}`,
+        );
+        if (edge) {
+          edge.selected = true;
+        }
+      }
+      return;
+    }
+    setUnsaved(false);
+  }
   router.push({
     name: "EdgeView",
     params: { source_id: edge.data.source, target_id: edge.data.target },
-  }); // uri follows backend convention
-  emit("edgeClick", edge.data.source, edge.data.target); // emit event to parent component
+  });
+  emit("edgeClick", edge.data.source, edge.data.target);
   closeSearchBar();
 });
 

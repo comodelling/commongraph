@@ -31,7 +31,7 @@
         </div>
       </div>
       <div class="visualization-column">
-        <SupportView :nodes="nodes" />
+        <SupportView :nodes="nodes" @filter-by-rating="applyRatingFilter" />
       </div>
     </div>
   </div>
@@ -78,18 +78,17 @@ export default {
   },
   methods: {
     search(parsedQuery) {
-      console.log("Parsed query:", parsedQuery);
       const params = {};
-      if (parsedQuery.text.length) {
+      if (parsedQuery.text?.length) {
         params.title = parsedQuery.text.join(" ");
       }
-      if (parsedQuery.type.length) {
+      if (parsedQuery.type?.length) {
         params.node_type = parsedQuery.type;
       }
-      if (parsedQuery.status.length) {
+      if (parsedQuery.status?.length) {
         params.status = parsedQuery.status;
       }
-      if (parsedQuery.tag.length) {
+      if (parsedQuery.tag?.length) {
         params.tags = parsedQuery.tag;
       }
       if (parsedQuery.scope) {
@@ -99,6 +98,9 @@ export default {
         params.rating = parsedQuery.rating;
       }
       this.$router.push({ name: "SearchPage", query: params });
+    },
+    applyRatingFilter(rating) {
+      this.search({ text: [this.title], rating });
     },
     async performSearch() {
       try {

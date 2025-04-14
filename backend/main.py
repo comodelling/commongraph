@@ -250,15 +250,19 @@ def search_nodes(
     scope: str | None = None,
     status: list[NodeStatus] | NodeStatus = Query(None),
     tags: list[str] | None = Query(None),
+    rating: LikertScale | None = None,
     description: str | None = None,
     db_graph: GraphDatabaseInterface | None = Depends(get_graph_db_connection),
     db_history: GraphHistoryRelationalInterface = Depends(
         get_graph_history_db_connection
     ),
+    db_ratings: RatingHistoryRelationalInterface = Depends(
+        get_rating_history_db_connection
+    ),
 ) -> list[NodeBase]:
     """Search in nodes on a field by field level."""
     if db_graph is not None:
-        return db_graph.search_nodes(
+        nodes = db_graph.search_nodes(
             node_type=node_type,
             title=title,
             scope=scope,
@@ -266,7 +270,7 @@ def search_nodes(
             tags=tags,
             description=description,
         )
-    return db_history.search_nodes(
+    nodes = db_history.search_nodes(
         node_type=node_type,
         title=title,
         scope=scope,
@@ -274,6 +278,12 @@ def search_nodes(
         tags=tags,
         description=description,
     )
+    if rating is None:
+        return nodes
+    else:
+        nodes_ids = [el.node_id for el in nodes]
+        medians = db_ratings.get_nodes_median_ratings(nodes_ids, RatingType.support)
+        return [node for node in nodes if medians[node.node_id] == rating]
 
 
 ### /node/ ###

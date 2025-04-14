@@ -6,6 +6,7 @@ export function parseSearchQuery(query) {
     tag: [],
     status: [],
     scope: null,
+    rating: [],
   };
   if (tokens) {
     tokens.forEach((token) => {
@@ -17,6 +18,8 @@ export function parseSearchQuery(query) {
         parsed.status.push(token.slice(7));
       } else if (token.startsWith("scope:")) {
         parsed.scope = token.slice(6);
+      } else if (token.startsWith("rating:")) {
+        parsed.rating.push(token.slice(7));
       } else {
         parsed.text.push(token);
       }
@@ -41,6 +44,9 @@ export function buildSearchParams(parsedQuery) {
   }
   if (parsedQuery.scope) {
     params.scope = parsedQuery.scope;
+  }
+  if (parsedQuery.rating) {
+    params.rating = parsedQuery.rating;
   }
   return params;
 }

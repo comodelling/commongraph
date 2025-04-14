@@ -95,11 +95,15 @@ export default {
       if (parsedQuery.scope) {
         params.scope = parsedQuery.scope;
       }
+      if (parsedQuery.rating) {
+        params.rating = parsedQuery.rating;
+      }
       this.$router.push({ name: "SearchPage", query: params });
     },
     async performSearch() {
       try {
-        const { title, node_type, status, tags, scope } = this.$route.query;
+        const { title, node_type, status, tags, scope, rating } =
+          this.$route.query;
         const tagsArray = tags
           ? typeof tags === "string"
             ? tags
@@ -125,6 +129,7 @@ export default {
               status: status,
               tags: tagsArray.length ? tagsArray : undefined,
               scope: scope,
+              rating: rating || undefined,
             },
             paramsSerializer: (params) =>
               qs.stringify(params, { arrayFormat: "repeat" }),

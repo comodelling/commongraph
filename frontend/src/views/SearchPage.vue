@@ -115,14 +115,32 @@ export default {
             : tags
           : [];
 
-        // Convert numeric rating to a letter right before the API call
         let apiRating = undefined;
         if (rating) {
           const ratingMap = { 1: "E", 2: "D", 3: "C", 4: "B", 5: "A" };
+          const validLetters = ["A", "B", "C", "D", "E"];
+          const convertRating = (r) => {
+            let letter = ratingMap[r];
+            if (!letter) {
+              letter = r.toUpperCase();
+            }
+            return validLetters.includes(letter) ? letter : undefined;
+          };
+
           if (Array.isArray(rating)) {
-            apiRating = rating.map((r) => ratingMap[r] || r);
+            apiRating = rating.map(convertRating);
+            if (apiRating.includes(undefined)) {
+              throw new Error(
+                `Invalid rating value provided in URL: ${rating}`,
+              );
+            }
           } else {
-            apiRating = ratingMap[rating] || rating;
+            apiRating = convertRating(rating);
+            if (!apiRating) {
+              throw new Error(
+                `Invalid rating value provided in URL: ${rating}`,
+              );
+            }
           }
         }
 
@@ -139,11 +157,11 @@ export default {
           `${import.meta.env.VITE_BACKEND_URL}/nodes`,
           {
             params: {
-              title: title,
-              node_type: node_type,
-              status: status,
+              title,
+              node_type,
+              status,
               tags: tagsArray.length ? tagsArray : undefined,
-              scope: scope,
+              scope,
               rating: apiRating,
             },
             paramsSerializer: (params) =>
@@ -155,6 +173,7 @@ export default {
         this.nodes = response.data;
       } catch (error) {
         console.error("Error fetching nodes:", error);
+        // Optionally, show error to the user or handle it appropriately
       }
     },
   },

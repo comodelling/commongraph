@@ -8,7 +8,6 @@ export function parseSearchQuery(query) {
     scope: null,
     rating: [],
   };
-  const ratingMap = { 1: "E", 2: "D", 3: "C", 4: "B", 5: "A" };
   if (tokens) {
     tokens.forEach((token) => {
       if (token.startsWith("type:")) {
@@ -20,13 +19,7 @@ export function parseSearchQuery(query) {
       } else if (token.startsWith("scope:")) {
         parsed.scope = token.slice(6);
       } else if (token.startsWith("rating:")) {
-        const rawRating = token.slice(7);
-        // Convert numeric rating to letter if applicable
-        if (ratingMap[rawRating]) {
-          parsed.rating.push(ratingMap[rawRating]);
-        } else {
-          parsed.rating.push(rawRating);
-        }
+        parsed.rating.push(token.slice(7));
       } else {
         parsed.text.push(token);
       }

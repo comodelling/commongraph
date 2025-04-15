@@ -114,12 +114,25 @@ export default {
                 .filter((tag) => tag)
             : tags
           : [];
+
+        // Convert numeric rating to a letter right before the API call
+        let apiRating = undefined;
+        if (rating) {
+          const ratingMap = { 1: "E", 2: "D", 3: "C", 4: "B", 5: "A" };
+          if (Array.isArray(rating)) {
+            apiRating = rating.map((r) => ratingMap[r] || r);
+          } else {
+            apiRating = ratingMap[rating] || rating;
+          }
+        }
+
         console.log("Searching for nodes with:", {
           title,
           node_type,
           status,
           tags: tagsArray,
           scope,
+          rating: apiRating,
         });
         const startTime = performance.now();
         const response = await api.get(
@@ -131,7 +144,7 @@ export default {
               status: status,
               tags: tagsArray.length ? tagsArray : undefined,
               scope: scope,
-              rating: rating || undefined,
+              rating: apiRating,
             },
             paramsSerializer: (params) =>
               qs.stringify(params, { arrayFormat: "repeat" }),

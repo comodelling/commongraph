@@ -8,9 +8,9 @@ It helps browse through the database and can accomodate for multiple visualisati
 ## Search Bar
 
 Located at the top, this allows the user to search for nodes in the database.
-By default, the entered text will be searched for in titles, across all types, statuses, scopes and tags.
+By default, the entered text will be searched for in titles, across all types, statuses, scopes, tags, and ratings.
 Filters on the properties can be applied using the following syntax:<br>
-```> title words type:objective scope:Spain tag:tagname status:live ```
+```> title words type:objective scope:Spain tag:tagname status:live rating:5```
 
 ## Search Results
 

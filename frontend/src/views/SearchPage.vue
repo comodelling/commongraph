@@ -31,7 +31,7 @@
         </div>
       </div>
       <div class="visualization-column">
-        <SupportView :nodes="nodes" />
+        <SupportView :nodes="nodes" @filter-by-rating="applyRatingFilter" />
       </div>
     </div>
   </div>
@@ -78,28 +78,34 @@ export default {
   },
   methods: {
     search(parsedQuery) {
-      console.log("Parsed query:", parsedQuery);
       const params = {};
-      if (parsedQuery.text.length) {
+      if (parsedQuery.text?.length) {
         params.title = parsedQuery.text.join(" ");
       }
-      if (parsedQuery.type.length) {
+      if (parsedQuery.type?.length) {
         params.node_type = parsedQuery.type;
       }
-      if (parsedQuery.status.length) {
+      if (parsedQuery.status?.length) {
         params.status = parsedQuery.status;
       }
-      if (parsedQuery.tag.length) {
+      if (parsedQuery.tag?.length) {
         params.tags = parsedQuery.tag;
       }
       if (parsedQuery.scope) {
         params.scope = parsedQuery.scope;
       }
+      if (parsedQuery.rating) {
+        params.rating = parsedQuery.rating;
+      }
       this.$router.push({ name: "SearchPage", query: params });
+    },
+    applyRatingFilter(rating) {
+      this.search({ text: [this.title], rating });
     },
     async performSearch() {
       try {
-        const { title, node_type, status, tags, scope } = this.$route.query;
+        const { title, node_type, status, tags, scope, rating } =
+          this.$route.query;
         const tagsArray = tags
           ? typeof tags === "string"
             ? tags
@@ -108,23 +114,55 @@ export default {
                 .filter((tag) => tag)
             : tags
           : [];
+
+        let apiRating = undefined;
+        if (rating) {
+          const ratingMap = { 1: "E", 2: "D", 3: "C", 4: "B", 5: "A" };
+          const validLetters = ["A", "B", "C", "D", "E"];
+          const convertRating = (r) => {
+            let letter = ratingMap[r];
+            if (!letter) {
+              letter = r.toUpperCase();
+            }
+            return validLetters.includes(letter) ? letter : undefined;
+          };
+
+          if (Array.isArray(rating)) {
+            apiRating = rating.map(convertRating);
+            if (apiRating.includes(undefined)) {
+              throw new Error(
+                `Invalid rating value provided in URL: ${rating}`,
+              );
+            }
+          } else {
+            apiRating = convertRating(rating);
+            if (!apiRating) {
+              throw new Error(
+                `Invalid rating value provided in URL: ${rating}`,
+              );
+            }
+          }
+        }
+
         console.log("Searching for nodes with:", {
           title,
           node_type,
           status,
           tags: tagsArray,
           scope,
+          rating: apiRating,
         });
         const startTime = performance.now();
         const response = await api.get(
           `${import.meta.env.VITE_BACKEND_URL}/nodes`,
           {
             params: {
-              title: title,
-              node_type: node_type,
-              status: status,
+              title,
+              node_type,
+              status,
               tags: tagsArray.length ? tagsArray : undefined,
-              scope: scope,
+              scope,
+              rating: apiRating,
             },
             paramsSerializer: (params) =>
               qs.stringify(params, { arrayFormat: "repeat" }),
@@ -135,6 +173,7 @@ export default {
         this.nodes = response.data;
       } catch (error) {
         console.error("Error fetching nodes:", error);
+        // Optionally, show error to the user or handle it appropriately
       }
     },
   },

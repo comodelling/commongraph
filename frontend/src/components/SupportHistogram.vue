@@ -11,7 +11,7 @@
     <div v-if="loading">Loading ratings...</div>
     <div v-if="error">{{ error }}</div>
     <div v-else class="chart-container">
-      <canvas ref="chart"></canvas>
+      <canvas ref="chart" @click="onChartClick"></canvas>
     </div>
   </div>
 </template>
@@ -49,7 +49,7 @@ export default {
       default: true,
     },
   },
-  setup(props, { expose }) {
+  setup(props, { emit, expose }) {
     const ratings = ref(null);
     const loading = ref(false);
     const error = ref(null);
@@ -212,8 +212,35 @@ export default {
         fetchRatings();
     });
 
+    const onChartClick = (evt) => {
+      if (!chartInstance) return;
+      const activePoint = chartInstance.getElementsAtEventForMode(
+        evt,
+        "nearest",
+        { intersect: true },
+        false,
+      );
+      if (activePoint[0]) {
+        const idx = activePoint[0].index;
+        // Convert index back to a rating letter, e.g. buckets[0] -> 'E'
+        const ratingLetter = Object.keys(scaleMap).find(
+          (key) => scaleMap[key] === idx,
+        );
+        if (ratingLetter) {
+          emit("filter-by-rating", ratingLetter);
+        }
+      }
+    };
+
     expose({ fetchRatings });
-    return { ratings, loading, error, chart, aggregate: props.aggregate };
+    return {
+      ratings,
+      loading,
+      error,
+      chart,
+      aggregate: props.aggregate,
+      onChartClick,
+    };
   },
 };
 </script>

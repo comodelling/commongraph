@@ -12,6 +12,7 @@
       <router-link to="/signup">Sign up</router-link><br />
     </div>
     <div v-else>
+      <router-link to="/favourites">Favourites</router-link><br />
       <router-link to="/settings">Settings</router-link><br />
       <a href="#" @click="logout">Log out</a>
     </div>

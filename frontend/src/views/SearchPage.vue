@@ -22,9 +22,11 @@
             >
               <h4>{{ scope }}</h4>
               <ul>
-                <li v-for="node in nodes" :key="node.id" class="node-item">
-                  <a :href="`/node/${node.node_id}`">{{ node.title }}</a>
-                </li>
+                <NodeListItem
+                  v-for="node in nodes"
+                  :key="node.node_id"
+                  :node="node"
+                />
               </ul>
             </div>
           </div>
@@ -43,9 +45,10 @@ import qs from "qs";
 import { useRouter, useRoute } from "vue-router";
 import SearchBar from "../components/SearchBar.vue";
 import SupportView from "../components/SupportHistogram.vue";
+import NodeListItem from "../components/NodeListItem.vue";
 
 export default {
-  components: { SearchBar, SupportView },
+  components: { SearchBar, SupportView, NodeListItem },
   data() {
     return {
       title: "",

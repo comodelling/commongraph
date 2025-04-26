@@ -8,6 +8,7 @@ import Login from "../views/Login.vue";
 import Signup from "../views/Signup.vue";
 import UserSettings from "../views/UserSettings.vue";
 import ResetPassword from "../views/ResetPassword.vue";
+import Favourites from "../views/Favourites.vue";
 import VerifySecurityQuestion from "../views/VerifySecurityQuestion.vue";
 import UpdateSecurityQuestion from "../views/UpdateSecurityQuestion.vue";
 import { useUnsaved } from "../composables/useUnsaved";
@@ -24,6 +25,7 @@ const routes = [
       { path: "/login", name: "Login", component: Login },
       { path: "/signup", name: "Signup", component: Signup },
       { path: "/settings", name: "UserSettings", component: UserSettings },
+      { path: "/favourites", name: "Favourites", component: Favourites },
       {
         path: "/verify-security-question",
         name: "VerifySecurityQuestion",

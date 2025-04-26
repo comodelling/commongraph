@@ -1,5 +1,10 @@
 <template>
   <div class="element-info">
+    <div class="favourite-toggle">
+      <button class="favourite-btn" @click="toggleFavourite">
+        {{ isFavourite ? "★" : "☆" }}
+      </button>
+    </div>
     <div class="tabs">
       <button
         :class="{ active: currentTab === 'view' }"
@@ -49,6 +54,8 @@
 import NodeInfoView from "./NodeInfoView.vue";
 import NodeInfoEdit from "./NodeInfoEdit.vue";
 import NodeHistoryView from "./NodeHistory.vue";
+import { useAuth } from "../composables/useAuth";
+import api from "../axios";
 
 export default {
   props: {
@@ -65,6 +72,8 @@ export default {
         : this.$route.path.endsWith("/history")
           ? "history"
           : "view",
+      isFavourite: false,
+      userFavourites: [],
     };
   },
   computed: {
@@ -74,7 +83,17 @@ export default {
       if (this.currentTab === "history") return NodeHistoryView;
     },
   },
+  mounted() {
+    if (this.node && this.node.node_id) {
+      this.fetchUserFavourites();
+    }
+  },
   watch: {
+    node(newVal) {
+      if (newVal && newVal.node_id) {
+        this.fetchUserFavourites();
+      }
+    },
     "$route.path"(newPath) {
       if (newPath.includes("/node")) {
         if (newPath.endsWith("/edit")) {
@@ -89,14 +108,12 @@ export default {
   },
   methods: {
     switchTab(tab) {
-      // If currently in edit mode, ask for confirmation if there are unsaved edits.
       if (this.currentTab === "edit" && this.$refs.nodeEdit) {
-        // Ensure our NodeInfoEdit component exposes hasLocalUnsavedChanges
         if (this.$refs.nodeEdit.hasLocalUnsavedChanges) {
           if (
             !window.confirm("You have unsaved edits. Leave without saving?")
           ) {
-            return; // stay in edit mode
+            return;
           }
         }
       }
@@ -114,6 +131,96 @@ export default {
       this.$emit("update-node-from-editor", updatedNode);
       this.switchTab("view");
     },
+    fetchUserFavourites() {
+      const { getAccessToken } = useAuth();
+      const token = getAccessToken();
+      if (!token) return;
+      api
+        .get(`${import.meta.env.VITE_BACKEND_URL}/user/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        .then((response) => {
+          this.userFavourites = response.data.preferences?.favourites || [];
+          this.isFavourite = this.userFavourites.includes(this.node.node_id);
+        })
+        .catch((err) => {
+          console.error("Failed to fetch favourites:", err);
+        });
+    },
+    toggleFavourite() {
+      const { getAccessToken } = useAuth();
+      const token = getAccessToken();
+      if (!token) {
+        window.alert("You must be logged in to update favourites.");
+        return;
+      }
+      let updatedFavourites;
+      if (this.isFavourite) {
+        updatedFavourites = this.userFavourites.filter(
+          (id) => id !== this.node.node_id,
+        );
+      } else {
+        updatedFavourites = [...this.userFavourites, this.node.node_id];
+      }
+      api
+        .patch(
+          `${import.meta.env.VITE_BACKEND_URL}/user/preferences`,
+          { favourites: updatedFavourites },
+          { headers: { Authorization: `Bearer ${token}` } },
+        )
+        .then((response) => {
+          this.userFavourites = response.data.preferences.favourites;
+          this.isFavourite = this.userFavourites.includes(this.node.node_id);
+        })
+        .catch((err) => {
+          console.error("Failed to update favourites:", err);
+          window.alert("Failed to update favourites.");
+        });
+    },
   },
 };
 </script>
+
+<style scoped>
+.element-info {
+  position: relative;
+  padding-top: 2rem;
+}
+
+/* Favourite toggle style */
+.favourite-toggle {
+  position: absolute;
+  top: -17px; /* Adjust as needed */
+  right: -23px; /* Adjust as needed */
+}
+.favourite-btn {
+  background: none;
+  border: none;
+  font-size: 1.2rem; /* Smaller star */
+  cursor: pointer;
+  color: gold;
+}
+.favourite-btn:hover {
+  opacity: 0.8;
+}
+
+/* Tabs styles (unchanged) */
+.tabs {
+  position: absolute;
+  top: -10px;
+  left: -10px;
+}
+.tabs button {
+  flex: 1;
+  padding: 3px 10px;
+  cursor: pointer;
+  background: none;
+  border-radius: 3px;
+  border-bottom: 1px solid var(--border-color);
+  font-size: 11px;
+}
+.tabs button.active {
+  border-bottom: 2px solid #007bff;
+  font-weight: bold;
+}
+</style>

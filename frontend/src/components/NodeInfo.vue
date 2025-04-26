@@ -72,7 +72,6 @@ export default {
         : this.$route.path.endsWith("/history")
           ? "history"
           : "view",
-      // Favourite state
       isFavourite: false,
       userFavourites: [],
     };
@@ -89,9 +88,26 @@ export default {
       this.fetchUserFavourites();
     }
   },
+  watch: {
+    node(newVal) {
+      if (newVal && newVal.node_id) {
+        this.fetchUserFavourites();
+      }
+    },
+    "$route.path"(newPath) {
+      if (newPath.includes("/node")) {
+        if (newPath.endsWith("/edit")) {
+          this.currentTab = "edit";
+        } else if (newPath.endsWith("/history")) {
+          this.currentTab = "history";
+        } else {
+          this.currentTab = "view";
+        }
+      }
+    },
+  },
   methods: {
     switchTab(tab) {
-      // If currently in edit mode, ask for confirmation if there are unsaved edits.
       if (this.currentTab === "edit" && this.$refs.nodeEdit) {
         if (this.$refs.nodeEdit.hasLocalUnsavedChanges) {
           if (
@@ -140,12 +156,10 @@ export default {
       }
       let updatedFavourites;
       if (this.isFavourite) {
-        // Remove the node if it is already a favourite
         updatedFavourites = this.userFavourites.filter(
           (id) => id !== this.node.node_id,
         );
       } else {
-        // Add the node to favourites
         updatedFavourites = [...this.userFavourites, this.node.node_id];
       }
       api
@@ -162,19 +176,6 @@ export default {
           console.error("Failed to update favourites:", err);
           window.alert("Failed to update favourites.");
         });
-    },
-  },
-  watch: {
-    "$route.path"(newPath) {
-      if (newPath.includes("/node")) {
-        if (newPath.endsWith("/edit")) {
-          this.currentTab = "edit";
-        } else if (newPath.endsWith("/history")) {
-          this.currentTab = "history";
-        } else {
-          this.currentTab = "view";
-        }
-      }
     },
   },
 };

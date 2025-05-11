@@ -4,7 +4,7 @@
     <router-link to="/">Main page</router-link><br />
     <a href="#" @click="createNewNode">New node</a><br />
     <a href="#" @click="fetchRandomNode">Random node</a><br />
-    <router-link to="/about">About ObjectiveNet</router-link>
+    <router-link to="/about">About CommonGraph</router-link>
     <br /><br />
     <div class="title">User</div>
     <div v-if="!isLoggedIn">

@@ -292,7 +292,7 @@ function exportSubnet() {
       2,
       "0",
     )}${currentDate.getMinutes().toString().padStart(2, "0")}${currentDate.getSeconds().toString().padStart(2, "0")}`;
-  saveAs(blob, `objnet-export-${formattedDate}.json`);
+  saveAs(blob, `commongraph-export-${formattedDate}.json`);
 }
 
 onNodeClick(({ node }) => {

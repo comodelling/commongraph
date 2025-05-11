@@ -1,4 +1,4 @@
-<!-- filepath: /Users/mario/CODE/objectivenet/frontend/src/views/SearchPage.vue -->
+<!-- filepath: /Users/mario/CODE/commongraph/frontend/src/views/SearchPage.vue -->
 <template>
   <div class="search-page">
     <div class="search-header">

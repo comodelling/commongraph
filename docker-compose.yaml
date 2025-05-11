@@ -3,12 +3,12 @@ services:
     build:
       context: .
       dockerfile: backend/Dockerfile
-    container_name: objnet-backend
+    container_name: commongraph-backend
     ports:
       - "8000:8000"
     environment:
       - DOCKER_ENV=true
-      - POSTGRES_DB_URL=postgresql://postgres:postgres@postgres:5432/objectivenet_db
+      - POSTGRES_DB_URL=postgresql://postgres:postgres@postgres:5432/commongraph_db
     volumes:
       - ./backend:/app/backend/
       - ./backend/.env:/app/backend/.env
@@ -19,7 +19,7 @@ services:
 
   frontend:
     image: node:latest
-    container_name: objnet-frontend
+    container_name: commongraph-frontend
     ports:
       - "5173:5173"
     working_dir: /app
@@ -32,12 +32,12 @@ services:
 
   postgres:
     image: postgres:14
-    container_name: objnet-postgres
+    container_name: commongraph-postgres
     restart: always
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: objectivenet_db
+      POSTGRES_DB: commongraph_db
     ports:
       - "5432:5432"
     volumes:

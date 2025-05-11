@@ -1,6 +1,6 @@
 # Configuration
 
-Here we go through the different configuration options offered when deploying an instance of ObjectiveNet.
+Here we go through the different configuration options offered when deploying an instance of CommonGraph.
 For user-related settings, see the [user's views](view/user.md) .
 
 ## Graph database

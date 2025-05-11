@@ -1,7 +1,7 @@
 services:
   janusgraph:
     image: docker.io/janusgraph/janusgraph:latest
-    container_name: objnet-janusgraph
+    container_name: commongraph-janusgraph
     ports:
       - "8182:8182"
     volumes:

@@ -1,10 +1,10 @@
 # Graph of Change
 
-In ObjectiveNet, possible changes are modelled as **nodes** in a **graph**, which may be connected together by **edges**.
+In CommonGraph, possible changes are modelled as **nodes** in a **graph**, which may be connected together by **edges**.
 
 ## Nodes
 
-Nodes are the main entities in a graph. They are conceived as *possible changes* for the purpose of ObjectiveNet.
+Nodes are the main entities in a graph. They are conceived as *possible changes* for the purpose of CommonGraph.
 One can create or edit a node via the node info pane.
 
 Every node must have the following attributes:

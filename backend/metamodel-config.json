@@ -1,0 +1,115 @@
+{
+    "nodeTypes": {
+        "source": {
+            "displayName": "Source",
+            "attributes": {
+                "title": {
+                    "type": "string",
+                    "required": true
+                },
+                "source_type": {
+                    "type": "enum",
+                    "options": ["book", "speech", "article"],
+                    "required": false
+                },
+                "source_url": {
+                    "type": "string",
+                    "required": false
+                }
+            }
+        },
+        "quote": {
+            "displayName": "Quote",
+            "attributes": {
+                "title": {
+                    "type": "string",
+                    "required": true
+                },
+                "language": {
+                    "type": "string",
+                    "required": false
+                }
+            }
+        },
+        "author": {
+            "displayName": "Author",
+            "attributes": {
+                "name": {
+                    "type": "string",
+                    "required": true
+                }
+            }
+        },
+        "change": {
+            "displayName": "Change / Project / Action",
+            "attributes": {
+                "title": {
+                    "type": "string",
+                    "required": true
+                },
+                "description": {
+                    "type": "string",
+                    "required": false
+                },
+                "references": {
+                    "type": "list",
+                    "itemType": "string",
+                    "required": false
+                },
+                "userRating": {
+                    "type": "likert",
+                    "required": false
+                }
+            }
+        }
+    },
+    "edgeTypes": {
+        "authorProducedSource": {
+            "displayName": "Author Produced Source",
+            "attributes": {}
+        },
+        "sourceContainsQuote": {
+            "displayName": "Source Contains Quote",
+            "attributes": {
+                "page": {
+                    "type": "number",
+                    "required": false
+                }
+            }
+        },
+        "changeImpliesChange": {
+            "displayName": "Change Implies Change",
+            "attributes": {
+                "necessity": {
+                    "type": "number",
+                    "min": 0,
+                    "max": 1,
+                    "required": false
+                },
+                "sufficiency": {
+                    "type": "number",
+                    "min": 0,
+                    "max": 1,
+                    "required": false
+                },
+                "causalStrength": {
+                    "type": "number",
+                    "required": false
+                },
+                "userRatings": {
+                    "type": "list",
+                    "itemType": "string",
+                    "required": false
+                }
+            }
+        },
+        "questionMotivatesChange": {
+            "displayName": "Question Motivates Change",
+            "attributes": {}
+        },
+        "objectiveMotivatesChange": {
+            "displayName": "Objective Motivates Change",
+            "attributes": {}
+        }
+    }
+}

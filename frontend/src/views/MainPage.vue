@@ -1,7 +1,7 @@
 <template>
   <div class="main-page">
     <div class="content">
-      <h1>ObjectiveNet</h1>
+      <h1>CommonGraph</h1>
       <div class="search-container">
         <SearchBar
           class="wide-search"

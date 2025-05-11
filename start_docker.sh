@@ -1,8 +1,8 @@
 #!/bin/bash
 
 current_dir=$(basename "$PWD")
-if [ "$current_dir" != "objectivenet" ] || [ ! -d "backend" ]; then
-    echo "Error: This script must be run from the 'objectivenet' directory and require a 'backend' subdirectory."
+if [ "$current_dir" != "commongraph" ] || [ ! -d "backend" ]; then
+    echo "Error: This script must be run from the 'commongraph' directory and require a 'backend' subdirectory."
     exit 1
 fi
 

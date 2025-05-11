@@ -265,7 +265,7 @@ class Subnet(SQLModel):
 class NetworkExport(SQLModel):
     """Network Export model"""
 
-    objectivenet_version: str
+    commongraph_version: str
     timestamp: datetime.datetime
     nodes: list[NodeBase | dict]
     edges: list[EdgeBase | dict]

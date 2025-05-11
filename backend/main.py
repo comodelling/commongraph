@@ -53,7 +53,7 @@ if os.getenv("DOCKER_ENV"):
 elif os.getcwd().endswith("backend"):
     _version_path = PathlibPath("../VERSION")
     _env_path = PathlibPath(".env")
-elif os.getcwd().endswith("objectivenet"):
+elif os.getcwd().endswith("commongraph"):
     _version_path = PathlibPath("VERSION")
     _env_path = PathlibPath("backend/.env")
 else:
@@ -77,7 +77,7 @@ origins = (
 )
 
 
-app = FastAPI(title="ObjectiveNet API", version=__version__)
+app = FastAPI(title="CommonGraph API", version=__version__)
 app.include_router(auth_router)
 
 app.add_middleware(
@@ -139,7 +139,7 @@ def get_rating_history_db_connection(
 
 @app.get("/")
 async def root():
-    return {"message": "Welcome to ObjectiveNet!"}
+    return {"message": "Welcome to CommonGraph!"}
 
 
 ### /user/ ###
@@ -175,7 +175,7 @@ def get_whole_network(
 ) -> NetworkExport:
     """Return full network of nodes and edges from the database."""
     out = db_history.get_whole_network().model_dump()
-    out["objectivenet_version"] = __version__
+    out["commongraph_version"] = __version__
     out["timestamp"] = datetime.datetime.now().isoformat()
     return out
 

@@ -1,4 +1,4 @@
-site_name: ObjectiveNet Documentation
+site_name: CommonGraph Documentation
 nav:
   - Introduction: index.md
   - Configuration: configuration.md

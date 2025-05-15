@@ -8,17 +8,11 @@ import json
 import random
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, status, Query, Depends, HTTPException
+from fastapi import Body, Query, Depends, FastAPI, status, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from models import (
-    NodeBase,
-    EdgeBase,
-    Subnet,
-    NetworkExport,
-    NodeStatus,
     NodeId,
-    PartialNodeBase,
     MigrateLabelRequest,
     User,
     UserRead,
@@ -27,6 +21,13 @@ from models import (
     RatingType,
     LikertScale,
 )
+from properties import NodeStatus
+from dynamic_models import (NodeTypeModels, 
+                            EdgeTypeModels, 
+                            DynamicNode, 
+                            DynamicEdge, 
+                            DynamicSubnet, 
+                            DynamicNetworkExport)
 from database.base import (
     GraphDatabaseInterface,
     UserDatabaseInterface,
@@ -170,7 +171,7 @@ def get_whole_network(
     db_history: GraphHistoryRelationalInterface = Depends(
         get_graph_history_db_connection
     ),
-) -> NetworkExport:
+) -> DynamicNetworkExport:
     """Return full network of nodes and edges from the database."""
     out = db_history.get_whole_network().model_dump()
     out["commongraph_version"] = __version__
@@ -207,13 +208,13 @@ def reset_whole_network(
 
 @app.put("/subnet")
 def update_subnet(
-    subnet: Subnet,
+    subnet: DynamicSubnet,
     db_graph: GraphDatabaseInterface | None = Depends(get_graph_db_connection),
     db_history: GraphHistoryRelationalInterface = Depends(
         get_graph_history_db_connection
     ),
     user: UserRead = Depends(get_current_user),
-) -> Subnet:
+)  -> DynamicSubnet:
     """Add missing nodes and edges and update existing ones (given IDs)."""
     out_subnet = db_history.update_subnet(subnet, username=user.username)
     if db_graph is not None:
@@ -229,7 +230,7 @@ def get_induced_subnet(
     db_history: GraphHistoryRelationalInterface = Depends(
         get_graph_history_db_connection
     ),
-) -> Subnet:
+) -> DynamicSubnet:
     """Return the subnet induced from a particular element with an optional limit number of connections.
     If no neighbour is found, a singleton subnet with a single node is returned from the provided ID.
     """
@@ -257,7 +258,7 @@ def search_nodes(
     db_ratings: RatingHistoryRelationalInterface = Depends(
         get_rating_history_db_connection
     ),
-) -> list[NodeBase]:
+) -> list[DynamicNode]: #type: ignore
     """Search in nodes on a field by field level."""
     if db_graph is not None:
         nodes = db_graph.search_nodes(
@@ -294,7 +295,7 @@ def get_random_node(
     db_history: GraphHistoryRelationalInterface = Depends(
         get_graph_history_db_connection
     ),
-) -> NodeBase:
+) -> DynamicNode: #type: ignore
     """Return a random node with optional node_type."""
     if isinstance(db, JanusGraphDB):
         return db.get_random_node(node_type)
@@ -307,21 +308,27 @@ def get_node(
     db_history: GraphHistoryRelationalInterface = Depends(
         get_graph_history_db_connection
     ),
-) -> NodeBase:
+) -> DynamicNode: #type: ignore
     """Return the node associated with the provided ID."""
     return db_history.get_node(node_id)
 
 
 @app.post("/node", status_code=status.HTTP_201_CREATED)
 def create_node(
-    node: NodeBase,
+    payload: dict = Body(...),
     db_graph: GraphDatabaseInterface | None = Depends(get_graph_db_connection),
     db_history: GraphHistoryRelationalInterface = Depends(
         get_graph_history_db_connection
     ),
     user: UserRead = Depends(get_current_user),
-) -> NodeBase:
+) -> DynamicNode: #type: ignore
     """Create a node."""
+    nt = payload.get("node_type")
+    Model = NodeTypeModels.get(nt)
+    if not Model:
+        raise HTTPException(400, f"Unknown node_type {nt!r}")
+    node = Model(**payload)
+    
     if db_graph is not None:
         node = db_graph.create_node(node)
         # logger.info(f"User {user.username} created node {node_out.node_id} in graph database too")
@@ -349,14 +356,19 @@ def delete_node(
 
 @app.put("/node")
 def update_node(
-    node: PartialNodeBase,
+    payload: dict = Body(...),
     db_graph: GraphDatabaseInterface | None = Depends(get_graph_db_connection),
     db_history: GraphHistoryRelationalInterface = Depends(
         get_graph_history_db_connection
     ),
     user: UserRead = Depends(get_current_user),
-) -> NodeBase:
+) -> DynamicNode: #type: ignore
     """Update the properties of an existing node."""
+    nt = payload.get("node_type")
+    Model = NodeTypeModels.get(nt)
+    if not Model:
+        raise HTTPException(400, f"Unknown node_type {nt!r}")
+    node = Model(**payload)
     node_out = db_history.update_node(node, username=user.username)
     if db_graph is not None:
         db_graph.update_node(node)
@@ -382,7 +394,7 @@ def get_edge_list(
     db_history: GraphHistoryRelationalInterface = Depends(
         get_graph_history_db_connection
     ),
-) -> list[EdgeBase]:
+) -> list[DynamicEdge]: #type: ignore
     """Return all edges in the database."""
     return db_history.get_edge_list()
 
@@ -395,7 +407,7 @@ def find_edges(
     db_history: GraphHistoryRelationalInterface = Depends(
         get_graph_history_db_connection
     ),
-) -> list[EdgeBase]:
+) -> list[DynamicEdge]: #type: ignore
     """Return the edge associated with the provided ID."""
     return db_history.find_edges(
         source_id=source_id, target_id=target_id, edge_type=edge_type
@@ -412,21 +424,26 @@ def get_edge(
     db_history: GraphHistoryRelationalInterface = Depends(
         get_graph_history_db_connection
     ),
-) -> EdgeBase:
+) -> DynamicEdge: #type: ignore
     """Return the edge associated with the provided ID."""
     return db_history.get_edge(source_id, target_id)
 
 
 @app.post("/edge", status_code=201)
 def create_edge(
-    edge: EdgeBase,
+    payload: dict = Body(...),
     db_graph: GraphDatabaseInterface | None = Depends(get_graph_db_connection),
     db_history: GraphHistoryRelationalInterface = Depends(
         get_graph_history_db_connection
     ),
     user: UserRead = Depends(get_current_user),
-) -> EdgeBase:
+) -> DynamicEdge: #type: ignore
     """Create an edge."""
+    et = payload.get("edge_type")
+    Model = EdgeTypeModels.get(et)
+    if not Model:
+        raise HTTPException(400, f"Unknown edge_type {et!r}")
+    edge = Model(**payload)
     out_edge = db_history.create_edge(edge, username=user.username)
     if db_graph is not None:
         db_graph.create_edge(edge)
@@ -452,14 +469,19 @@ def delete_edge(
 
 @app.put("/edge")
 def update_edge(
-    edge: EdgeBase,
+    payload: dict = Body(...),
     db_graph: GraphDatabaseInterface | None = Depends(get_graph_db_connection),
     db_history: GraphHistoryRelationalInterface = Depends(
         get_graph_history_db_connection
     ),
     user: UserRead = Depends(get_current_user),
-) -> EdgeBase:
+) -> DynamicEdge: #type: ignore
     """Update the properties of an edge."""
+    et = payload.get("edge_type")
+    Model = EdgeTypeModels.get(et)
+    if not Model:
+        raise HTTPException(400, f"Unknown edge_type {et!r}")
+    edge = Model(**payload)
     out_edge = db_history.update_edge(edge, username=user.username)
     if db_graph is not None:
         db_graph.update_edge(edge)

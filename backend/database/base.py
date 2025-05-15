@@ -5,7 +5,7 @@ from functools import wraps
 from models import (
     NodeBase,
     EdgeBase,
-    Subnet,
+    SubnetBase,
     User,
     UserRead,
     UserCreate,
@@ -148,7 +148,7 @@ class GraphDatabaseInterface(ABC, metaclass=LogMeta):
         self.logger = logging.getLogger(self.__class__.__name__)
 
     @abstractmethod
-    def get_whole_network(self) -> Subnet:
+    def get_whole_network(self) -> SubnetBase:
         pass
 
     @abstractmethod
@@ -160,11 +160,11 @@ class GraphDatabaseInterface(ABC, metaclass=LogMeta):
         pass
 
     @abstractmethod
-    def update_subnet(self, subnet: Subnet) -> Subnet:
+    def update_subnet(self, subnet: SubnetBase) -> SubnetBase:
         pass
 
     @abstractmethod
-    def get_induced_subnet(self, node_id: NodeId, levels: NodeId) -> Subnet:
+    def get_induced_subnet(self, node_id: NodeId, levels: NodeId) -> SubnetBase:
         pass
 
     @abstractmethod
@@ -228,7 +228,7 @@ class GraphHistoryRelationalInterface(GraphDatabaseInterface):
         pass
 
     @abstractmethod
-    def update_subnet(self, subnet: Subnet, username: str) -> Subnet:
+    def update_subnet(self, subnet: SubnetBase, username: str) -> SubnetBase:
         pass
 
     @abstractmethod

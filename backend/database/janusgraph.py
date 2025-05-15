@@ -15,12 +15,12 @@ from contextlib import contextmanager
 from models import (
     NodeBase,
     EdgeBase,
-    Subnet,
-    NodeStatus,
+    SubnetBase,
     NodeId,
     PartialNodeBase,
     EdgeBase,
 )
+from properties import NodeStatus
 from .base import GraphDatabaseInterface
 
 
@@ -46,11 +46,11 @@ class JanusGraphDB(GraphDatabaseInterface):
         finally:
             connection.close()
 
-    def get_whole_network(self) -> Subnet:
+    def get_whole_network(self) -> SubnetBase:
         with self.connection() as g:
             nodes = [convert_gremlin_vertex(vertex) for vertex in g.V().to_list()]
             edges = [convert_gremlin_edge(edge) for edge in g.E().to_list()]
-        return Subnet(nodes=nodes, edges=edges)
+        return SubnetBase(nodes=nodes, edges=edges)
 
     def get_network_summary(self) -> dict:
         with self.connection() as g:
@@ -63,7 +63,7 @@ class JanusGraphDB(GraphDatabaseInterface):
             warnings.warn("Deleting all nodes and edges in the database!")
             g.V().drop().iterate()
 
-    def update_subnet(self, subnet: Subnet) -> Subnet:
+    def update_subnet(self, subnet: SubnetBase) -> SubnetBase:
         with self.connection() as g:
             mapping = {}
             nodes_out = []
@@ -118,7 +118,7 @@ class JanusGraphDB(GraphDatabaseInterface):
 
             return {"nodes": nodes_out, "edges": edges_out}
 
-    def get_induced_subnet(self, node_id: int, levels: int) -> Subnet:
+    def get_induced_subnet(self, node_id: int, levels: int) -> SubnetBase:
         with self.connection() as g:
             try:
                 # Start traversal from the given node

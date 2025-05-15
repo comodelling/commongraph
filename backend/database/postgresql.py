@@ -1,5 +1,6 @@
 from typing import List
 import random
+import logging
 
 from sqlalchemy import text
 from sqlalchemy.orm import sessionmaker
@@ -16,21 +17,25 @@ from models import (
     NodeBase,
     EdgeBase,
     NodeId,
-    NodeStatus,
     LikertScale,
     User,
     UserRead,
     UserCreate,
     GraphHistoryEvent,
-    Subnet,
+    SubnetBase,
     EntityType,
     EntityState,
     RatingEvent,
     RatingType,
 )
+from properties import NodeStatus
+from dynamic_models import NodeTypeModels, EdgeTypeModels, DynamicSubnet
 from utils.security import hash_password
 from database.config import get_engine
 
+# logger in debug mode
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 class UserPostgreSQLDB(UserDatabaseInterface):
     def __init__(self, database_url: str):
@@ -515,20 +520,34 @@ class GraphHistoryPostgreSQLDB(GraphHistoryRelationalInterface):
         return obj
 
     def _to_node(self, payload: dict) -> NodeBase:
-        # Ensure required fields are set with safe defaults.
-        data = dict(payload) if payload else {}
-        if data.get("node_type") is None:
-            data["node_type"] = "potentiality"
-        if data.get("scope") is None:
-            data["scope"] = ""
+        data = dict(payload or {})
+        # ensure minimal defaults
+        #data.setdefault("node_type", "potentiality")  #TODO: check defaults
+        #data.setdefault("scope", "")
+        try:
+            nt = data["node_type"]
+        except KeyError as e:
+            logger.error(f'"node_type" not found in payload: {data}')
+            raise e
+        Dyn = NodeTypeModels.get(nt)
+        if Dyn:
+            # Dyn is a SQLModel subclass with only your config-allowed fields
+            logger.debug('blablablabla\n')
+            out = Dyn(**data)
+            logger.info(f"Using dynamic model for node type: {nt}, ending up in {out}")
+            return out
+        # fallback
         return NodeBase.model_validate(data)
 
     def _to_edge(self, obj) -> EdgeBase:
-        """Convert payload to an EdgeBase instance."""
-        data = self._to_dict(obj)
+        data = obj if isinstance(obj, dict) else obj.model_dump()
+        et = data.get("edge_type")
+        Dyn = EdgeTypeModels.get(et)
+        if Dyn:
+            return Dyn(**data)
         return EdgeBase.model_validate(data)
 
-    def get_whole_network(self) -> Subnet:
+    def get_whole_network(self) -> SubnetBase:
         """Reconstruct the current network from the latest events."""
         with Session(self.engine) as session:
             node_events = session.exec(
@@ -574,7 +593,7 @@ class GraphHistoryPostgreSQLDB(GraphHistoryRelationalInterface):
             self.logger.info(
                 f"Returning network with {len(nodes)} nodes and {len(edges)} edges"
             )
-            return Subnet(nodes=nodes, edges=edges)
+            return DynamicSubnet(nodes=nodes, edges=edges)
 
     def get_network_summary(self) -> dict:
         subnet = self.get_whole_network()
@@ -588,7 +607,7 @@ class GraphHistoryPostgreSQLDB(GraphHistoryRelationalInterface):
             session.exec(delete(GraphHistoryEvent))
             session.commit()
 
-    def update_subnet(self, subnet: Subnet, username: str = "system") -> Subnet:
+    def update_subnet(self, subnet: SubnetBase, username: str = "system") -> SubnetBase:
         """
         Update the subnet by iterating over nodes and edges.
         For each node, if it exists (by node_id), update it; otherwise, create it.
@@ -634,9 +653,9 @@ class GraphHistoryPostgreSQLDB(GraphHistoryRelationalInterface):
                 updated_edge = self.create_edge(edge, username=username)
             edges_out.append(updated_edge)
 
-        return Subnet(nodes=nodes_out, edges=edges_out)
+        return DynamicSubnet(nodes=nodes_out, edges=edges_out)
 
-    def get_induced_subnet(self, node_id: NodeId, levels: int) -> Subnet:
+    def get_induced_subnet(self, node_id: NodeId, levels: int) -> SubnetBase:
         """
         Reconstruct an induced subnet starting from node_id by performing a BFS.
         """
@@ -670,7 +689,7 @@ class GraphHistoryPostgreSQLDB(GraphHistoryRelationalInterface):
             for edge in whole.edges
             if edge.source in induced_nodes and edge.target in induced_nodes
         ]
-        return Subnet(nodes=list(induced_nodes.values()), edges=induced_edges)
+        return DynamicSubnet(nodes=list(induced_nodes.values()), edges=induced_edges)
 
     def search_nodes(
         self,

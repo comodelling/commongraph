@@ -1,52 +1,70 @@
 <template>
   <div>
     <h2 :title="edgeTypeTooltip">
-      {{ edge.edge_type === "require" ? "Condition" : "Implication" }}
+      {{ edge.edge_type }}
     </h2>
-    <!-- <strong>Type:</strong> {{ localEdge.edge_type }}<br /> -->
-
-    <strong :title="tooltips.edge.references">References: </strong> <br />
-    <ul
-      class="references-list"
-      v-if="localEdge.references && localEdge.references.length"
-    >
-      <li
-        v-for="reference in localEdge.references.filter((ref) => ref.trim())"
-        :key="reference"
-      >
+    <strong v-if="isAllowed('references')" :title="tooltips.edge.references">References:</strong>
+    <br>
+    <ul class="references-list" v-if="localEdge.references && localEdge.references.length">
+      <li v-for="reference in localEdge.references.filter((ref) => ref.trim())" :key="reference">
         {{ reference.trim() }}
       </li>
     </ul>
-    <strong :title="tooltips.edge.description">Description:</strong><br />
+    <strong v-if="isAllowed('description')" :title="tooltips.edge.description">Description:</strong>
+    <br>
     <p>{{ localEdge.description ? localEdge.description : "" }}</p>
   </div>
 </template>
 
-<script>
-import tooltips from "../assets/tooltips.json"; // Add this line
+<script lang="ts">
+import { defineComponent, computed, onMounted } from "vue";
+import { useMetaConfig } from "../composables/useConfig";
+import tooltips from "../assets/tooltips.json";
 
-export default {
+export default defineComponent({
+  name: "EdgeInfoView",
   props: {
-    edge: Object,
+    edge: {
+      type: Object,
+      required: true,
+    },
     sourceId: Number,
     targetId: Number,
   },
   emits: ["publish-edge"],
+  setup(props) {
+    const { edgeTypes, load } = useMetaConfig();
+    onMounted(load);
+
+    const allowed = computed(() => {
+      // Ensure edgeTypes are loaded and the edge has a type.
+      if (!edgeTypes.value || !props.edge.edge_type) return Object.keys(props.edge);
+      return edgeTypes.value[props.edge.edge_type] || Object.keys(props.edge);
+    });
+
+    function isAllowed(prop: string): boolean {
+      return allowed.value.includes(prop);
+    }
+
+    const edgeTypeTooltip = computed(() => {
+      return tooltips.edge[props.edge.edge_type] || tooltips.edge.type;
+    });
+
+    return { isAllowed, edgeTypeTooltip };
+  },
   data() {
     return {
+      // localEdge is used so that modifications from watchers are applied.
       localEdge: this.edge,
-      tooltips, // Add this line
+      tooltips,
     };
   },
   computed: {
-    sourceLink() {
-      return;
+    sourceLink(): string {
+      return ""; // your implementation here
     },
-    targetLink() {
+    targetLink(): string {
       return `/node/${this.localEdge.target}`;
-    },
-    edgeTypeTooltip() {
-      return this.tooltips.edge[this.edge.edge_type] || this.tooltips.edge.type;
     },
   },
   watch: {
@@ -57,5 +75,5 @@ export default {
       deep: true,
     },
   },
-};
+});
 </script>

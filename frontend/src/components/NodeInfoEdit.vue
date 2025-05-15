@@ -1,6 +1,7 @@
 <template>
   <div>
-    <div class="field">
+    <!-- Title Field -->
+    <div class="field" v-if="isAllowed('title')">
       <strong :title="tooltips.node.title">Title:</strong>
       <div class="field-content">
         <span
@@ -19,29 +20,24 @@
         />
       </div>
     </div>
-
+    <!-- Type Field (always allowed) -->
     <div class="field">
       <strong :title="tooltips.node.type">Type:</strong>
       <div class="field-content">
-        <select v-model="editedNode.node_type" ref="typeInput">
-          <option value="objective" :title="tooltips.node.objective">
-            Objective
-          </option>
-          <option value="project" :title="tooltips.node.project">
-            Project
-          </option>
-          <option value="action" :title="tooltips.node.action">Action</option>
-          <option value="potentiality" :title="tooltips.node.potentiality">
-            Potentiality
-          </option>
-        </select>
+         <select v-model="editedNode.node_type" ref="typeInput">
+           <option
+             v-for="(props, type) in nodeTypes"
+             :key="type"
+             :value="type"
+             :title="tooltips.node[type] || tooltips.node.type"
+           >
+             {{ capitalise(type) }}
+           </option>
+         </select>
       </div>
     </div>
-    <!-- <h2 :title="nodeTypeTooltip" v-else>
-      {{ capitalise(editedNode.node_type) }}
-    </h2> -->
-
-    <div class="field">
+    <!-- Scope Field -->
+    <div class="field" v-if="isAllowed('scope')">
       <strong :title="tooltips.node.scope">Scope:</strong>
       <div class="field-content">
         <span
@@ -60,33 +56,30 @@
         />
       </div>
     </div>
-
-    <div class="field">
+    <!-- Status Field -->
+    <div class="field" v-if="isAllowed('status')">
       <strong :title="tooltips.node.status">Status:</strong>
       <div class="field-content">
         <select v-model="editedNode.status" ref="statusInput">
-          <option
-            value="unspecified"
-            :title="tooltips.node.unspecified"
-          ></option>
+          <option value="unspecified" :title="tooltips.node.unspecified"></option>
           <option value="draft" :title="tooltips.node.draft">Draft</option>
           <option value="live" :title="tooltips.node.live">Live</option>
-          <option value="completed" :title="tooltips.node.completed">
-            Completed
-          </option>
+          <option value="completed" :title="tooltips.node.completed">Completed</option>
           <option value="legacy" :title="tooltips.node.legacy">Legacy</option>
         </select>
       </div>
     </div>
-    <div class="field">
+    <!-- Tags Field -->
+    <div class="field" v-if="isAllowed('tags')">
       <strong :title="tooltips.node.tags">Tags:</strong>
       <div class="tags-container">
         <span v-for="(tag, index) in editedNode.tags" :key="index" class="tag">
           <span
             v-if="editingField !== `tag-${index}`"
             @click="startEditing(`tag-${index}`)"
-            >{{ tag }}</span
           >
+            {{ tag }}
+          </span>
           <input
             v-else
             v-model="editedNode.tags[index]"
@@ -100,8 +93,9 @@
         <button class="add-tag-button" @click="addTag">+ Tag</button>
       </div>
     </div>
-    <strong :title="tooltips.node.references">References:</strong>
-    <div class="field">
+    <!-- References Field -->
+    <div class="field" v-if="isAllowed('references')">
+      <strong :title="tooltips.node.references">References:</strong>
       <ul>
         <li
           v-for="(reference, index) in editedNode.references"
@@ -112,8 +106,9 @@
           <span
             v-if="editingField !== `reference-${index}`"
             @click="startEditing(`reference-${index}`)"
-            >{{ reference || "Click to edit" }}</span
           >
+            {{ reference || "Click to edit" }}
+          </span>
           <input
             v-else
             v-model="editedNode.references[index]"
@@ -122,39 +117,40 @@
           />
         </li>
       </ul>
-    </div>
-    <div>
       <button class="add-reference-button" @click="addReference">
         + Reference
       </button>
     </div>
-    <strong :title="tooltips.node.description">Description:</strong>
-    <div
-      class="field"
-      v-if="editedNode.description || editingField === 'description'"
-    >
-      <div class="field-content">
-        <span
-          v-if="editingField !== 'description'"
-          @click="startEditing('description')"
-          >{{ editedNode.description }}</span
-        >
-        <textarea
-          v-else
-          v-model="editedNode.description"
-          @blur="stopEditing('description')"
-          ref="descriptionInput"
-        ></textarea>
+    <!-- Description Field -->
+    <div v-if="isAllowed('description')">
+      <strong :title="tooltips.node.description">Description:</strong>
+      <div
+        class="field"
+        v-if="editedNode.description || editingField === 'description'"
+      >
+        <div class="field-content">
+          <span
+            v-if="editingField !== 'description'"
+            @click="startEditing('description')"
+          >
+            {{ editedNode.description }}
+          </span>
+          <textarea
+            v-else
+            v-model="editedNode.description"
+            @blur="stopEditing('description')"
+            ref="descriptionInput"
+          ></textarea>
+        </div>
       </div>
+      <button
+        v-if="!editedNode.description"
+        class="add-description-button"
+        @click="addDescription"
+      >
+        + Description
+      </button>
     </div>
-    <button
-      v-if="!editedNode.description"
-      class="add-description-button"
-      @click="addDescription"
-    >
-      + Description
-    </button>
-
     <button class="submit-button" @click="submit">{{ actionLabel }}</button>
   </div>
 </template>
@@ -165,10 +161,20 @@ import _ from "lodash";
 import tooltips from "../assets/tooltips.json";
 import { useAuth } from "../composables/useAuth";
 import { useUnsaved } from "../composables/useUnsaved";
+// Import the meta config composable
+import { useMetaConfig } from "../composables/useConfig";
 
 export default {
   props: {
     node: Object,
+  },
+  // Use the setup() function solely to expose the meta config data.
+  setup(props) {
+    const { nodeTypes, load } = useMetaConfig();
+    load();
+    return {
+      nodeTypes, // returned so we can access it in computed below.
+    };
   },
   data() {
     let editedNode = _.cloneDeep(this.node);
@@ -182,6 +188,14 @@ export default {
     };
   },
   computed: {
+    // Compute allowedFields reactively based on the current editable type.
+    allowedFields() {
+      if (!this.nodeTypes || !this.editedNode.node_type) {
+        // Fallback: allow all properties from the node object.
+        return Object.keys(this.node);
+      }
+      return this.nodeTypes[this.editedNode.node_type] || [];
+    },
     actionLabel() {
       return this.editedNode.new ? "Create" : "Submit";
     },
@@ -193,52 +207,10 @@ export default {
       return JSON.stringify(this.node) !== JSON.stringify(this.editedNode);
     },
   },
-  beforeRouteLeave(to, from, next) {
-    if (this.isSubmitting) {
-      next();
-      return;
-    }
-    if (this.hasLocalUnsavedChanges) {
-      if (!confirm("You have unsaved edits. Leave without saving?")) {
-        next(false);
-        return;
-      }
-    }
-    next();
-  },
-  beforeRouteUpdate(to, from, next) {
-    if (this.isSubmitting) {
-      next();
-      return;
-    }
-    if (this.editedNode.new) {
-      if (
-        !confirm("This new node is not saved. Are you sure you want to leave?")
-      ) {
-        next(false);
-        return;
-      }
-    } else if (this.hasLocalUnsavedChanges) {
-      if (!confirm("You have unsaved edits. Leave without saving?")) {
-        next(false);
-        return;
-      }
-    }
-    next();
-  },
-  mounted() {
-    window.addEventListener("beforeunload", this.onBeforeUnload);
-  },
-  beforeUnmount() {
-    window.removeEventListener("beforeunload", this.onBeforeUnload);
-  },
   methods: {
-    onBeforeUnload(e) {
-      if (this.hasLocalUnsavedChanges) {
-        e.preventDefault();
-        e.returnValue = "";
-        return "";
-      }
+    // Use the computed allowedFields to check if a field is allowed.
+    isAllowed(field) {
+      return this.allowedFields.includes(field);
     },
     capitalise(string) {
       return string.charAt(0).toUpperCase() + string.slice(1);
@@ -270,7 +242,6 @@ export default {
       this.editedNode.tags.splice(index, 1);
     },
     addReference() {
-      console.log("Adding reference");
       this.editedNode.references.push("");
       this.$nextTick(() => {
         this.startEditing(`reference-${this.editedNode.references.length - 1}`);
@@ -283,58 +254,40 @@ export default {
       });
     },
     async submit() {
-      // Ask the user explicitly whether to submit changes.
       if (!window.confirm("Are you sure you want to submit your changes?")) {
-        // User canceled submission; do nothing.
         return;
       }
-
       const { getAccessToken } = useAuth();
       const token = getAccessToken();
-
       const trimmedTitle = this.editedNode.title.trim();
       const trimmedScope = this.editedNode.scope.trim();
       this.editedNode.title = trimmedTitle;
       this.editedNode.scope = trimmedScope;
-      this.titleError =
-        trimmedTitle === "" ||
-        trimmedTitle === null ||
-        trimmedTitle === undefined;
-      this.scopeError =
-        trimmedScope === "" ||
-        trimmedScope === null ||
-        trimmedScope === undefined;
+      this.titleError = !trimmedTitle;
+      this.scopeError = !trimmedScope;
       if (this.titleError || this.scopeError) {
         return;
       }
-
       if (
         !this.editedNode.new &&
         this.editedNode.node_type !== this.node.node_type
       ) {
         const confirmChange = window.confirm(
-          "Changing the node type may have unintended consequences. Are you sure you want to proceed?",
+          "Changing the node type may have unintended consequences. Are you sure you want to proceed?"
         );
         if (!confirmChange) {
           this.editedNode.node_type = this.node.node_type;
           return;
         }
       }
-
-      // Additional cleanup of support, tags, and references
-      this.editedNode.support = this.editedNode.support || null;
-      if (this.editedNode.support === "") {
-        this.editedNode.support = null;
-      }
+      // Cleanup tags, references, support.
       this.editedNode.references = this.editedNode.references.filter(
-        (ref) => ref.trim() !== "",
+        (ref) => ref.trim() !== ""
       );
       this.editedNode.tags = this.editedNode.tags.filter(
-        (tag) => tag.trim() !== "",
+        (tag) => tag.trim() !== ""
       );
       this.editedNode.status = this.editedNode.status || null;
-
-      // Now process submission – set isSubmitting so that route guards don’t trigger.
       this.isSubmitting = true;
       const { setUnsaved } = useUnsaved();
       setUnsaved(false);
@@ -348,7 +301,9 @@ export default {
           const response = await api.post(
             `${import.meta.env.VITE_BACKEND_URL}/node`,
             this.editedNode,
-            token ? { headers: { Authorization: `Bearer ${token}` } } : {},
+            token
+              ? { headers: { Authorization: `Bearer ${token}` } }
+              : {}
           );
           const nodeReturned = response.data;
           const target = nodeReturned.node_id;
@@ -369,7 +324,9 @@ export default {
               await api.post(
                 `${import.meta.env.VITE_BACKEND_URL}/edge`,
                 newEdge,
-                token ? { headers: { Authorization: `Bearer ${token}` } } : {},
+                token
+                  ? { headers: { Authorization: `Bearer ${token}` } }
+                  : {}
               );
             } catch (error) {
               console.error("Failed to create edge:", error);
@@ -377,10 +334,7 @@ export default {
           }
           this.$emit("publish-node", nodeReturned);
           this.editedNode = _.cloneDeep(nodeReturned);
-          this.$router.push({
-            name: "NodeView",
-            params: { id: target.toString() },
-          });
+          this.$router.push({ name: "NodeView", params: { id: target.toString() } });
         } catch (error) {
           console.error("Failed to create node:", error);
         }
@@ -388,7 +342,7 @@ export default {
         try {
           const response = await api.put(
             `${import.meta.env.VITE_BACKEND_URL}/node`,
-            this.editedNode,
+            this.editedNode
           );
           this.$emit("publish-node", response.data);
           this.editedNode = _.cloneDeep(response.data);
@@ -397,6 +351,50 @@ export default {
         }
       }
     },
+    onBeforeUnload(e) {
+      if (this.hasLocalUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = "";
+        return "";
+      }
+    },
+  },
+  beforeRouteLeave(to, from, next) {
+    if (this.isSubmitting) {
+      next();
+      return;
+    }
+    if (this.hasLocalUnsavedChanges) {
+      if (!confirm("You have unsaved edits. Leave without saving?")) {
+        next(false);
+        return;
+      }
+    }
+    next();
+  },
+  beforeRouteUpdate(to, from, next) {
+    if (this.isSubmitting) {
+      next();
+      return;
+    }
+    if (this.editedNode.new) {
+      if (!confirm("This new node is not saved. Are you sure you want to leave?")) {
+        next(false);
+        return;
+      }
+    } else if (this.hasLocalUnsavedChanges) {
+      if (!confirm("You have unsaved edits. Leave without saving?")) {
+        next(false);
+        return;
+      }
+    }
+    next();
+  },
+  mounted() {
+    window.addEventListener("beforeunload", this.onBeforeUnload);
+  },
+  beforeUnmount() {
+    window.removeEventListener("beforeunload", this.onBeforeUnload);
   },
   watch: {
     node: {
@@ -417,7 +415,6 @@ export default {
 .error-input {
   border-color: red;
 }
-
 .error-text {
   color: red;
 }

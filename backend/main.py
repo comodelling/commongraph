@@ -22,12 +22,7 @@ from models import (
     LikertScale,
 )
 from properties import NodeStatus
-from dynamic_models import (NodeTypeModels, 
-                            EdgeTypeModels, 
-                            DynamicNode, 
-                            DynamicEdge, 
-                            DynamicSubnet, 
-                            DynamicNetworkExport)
+
 from database.base import (
     GraphDatabaseInterface,
     UserDatabaseInterface,
@@ -42,6 +37,13 @@ from database.postgresql import (
 )
 from auth import router as auth_router
 from auth import get_current_user
+from config import NODE_TYPE_PROPS, EDGE_TYPE_PROPS
+from dynamic_models import (NodeTypeModels,
+                            EdgeTypeModels,
+                            DynamicNode,
+                            DynamicEdge,
+                            DynamicSubnet,
+                            DynamicNetworkExport)
 
 logger = logging.getLogger(__name__)
 
@@ -86,6 +88,14 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.get("/config")
+def get_metamodel():
+    return {
+        "node_types": {k: sorted(v) for k, v in NODE_TYPE_PROPS.items()},
+        "edge_types": {k: sorted(v) for k, v in EDGE_TYPE_PROPS.items()},
+    }
 
 
 def get_graph_db_connection(

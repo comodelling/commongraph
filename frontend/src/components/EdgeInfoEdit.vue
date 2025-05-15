@@ -1,10 +1,22 @@
 <template>
   <div>
-    <h2 :title="edgeTypeTooltip">
-      {{ edge.edge_type === "require" ? "Condition" : "Implication" }}
-    </h2>
-
     <div class="field">
+      <strong :title="tooltips.edge.type">Type:</strong>
+      <div class="field-content">
+        <select v-model="editedEdge.edge_type">
+          <option
+            v-for="(props, type) in edgeTypes"
+            :key="type"
+            :value="type"
+            :title="tooltips.edge[type] || tooltips.edge.type"
+          >
+            {{ capitalise(type) }}
+          </option>
+        </select>
+      </div>
+    </div>
+
+    <div  v-if="isAllowed('references')" class="field" >
       <strong :title="tooltips.edge.references">References:</strong><br />
       <ul>
         <li
@@ -32,7 +44,7 @@
     </div>
     <br />
 
-    <strong :title="tooltips.edge.description">Description:</strong>
+    <strong v-if="isAllowed('description')" :title="tooltips.edge.description">Description:</strong>
     <div
       class="field"
       v-if="editedEdge.description || editingField === 'description'"
@@ -67,14 +79,21 @@
 import api from "../axios";
 import _ from "lodash";
 import tooltips from "../assets/tooltips.json";
+import { onMounted } from "vue";
 import { useAuth } from "../composables/useAuth";
 import { useUnsaved } from "../composables/useUnsaved";
+import { useMetaConfig } from "../composables/useConfig";
 
 export default {
   props: {
     edge: Object,
   },
   emits: ["publish-edge"],
+  setup() {
+    const { edgeTypes, load } = useMetaConfig();
+    onMounted(load);
+    return { edgeTypes };
+  },
   data() {
     const editedEdge = _.cloneDeep(this.edge);
     return {
@@ -85,6 +104,12 @@ export default {
     };
   },
   computed: {
+    allowedFields() {
+      if (!this.edgeTypes || !this.editedEdge.edge_type) {
+        return Object.keys(this.editedEdge);
+      }
+      return this.edgeTypes[this.editedEdge.edge_type] || [];
+    },
     actionLabel() {
       return this.editedEdge.new ? "Create" : "Submit";
     },
@@ -129,6 +154,12 @@ export default {
     window.removeEventListener("beforeunload", this.onBeforeUnload);
   },
   methods: {
+    isAllowed(field) {
+      return this.allowedFields.includes(field);
+    },
+    capitalise(str) {
+      return str.charAt(0).toUpperCase() + str.slice(1);
+    },
     onBeforeUnload(e) {
       if (this.hasLocalUnsavedChanges) {
         e.preventDefault();

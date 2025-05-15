@@ -1,61 +1,90 @@
 <template>
-  <div>
-    <!-- :title="tooltips.node.title" -->
-    <h2>{{ node.title }}</h2>
-    <strong :title="nodeTypeTooltip">Type:</strong>
-    {{ capitalise(node.node_type) }}<br />
-    <strong :title="tooltips.node.scope">Scope: </strong>
-    {{ node.scope }}<br />
-    <strong :title="tooltips.node.status">Status: </strong>
-    {{ formatStatus(node.status) }}<br />
-    <div class="tags-container" v-if="node.tags && node.tags.length">
-      <strong :title="tooltips.node.tags">Tags: </strong>
+  <div class="node-info-view">
+    <!-- Title -->
+    <h2 v-if="isAllowed('title')">{{ node.title }}</h2>
+    <!-- Type -->
+    <div>
+      <strong :title="nodeTypeTooltip">Type:</strong>
+      {{ capitalise(node.node_type) }}<br>
+    </div>
+    <!-- Scope -->
+    <div v-if="isAllowed('scope')">
+      <strong :title="tooltips.node.scope">Scope:</strong>
+      {{ node.scope }}<br>
+    </div>
+    <!-- Status -->
+    <div v-if="isAllowed('status')">
+      <strong :title="tooltips.node.status">Status:</strong>
+      {{ formatStatus(node.status) }}<br>
+    </div>
+
+    <!-- References -->
+    <div v-if="isAllowed('references') && node.references?.length">
+      <strong :title="tooltips.node.references">References:</strong><br>
+      <ul class="references-list">
+        <li
+          v-for="reference in node.references.filter(ref => ref.trim())"
+          :key="reference"
+        >
+          {{ reference.trim() }}
+        </li>
+      </ul>
+    </div>
+    <!-- Description -->
+    <div v-if="isAllowed('description')">
+      <strong :title="tooltips.node.description">Description:</strong>
+      {{ node.description ? node.description : "" }}
+    </div>
+    <!-- Tags -->
+    <div class="tags-container" v-if="isAllowed('tags') && node.tags?.length">
+      <strong :title="tooltips.node.tags">Tags:</strong>
       <span v-for="tag in node.tags" :key="tag" class="tag">{{ tag }}</span>
     </div>
-    <strong :title="tooltips.node.references">References: </strong> <br />
-    <ul
-      class="references-list"
-      v-if="node.references && node.references.length"
-    >
-      <li
-        v-for="reference in node.references.filter((ref) => ref.trim())"
-        :key="reference"
-      >
-        {{ reference.trim() }}
-      </li>
-    </ul>
-    <strong :title="tooltips.node.description">Description:</strong>
-    {{ node.description ? node.description : "" }}
   </div>
 </template>
 
-<script>
+<script setup lang="ts">
+import { computed, onMounted, toRefs } from "vue";
+import { useMetaConfig } from "../composables/useConfig";
 import tooltips from "../assets/tooltips.json";
 
-export default {
-  props: {
-    node: Object,
-  },
-  data() {
-    return {
-      tooltips, // Add this line
-    };
-  },
-  computed: {
-    nodeTypeTooltip() {
-      return this.tooltips.node[this.node.node_type] || this.tooltips.node.type;
-    },
-  },
-  methods: {
-    formatStatus(string) {
-      if (string === "unspecified") {
-        return "";
-      }
-      return this.capitalise(string);
-    },
-    capitalise(string) {
-      return string.charAt(0).toUpperCase() + string.slice(1);
-    },
-  },
-};
+interface Node {
+  node_id: number;
+  node_type: string;
+  title?: string;
+  scope?: string;
+  status?: string;
+  description?: string;
+  tags?: string[];
+  references?: string[];
+}
+
+const props = defineProps<{ node: Node }>();
+const { node } = toRefs(props);
+
+const { nodeTypes, load } = useMetaConfig();
+onMounted(load);
+
+const allowed = computed(() => {
+  // Ensure nodeTypes have been loaded and node.node_type exists.
+  if (!nodeTypes.value || !node.value.node_type) return [];
+  return nodeTypes.value[node.value.node_type] || [];
+});
+
+function isAllowed(prop: string): boolean {
+  return allowed.value.includes(prop);
+}
+
+function formatStatus(status: string): string {
+  if (status === "unspecified") return "";
+  return capitalise(status);
+}
+
+function capitalise(str: string): string {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+const nodeTypeTooltip = computed(() => {
+  return tooltips.node[node.value.node_type] || tooltips.node.type;
+});
 </script>

@@ -183,19 +183,6 @@ class EdgeBase(SQLModel):
             raise ValueError(f"{nt!r} not in configured node_types")
         return values
 
-    @model_validator(mode="before")
-    def convert_cprob(cls, values):
-        edge_type = values.get("edge_type")
-        cprob = values.get("cprob")
-        if cprob is not None:
-            if edge_type == "require":
-                values["necessity"] = cprob
-                values["source"], values["target"] = values["target"], values["source"]
-                values["edge_type"] = "imply"
-            elif edge_type == "imply":
-                values["sufficiency"] = cprob
-        return values  # Return the modified values
-
     @classmethod
     def get_single_field_types(cls, deprecated: bool = False) -> Dict[str, type]:
         """List of fields encoded as properties with 'single' cardinality in the graph.

@@ -16,9 +16,7 @@ from models import (
     NodeBase,
     EdgeBase,
     NodeId,
-    NodeType,
     NodeStatus,
-    EdgeType,
     LikertScale,
     User,
     UserRead,
@@ -520,7 +518,7 @@ class GraphHistoryPostgreSQLDB(GraphHistoryRelationalInterface):
         # Ensure required fields are set with safe defaults.
         data = dict(payload) if payload else {}
         if data.get("node_type") is None:
-            data["node_type"] = NodeType.potentiality
+            data["node_type"] = "potentiality"
         if data.get("scope") is None:
             data["scope"] = ""
         return NodeBase.model_validate(data)
@@ -676,7 +674,7 @@ class GraphHistoryPostgreSQLDB(GraphHistoryRelationalInterface):
 
     def search_nodes(
         self,
-        node_type: list[NodeType] | NodeType = Query(None),
+        node_type: list[str] | str = Query(None),
         title: str | None = None,
         scope: str | None = None,
         status: list[NodeStatus] | NodeStatus = Query(None),
@@ -771,7 +769,7 @@ class GraphHistoryPostgreSQLDB(GraphHistoryRelationalInterface):
         )
         return results
 
-    def get_random_node(self, node_type: NodeType = None) -> NodeBase:
+    def get_random_node(self, node_type: str = None) -> NodeBase:
         nodes = self.get_whole_network().nodes
         if node_type is not None:
             nodes = [
@@ -942,7 +940,7 @@ class GraphHistoryPostgreSQLDB(GraphHistoryRelationalInterface):
         self,
         source_id: NodeId,
         target_id: NodeId,
-        edge_type: EdgeType = None,
+        edge_type: str = None,
         username: str = "system",
     ) -> None:
         event = GraphHistoryEvent(

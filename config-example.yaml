@@ -1,0 +1,19 @@
+
+platform_name: CommonGraph
+metamodel:
+  node_types:
+    node_type1:
+      properties:
+        - title
+        - scope
+        - description
+        - status
+        - references
+        - support_rating
+
+  edge_types:
+    edg_type1:
+      properties:
+        - description
+        - references
+        - causal_strength_rating

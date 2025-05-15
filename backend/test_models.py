@@ -2,7 +2,7 @@ import pytest
 import warnings
 from pydantic import ValidationError
 
-from models import NodeBase, EdgeBase, EdgeType
+from models import NodeBase, EdgeBase
 
 
 correct_node_types = [
@@ -104,7 +104,7 @@ def test_edge_optional_fields():
     )
     assert edge_with_cprob_require.necessity == 0.5
     assert edge_with_cprob_require.sufficiency is None
-    assert edge_with_cprob_require.edge_type == EdgeType.imply
+    assert edge_with_cprob_require.edge_type == "imply"
     assert edge_with_cprob_require.source == 1  # Swapped
     assert edge_with_cprob_require.target == 2  # Swapped
 

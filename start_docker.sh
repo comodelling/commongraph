@@ -6,6 +6,11 @@ if [ "$current_dir" != "commongraph" ] || [ ! -d "backend" ]; then
     exit 1
 fi
 
+if [ ! -f config.yaml ]; then
+    echo "Error: config.yaml not found in project root. Aborting."
+    exit 1
+fi
+
 # Check if backend/.env exists and if not, copy from backend/.envbase
 if [ ! -f backend/.env ]; then
     if [ -f backend/.envbase ]; then

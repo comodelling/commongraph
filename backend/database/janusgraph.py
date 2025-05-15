@@ -16,10 +16,8 @@ from models import (
     NodeBase,
     EdgeBase,
     Subnet,
-    NodeType,
     NodeStatus,
     NodeId,
-    EdgeType,
     PartialNodeBase,
     EdgeBase,
 )
@@ -153,7 +151,7 @@ class JanusGraphDB(GraphDatabaseInterface):
 
     def search_nodes(
         self,
-        node_type: list[NodeType] | NodeType = Query(None),
+        node_type: list[str] | str = Query(None),
         title: str | None = None,
         scope: str | None = None,
         status: list[NodeStatus] | NodeStatus = Query(None),
@@ -165,7 +163,7 @@ class JanusGraphDB(GraphDatabaseInterface):
             if node_type is not None:
                 if isinstance(node_type, list):
                     trav = trav.has("node_type", P.within(node_type))
-                elif isinstance(node_type, NodeType):
+                elif isinstance(node_type, str):
                     trav = trav.has("node_type", node_type)
             if title:
                 for word in title.split(" "):
@@ -259,7 +257,7 @@ class JanusGraphDB(GraphDatabaseInterface):
         self,
         source_id: NodeId = None,
         target_id: NodeId = None,
-        edge_type: EdgeType = None,
+        edge_type: str = None,
     ) -> list[EdgeBase]:
         with self.connection() as g:
             try:

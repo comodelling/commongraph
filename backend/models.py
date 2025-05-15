@@ -8,6 +8,8 @@ from fastapi import Query
 from sqlalchemy import JSON, Column
 from sqlmodel import SQLModel, Field
 
+from config import valid_node_types, valid_edge_types
+
 
 NodeId = Annotated[
     int,
@@ -18,31 +20,6 @@ NodeId = Annotated[
 ]
 
 Proba = Annotated[float, Query(title="conditional proba", ge=0, le=1)]
-
-
-class NodeType(str, Enum):
-    action = "action"
-    project = "project"
-    objective = "objective"
-    potentiality = "potentiality"
-
-    change = "change"  # TODO: migrate and deprecate
-    wish = "wish"  # TODO: migrate and deprecate
-    proposal = "proposal"  # TODO: migrate and deprecate?
-
-    @classmethod
-    def _missing_(cls, value):
-        value = value.lower()
-        for member in cls:
-            if member.value == value:
-                return member
-        raise ValueError(f"{value} is not a valid {cls.__name__}")
-
-
-class EdgeType(str, Enum):
-    imply = "imply"
-
-    require = "require"
 
 
 class LikertScale(str, Enum):
@@ -82,7 +59,7 @@ class NodeBase(SQLModel):
 
     # definition
     node_id: NodeId | None = None  # node id is not created by client
-    node_type: NodeType = NodeType.potentiality
+    node_type: str
     title: str
     scope: str
     status: NodeStatus | None = NodeStatus.unspecified
@@ -95,6 +72,13 @@ class NodeBase(SQLModel):
     grade: LikertScale | None = Field(None, exclude=True)
     gradable: bool | None = Field(None, exclude=True)
     proponents: list[str] | None = Field(default_factory=list, exclude=True)
+
+    @model_validator(mode="before")
+    def check_node_type(cls, values):
+        nt = values.get("node_type")
+        if nt and nt not in valid_node_types():
+            raise ValueError(f"{nt!r} not in configured node_types")
+        return values
 
     @model_validator(mode="before")
     def handle_deprecated_fields(cls, values):
@@ -161,7 +145,7 @@ class PartialNodeBase(NodeBase):
     """
 
     node_id: NodeId
-    node_type: NodeType | None = None
+    node_type: str | None = None
     title: str | None = None
     scope: str | None = None
     status: NodeStatus | None = None
@@ -175,7 +159,7 @@ class EdgeBase(SQLModel):
     """Base Edge model"""
 
     # definition
-    edge_type: EdgeType
+    edge_type: str
     source: NodeId
     target: NodeId
     references: list[str] | None = Field(default_factory=list)
@@ -193,15 +177,22 @@ class EdgeBase(SQLModel):
     target_from_ui: int | None = Field(None, exclude=True)
 
     @model_validator(mode="before")
+    def check_edge_type(cls, values):
+        nt = values.get("edge_type")
+        if nt and nt not in valid_edge_types():
+            raise ValueError(f"{nt!r} not in configured node_types")
+        return values
+
+    @model_validator(mode="before")
     def convert_cprob(cls, values):
         edge_type = values.get("edge_type")
         cprob = values.get("cprob")
         if cprob is not None:
-            if edge_type == EdgeType.require:
+            if edge_type == "require":
                 values["necessity"] = cprob
                 values["source"], values["target"] = values["target"], values["source"]
-                values["edge_type"] = EdgeType.imply
-            elif edge_type == EdgeType.imply:
+                values["edge_type"] = "imply"
+            elif edge_type == "imply":
                 values["sufficiency"] = cprob
         return values  # Return the modified values
 
@@ -252,7 +243,7 @@ class EdgeBase(SQLModel):
 
 class PartialEdgeBase(EdgeBase):
     references: list[str] | None = None
-    edge_type: EdgeType | None = None
+    edge_type: str | None = None
 
 
 class Subnet(SQLModel):

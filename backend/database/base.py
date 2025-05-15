@@ -10,8 +10,6 @@ from models import (
     UserRead,
     UserCreate,
     NodeId,
-    NodeType,
-    EdgeType,
     RatingEvent,
     RatingType,
     LikertScale,
@@ -174,7 +172,7 @@ class GraphDatabaseInterface(ABC, metaclass=LogMeta):
         pass
 
     @abstractmethod
-    def get_random_node(self, node_type: NodeType = None) -> NodeBase:
+    def get_random_node(self, node_type: str = None) -> NodeBase:
         pass
 
     @abstractmethod
@@ -211,7 +209,7 @@ class GraphDatabaseInterface(ABC, metaclass=LogMeta):
 
     @abstractmethod
     def delete_edge(
-        self, source_id: NodeId, target_id: NodeId, edge_type: EdgeType = None
+        self, source_id: NodeId, target_id: NodeId, edge_type: str = None
     ) -> None:
         pass
 
@@ -251,7 +249,7 @@ class GraphHistoryRelationalInterface(GraphDatabaseInterface):
 
     @abstractmethod
     def delete_edge(
-        self, source_id: NodeId, target_id: NodeId, edge_type: EdgeType, username: str
+        self, source_id: NodeId, target_id: NodeId, edge_type: str, username: str
     ) -> None:
         pass
 

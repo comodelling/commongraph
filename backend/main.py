@@ -16,10 +16,8 @@ from models import (
     EdgeBase,
     Subnet,
     NetworkExport,
-    NodeType,
     NodeStatus,
     NodeId,
-    EdgeType,
     PartialNodeBase,
     MigrateLabelRequest,
     User,
@@ -245,7 +243,7 @@ def get_induced_subnet(
 
 @app.get("/nodes")
 def search_nodes(
-    node_type: list[NodeType] | NodeType = Query(None),
+    node_type: list[str] | str = Query(None),
     title: str | None = None,
     scope: str | None = None,
     status: list[NodeStatus] | NodeStatus = Query(None),
@@ -291,7 +289,7 @@ def search_nodes(
 
 @app.get("/node/random")
 def get_random_node(
-    node_type: NodeType | None = None,
+    node_type: str | None = None,
     db: GraphDatabaseInterface | None = Depends(get_graph_db_connection),
     db_history: GraphHistoryRelationalInterface = Depends(
         get_graph_history_db_connection
@@ -393,7 +391,7 @@ def get_edge_list(
 def find_edges(
     source_id: NodeId = None,
     target_id: NodeId = None,
-    edge_type: EdgeType = None,
+    edge_type: str = None,
     db_history: GraphHistoryRelationalInterface = Depends(
         get_graph_history_db_connection
     ),
@@ -439,7 +437,7 @@ def create_edge(
 def delete_edge(
     source_id: NodeId,
     target_id: NodeId,
-    edge_type: EdgeType | None = None,
+    edge_type: str | None = None,
     db_graph: GraphDatabaseInterface | None = Depends(get_graph_db_connection),
     db_history: GraphHistoryRelationalInterface = Depends(
         get_graph_history_db_connection

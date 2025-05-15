@@ -41,3 +41,6 @@ dist-ssr
 
 # Documentation
 site/
+
+# Config
+config.yaml

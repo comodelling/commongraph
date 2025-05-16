@@ -212,10 +212,16 @@ export default {
     async submit() {
       const { getAccessToken } = useAuth();
       const token = getAccessToken();
-
-      this.editedEdge.references = this.editedEdge.references.filter(
-        (ref) => ref.trim() !== "",
-      );
+      if (this.isAllowed("references")) {
+        this.editedEdge.references = this.editedEdge.references.map((ref) =>
+          ref.trim(),
+        );
+      }
+      if (this.isAllowed("tags")) {
+        this.editedEdge.tags = this.editedEdge.tags.map((tag) =>
+          tag.trim(),
+        );
+      }
       console.log("Submitting edge:", this.editedEdge);
       let response;
       try {

@@ -259,15 +259,20 @@ export default {
       }
       const { getAccessToken } = useAuth();
       const token = getAccessToken();
-      const trimmedTitle = this.editedNode.title.trim();
-      const trimmedScope = this.editedNode.scope.trim();
-      this.editedNode.title = trimmedTitle;
-      this.editedNode.scope = trimmedScope;
-      this.titleError = !trimmedTitle;
-      this.scopeError = !trimmedScope;
-      if (this.titleError || this.scopeError) {
-        return;
+      if (this.isAllowed("title")) {
+        const trimmedTitle = this.editedNode.title.trim();
+        this.editedNode.title = trimmedTitle;
+        this.titleError = !trimmedTitle;
+        if (this.titleError) return;
       }
+      if (this.isAllowed("scope")) {
+        const trimmedScope = this.editedNode.scope.trim();
+        this.editedNode.scope = trimmedScope;
+        this.scopeError = !trimmedScope;
+        if (this.scopeError) return;
+      }
+
+
       if (
         !this.editedNode.new &&
         this.editedNode.node_type !== this.node.node_type
@@ -281,13 +286,19 @@ export default {
         }
       }
       // Cleanup tags, references, support.
-      this.editedNode.references = this.editedNode.references.filter(
-        (ref) => ref.trim() !== ""
-      );
-      this.editedNode.tags = this.editedNode.tags.filter(
-        (tag) => tag.trim() !== ""
-      );
-      this.editedNode.status = this.editedNode.status || null;
+      if (this.isAllowed("references")) {
+        this.editedNode.references = this.editedNode.references.filter(
+          (ref) => ref.trim() !== ""
+        );
+      }
+      if (this.isAllowed("tags")) {
+        this.editedNode.tags = this.editedNode.tags.filter(
+          (tag) => tag.trim() !== ""
+        );
+      }
+      if (this.isAllowed("status")) {
+        this.editedNode.status = this.editedNode.status || null;
+      }
       this.isSubmitting = true;
       const { setUnsaved } = useUnsaved();
       setUnsaved(false);

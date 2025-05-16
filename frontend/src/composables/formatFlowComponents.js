@@ -5,10 +5,10 @@
 export function formatFlowEdgeProps(data) {
   const { source, target, edge_type, selected, causal_strength } = data;
 
-  const flowSource =
-    edge_type === "imply" ? source.toString() : target.toString();
-  const flowTarget =
-    edge_type === "imply" ? target.toString() : source.toString();
+  const flowSource = source.toString();
+    // edge_type === "imply" ? source.toString() : target.toString();
+  const flowTarget = target.toString();
+    // edge_type === "imply" ? target.toString() : source.toString();
 
   // const strokeWidth = 1 + (data.cprob ?? 0.5);
   // const markerFactor = 1 / (1 + (data.cprob ?? 0.5) / 2);
@@ -16,23 +16,23 @@ export function formatFlowEdgeProps(data) {
   const markerSize = 15;
 
   const markerEnd =
-    edge_type === "imply"
-      ? {
+    // edge_type === "imply" ? 
+    {
           type: "arrow",
           height: markerSize,
           width: markerSize,
           color: "grey",
-        }
-      : undefined;
-  const markerStart =
-    edge_type === "require"
-      ? {
-          type: "arrow",
-          height: markerSize,
-          width: markerSize,
-          color: "grey",
-        }
-      : undefined;
+    };
+      // : undefined;
+  const markerStart = undefined;
+  //   edge_type === "require"
+  //     ? {
+  //         type: "arrow",
+  //         height: markerSize,
+  //         width: markerSize,
+  //         color: "grey",
+  //       }
+  //     : undefined;
 
   let strokeColor = "#ccc";
   switch (causal_strength) {

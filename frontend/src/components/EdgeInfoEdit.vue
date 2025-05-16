@@ -82,7 +82,7 @@ import tooltips from "../assets/tooltips.json";
 import { onMounted } from "vue";
 import { useAuth } from "../composables/useAuth";
 import { useUnsaved } from "../composables/useUnsaved";
-import { useMetaConfig } from "../composables/useConfig";
+import { useGraphConfig } from "../composables/useConfig";
 
 export default {
   props: {
@@ -90,7 +90,7 @@ export default {
   },
   emits: ["publish-edge"],
   setup() {
-    const { edgeTypes, load } = useMetaConfig();
+    const { edgeTypes, load } = useGraphConfig();
     onMounted(load);
     return { edgeTypes };
   },

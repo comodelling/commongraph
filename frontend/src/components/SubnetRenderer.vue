@@ -2,7 +2,7 @@
 import api from "../axios";
 import { useAuth } from "../composables/useAuth";
 import { saveAs } from "file-saver";
-import { nextTick, ref, warn, watch, computed } from "vue";
+import { nextTick, ref, warn, watch, computed, onMounted } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { Panel, VueFlow, useVueFlow, ConnectionMode } from "@vue-flow/core";
 import { Background } from "@vue-flow/background";
@@ -21,6 +21,23 @@ import {
   formatFlowNodeProps,
 } from "../composables/formatFlowComponents";
 import { useUnsaved } from "../composables/useUnsaved";
+import { useGraphConfig } from "../composables/useConfig";
+
+const {
+  nodeTypes,
+  edgeTypes,
+  defaultNodeType,
+  defaultEdgeType,
+  load: loadConfig
+} = useGraphConfig()
+
+onMounted(async () => {
+  await loadConfig()
+  console.log("nodeTypes:", nodeTypes.value)
+  console.log("edgeTypes:", edgeTypes.value)
+  console.log("defaultNodeType =", defaultNodeType.value)
+  console.log("defaultEdgeType =", defaultEdgeType.value)
+})
 
 const { getAccessToken } = useAuth();
 
@@ -458,7 +475,9 @@ function onConnectStart({ nodeId, handleType }) {
 function onConnect(connection) {
   console.log("on connect", connection);
   // addEdges(connection);
-  const newEdgeData = createEdgeOnConnection(connection.target);
+  console.log("connectionInfo", connectionInfo.value);
+  const target = connectionInfo.value.handleType === "source" ? connection.target : connection.source;
+  const newEdgeData = createEdgeOnConnection(target);
   nextTick(() => {
     emit("newEdgeCreated", newEdgeData);
   });
@@ -498,10 +517,12 @@ function determinePositionWithinWindow(event) {
 // direct connection between existing handles
 function createEdgeOnConnection(targetId) {
   const { nodeId, handleType } = connectionInfo.value;
+  console.log("connecting to node", targetId);
+  console.log("from node", nodeId);
   const newEdgeData = formatFlowEdgeProps({
     source: handleType === "source" ? nodeId.toString() : targetId,
     target: handleType === "source" ? targetId : nodeId.toString(), // targetId is a string
-    edge_type: "imply", //handleType === "source" ? "imply" : "require",
+    edge_type: defaultEdgeType.value, //handleType === "source" ? "imply" : "require",
   });
   console.log("New edge data (direct connection):", newEdgeData);
   return newEdgeData;
@@ -547,9 +568,11 @@ function createNodeAndEdge(event = null) {
     const sourceNode = findNode(nodeId);
     scope = sourceNode.data.scope; // inherited scope
     tags = sourceNode.data.tags; // inherited tags
+    
     fromConnection = {
       id: nodeId,
-      edge_type: handleType === "source" ? "imply" : "require",
+      handle_type: handleType,
+      // edge_type: handleType === "source" ? "imply" : "require",
     }; // to be used to update edge data
     eventPosition = connectionInfo.value.position || {
       x: event.clientX,
@@ -563,16 +586,33 @@ function createNodeAndEdge(event = null) {
     eventPosition = { x: event.clientX, y: event.clientY };
     // console.log("Event position:", eventPosition);
   }
-  const newNodeData = formatFlowNodeProps({
-    node_id: `new`,
-    title: "New Node",
+  // Get default type and allowed properties from the config
+  // Build initial node data
+  let newNodeData = formatFlowNodeProps({
+    node_id: "new",
+    title: "",
     status: "live",
     position: screenToFlowCoordinate(eventPosition),
     scope: scope,
-    node_type: "action", // default node type
+    node_type: defaultNodeType.value,
+    references: [],
     tags: tags,
     fromConnection: fromConnection,
   });
+  // Remove properties not allowed by the default node type
+  const allowedProps = nodeTypes.value[defaultNodeType.value] || [];
+  if (!allowedProps.includes("status")) {
+    delete newNodeData.status;
+  }
+  if (!allowedProps.includes("scope")) {
+    delete newNodeData.scope;
+  }
+  if (!allowedProps.includes("tags")) {
+    delete newNodeData.tags;
+  }
+  if (!allowedProps.includes("references")) {
+    delete newNodeData.references;
+  }
   addNodes(newNodeData);
 
   if (connectionInfo.value) {

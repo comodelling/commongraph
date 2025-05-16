@@ -162,20 +162,20 @@ import tooltips from "../assets/tooltips.json";
 import { useAuth } from "../composables/useAuth";
 import { useUnsaved } from "../composables/useUnsaved";
 // Import the meta config composable
-import { useMetaConfig } from "../composables/useConfig";
+import { useGraphConfig } from "../composables/useConfig";
+import { onBeforeMount } from "vue";
 
 export default {
   props: {
     node: Object,
   },
   // Use the setup() function solely to expose the meta config data.
-  setup(props) {
-    const { nodeTypes, load } = useMetaConfig();
-    load();
-    return {
-      nodeTypes, // returned so we can access it in computed below.
-    };
-  },
+   setup(props) {
+     const { nodeTypes, load, defaultEdgeType } = useGraphConfig();
+     // block here until both nodeTypes & edgeTypes are populated
+     onBeforeMount(load);
+     return { nodeTypes, defaultEdgeType, load };
+   },
   data() {
     let editedNode = _.cloneDeep(this.node);
     return {
@@ -292,6 +292,9 @@ export default {
       const { setUnsaved } = useUnsaved();
       setUnsaved(false);
 
+      await this.load();
+
+
       if (this.editedNode.new) {
         try {
           const fromConnection = this.editedNode.fromConnection;
@@ -312,15 +315,16 @@ export default {
             try {
               const newEdge = {
                 source:
-                  fromConnection.edge_type === "imply"
+                  fromConnection.handle_type === "source"
                     ? parseInt(fromConnection.id)
                     : target,
                 target:
-                  fromConnection.edge_type === "imply"
+                  fromConnection.handle_type === "source"
                     ? target
                     : parseInt(fromConnection.id),
-                edge_type: "imply",
+                edge_type: this.defaultEdgeType,
               };
+              console.log("Creating edge (as connection to created target):", newEdge);
               await api.post(
                 `${import.meta.env.VITE_BACKEND_URL}/edge`,
                 newEdge,

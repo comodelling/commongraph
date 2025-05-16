@@ -68,7 +68,8 @@ const props = defineProps({
 const path = computed(() => getBezierPath(props));
 
 const hoverText = computed(() =>
-  props.data.edge_type === "require" ? "Condition" : "Implication",
+  props.data.edge_type
+  // props.data.edge_type === "require" ? "Condition" : "Implication",
 );
 </script>
 

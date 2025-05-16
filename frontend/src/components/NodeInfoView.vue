@@ -45,7 +45,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, toRefs } from "vue";
-import { useMetaConfig } from "../composables/useConfig";
+import { useGraphConfig } from "../composables/useConfig";
 import tooltips from "../assets/tooltips.json";
 
 interface Node {
@@ -62,7 +62,7 @@ interface Node {
 const props = defineProps<{ node: Node }>();
 const { node } = toRefs(props);
 
-const { nodeTypes, load } = useMetaConfig();
+const { nodeTypes, load } = useGraphConfig();
 onMounted(load);
 
 const allowed = computed(() => {

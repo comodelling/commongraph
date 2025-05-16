@@ -18,7 +18,7 @@
 
 <script lang="ts">
 import { defineComponent, computed, onMounted } from "vue";
-import { useMetaConfig } from "../composables/useConfig";
+import { useGraphConfig } from "../composables/useConfig";
 import tooltips from "../assets/tooltips.json";
 
 export default defineComponent({
@@ -33,7 +33,7 @@ export default defineComponent({
   },
   emits: ["publish-edge"],
   setup(props) {
-    const { edgeTypes, load } = useMetaConfig();
+    const { edgeTypes, load } = useGraphConfig();
     onMounted(load);
 
     const allowed = computed(() => {

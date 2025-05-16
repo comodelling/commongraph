@@ -101,6 +101,7 @@ import {
   formatFlowNodeProps,
 } from "../composables/formatFlowComponents";
 import api from "../axios";
+import { useGraphConfig } from "../composables/useConfig";
 
 export default {
   components: {
@@ -145,27 +146,29 @@ export default {
       return Boolean(this.sourceId && this.targetId);
     },
   },
-  created() {
+  // when opening a brand-new node, use defaultNodeType and only include allowed props
+  async created() {
     if (this.isBrandNewNode) {
       console.log("Opening brand new node in focus");
-      this.node = {
-        node_id: "new", // temporary id
-        node_type: "action",
-        title: "",
-        scope: "",
-        status: "live",
-        tags: [],
-        references: [],
-        new: true,
-      };
+      const { nodeTypes, defaultNodeType, load } = useGraphConfig();
+      await load();
+      const type = defaultNodeType.value;
+      const allowed = nodeTypes.value[type] || [];
+      // build minimal node object
+      const node = { node_id: "new", node_type: type, new: true };
+      if (allowed.includes("title"))      node.title = "";
+      if (allowed.includes("scope"))      node.scope = "";
+      if (allowed.includes("status"))     node.status = "live";
+      if (allowed.includes("tags"))       node.tags = [];
+      if (allowed.includes("references")) node.references = [];
+      if (allowed.includes("description")) node.description = "";
+      this.node = node;
       this.$router.push({ name: "NodeEdit", params: { id: "new" } });
       let formattedNode = formatFlowNodeProps(this.node);
       formattedNode.label = "New Node";
+      // small delay so VueFlow has time to mount
       setTimeout(() => {
-        this.subnetData = {
-          nodes: [formattedNode],
-          edges: [],
-        };
+        this.subnetData = { nodes: [formattedNode], edges: [] };
       }, 45);
     } else {
       this.fetchElementAndSubnetData();
@@ -304,33 +307,35 @@ export default {
       }
     },
     openNewlyCreatedNode(newNode) {
-      this.node = {
-        node_id: newNode.id,
-        title: "",
-        node_type: newNode.data.node_type,
-        scope: newNode.data.scope,
-        status: "live",
-        tags: newNode.data.tags,
-        references: [],
+      this.node = {...newNode.data,
         new: true,
         fromConnection: newNode.data.fromConnection,
       };
       this.$router.push({ name: "NodeEdit", params: { id: newNode.id } });
     },
-    openNewlyCreatedEdge(newEdge) {
+    async openNewlyCreatedEdge(newEdge) {
+      const { edgeTypes, load } = useGraphConfig();
+      await load();
+      const allowed = edgeTypes.value[newEdge.data.edge_type];
+      console.log("Allowed edge props:", allowed);
+
       this.edge = {
-        source: newEdge.data.source,
-        target: newEdge.data.target,
+        source: parseInt(newEdge.data.source),
+        target: parseInt(newEdge.data.target),
         edge_type: newEdge.data.edge_type,
-        cprob: undefined,
-        references: [],
+        // references: [],
         new: true,
       };
+      if (allowed.includes("description")) 
+        this.edge.description = "";
+      if (allowed.includes("references"))
+        this.edge.references = [];
+
       this.$router.push({
         name: "EdgeEdit",
         params: {
-          source_id: newEdge.data.source,
-          target_id: newEdge.data.target,
+          source_id: parseInt(newEdge.data.source),
+          target_id: parseInt(newEdge.data.target)
         },
       });
     },

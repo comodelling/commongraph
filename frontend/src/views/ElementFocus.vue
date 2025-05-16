@@ -23,7 +23,7 @@
 
       <!-- Second card: show rating for node or edge -->
 
-      <template v-if="isNode && !isBrandNewNode">
+      <template v-if="isNode && !isBrandNewNode && this.allowedNodeFields.includes('support_rating')">
         <div class="card">
           <ElementRating
             :key="node ? node.node_id : nodeId"
@@ -32,7 +32,8 @@
           />
         </div>
       </template>
-      <template v-else-if="isEdge">
+      
+      <template v-else-if="isEdge && this.allowedEdgeFields.includes('causal_strength_rating')" >
         <div class="card">
           <ElementRating
             :key="
@@ -92,6 +93,8 @@
 </template>
 
 <script>
+import { onBeforeMount, ref } from 'vue'
+import { useConfig } from "../composables/useConfig";
 import NodeInfo from "../components/NodeInfo.vue";
 import EdgeInfo from "../components/EdgeInfo.vue";
 import ElementRating from "../components/ElementRating.vue";
@@ -101,7 +104,6 @@ import {
   formatFlowNodeProps,
 } from "../composables/formatFlowComponents";
 import api from "../axios";
-import { useConfig } from "../composables/useConfig";
 
 export default {
   components: {
@@ -110,6 +112,19 @@ export default {
     ElementRating,
     SubnetRenderer,
   },
+  setup() {
+    const { nodeTypes, edgeTypes, defaultNodeType, load } = useConfig()
+    const configLoaded = ref(false)
+
+    onBeforeMount(async () => {
+      await load()
+      configLoaded.value = true
+    })
+ 
+    // nodeTypes & edgeTypes will be unwrapped when used in `this.*`
+    return { nodeTypes, edgeTypes, defaultNodeType, configLoaded, load }
+  },
+
   data() {
     return {
       node: undefined,
@@ -145,15 +160,30 @@ export default {
     isEdge() {
       return Boolean(this.sourceId && this.targetId);
     },
+    allowedNodeFields() {
+       if (!this.configLoaded || !this.node?.node_type) return []
+       console.log("node Types allowed", this.nodeTypes);
+       return this.nodeTypes[this.node.node_type] || []
+    },
+    allowedEdgeFields() {
+      if (!this.configLoaded || !this.edge?.edge_type) return []
+      return this.edgeTypes[this.edge.edge_type] || []
+    },
   },
   // when opening a brand-new node, use defaultNodeType and only include allowed props
   async created() {
     if (this.isBrandNewNode) {
+      if (!this.configLoaded) {
+        await this.load()
+      this.configLoaded = true
+     }
+
       console.log("Opening brand new node in focus");
-      const { nodeTypes, defaultNodeType, load } = useConfig();
-      await load();
-      const type = defaultNodeType.value;
-      const allowed = nodeTypes.value[type] || [];
+      const type = this.defaultNodeType;
+      console.log("Default node type:", type);
+      // const allowed = this.allowedNodeFields.value || [];
+      const allowed = this.nodeTypes[type] || [];
+      console.log("Allowed node props:", allowed);
       // build minimal node object
       const node = { node_id: "new", node_type: type, new: true };
       if (allowed.includes("title"))      node.title = "";

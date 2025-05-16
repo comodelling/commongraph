@@ -162,7 +162,7 @@ import tooltips from "../assets/tooltips.json";
 import { useAuth } from "../composables/useAuth";
 import { useUnsaved } from "../composables/useUnsaved";
 // Import the meta config composable
-import { useGraphConfig } from "../composables/useConfig";
+import { useConfig } from "../composables/useConfig";
 import { onBeforeMount } from "vue";
 
 export default {
@@ -171,7 +171,7 @@ export default {
   },
   // Use the setup() function solely to expose the meta config data.
    setup(props) {
-     const { nodeTypes, load, defaultEdgeType } = useGraphConfig();
+     const { nodeTypes, load, defaultEdgeType } = useConfig();
      // block here until both nodeTypes & edgeTypes are populated
      onBeforeMount(load);
      return { nodeTypes, defaultEdgeType, load };

@@ -5,6 +5,8 @@ from pathlib import Path
 _CONFIG_PATH = Path(__file__).parent.parent / "config.yaml"
 _CONFIG = yaml.safe_load(_CONFIG_PATH.read_text())
 
+PLATFORM_NAME = _CONFIG["platform_name"] if "platform_name" in _CONFIG else "CommonGraph"
+
 METAMODEL      = _CONFIG["metamodel"]
 NODE_TYPE_CFG  = METAMODEL["node_types"]
 EDGE_TYPE_CFG  = METAMODEL["edge_types"]

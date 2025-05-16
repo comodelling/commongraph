@@ -101,7 +101,7 @@ import {
   formatFlowNodeProps,
 } from "../composables/formatFlowComponents";
 import api from "../axios";
-import { useGraphConfig } from "../composables/useConfig";
+import { useConfig } from "../composables/useConfig";
 
 export default {
   components: {
@@ -150,7 +150,7 @@ export default {
   async created() {
     if (this.isBrandNewNode) {
       console.log("Opening brand new node in focus");
-      const { nodeTypes, defaultNodeType, load } = useGraphConfig();
+      const { nodeTypes, defaultNodeType, load } = useConfig();
       await load();
       const type = defaultNodeType.value;
       const allowed = nodeTypes.value[type] || [];
@@ -314,7 +314,7 @@ export default {
       this.$router.push({ name: "NodeEdit", params: { id: newNode.id } });
     },
     async openNewlyCreatedEdge(newEdge) {
-      const { edgeTypes, load } = useGraphConfig();
+      const { edgeTypes, load } = useConfig();
       await load();
       const allowed = edgeTypes.value[newEdge.data.edge_type];
       console.log("Allowed edge props:", allowed);

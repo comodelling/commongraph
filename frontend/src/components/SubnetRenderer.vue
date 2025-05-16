@@ -21,7 +21,7 @@ import {
   formatFlowNodeProps,
 } from "../composables/formatFlowComponents";
 import { useUnsaved } from "../composables/useUnsaved";
-import { useGraphConfig } from "../composables/useConfig";
+import { useConfig } from "../composables/useConfig";
 
 const {
   nodeTypes,
@@ -29,7 +29,7 @@ const {
   defaultNodeType,
   defaultEdgeType,
   load: loadConfig
-} = useGraphConfig()
+} = useConfig()
 
 onMounted(async () => {
   await loadConfig()

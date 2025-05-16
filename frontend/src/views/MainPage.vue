@@ -1,7 +1,7 @@
 <template>
   <div class="main-page">
     <div class="content">
-      <h1>CommonGraph</h1>
+      <h1>{{ platformName }}</h1>
       <div class="search-container">
         <SearchBar
           class="wide-search"
@@ -22,8 +22,10 @@
 </template>
 
 <script>
+import { onMounted } from "vue";
 import SearchBar from "../components/SearchBar.vue";
 import { buildSearchParams } from "../utils/searchParser.js";
+import { useConfig } from "../composables/useConfig";
 
 export default {
   components: { SearchBar },
@@ -31,6 +33,11 @@ export default {
     return {
       quote: null,
     };
+  },
+  setup() {
+    const { platformName, load } = useConfig();
+    onMounted(load);
+    return { platformName };
   },
   mounted() {
     this.fetchQuote();

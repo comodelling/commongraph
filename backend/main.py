@@ -37,7 +37,7 @@ from database.postgresql import (
 )
 from auth import router as auth_router
 from auth import get_current_user
-from config import NODE_TYPE_PROPS, EDGE_TYPE_PROPS
+from config import NODE_TYPE_PROPS, EDGE_TYPE_PROPS, PLATFORM_NAME
 from dynamic_models import (NodeTypeModels,
                             EdgeTypeModels,
                             DynamicNode,
@@ -91,8 +91,9 @@ app.add_middleware(
 
 
 @app.get("/config")
-def get_metamodel():
+def get_config():
     return {
+        "platform_name": PLATFORM_NAME,
         "node_types": {k: sorted(v) for k, v in NODE_TYPE_PROPS.items()},
         "edge_types": {k: sorted(v) for k, v in EDGE_TYPE_PROPS.items()},
     }

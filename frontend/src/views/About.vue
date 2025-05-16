@@ -1,35 +1,27 @@
 <template>
   <div class="about">
-    <h1>About CommonGraph</h1>
+    <h1>About {{ platformName }}</h1>
     <p>
-      CommonGraph is a free and open source software to help model networks of
-      possible changes. It aims to foster open, inclusive, collaborative and
-      objective-based decision-making processes.
+      {{ platformName }} is a platform based on CommonGraph, a free and open source software enabling groups to model graphs collaboratively.
+
     </p>
 
-    <p>Looking to contribute? You can:</p>
-    <ul>
-      <li>
-        <a href="https://github.com/comodelling/commongraph/issues"
-          >File a bug report or a feature request</a
-        >,
-      </li>
-      <li>
-        Experiment with the software and
-        <a href="mailto:mario.morvan@ucl.ac.uk">send feedback via email</a>,
-      </li>
-      <li>
-        Improve the code by creating feature/fix branches and
-        <a href="https://github.com/comodelling/commongraph/pulls"
-          >opening pull requests</a
-        >.
-      </li>
-    </ul>
   </div>
 </template>
 
+
 <script>
-export default {};
+import { onMounted } from "vue";
+import { useConfig } from "../composables/useConfig";
+
+
+export default {
+    setup() {
+    const { platformName, load } = useConfig();
+    onMounted(load);
+    return { platformName };
+  },
+};
 </script>
 
 <style scoped>

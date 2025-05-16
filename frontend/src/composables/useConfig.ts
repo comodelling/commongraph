@@ -1,9 +1,11 @@
 import { ref, computed } from "vue";
 import api from "../axios";
 
-export function useGraphConfig() {
+export function useConfig() {
   const nodeTypes = ref<Record<string, string[]>>({});
   const edgeTypes = ref<Record<string, string[]>>({});
+  const platformName = ref<string>("");
+
   async function load() {
     try {
       const { data } = await api.get("/config");
@@ -11,6 +13,7 @@ export function useGraphConfig() {
       // assume data format: { node_types: { potentiality: [...], ... }, edge_types: { ... } }
       nodeTypes.value = data.node_types;
       edgeTypes.value = data.edge_types;
+      platformName.value = data.platform_name;
     } catch (error) {
       console.error("Failed to load meta config", error);
     }
@@ -24,5 +27,5 @@ export function useGraphConfig() {
     const out = keys.length ? keys[0] : "";
     return out;
   });
-  return { nodeTypes, edgeTypes, defaultNodeType, defaultEdgeType, load };
+  return { nodeTypes, edgeTypes, defaultNodeType, defaultEdgeType, platformName, load };
 }

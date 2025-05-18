@@ -75,8 +75,10 @@ function isAllowed(prop: string): boolean {
   return allowed.value.includes(prop);
 }
 
-function formatStatus(status: string): string {
-  if (status === "unspecified") return "";
+function formatStatus(status?: string): string {
+  if (!status || status === "unspecified") {
+    return tooltips.node.status;
+  }
   return capitalise(status);
 }
 

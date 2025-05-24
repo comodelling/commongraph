@@ -194,7 +194,7 @@ export default {
         // Fallback: allow all properties from the node object.
         return Object.keys(this.node);
       }
-      return this.nodeTypes[this.editedNode.node_type] || [];
+      return this.nodeTypes[this.editedNode.node_type].properties || [];
     },
     actionLabel() {
       return this.editedNode.new ? "Create" : "Submit";
@@ -210,7 +210,8 @@ export default {
   methods: {
     // Use the computed allowedFields to check if a field is allowed.
     isAllowed(field) {
-      return this.allowedFields.includes(field);
+      const allowed = this.allowedFields;       // ← allowedFields is already an Array
+      return allowed.includes(field);
     },
     capitalise(string) {
       return string.charAt(0).toUpperCase() + string.slice(1);
@@ -303,9 +304,6 @@ export default {
       const { setUnsaved } = useUnsaved();
       setUnsaved(false);
 
-      await this.load();
-
-
       if (this.editedNode.new) {
         try {
           const fromConnection = this.editedNode.fromConnection;
@@ -333,7 +331,7 @@ export default {
                   fromConnection.handle_type === "source"
                     ? target
                     : parseInt(fromConnection.id),
-                edge_type: this.defaultEdgeType,
+                edge_type: this.defaultEdgeType.value,
               };
               console.log("Creating edge (as connection to created target):", newEdge);
               await api.post(

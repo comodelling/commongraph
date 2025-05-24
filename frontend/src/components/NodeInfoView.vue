@@ -68,7 +68,7 @@ onMounted(load);
 const allowed = computed(() => {
   // Ensure nodeTypes have been loaded and node.node_type exists.
   if (!nodeTypes.value || !node.value.node_type) return [];
-  return nodeTypes.value[node.value.node_type] || [];
+  return nodeTypes.value[node.value.node_type].properties || [];
 });
 
 function isAllowed(prop: string): boolean {

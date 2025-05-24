@@ -39,7 +39,7 @@ export default defineComponent({
     const allowed = computed(() => {
       // Ensure edgeTypes are loaded and the edge has a type.
       if (!edgeTypes.value || !props.edge.edge_type) return Object.keys(props.edge);
-      return edgeTypes.value[props.edge.edge_type] || Object.keys(props.edge);
+      return edgeTypes.value[props.edge.edge_type].properties || Object.keys(props.edge);
     });
 
     function isAllowed(prop: string): boolean {

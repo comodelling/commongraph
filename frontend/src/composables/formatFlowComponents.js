@@ -1,146 +1,54 @@
-/**
- * standardise formatting of edge data from backend to frontend format
- * backend data is kept as is in the data field
- **/
+import { useConfig } from "./useConfig";
+const { nodeTypes, edgeTypes } = useConfig();
+
+const defaultStrengthColors = {
+  A: "#006d2c", B: "#74c476", C: "#e3c100", D: "#fb6a4a", E: "#a50f15",
+};
+const defaultNodeBorderWidth = "5px";
+
+const defaultNodeBorderRadius = "5px";
+
 export function formatFlowEdgeProps(data) {
   const { source, target, edge_type, selected, causal_strength } = data;
+  const conf = edgeTypes.value[edge_type]?.style || {};
+  console.log("config", conf);
 
-  const flowSource = source.toString();
-    // edge_type === "imply" ? source.toString() : target.toString();
-  const flowTarget = target.toString();
-    // edge_type === "imply" ? target.toString() : source.toString();
-
-  // const strokeWidth = 1 + (data.cprob ?? 0.5);
-  // const markerFactor = 1 / (1 + (data.cprob ?? 0.5) / 2);
-  const strokeWidth = 1.5;
-  const markerSize = 15;
-
-  const markerEnd =
-    // edge_type === "imply" ? 
-    {
-          type: "arrow",
-          height: markerSize,
-          width: markerSize,
-          color: "grey",
-    };
-      // : undefined;
-  const markerStart = undefined;
-  //   edge_type === "require"
-  //     ? {
-  //         type: "arrow",
-  //         height: markerSize,
-  //         width: markerSize,
-  //         color: "grey",
-  //       }
-  //     : undefined;
-
-  let strokeColor = "#ccc";
-  switch (causal_strength) {
-    case "A":
-      strokeColor = "#006d2c";
-      break;
-    case "B":
-      strokeColor = "#74c476";
-      break;
-    case "C":
-      strokeColor = "#e3c100";
-      break;
-    case "D":
-      strokeColor = "#fb6a4a";
-      break;
-    case "E":
-      strokeColor = "#a50f15";
-      break;
-  }
+  const strokeColor   = conf.stroke      || defaultStrengthColors[causal_strength] || "#ccc";
+  const strokeWidth   = conf.strokeWidth ?? 1.5;
+  const markerEndConf = conf.markerEnd   || { type: "arrow", height: 15, width: 15, color: strokeColor };
 
   return {
     id: `${source}-${target}`,
     type: "special",
-    source: flowSource,
-    target: flowTarget,
-    markerEnd: markerEnd,
-    markerStart: markerStart,
+    source: source.toString(),
+    target: target.toString(),
+    markerEnd: markerEndConf,
+    markerStart: undefined,
     data: { ...data },
-    selected: selected ? true : false,
-    style: {
-      stroke: strokeColor,
-      strokeWidth: strokeWidth,
-      // strokeColor: "blue",
-      // opacity: `${0.5 + (data.cprob ?? 0.5) / 2}`,
-    },
+    selected: !!selected,
+    style: { stroke: strokeColor, strokeWidth },
   };
 }
 
-/**
- * standardise formatting of node data from backend to frontend format
- * backend data is kept as is in the data field
- **/
 export function formatFlowNodeProps(data) {
-  // console.log("formatFlowNodeProps", data);
-  const { node_id, title, node_type, status, position, selected, support } =
-    data;
+  const { node_id, title, node_type, status, position, selected, support } = data;
+  const conf = nodeTypes.value[node_type]?.style || {};
+  console.log("config", conf);
+  console.log("nodeTypes", nodeTypes.value);
 
-  let borderColor = "#ccc";
-  switch (support) {
-    case "A":
-      borderColor = "#006d2c";
-      break;
-    case "B":
-      borderColor = "#74c476";
-      break;
-    case "C":
-      borderColor = "#e3c100";
-      break;
-    case "D":
-      borderColor = "#fb6a4a";
-      break;
-    case "E":
-      borderColor = "#a50f15";
-      break;
-  }
+  const borderColor = conf.borderColor || defaultStrengthColors[support] || "#ccc";
+  const borderWidth = conf.borderWidth || defaultNodeBorderWidth;
+  const borderRadius= conf.borderRadius|| defaultNodeBorderRadius;
+  const borderStyle = conf.borderStyle || (status === "draft" ? "dotted" : "solid");
+  const opacity     = conf.opacity     ?? (status === "completed" ? 0.5 : 0.95);
 
-  const style = {
-    opacity: status === "completed" ? 0.5 : 0.95,
-    borderColor: borderColor,
-    borderWidth: "5px", //getBorderWidthByType(node_type),
-    borderStyle: status === "draft" ? "dotted" : "solid",
-    borderRadius: getBorderRadiusByType(node_type),
-  };
-
-  const nodeProps = {
+  return {
     id: node_id.toString(),
     type: "special",
     position: position || { x: 0, y: 0 },
     label: title,
-    style: style,
-    selected: selected ? true : false,
+    selected: !!selected,
     data: { ...data },
+    style: { opacity, borderColor, borderWidth, borderStyle, borderRadius },
   };
-
-  return nodeProps;
-}
-
-function getBorderWidthByType(nodeType) {
-  const typeToBorderWidthMap = {
-    change: "1px",
-    potentiality: "1px",
-    action: "2px",
-    project: "3px",
-    proposal: "3px",
-    objective: "4px",
-  };
-  return typeToBorderWidthMap[nodeType];
-}
-
-function getBorderRadiusByType(nodeType) {
-  const typeToBorderRadiusMap = {
-    change: "1px",
-    potentiality: "1px",
-    externality: "1px",
-    action: "3px",
-    proposal: "7px",
-    project: "7px",
-    objective: "15px",
-  };
-  return typeToBorderRadiusMap[nodeType];
 }

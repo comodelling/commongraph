@@ -1,10 +1,7 @@
 import { ref, computed } from "vue";
 import api from "../axios";
 
-/* —————————————————————————————–  
-   module‐scope singletons 
-   (shared by every import of useConfig)  
-   —————————————————————————————– */
+/* module‐scope singletons */
 const nodeTypes     = ref<Record<string, any>>({});
 const edgeTypes     = ref<Record<string, any>>({});
 const platformName  = ref<string>("");
@@ -27,9 +24,7 @@ async function load() {
 const defaultNodeType = computed(() => Object.keys(nodeTypes.value)[0] || "");
 const defaultEdgeType = computed(() => Object.keys(edgeTypes.value)[0] || "");
 
-/* —————————————————————————————–  
-   every consumer gets the same refs  
-   —————————————————————————————– */
+
 export function useConfig() {
   return {
     nodeTypes,

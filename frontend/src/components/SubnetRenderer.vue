@@ -600,7 +600,7 @@ function createNodeAndEdge(event = null) {
     fromConnection: fromConnection,
   });
   // Remove properties not allowed by the default node type
-  const allowedProps = nodeTypes.value[defaultNodeType.value] || [];
+  const allowedProps = nodeTypes.value[defaultNodeType.value].properties || [];
   if (!allowedProps.includes("status")) {
     delete newNodeData.status;
   }

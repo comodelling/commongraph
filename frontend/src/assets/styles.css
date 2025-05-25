@@ -146,7 +146,8 @@ button:focus-visible {
 .vue-flow__node-special {
   /* border: 1px solid var(--border-color); */
   padding: 10px;
-  border-radius: 10px;
+  border-radius: 5px;
+  border-width: 5px;
   /* border: red; */
   background-color: var(--node-color);
   /* border-color: var(--border-color); */
@@ -156,8 +157,9 @@ button:focus-visible {
   justify-content: space-between;
   align-items: center;
   gap: 15px;
-  min-width: 150px;
+  min-width: 50px;
   max-width: 250px;
+  /* min-height: 30px; */
 }
 
 /* body.dark .vue-flow__node-special { */

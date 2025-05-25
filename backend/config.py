@@ -5,13 +5,13 @@ from pathlib import Path
 _CONFIG_PATH = Path(__file__).parent.parent / "config.yaml"
 _CONFIG = yaml.safe_load(_CONFIG_PATH.read_text())
 
-PLATFORM_NAME = _CONFIG["platform_name"] if "platform_name" in _CONFIG else "CommonGraph"
+PLATFORM_NAME = _CONFIG.get("platform_name", "CommonGraph")
 
 METAMODEL      = _CONFIG["metamodel"]
 NODE_TYPE_CFG  = METAMODEL["node_types"]
 EDGE_TYPE_CFG  = METAMODEL["edge_types"]
 
-# 2. Build maps: node_type -> set(properties), same for edges
+# 2. Build maps for properties
 NODE_TYPE_PROPS = {
     nt: set(defn.get("properties", []))
     for nt, defn in NODE_TYPE_CFG.items()
@@ -21,7 +21,17 @@ EDGE_TYPE_PROPS = {
     for et, defn in EDGE_TYPE_CFG.items()
 }
 
-# 3. Helpers
+# 3. Build maps for styles
+NODE_TYPE_STYLE = {
+    nt: defn.get("style", {})
+    for nt, defn in NODE_TYPE_CFG.items()
+}
+EDGE_TYPE_STYLE = {
+    et: defn.get("style", {})
+    for et, defn in EDGE_TYPE_CFG.items()
+}
+
+# 4. Helpers
 def valid_node_types() -> set[str]:
     return set(NODE_TYPE_PROPS)
 

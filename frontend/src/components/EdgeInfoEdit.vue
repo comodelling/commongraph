@@ -108,7 +108,7 @@ export default {
       if (!this.edgeTypes || !this.editedEdge.edge_type) {
         return Object.keys(this.editedEdge);
       }
-      return this.edgeTypes[this.editedEdge.edge_type] || [];
+      return this.edgeTypes[this.editedEdge.edge_type].properties || [];
     },
     actionLabel() {
       return this.editedEdge.new ? "Create" : "Submit";

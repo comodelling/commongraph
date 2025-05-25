@@ -113,16 +113,10 @@ export default {
     SubnetRenderer,
   },
   setup() {
-    const { nodeTypes, edgeTypes, defaultNodeType, load } = useConfig()
-    const configLoaded = ref(false)
-
-    onBeforeMount(async () => {
-      await load()
-      configLoaded.value = true
-    })
+    const { nodeTypes, edgeTypes, defaultNodeType} = useConfig()
  
     // nodeTypes & edgeTypes will be unwrapped when used in `this.*`
-    return { nodeTypes, edgeTypes, defaultNodeType, configLoaded, load }
+    return { nodeTypes, edgeTypes, defaultNodeType}
   },
 
   data() {
@@ -161,28 +155,24 @@ export default {
       return Boolean(this.sourceId && this.targetId);
     },
     allowedNodeFields() {
-       if (!this.configLoaded || !this.node?.node_type) return []
+       if (!this.node?.node_type) return []
        console.log("node Types allowed", this.nodeTypes);
-       return this.nodeTypes[this.node.node_type] || []
+       return this.nodeTypes[this.node.node_type].properties || []
     },
     allowedEdgeFields() {
-      if (!this.configLoaded || !this.edge?.edge_type) return []
-      return this.edgeTypes[this.edge.edge_type] || []
+      if (!this.edge?.edge_type) return []
+      return this.edgeTypes[this.edge.edge_type].properties || []
     },
   },
   // when opening a brand-new node, use defaultNodeType and only include allowed props
   async created() {
     if (this.isBrandNewNode) {
-      if (!this.configLoaded) {
-        await this.load()
-      this.configLoaded = true
-     }
 
       console.log("Opening brand new node in focus");
       const type = this.defaultNodeType;
       console.log("Default node type:", type);
       // const allowed = this.allowedNodeFields.value || [];
-      const allowed = this.nodeTypes[type] || [];
+      const allowed = this.nodeTypes[type].properties || [];
       console.log("Allowed node props:", allowed);
       // build minimal node object
       const node = { node_id: "new", node_type: type, new: true };
@@ -344,8 +334,7 @@ export default {
       this.$router.push({ name: "NodeEdit", params: { id: newNode.id } });
     },
     async openNewlyCreatedEdge(newEdge) {
-      const { edgeTypes, load } = useConfig();
-      await load();
+      const { edgeTypes } = useConfig();
       const allowed = edgeTypes.value[newEdge.data.edge_type];
       console.log("Allowed edge props:", allowed);
 

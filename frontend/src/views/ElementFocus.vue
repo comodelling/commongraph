@@ -169,7 +169,7 @@ export default {
     if (this.isBrandNewNode) {
 
       console.log("Opening brand new node in focus");
-      const type = this.defaultNodeType.value;
+      const type = this.defaultNodeType;
       console.log("Default node type:", type);
       // const allowed = this.allowedNodeFields.value || [];
       const allowed = this.nodeTypes[type].properties || [];

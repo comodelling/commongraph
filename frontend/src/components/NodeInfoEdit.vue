@@ -331,7 +331,7 @@ export default {
                   fromConnection.handle_type === "source"
                     ? target
                     : parseInt(fromConnection.id),
-                edge_type: this.defaultEdgeType.value,
+                edge_type: this.defaultEdgeType,
               };
               console.log("Creating edge (as connection to created target):", newEdge);
               await api.post(

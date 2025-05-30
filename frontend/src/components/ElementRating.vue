@@ -4,6 +4,7 @@
     <SupportHistogram
       v-if="
         element &&
+        element.node_id !== 'new' &&
         (element.node_id || (element.edge && property === 'causal_strength'))
       "
       ref="histogram"

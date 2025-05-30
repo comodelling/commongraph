@@ -335,7 +335,7 @@ export default {
     },
     async openNewlyCreatedEdge(newEdge) {
       const { edgeTypes } = useConfig();
-      const allowed = edgeTypes.value[newEdge.data.edge_type];
+      const allowed = edgeTypes.value[newEdge.data.edge_type].properties || [];
       console.log("Allowed edge props:", allowed);
 
       this.edge = {

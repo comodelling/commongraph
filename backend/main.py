@@ -37,7 +37,7 @@ from database.postgresql import (
 )
 from auth import router as auth_router
 from auth import get_current_user
-from config import (PLATFORM_NAME, NODE_TYPE_PROPS, EDGE_TYPE_PROPS, 
+from config import (PLATFORM_NAME, NODE_TYPE_PROPS, EDGE_TYPE_PROPS, EDGE_TYPE_BETWEEN,
                     NODE_TYPE_STYLE, EDGE_TYPE_STYLE)
 from dynamic_models import (NodeTypeModels,
                             EdgeTypeModels,
@@ -99,7 +99,9 @@ def get_config():
         for nt, props in NODE_TYPE_PROPS.items()
     }
     edge_types = {
-        et: {"properties": list(props), "style": EDGE_TYPE_STYLE.get(et, {})}
+        et: {"properties": list(props),
+             "between": EDGE_TYPE_BETWEEN.get(et, None),
+             "style": EDGE_TYPE_STYLE.get(et, {})}
         for et, props in EDGE_TYPE_PROPS.items()
     }
     return {

@@ -126,7 +126,7 @@ def get_schema():
                     {
                         "source_type": node_type1,
                         "target_type": node_type2,
-                        "edge_type": edge_type,
+                        "label": edge_type,
                     }
                 ]
         else:
@@ -138,7 +138,7 @@ def get_schema():
                         {
                             "source_type": node_type1,
                             "target_type": node_type2,
-                            "edge_type": edge_type,
+                            "label": edge_type,
                         }
                     ]
     return {

@@ -14,7 +14,7 @@ export default {
     let renderer: Sigma;
 
     onMounted(async () => {
-      const graph = new Graph();
+      const graph = new Graph({ type: "directed", multi: true });
 
       // Compute text color from CSS variable:
       const computedLabelColor =

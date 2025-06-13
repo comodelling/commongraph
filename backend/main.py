@@ -23,14 +23,14 @@ from models import (
 )
 from properties import NodeStatus
 
-from database.base import (
+from db.base import (
     GraphDatabaseInterface,
     UserDatabaseInterface,
     GraphHistoryRelationalInterface,
     RatingHistoryRelationalInterface,
 )
-from database.janusgraph import JanusGraphDB
-from database.postgresql import (
+from db.janusgraph import JanusGraphDB
+from db.postgresql import (
     UserPostgreSQLDB,
     GraphHistoryPostgreSQLDB,
     RatingHistoryPostgreSQLDB,

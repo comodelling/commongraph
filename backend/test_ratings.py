@@ -23,7 +23,7 @@ app.dependency_overrides[get_current_user] = lambda: UserRead(
 
 @pytest.fixture(scope="module", autouse=True)
 def reset_db():
-    from database.postgresql import RatingHistoryPostgreSQLDB
+    from db.postgresql import RatingHistoryPostgreSQLDB
 
     db = RatingHistoryPostgreSQLDB(TEST_DB_URL)
     db.reset_table()

@@ -7,8 +7,8 @@ from fastapi.testclient import TestClient
 import threading
 
 from main import app, get_graph_db_connection, get_graph_history_db_connection
-from database.janusgraph import JanusGraphDB
-from database.postgresql import GraphHistoryPostgreSQLDB
+from db.janusgraph import JanusGraphDB
+from db.postgresql import GraphHistoryPostgreSQLDB
 
 
 POSTGRES_TEST_DB_URL = "postgresql://postgres:postgres@localhost/testdb"

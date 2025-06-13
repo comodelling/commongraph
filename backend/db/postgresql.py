@@ -31,7 +31,7 @@ from models import (
 from properties import NodeStatus
 from dynamic_models import NodeTypeModels, EdgeTypeModels, DynamicSubnet
 from utils.security import hash_password
-from database.config import get_engine
+from db.config import get_engine
 
 # logger in debug mode
 logging.basicConfig(level=logging.DEBUG)

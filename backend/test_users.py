@@ -3,7 +3,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from main import app
-from database.postgresql import UserPostgreSQLDB
+from db.postgresql import UserPostgreSQLDB
 
 # Configure test database and secret key
 TEST_DB_URL = "postgresql://postgres:postgres@localhost/testdb"

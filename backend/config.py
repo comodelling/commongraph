@@ -31,7 +31,14 @@ EDGE_TYPE_STYLE = {
     for et, defn in EDGE_TYPE_CFG.items()
 }
 
-# 4. Helpers
+#. 4
+EDGE_TYPE_BETWEEN = {
+    et: defn.get("between", None)
+    for et, defn in EDGE_TYPE_CFG.items()
+}
+
+
+# 5. Helpers
 def valid_node_types() -> set[str]:
     return set(NODE_TYPE_PROPS)
 

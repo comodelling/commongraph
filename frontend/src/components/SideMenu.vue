@@ -4,6 +4,7 @@
     <router-link to="/">Main page</router-link><br />
     <a href="#" @click="createNewNode">New node</a><br />
     <a href="#" @click="fetchRandomNode">Random node</a><br />
+    <router-link to="/schema">Schema</router-link><br />
     <router-link to="/about">About</router-link>
     <br /><br />
     <div class="title">User</div>

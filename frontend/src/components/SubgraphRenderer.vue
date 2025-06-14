@@ -401,7 +401,7 @@ const onNodesChange = async (changes) => {
         const token = getAccessToken();
         try {
           const response = await api.delete(
-            `${import.meta.env.VITE_BACKEND_URL}/nodes/${node_id}`,
+            `/nodes/${node_id}`,
             token ? { headers: { Authorization: `Bearer ${token}` } } : {},
           );
         } catch (error) {
@@ -446,7 +446,7 @@ const onEdgesChange = async (changes) => {
         const token = getAccessToken();
         try {
           const response = await api.delete(
-            `${import.meta.env.VITE_BACKEND_URL}/edges/${source_id}/${target_id}`,
+            `/edges/${source_id}/${target_id}`,
             { edge_type: edge_type },
             token ? { headers: { Authorization: `Bearer ${token}` } } : {},
           );
@@ -544,7 +544,7 @@ function handleSearch(query) {
   }
 
   api
-    .get(`${import.meta.env.VITE_BACKEND_URL}/nodes/`, { params })
+    .get(`/nodes/`, { params })
     .then((response) => {
       console.log("Search results:", response.data);
       searchResults.value = response.data;
@@ -631,7 +631,7 @@ async function handleSearchResultClick(id, event) {
   console.log("search result clicked", id);
   try {
     const response = await api.get(
-      `${import.meta.env.VITE_BACKEND_URL}/nodes/${id}/`,
+      `/nodes/${id}/`,
     );
     const node = response.data;
     // console.log("Fetched node:", node);

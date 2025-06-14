@@ -35,7 +35,7 @@ export default {
     const fetchRandomNode = async () => {
       try {
         const response = await api.get(
-          `${import.meta.env.VITE_BACKEND_URL}/nodes/random`,
+          `/nodes/random`,
         );
         const node = response.data;
         const path = router.currentRoute.value.path;

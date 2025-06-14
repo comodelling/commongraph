@@ -136,7 +136,7 @@ export default {
           ...(displayName.value && { display_name: displayName.value }),
         };
         const response = await api.post(
-          `${import.meta.env.VITE_BACKEND_URL}/auth/signup`,
+          `/auth/signup`,
           user_data,
         );
         success.value = `Signup successful for ${response.data.username}. Please log in.`;

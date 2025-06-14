@@ -157,7 +157,7 @@ export default {
         });
         const startTime = performance.now();
         const response = await api.get(
-          `${import.meta.env.VITE_BACKEND_URL}/nodes`,
+          `/nodes`,
           {
             params: {
               title,

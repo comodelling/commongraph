@@ -52,7 +52,7 @@ export default {
       error.value = null;
       try {
         const response = await api.post(
-          `${import.meta.env.VITE_BACKEND_URL}/auth/login`,
+          `/auth/login`,
           new URLSearchParams({
             username: username.value,
             password: password.value,

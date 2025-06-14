@@ -26,6 +26,7 @@ import { onMounted } from "vue";
 import SearchBar from "../components/SearchBar.vue";
 import { buildSearchParams } from "../utils/searchParser.js";
 import { useConfig } from "../composables/useConfig";
+import api from "../axios";
 
 export default {
   components: { SearchBar },
@@ -49,12 +50,8 @@ export default {
     },
     async fetchQuote() {
       try {
-        const response = await fetch(
-          `${import.meta.env.VITE_BACKEND_URL}/quote`,
-        );
-        if (response.ok) {
-          this.quote = await response.json();
-        }
+        const response = await api.get(`/quote`);
+        this.quote = response.data;
         console.log("Quote fetched:", this.quote);
       } catch (error) {
         console.error("Error fetching quote:", error);

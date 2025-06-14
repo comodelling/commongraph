@@ -77,7 +77,7 @@ export default {
           security_answer: securityAnswer.value,
         };
         const response = await api.patch(
-          `${import.meta.env.VITE_BACKEND_URL}/users/security-settings`,
+          `/users/security-settings`,
           security_settings,
           { headers: { Authorization: `Bearer ${token}` } },
         );

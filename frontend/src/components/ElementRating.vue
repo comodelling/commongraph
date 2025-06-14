@@ -119,7 +119,7 @@ export default {
         let response;
         if (props.element && props.element.node_id) {
           response = await api.get(
-            `${import.meta.env.VITE_BACKEND_URL}/nodes/${props.element.node_id}/ratings/me`,
+            `/nodes/${props.element.node_id}/ratings/me`,
             {
               params: { rating_type: props.property },
               headers: { Authorization: `Bearer ${token}` },
@@ -132,7 +132,7 @@ export default {
           props.element.edge.target
         ) {
           response = await api.get(
-            `${import.meta.env.VITE_BACKEND_URL}/edges/${props.element.edge.source}/${props.element.edge.target}/ratings/me`,
+            `/edges/${props.element.edge.source}/${props.element.edge.target}/ratings/me`,
             {
               params: {
                 rating_type: props.property,
@@ -167,7 +167,7 @@ export default {
           ratingData.entity_type = "node";
 
           response = await api.post(
-            `${import.meta.env.VITE_BACKEND_URL}/nodes/${props.element.node_id}/ratings`,
+            `/nodes/${props.element.node_id}/ratings`,
             ratingData,
             { headers: { Authorization: `Bearer ${token}` } },
           );
@@ -181,7 +181,7 @@ export default {
           ratingData.target_id = props.element.edge.target;
           ratingData.entity_type = "edge";
           response = await api.post(
-            `${import.meta.env.VITE_BACKEND_URL}/edges/${props.element.edge.source}/${props.element.edge.target}/ratings`,
+            `/edges/${props.element.edge.source}/${props.element.edge.target}/ratings`,
             ratingData,
             { headers: { Authorization: `Bearer ${token}` } },
           );

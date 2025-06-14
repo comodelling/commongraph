@@ -2,8 +2,8 @@ import os
 import pytest
 from fastapi.testclient import TestClient
 
-from main import app
-from db.postgresql import UserPostgreSQLDB
+from backend.main import app
+from backend.db.postgresql import UserPostgreSQLDB
 
 # Configure test database and secret key
 TEST_DB_URL = "postgresql://postgres:postgres@localhost/testdb"

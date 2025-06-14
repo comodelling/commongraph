@@ -24,19 +24,19 @@ from backend.models import (
     RatingType,
     LikertScale,
 )
-from properties import NodeStatus
-from db.base import (
+from backend.properties import NodeStatus
+from backend.db.base import (
     GraphDatabaseInterface,
     GraphHistoryRelationalInterface,
     RatingHistoryRelationalInterface,
 )
-from db.janusgraph import JanusGraphDB
+from backend.db.janusgraph import JanusGraphDB
 from backend.auth import router as auth_router
-from api.users import router as users_router
+from backend.api.users import router as users_router
 from backend.auth import get_current_user
-from config import (PLATFORM_NAME, NODE_TYPE_PROPS, EDGE_TYPE_PROPS, EDGE_TYPE_BETWEEN,
+from backend.config import (PLATFORM_NAME, NODE_TYPE_PROPS, EDGE_TYPE_PROPS, EDGE_TYPE_BETWEEN,
                     NODE_TYPE_STYLE, EDGE_TYPE_STYLE)
-from dynamic_models import (NodeTypeModels,
+from backend.dynamic_models import (NodeTypeModels,
                             EdgeTypeModels,
                             DynamicNode,
                             DynamicEdge,

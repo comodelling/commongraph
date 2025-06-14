@@ -8,7 +8,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlmodel import SQLModel, Session, select
 from fastapi import HTTPException, Query
 
-from .base import (
+from backend.db.base import (
     UserDatabaseInterface,
     GraphHistoryRelationalInterface,
     RatingHistoryRelationalInterface,
@@ -28,10 +28,10 @@ from backend.models import (
     RatingEvent,
     RatingType,
 )
-from properties import NodeStatus
-from dynamic_models import NodeTypeModels, EdgeTypeModels, DynamicSubnet
-from utils.security import hash_password
-from db.config import get_engine
+from backend.properties import NodeStatus
+from backend.dynamic_models import NodeTypeModels, EdgeTypeModels, DynamicSubnet
+from backend.utils.security import hash_password
+from backend.db.config import get_engine
 
 # logger in debug mode
 logging.basicConfig(level=logging.DEBUG)

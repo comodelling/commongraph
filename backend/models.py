@@ -6,8 +6,8 @@ from pydantic import model_validator
 from sqlalchemy import JSON, Column
 from sqlmodel import SQLModel, Field
 
-from config import valid_node_types, valid_edge_types
-from properties import LikertScale
+from backend.config import valid_node_types, valid_edge_types
+from backend.properties import LikertScale
 
 NodeId = Annotated[
     int,

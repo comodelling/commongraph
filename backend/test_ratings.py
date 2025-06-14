@@ -2,7 +2,8 @@ import os
 import pytest
 import datetime
 from fastapi.testclient import TestClient
-from main import app
+
+from backend.main import app
 from backend.auth import get_current_user
 from backend.models import RatingEvent, EntityType
 

@@ -5,8 +5,8 @@ from pydantic import create_model
 from sqlmodel import SQLModel
 
 from backend.models import NodeBase, EdgeBase, SubnetBase, NetworkExportBase
-from properties import PredefinedProperties
-from config import NODE_TYPE_PROPS, EDGE_TYPE_PROPS
+from backend.properties import PredefinedProperties
+from backend.config import NODE_TYPE_PROPS, EDGE_TYPE_PROPS
 
 logger = logging.getLogger(__name__)
 

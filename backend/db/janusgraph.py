@@ -1,5 +1,6 @@
 import warnings
 import logging
+from contextlib import contextmanager
 
 from fastapi import HTTPException, Query
 from gremlin_python.process.anonymous_traversal import traversal
@@ -11,7 +12,6 @@ from gremlin_python.structure.graph import Vertex as Gremlin_vertex
 from janusgraph_python.driver.serializer import JanusGraphSONSerializersV3d0
 from janusgraph_python.process.traversal import Text
 
-from contextlib import contextmanager
 from backend.models import (
     NodeBase,
     EdgeBase,
@@ -20,8 +20,8 @@ from backend.models import (
     PartialNodeBase,
     EdgeBase,
 )
-from properties import NodeStatus
-from .base import GraphDatabaseInterface
+from backend.properties import NodeStatus
+from backend.db.base import GraphDatabaseInterface
 
 
 class JanusGraphDB(GraphDatabaseInterface):

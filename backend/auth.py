@@ -8,9 +8,9 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel
 
 from backend.models import UserCreate, UserRead
-from db.base import UserDatabaseInterface
-from db.postgresql import UserPostgreSQLDB
-from utils.security import verify_password, hash_password
+from backend.db.base import UserDatabaseInterface
+from backend.db.postgresql import UserPostgreSQLDB
+from backend.utils.security import verify_password, hash_password
 
 logger = logging.getLogger(__name__)
 

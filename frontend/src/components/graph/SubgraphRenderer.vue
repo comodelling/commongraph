@@ -33,10 +33,6 @@ const {
 
 onMounted(async () => {
   await loadConfig()
-  console.log("nodeTypes:", nodeTypes.value)
-  console.log("edgeTypes:", edgeTypes.value)
-  console.log("defaultNodeType =", defaultNodeType.value)
-  console.log("defaultEdgeType =", defaultEdgeType.value)
 })
 
 const { getAccessToken } = useAuth();
@@ -519,9 +515,11 @@ function createEdgeOnConnection(targetId) {
   const { nodeId, handleType } = connectionInfo.value;
   console.log("connecting to node", targetId);
   console.log("from node", nodeId);
+  const source = handleType === "source" ? nodeId.toString() : targetId;
+  const target = handleType === "source" ? targetId : nodeId.toString();
   const newEdgeData = formatFlowEdgeProps({
-    source: handleType === "source" ? nodeId.toString() : targetId,
-    target: handleType === "source" ? targetId : nodeId.toString(), // targetId is a string
+    source: source,
+    target: target,
     edge_type: defaultEdgeType.value, //handleType === "source" ? "imply" : "require",
   });
   console.log("New edge data (direct connection):", newEdgeData);

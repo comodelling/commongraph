@@ -5,7 +5,7 @@ import datetime
 import json
 import random
 
-from fastapi import Query, Depends, FastAPI, status, HTTPException
+from fastapi import Query, Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.settings import settings
@@ -32,11 +32,11 @@ from backend.api.auth import router as auth_router
 from backend.api.users import router as users_router
 from backend.api.nodes import router as nodes_router
 from backend.api.edges import router as edges_router
+from backend.api.graph import router as graph_router
 from backend.api.auth import get_current_user
 from backend.config import (PLATFORM_NAME, NODE_TYPE_PROPS, EDGE_TYPE_PROPS, EDGE_TYPE_BETWEEN,
                     NODE_TYPE_STYLE, EDGE_TYPE_STYLE)
-from backend.dynamic_models import (DynamicSubnet,
-                            DynamicNetworkExport)
+from backend.dynamic_models import (DynamicSubnet)
 
 logger = logging.getLogger(__name__)
 
@@ -57,6 +57,7 @@ app.include_router(auth_router)
 app.include_router(users_router)
 app.include_router(nodes_router)
 app.include_router(edges_router)
+app.include_router(graph_router)
 
 @app.get("/config")
 def get_config():
@@ -73,7 +74,7 @@ def get_config():
     }
     return {
         "platform_name": PLATFORM_NAME,
-        "node_types": node_types,
+        "node_types": node_types,  #TODO: might deprecate and use graph/schema instead
         "edge_types": edge_types,
     }
     
@@ -119,47 +120,7 @@ def get_schema():
 
 @app.get("/")
 async def root():
-    return {"message": "Welcome to CommonGraph!"}
-
-
-### /network/ ###
-
-
-@app.get("/network")
-def get_whole_network(
-    db_history: GraphHistoryRelationalInterface = Depends(
-        get_graph_history_db
-    ),
-) -> DynamicNetworkExport:
-    """Return full network of nodes and edges from the database."""
-    out = db_history.get_whole_network().model_dump()
-    out["commongraph_version"] = __version__
-    out["timestamp"] = datetime.datetime.now().isoformat()
-    return out
-
-
-@app.get("/network/summary")
-def get_network_summary(
-    db_history: GraphHistoryRelationalInterface = Depends(
-        get_graph_history_db
-    ),
-) -> dict[str, int]:
-    """Count nodes and edges."""
-    return db_history.get_network_summary()
-
-
-@app.delete("/network", status_code=status.HTTP_205_RESET_CONTENT)
-def reset_whole_network(
-    db_graph: GraphDatabaseInterface | None = Depends(get_graph_db),
-    db_history: GraphHistoryRelationalInterface = Depends(
-        get_graph_history_db
-    ),
-    user: UserRead = Depends(get_current_user),
-) -> None:
-    """Delete all nodes and edges. Be careful!"""
-    db_history.reset_whole_network(username=user.username)
-    if db_graph is not None:
-        db_graph.reset_whole_network()
+    return {"message": "CommonGraph API", "version": __version__}
 
 
 ### /subnet/ ###

@@ -66,7 +66,7 @@ def client(override_db_connections):
 @pytest.fixture(scope="module")
 def initial_node(graph_db, client):
     warnings.filterwarnings("ignore", category=UserWarning)
-    client.delete("/network")
+    client.delete("/graph")
 
     result = client.post(
         "/nodes",
@@ -82,7 +82,7 @@ def initial_node(graph_db, client):
 
     yield node_dict
     warnings.filterwarnings("ignore", category=UserWarning)
-    client.delete("/network")
+    client.delete("/graph")
 
 
 def test_read_main(client):
@@ -91,7 +91,7 @@ def test_read_main(client):
 
 
 def test_get_whole_network(graph_db, client):
-    response = client.get("/network")
+    response = client.get("/graph")
     assert response.status_code == 200, print(response.json())
     assert "nodes" in response.json()
     assert "edges" in response.json()
@@ -110,17 +110,17 @@ def test_reset_whole_network(graph_db, client):
     #     },
     # )
     warnings.filterwarnings("ignore", category=UserWarning)
-    response = client.delete("/network")
+    response = client.delete("/graph")
     assert response.status_code == 205
 
-    summary_response = client.get("/network/summary")
+    summary_response = client.get("/graph/summary")
     summary = json.loads(summary_response.content.decode("utf-8"))
     assert summary["nodes"] == 0
     assert summary["edges"] == 0
 
 
 def test_update_subnet(graph_db, client):
-    n_nodes = json.loads(client.get("/network/summary").content.decode("utf-8"))[
+    n_nodes = json.loads(client.get("/graph/summary").content.decode("utf-8"))[
         "nodes"
     ]
     response = client.put(
@@ -129,7 +129,7 @@ def test_update_subnet(graph_db, client):
     )
     assert response.status_code == 200, print(response.json())
     assert (
-        json.loads(client.get("/network/summary").content.decode("utf-8"))["nodes"]
+        json.loads(client.get("/graph/summary").content.decode("utf-8"))["nodes"]
         == n_nodes + 1
     )
 
@@ -145,7 +145,7 @@ def test_get_subnet(initial_node, client):
 
 
 def test_network_summary(graph_db, client):
-    response = client.get("/network/summary")
+    response = client.get("/graph/summary")
     assert response.status_code == 200, print(response.json())
 
 
@@ -156,7 +156,7 @@ def test_get_nodes_list(graph_db, client):
 
 
 def test_create_and_delete_node(graph_db, client):
-    n_nodes = json.loads(client.get("/network/summary").content.decode("utf-8"))[
+    n_nodes = json.loads(client.get("/graph/summary").content.decode("utf-8"))[
         "nodes"
     ]
     response = client.post(
@@ -165,7 +165,7 @@ def test_create_and_delete_node(graph_db, client):
     )
     assert response.status_code == 201, print(response.json())
     assert (
-        json.loads(client.get("/network/summary").content.decode("utf-8"))["nodes"]
+        json.loads(client.get("/graph/summary").content.decode("utf-8"))["nodes"]
         == n_nodes + 1
     )
 
@@ -178,7 +178,7 @@ def test_create_and_delete_node(graph_db, client):
     response = client.delete(f"/nodes/{node_id}")
     assert response.status_code == 200, print(response.json())
     assert (
-        json.loads(client.get("/network/summary").content.decode("utf-8"))["nodes"]
+        json.loads(client.get("/graph/summary").content.decode("utf-8"))["nodes"]
         == n_nodes
     )
 
@@ -347,7 +347,7 @@ def test_get_edge_list(graph_db, client):
 
 
 def test_create_update_and_delete_edge(initial_node, client):
-    n_edges = json.loads(client.get("/network/summary").content.decode("utf-8"))[
+    n_edges = json.loads(client.get("/graph/summary").content.decode("utf-8"))[
         "edges"
     ]
     response = client.post(
@@ -360,7 +360,7 @@ def test_create_update_and_delete_edge(initial_node, client):
     )
     assert response.status_code == 201, print(response.json())
     assert (
-        json.loads(client.get("/network/summary").content.decode("utf-8"))["edges"]
+        json.loads(client.get("/graph/summary").content.decode("utf-8"))["edges"]
         == n_edges + 1
     )
 
@@ -421,7 +421,7 @@ def test_create_node_with_references(graph_db, client):
     assert len(node["references"]) == 3
     assert set(node["references"]) == {"ref1", "ref2", "ref3"}
 
-    response = client.get("/network")
+    response = client.get("/graph")
 
 
 def test_update_node_with_references(graph_db, client):

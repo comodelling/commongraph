@@ -30,7 +30,7 @@
 
 <script>
 import { ref } from "vue";
-import api from "../axios";
+import api from "../api/axios";
 import { useRouter } from "vue-router";
 
 export default {
@@ -46,7 +46,7 @@ export default {
       error.value = null;
       try {
         const response = await api.get(
-          `${import.meta.env.VITE_BACKEND_URL}/auth/security-question`,
+          `/auth/security-question`,
           { params: { username: username.value } },
         );
         if (response.data.security_question) {
@@ -63,7 +63,7 @@ export default {
       error.value = null;
       try {
         const response = await api.post(
-          `${import.meta.env.VITE_BACKEND_URL}/auth/verify-security-question`,
+          `/auth/verify-security-question`,
           { username: username.value, answer: answer.value },
         );
         console.log(response.data);

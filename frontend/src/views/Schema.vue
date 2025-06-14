@@ -5,7 +5,7 @@
 </template>
 
 <script lang="ts">
-import GraphSchema from "../components/GraphSchema.vue";
+import GraphSchema from "../components/graph/GraphSchema.vue";
 
 export default {
   name: "Schema",

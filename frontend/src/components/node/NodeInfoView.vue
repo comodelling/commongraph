@@ -45,8 +45,8 @@
 
 <script setup lang="ts">
 import { computed, onMounted, toRefs } from "vue";
-import { useConfig } from "../composables/useConfig";
-import tooltips from "../assets/tooltips.json";
+import { useConfig } from "../../composables/useConfig";
+import tooltips from "../../assets/tooltips.json";
 
 interface Node {
   node_id: number;

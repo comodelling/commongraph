@@ -4,7 +4,7 @@
 
 <script lang="ts">
 import { onMounted, onBeforeUnmount } from "vue";
-import api from "../axios";
+import api from "../../api/axios";
 import Graph from "graphology";
 import Sigma from "sigma";
 

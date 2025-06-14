@@ -40,12 +40,12 @@
 </template>
 
 <script>
-import api from "../axios";
+import api from "../api/axios";
 import qs from "qs";
 import { useRouter, useRoute } from "vue-router";
-import SearchBar from "../components/SearchBar.vue";
-import SupportView from "../components/SupportHistogram.vue";
-import NodeListItem from "../components/NodeListItem.vue";
+import SearchBar from "../components/common/SearchBar.vue";
+import SupportView from "../components/rating/SupportHistogram.vue";
+import NodeListItem from "../components/node/NodeListItem.vue";
 
 export default {
   components: { SearchBar, SupportView, NodeListItem },
@@ -157,7 +157,7 @@ export default {
         });
         const startTime = performance.now();
         const response = await api.get(
-          `${import.meta.env.VITE_BACKEND_URL}/nodes`,
+          `/nodes`,
           {
             params: {
               title,

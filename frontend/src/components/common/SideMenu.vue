@@ -21,9 +21,9 @@
 </template>
 
 <script>
-import api from "../axios";
+import api from "../../api/axios";
 import { useRouter } from "vue-router";
-import { useAuth } from "../composables/useAuth";
+import { useAuth } from "../../composables/useAuth";
 
 
 export default {
@@ -35,7 +35,7 @@ export default {
     const fetchRandomNode = async () => {
       try {
         const response = await api.get(
-          `${import.meta.env.VITE_BACKEND_URL}/nodes/random`,
+          `/nodes/random`,
         );
         const node = response.data;
         const path = router.currentRoute.value.path;

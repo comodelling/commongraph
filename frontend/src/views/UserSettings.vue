@@ -31,7 +31,7 @@
 
 <script>
 import { ref, onMounted, watch } from "vue";
-import api from "../axios";
+import api from "../api/axios";
 import router from "../router";
 import { useAuth } from "../composables/useAuth";
 
@@ -62,7 +62,7 @@ export default {
       if (token) {
         try {
           const response = await api.patch(
-            `${import.meta.env.VITE_BACKEND_URL}/users/preferences`,
+            `/users/preferences`,
             { theme: newTheme },
             { headers: { Authorization: `Bearer ${token}` } },
           );
@@ -78,7 +78,7 @@ export default {
       error.value = null;
       try {
         const response = await api.get(
-          `${import.meta.env.VITE_BACKEND_URL}/users/me`,
+          `/users/me`,
           { headers: { Authorization: `Bearer ${token}` } },
         );
         user.value = response.data;

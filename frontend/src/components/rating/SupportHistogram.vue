@@ -18,7 +18,7 @@
 
 <script>
 import { ref, watch, onMounted, nextTick } from "vue";
-import api from "../axios";
+import api from "../../api/axios";
 import Chart from "chart.js/auto";
 
 export default {
@@ -88,7 +88,7 @@ export default {
           // Aggregated mode: multiple nodes.
           const nodeIds = props.nodes.map((node) => node.node_id);
           const response = await api.get(
-            `${import.meta.env.VITE_BACKEND_URL}/nodes/ratings/median`,
+            `/nodes/ratings/median`,
             { params: { node_ids: nodeIds } },
           );
           ratings.value = response.data;
@@ -97,13 +97,13 @@ export default {
           if (props.nodeId) {
             // Node ratings mode
             const response = await api.get(
-              `${import.meta.env.VITE_BACKEND_URL}/nodes/${props.nodeId}/ratings`,
+              `/nodes/${props.nodeId}/ratings`,
             );
             ratings.value = response.data.ratings;
           } else if (props.edge) {
             // Edge ratings mode (for causal_strength)
             const response = await api.get(
-              `${import.meta.env.VITE_BACKEND_URL}/edges/${props.edge.source}/${props.edge.target}/ratings`,
+              `/edges/${props.edge.source}/${props.edge.target}/ratings`,
               {
                 params: {
                   rating_type: props.property,

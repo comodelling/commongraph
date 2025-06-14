@@ -18,8 +18,8 @@
 
 <script lang="ts">
 import { defineComponent, computed, onMounted } from "vue";
-import { useConfig } from "../composables/useConfig";
-import tooltips from "../assets/tooltips.json";
+import { useConfig } from "../../composables/useConfig";
+import tooltips from "../../assets/tooltips.json";
 
 export default defineComponent({
   name: "EdgeInfoView",

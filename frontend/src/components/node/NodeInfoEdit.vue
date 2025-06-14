@@ -156,13 +156,13 @@
 </template>
 
 <script>
-import api from "../axios";
+import api from "../../api/axios";
 import _ from "lodash";
-import tooltips from "../assets/tooltips.json";
-import { useAuth } from "../composables/useAuth";
-import { useUnsaved } from "../composables/useUnsaved";
+import tooltips from "../../assets/tooltips.json";
+import { useAuth } from "../../composables/useAuth";
+import { useUnsaved } from "../../composables/useUnsaved";
 // Import the meta config composable
-import { useConfig } from "../composables/useConfig";
+import { useConfig } from "../../composables/useConfig";
 import { onBeforeMount } from "vue";
 
 export default {
@@ -311,7 +311,7 @@ export default {
           delete this.editedNode.new;
           delete this.editedNode.node_id;
           const response = await api.post(
-            `${import.meta.env.VITE_BACKEND_URL}/nodes`,
+            `/nodes`,
             this.editedNode,
             token
               ? { headers: { Authorization: `Bearer ${token}` } }
@@ -335,7 +335,7 @@ export default {
               };
               console.log("Creating edge (as connection to created target):", newEdge);
               await api.post(
-                `${import.meta.env.VITE_BACKEND_URL}/edges`,
+                `/edges`,
                 newEdge,
                 token
                   ? { headers: { Authorization: `Bearer ${token}` } }
@@ -354,7 +354,7 @@ export default {
       } else {
         try {
           const response = await api.put(
-            `${import.meta.env.VITE_BACKEND_URL}/nodes`,
+            `/nodes`,
             this.editedNode
           );
           this.$emit("publish-node", response.data);

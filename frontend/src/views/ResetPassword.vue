@@ -17,7 +17,7 @@
 
 <script>
 import { ref } from "vue";
-import api from "../axios";
+import api from "../api/axios";
 import { useRoute } from "vue-router";
 import { useRouter } from "vue-router";
 
@@ -34,7 +34,7 @@ export default {
       error.value = null;
       try {
         const response = await api.post(
-          `${import.meta.env.VITE_BACKEND_URL}/auth/reset-password`,
+          `/auth/reset-password`,
           { token, new_password: newPassword.value },
         );
         success.value = response.data.msg;

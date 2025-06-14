@@ -76,13 +76,13 @@
 </template>
 
 <script>
-import api from "../axios";
+import api from "../../api/axios";
 import _ from "lodash";
-import tooltips from "../assets/tooltips.json";
+import tooltips from "../../assets/tooltips.json";
 import { onMounted } from "vue";
-import { useAuth } from "../composables/useAuth";
-import { useUnsaved } from "../composables/useUnsaved";
-import { useConfig } from "../composables/useConfig";
+import { useAuth } from "../../composables/useAuth";
+import { useUnsaved } from "../../composables/useUnsaved";
+import { useConfig } from "../../composables/useConfig";
 
 export default {
   props: {
@@ -229,14 +229,14 @@ export default {
         if (this.editedEdge.new) {
           delete this.editedEdge.new;
           response = await api.post(
-            `${import.meta.env.VITE_BACKEND_URL}/edges/`,
+            `/edges/`,
             this.editedEdge,
             token ? { headers: { Authorization: `Bearer ${token}` } } : {},
           );
           console.log("Created edge returned:", response.data);
         } else {
           response = await api.put(
-            `${import.meta.env.VITE_BACKEND_URL}/edges`,
+            `/edges`,
             this.editedEdge,
             token ? { headers: { Authorization: `Bearer ${token}` } } : {},
           );

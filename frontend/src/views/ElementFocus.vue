@@ -95,15 +95,15 @@
 <script>
 import { onBeforeMount, ref } from 'vue'
 import { useConfig } from "../composables/useConfig";
-import NodeInfo from "../components/NodeInfo.vue";
-import EdgeInfo from "../components/EdgeInfo.vue";
-import ElementRating from "../components/ElementRating.vue";
-import SubgraphRenderer from "../components/SubgraphRenderer.vue";
+import NodeInfo from "../components/node/NodeInfo.vue";
+import EdgeInfo from "../components/edge/EdgeInfo.vue";
+import ElementRating from "../components/rating/ElementRating.vue";
+import SubgraphRenderer from "../components/graph/SubgraphRenderer.vue";
 import {
   formatFlowEdgeProps,
   formatFlowNodeProps,
 } from "../composables/formatFlowComponents";
-import api from "../axios";
+import api from "../api/axios";
 
 export default {
   components: {
@@ -200,7 +200,7 @@ export default {
       try {
         const seed = this.nodeId || this.sourceId || this.targetId;
         const response = await api.get(
-          `${import.meta.env.VITE_BACKEND_URL}/graph/${seed}`,
+          `/graph/${seed}`,
           { params: { levels: 10 } },
         );
         let fetched_nodes = response.data.nodes || [];
@@ -281,7 +281,7 @@ export default {
     async updateNodeFromBackend(node_id) {
       try {
         const response = await api.get(
-          `${import.meta.env.VITE_BACKEND_URL}/nodes/${node_id}`,
+          `/nodes/${node_id}`,
         );
         this.node = response.data || undefined;
       } catch (error) {
@@ -292,7 +292,7 @@ export default {
     async updateEdgeFromBackend(source_id, target_id) {
       try {
         const response = await api.get(
-          `${import.meta.env.VITE_BACKEND_URL}/edges/${source_id}/${target_id}`,
+          `/edges/${source_id}/${target_id}`,
         );
         this.edge = response.data || undefined;
       } catch (error) {

@@ -11,7 +11,7 @@
 </template>
 
 <script>
-import { parseSearchQuery } from "../utils/searchParser.js";
+import { parseSearchQuery } from "../../utils/searchParser.js";
 
 export default {
   props: {

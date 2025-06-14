@@ -11,7 +11,7 @@
 </template>
 
 <script>
-import api from "../axios";
+import api from "../../api/axios";
 
 export default {
   props: {
@@ -28,7 +28,7 @@ export default {
   async created() {
     try {
       const response = await api.get(
-        `${import.meta.env.VITE_BACKEND_URL}/nodes/${this.nodeId}/history`,
+        `/nodes/${this.nodeId}/history`,
       );
       this.history = response.data.reverse(); // Reverse the order to show the most recent first
     } catch (error) {

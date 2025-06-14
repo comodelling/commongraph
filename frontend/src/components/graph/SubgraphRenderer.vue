@@ -1,27 +1,27 @@
 <script setup>
-import api from "../axios";
-import { useAuth } from "../composables/useAuth";
+import api from "../../api/axios.js";
+import { useAuth } from "../../composables/useAuth.js";
 import { saveAs } from "file-saver";
 import { nextTick, ref, warn, watch, computed, onMounted } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { Panel, VueFlow, useVueFlow, ConnectionMode } from "@vue-flow/core";
 import { Background } from "@vue-flow/background";
 import { ControlButton, Controls } from "@vue-flow/controls";
-import { MiniMap } from "@vue-flow/minimap";
-import Icon from "./Icon.vue";
-import { useLayout } from "../composables/useLayout";
+// import { MiniMap } from "@vue-flow/minimap";
+import Icon from "../common/Icon.vue";
+import { useLayout } from "../../composables/useLayout.js";
 import VueSimpleContextMenu from "vue-simple-context-menu";
 import "vue-simple-context-menu/dist/vue-simple-context-menu.css";
-import SearchBar from "./SearchBar.vue";
-import { parseSearchQuery, buildSearchParams } from "../utils/searchParser.js";
-import SpecialNode from "../components/SpecialNode.vue";
+import SearchBar from "../common/SearchBar.vue";
+import { parseSearchQuery, buildSearchParams } from "../../utils/searchParser.js";
+import SpecialNode from "./SpecialNode.vue";
 import SpecialEdge from "./SpecialEdge.vue";
 import {
   formatFlowEdgeProps,
   formatFlowNodeProps,
-} from "../composables/formatFlowComponents";
-import { useUnsaved } from "../composables/useUnsaved";
-import { useConfig } from "../composables/useConfig";
+} from "../../composables/formatFlowComponents.js";
+import { useUnsaved } from "../../composables/useUnsaved.js";
+import { useConfig } from "../../composables/useConfig.js";
 
 const {
   nodeTypes,
@@ -33,10 +33,6 @@ const {
 
 onMounted(async () => {
   await loadConfig()
-  console.log("nodeTypes:", nodeTypes.value)
-  console.log("edgeTypes:", edgeTypes.value)
-  console.log("defaultNodeType =", defaultNodeType.value)
-  console.log("defaultEdgeType =", defaultEdgeType.value)
 })
 
 const { getAccessToken } = useAuth();
@@ -401,7 +397,7 @@ const onNodesChange = async (changes) => {
         const token = getAccessToken();
         try {
           const response = await api.delete(
-            `${import.meta.env.VITE_BACKEND_URL}/nodes/${node_id}`,
+            `/nodes/${node_id}`,
             token ? { headers: { Authorization: `Bearer ${token}` } } : {},
           );
         } catch (error) {
@@ -446,7 +442,7 @@ const onEdgesChange = async (changes) => {
         const token = getAccessToken();
         try {
           const response = await api.delete(
-            `${import.meta.env.VITE_BACKEND_URL}/edges/${source_id}/${target_id}`,
+            `/edges/${source_id}/${target_id}`,
             { edge_type: edge_type },
             token ? { headers: { Authorization: `Bearer ${token}` } } : {},
           );
@@ -519,9 +515,11 @@ function createEdgeOnConnection(targetId) {
   const { nodeId, handleType } = connectionInfo.value;
   console.log("connecting to node", targetId);
   console.log("from node", nodeId);
+  const source = handleType === "source" ? nodeId.toString() : targetId;
+  const target = handleType === "source" ? targetId : nodeId.toString();
   const newEdgeData = formatFlowEdgeProps({
-    source: handleType === "source" ? nodeId.toString() : targetId,
-    target: handleType === "source" ? targetId : nodeId.toString(), // targetId is a string
+    source: source,
+    target: target,
     edge_type: defaultEdgeType.value, //handleType === "source" ? "imply" : "require",
   });
   console.log("New edge data (direct connection):", newEdgeData);
@@ -544,7 +542,7 @@ function handleSearch(query) {
   }
 
   api
-    .get(`${import.meta.env.VITE_BACKEND_URL}/nodes/`, { params })
+    .get(`/nodes/`, { params })
     .then((response) => {
       console.log("Search results:", response.data);
       searchResults.value = response.data;
@@ -631,7 +629,7 @@ async function handleSearchResultClick(id, event) {
   console.log("search result clicked", id);
   try {
     const response = await api.get(
-      `${import.meta.env.VITE_BACKEND_URL}/nodes/${id}/`,
+      `/nodes/${id}/`,
     );
     const node = response.data;
     // console.log("Fetched node:", node);

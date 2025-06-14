@@ -1,7 +1,7 @@
 import axios from "axios";
 import qs    from "qs";           // <— new import
 import { jwtDecode } from "jwt-decode";
-import { useAuth } from "./composables/useAuth";
+import { useAuth } from "../composables/useAuth";
 
 const { getAccessToken, getRefreshToken, setTokens, clearTokens } = useAuth();
 

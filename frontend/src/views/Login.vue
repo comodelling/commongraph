@@ -26,7 +26,7 @@
 
 <script>
 import { ref, onMounted } from "vue";
-import api from "../axios";
+import api from "../api/axios";
 import router from "../router";
 import { useAuth } from "../composables/useAuth";
 
@@ -52,7 +52,7 @@ export default {
       error.value = null;
       try {
         const response = await api.post(
-          `${import.meta.env.VITE_BACKEND_URL}/auth/login`,
+          `/auth/login`,
           new URLSearchParams({
             username: username.value,
             password: password.value,

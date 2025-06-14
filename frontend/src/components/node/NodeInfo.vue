@@ -54,8 +54,8 @@
 import NodeInfoView from "./NodeInfoView.vue";
 import NodeInfoEdit from "./NodeInfoEdit.vue";
 import NodeHistoryView from "./NodeHistory.vue";
-import { useAuth } from "../composables/useAuth";
-import api from "../api/axios";
+import { useAuth } from "../../composables/useAuth";
+import api from "../../api/axios";
 
 export default {
   props: {

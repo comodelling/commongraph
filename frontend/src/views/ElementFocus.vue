@@ -95,10 +95,10 @@
 <script>
 import { onBeforeMount, ref } from 'vue'
 import { useConfig } from "../composables/useConfig";
-import NodeInfo from "../components/NodeInfo.vue";
-import EdgeInfo from "../components/EdgeInfo.vue";
-import ElementRating from "../components/ElementRating.vue";
-import SubgraphRenderer from "../components/SubgraphRenderer.vue";
+import NodeInfo from "../components/node/NodeInfo.vue";
+import EdgeInfo from "../components/edge/EdgeInfo.vue";
+import ElementRating from "../components/rating/ElementRating.vue";
+import SubgraphRenderer from "../components/graph/SubgraphRenderer.vue";
 import {
   formatFlowEdgeProps,
   formatFlowNodeProps,

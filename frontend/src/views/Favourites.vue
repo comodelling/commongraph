@@ -29,7 +29,7 @@
 <script>
 import { ref, onMounted, computed } from "vue";
 import api from "../api/axios";
-import NodeListItem from "../components/NodeListItem.vue";
+import NodeListItem from "../components/node/NodeListItem.vue";
 
 export default {
   components: { NodeListItem },

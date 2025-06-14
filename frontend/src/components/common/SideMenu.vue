@@ -21,9 +21,9 @@
 </template>
 
 <script>
-import api from "../api/axios";
+import api from "../../api/axios";
 import { useRouter } from "vue-router";
-import { useAuth } from "../composables/useAuth";
+import { useAuth } from "../../composables/useAuth";
 
 
 export default {

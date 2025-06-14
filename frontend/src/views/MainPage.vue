@@ -23,7 +23,7 @@
 
 <script>
 import { onMounted } from "vue";
-import SearchBar from "../components/SearchBar.vue";
+import SearchBar from "../components/common/SearchBar.vue";
 import { buildSearchParams } from "../utils/searchParser.js";
 import { useConfig } from "../composables/useConfig";
 import api from "../api/axios.js";

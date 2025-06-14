@@ -90,8 +90,8 @@
 
 <script>
 import { ref, onMounted } from "vue";
-import api from "../api/axios";
-import { useAuth } from "../composables/useAuth";
+import api from "../../api/axios";
+import { useAuth } from "../../composables/useAuth";
 import SupportHistogram from "./SupportHistogram.vue";
 
 export default {

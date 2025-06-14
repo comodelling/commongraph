@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h2>Edge History</h2>
+    <h2>Node History</h2>
     <ul>
       <li v-for="event in history" :key="event.event_id">
         {{ formatTimestamp(event.timestamp) }}:
@@ -11,15 +11,11 @@
 </template>
 
 <script>
-import api from "../api/axios";
+import api from "../../api/axios";
 
 export default {
   props: {
-    sourceId: {
-      type: Number,
-      required: true,
-    },
-    targetId: {
+    nodeId: {
       type: Number,
       required: true,
     },
@@ -32,11 +28,11 @@ export default {
   async created() {
     try {
       const response = await api.get(
-        `/edges/${this.sourceId}/${this.targetId}/history`,
+        `/nodes/${this.nodeId}/history`,
       );
       this.history = response.data.reverse(); // Reverse the order to show the most recent first
     } catch (error) {
-      console.error("Failed to fetch edge history:", error);
+      console.error("Failed to fetch node history:", error);
     }
   },
   methods: {

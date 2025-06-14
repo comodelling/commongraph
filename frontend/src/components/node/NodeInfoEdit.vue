@@ -156,13 +156,13 @@
 </template>
 
 <script>
-import api from "../api/axios";
+import api from "../../api/axios";
 import _ from "lodash";
-import tooltips from "../assets/tooltips.json";
-import { useAuth } from "../composables/useAuth";
-import { useUnsaved } from "../composables/useUnsaved";
+import tooltips from "../../assets/tooltips.json";
+import { useAuth } from "../../composables/useAuth";
+import { useUnsaved } from "../../composables/useUnsaved";
 // Import the meta config composable
-import { useConfig } from "../composables/useConfig";
+import { useConfig } from "../../composables/useConfig";
 import { onBeforeMount } from "vue";
 
 export default {

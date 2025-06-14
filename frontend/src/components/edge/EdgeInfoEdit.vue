@@ -76,13 +76,13 @@
 </template>
 
 <script>
-import api from "../api/axios";
+import api from "../../api/axios";
 import _ from "lodash";
-import tooltips from "../assets/tooltips.json";
+import tooltips from "../../assets/tooltips.json";
 import { onMounted } from "vue";
-import { useAuth } from "../composables/useAuth";
-import { useUnsaved } from "../composables/useUnsaved";
-import { useConfig } from "../composables/useConfig";
+import { useAuth } from "../../composables/useAuth";
+import { useUnsaved } from "../../composables/useUnsaved";
+import { useConfig } from "../../composables/useConfig";
 
 export default {
   props: {

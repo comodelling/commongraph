@@ -1,27 +1,27 @@
 <script setup>
-import api from "../api/axios.js";
-import { useAuth } from "../composables/useAuth";
+import api from "../../api/axios.js";
+import { useAuth } from "../../composables/useAuth.js";
 import { saveAs } from "file-saver";
 import { nextTick, ref, warn, watch, computed, onMounted } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { Panel, VueFlow, useVueFlow, ConnectionMode } from "@vue-flow/core";
 import { Background } from "@vue-flow/background";
 import { ControlButton, Controls } from "@vue-flow/controls";
-import { MiniMap } from "@vue-flow/minimap";
-import Icon from "./Icon.vue";
-import { useLayout } from "../composables/useLayout.js";
+// import { MiniMap } from "@vue-flow/minimap";
+import Icon from "../common/Icon.vue";
+import { useLayout } from "../../composables/useLayout.js";
 import VueSimpleContextMenu from "vue-simple-context-menu";
 import "vue-simple-context-menu/dist/vue-simple-context-menu.css";
-import SearchBar from "./SearchBar.vue";
-import { parseSearchQuery, buildSearchParams } from "../utils/searchParser.js";
-import SpecialNode from "../components/SpecialNode.vue";
+import SearchBar from "../common/SearchBar.vue";
+import { parseSearchQuery, buildSearchParams } from "../../utils/searchParser.js";
+import SpecialNode from "./SpecialNode.vue";
 import SpecialEdge from "./SpecialEdge.vue";
 import {
   formatFlowEdgeProps,
   formatFlowNodeProps,
-} from "../composables/formatFlowComponents";
-import { useUnsaved } from "../composables/useUnsaved";
-import { useConfig } from "../composables/useConfig";
+} from "../../composables/formatFlowComponents.js";
+import { useUnsaved } from "../../composables/useUnsaved.js";
+import { useConfig } from "../../composables/useConfig.js";
 
 const {
   nodeTypes,

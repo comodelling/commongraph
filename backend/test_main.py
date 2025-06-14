@@ -27,7 +27,7 @@ def graph_db(request):
         try:
             graph_db = JanusGraphDB("localhost", "g_test")
             with graph_db.connection():
-                graph_db.reset_whole_network()
+                graph_db.reset_whole_graph()
         except Exception:
             pytest.skip("JanusGraph server not running.")
     elif db_type is None:
@@ -42,7 +42,7 @@ def graph_db(request):
 def override_db_connections(graph_db):
 
     graph_history_db = GraphHistoryPostgreSQLDB(POSTGRES_TEST_DB_URL)
-    graph_history_db.reset_whole_network()
+    graph_history_db.reset_whole_graph()
 
     app.dependency_overrides[get_graph_history_db] = lambda: graph_history_db
 
@@ -90,7 +90,7 @@ def test_read_main(client):
     assert response.status_code == 200, print(response.json())
 
 
-def test_get_whole_network(graph_db, client):
+def test_get_whole_graph(graph_db, client):
     response = client.get("/graph")
     assert response.status_code == 200, print(response.json())
     assert "nodes" in response.json()
@@ -98,7 +98,7 @@ def test_get_whole_network(graph_db, client):
     # assert len(response.json()["nodes"])
 
 
-def test_reset_whole_network(graph_db, client):
+def test_reset_whole_graph(graph_db, client):
     # Ensure there are nodes and edges before reset
     # client.post(
     #     "/nodes",
@@ -119,12 +119,12 @@ def test_reset_whole_network(graph_db, client):
     assert summary["edges"] == 0
 
 
-def test_update_subnet(graph_db, client):
+def test_update_subgraph(graph_db, client):
     n_nodes = json.loads(client.get("/graph/summary").content.decode("utf-8"))[
         "nodes"
     ]
     response = client.put(
-        "/subnet",
+        "/graph",
         json={"nodes": [{"title": "test", "scope": "test scope"}], "edges": []},
     )
     assert response.status_code == 200, print(response.json())
@@ -134,9 +134,9 @@ def test_update_subnet(graph_db, client):
     )
 
 
-def test_get_subnet(initial_node, client):
+def test_get_subgraph(initial_node, client):
     node_id = initial_node["node_id"]
-    response = client.get(f"/subnet/{node_id}")
+    response = client.get(f"/graph/{node_id}")
     assert response.status_code == 200, print(response.json())
     assert node_id in [
         node["node_id"]
@@ -144,7 +144,7 @@ def test_get_subnet(initial_node, client):
     ]
 
 
-def test_network_summary(graph_db, client):
+def test_graph_summary(graph_db, client):
     response = client.get("/graph/summary")
     assert response.status_code == 200, print(response.json())
 

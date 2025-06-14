@@ -1,5 +1,4 @@
 import os
-from typing import Annotated
 import logging
 import datetime
 import json
@@ -12,7 +11,6 @@ from backend.settings import settings
 from backend.version import __version__
 from backend.db.connections import (
     get_graph_db,
-    get_graph_history_db,
     get_rating_history_db
 )
 from backend.models import (
@@ -23,8 +21,6 @@ from backend.models import (
     RatingType,
 )
 from backend.db.base import (
-    GraphDatabaseInterface,
-    GraphHistoryRelationalInterface,
     RatingHistoryRelationalInterface,
 )
 from backend.db.janusgraph import JanusGraphDB
@@ -36,7 +32,6 @@ from backend.api.graph import router as graph_router
 from backend.api.auth import get_current_user
 from backend.config import (PLATFORM_NAME, NODE_TYPE_PROPS, EDGE_TYPE_PROPS, EDGE_TYPE_BETWEEN,
                     NODE_TYPE_STYLE, EDGE_TYPE_STYLE)
-from backend.dynamic_models import (DynamicSubnet)
 
 logger = logging.getLogger(__name__)
 
@@ -58,6 +53,13 @@ app.include_router(users_router)
 app.include_router(nodes_router)
 app.include_router(edges_router)
 app.include_router(graph_router)
+
+
+@app.get("/")
+async def root():
+    return {"message": "CommonGraph API", "version": __version__}
+
+
 
 @app.get("/config")
 def get_config():
@@ -117,46 +119,6 @@ def get_schema():
 
 ### root ###
 
-
-@app.get("/")
-async def root():
-    return {"message": "CommonGraph API", "version": __version__}
-
-
-### /subnet/ ###
-
-
-@app.put("/subnet")
-def update_subnet(
-    subnet: DynamicSubnet,
-    db_graph: GraphDatabaseInterface | None = Depends(get_graph_db),
-    db_history: GraphHistoryRelationalInterface = Depends(
-        get_graph_history_db
-    ),
-    user: UserRead = Depends(get_current_user),
-)  -> DynamicSubnet:
-    """Add missing nodes and edges and update existing ones (given IDs)."""
-    out_subnet = db_history.update_subnet(subnet, username=user.username)
-    if db_graph is not None:
-        db_graph.update_subnet(subnet)
-    return out_subnet
-
-
-@app.get("/subnet/{node_id}")
-def get_induced_subnet(
-    node_id: NodeId,
-    levels: Annotated[int, Query(get=0)] = 2,
-    db_graph: GraphDatabaseInterface | None = Depends(get_graph_db),
-    db_history: GraphHistoryRelationalInterface = Depends(
-        get_graph_history_db
-    ),
-) -> DynamicSubnet:
-    """Return the subnet induced from a particular element with an optional limit number of connections.
-    If no neighbour is found, a singleton subnet with a single node is returned from the provided ID.
-    """
-    if db_graph is not None:
-        return db_graph.get_induced_subnet(node_id, levels)
-    return db_history.get_induced_subnet(node_id, levels)
 
 
 

@@ -63,15 +63,15 @@ class PartialEdgeBase(EdgeBase):
     edge_type: str | None = None
 
 
-class SubnetBase(SQLModel):
-    """Subnet model"""
+class SubgraphBase(SQLModel):
+    """Subgraph model"""
 
     nodes: list[NodeBase | dict]
     edges: list[EdgeBase | dict]
 
 
-class NetworkExportBase(SQLModel):
-    """Network Export model"""
+class GraphExportBase(SQLModel):
+    """G Export model"""
 
     commongraph_version: str
     timestamp: datetime.datetime

@@ -22,14 +22,14 @@ from backend.models import (
     UserRead,
     UserCreate,
     GraphHistoryEvent,
-    SubnetBase,
+    SubgraphBase,
     EntityType,
     EntityState,
     RatingEvent,
     RatingType,
 )
 from backend.properties import NodeStatus
-from backend.dynamic_models import NodeTypeModels, EdgeTypeModels, DynamicSubnet
+from backend.dynamic_models import NodeTypeModels, EdgeTypeModels, DynamicSubgraph
 from backend.utils.security import hash_password
 from backend.db.config import get_engine
 
@@ -547,8 +547,8 @@ class GraphHistoryPostgreSQLDB(GraphHistoryRelationalInterface):
             return Dyn(**data)
         return EdgeBase.model_validate(data)
 
-    def get_whole_network(self) -> SubnetBase:
-        """Reconstruct the current network from the latest events."""
+    def get_whole_graph(self) -> SubgraphBase:
+        """Reconstruct the current graph from the latest events."""
         with Session(self.engine) as session:
             node_events = session.exec(
                 select(GraphHistoryEvent).where(
@@ -591,32 +591,32 @@ class GraphHistoryPostgreSQLDB(GraphHistoryRelationalInterface):
             ]
 
             self.logger.info(
-                f"Returning network with {len(nodes)} nodes and {len(edges)} edges"
+                f"Returning graph with {len(nodes)} nodes and {len(edges)} edges"
             )
-            return DynamicSubnet(nodes=nodes, edges=edges)
+            return DynamicSubgraph(nodes=nodes, edges=edges)
 
-    def get_network_summary(self) -> dict:
-        subnet = self.get_whole_network()
-        return {"nodes": len(subnet.nodes), "edges": len(subnet.edges)}
+    def get_graph_summary(self) -> dict:
+        graph = self.get_whole_graph()
+        return {"nodes": len(graph.nodes), "edges": len(graph.edges)}
 
-    def reset_whole_network(self, username: str = "system") -> None:
-        """Reset the network by clearing all history events."""
+    def reset_whole_graph(self, username: str = "system") -> None:
+        """Reset the graph by clearing all history events."""
         from sqlalchemy import delete
 
         with Session(self.engine) as session:
             session.exec(delete(GraphHistoryEvent))
             session.commit()
 
-    def update_subnet(self, subnet: SubnetBase, username: str = "system") -> SubnetBase:
+    def update_graph(self, subgraph: SubgraphBase, username: str = "system") -> SubgraphBase:
         """
-        Update the subnet by iterating over nodes and edges.
+        Update the subgraph by iterating over nodes and edges.
         For each node, if it exists (by node_id), update it; otherwise, create it.
         For each edge, if it exists (by source and target), update it; otherwise, create it.
         Applies mapping for newly created nodes.
         """
         mapping: dict[int, int] = {}
         nodes_out = []
-        for node in subnet.nodes:
+        for node in subgraph.nodes:
             if not isinstance(node, NodeBase):
                 self.logger.error(f"Invalid node: {node}, ignoring it.")
                 continue
@@ -632,7 +632,7 @@ class GraphHistoryPostgreSQLDB(GraphHistoryRelationalInterface):
             nodes_out.append(updated_node)
 
         edges_out = []
-        for edge in subnet.edges:
+        for edge in subgraph.edges:
             if (
                 not isinstance(edge, EdgeBase)
                 or not hasattr(edge, "source")
@@ -653,13 +653,13 @@ class GraphHistoryPostgreSQLDB(GraphHistoryRelationalInterface):
                 updated_edge = self.create_edge(edge, username=username)
             edges_out.append(updated_edge)
 
-        return DynamicSubnet(nodes=nodes_out, edges=edges_out)
+        return DynamicSubgraph(nodes=nodes_out, edges=edges_out)
 
-    def get_induced_subnet(self, node_id: NodeId, levels: int) -> SubnetBase:
+    def get_induced_subgraph(self, node_id: NodeId, levels: int) -> SubgraphBase:
         """
-        Reconstruct an induced subnet starting from node_id by performing a BFS.
+        Reconstruct an induced subgraph starting from node_id by performing a BFS.
         """
-        whole = self.get_whole_network()
+        whole = self.get_whole_graph()
         node_index = {node.node_id: node for node in whole.nodes}
         adjacency = {node.node_id: set() for node in whole.nodes}
         for edge in whole.edges:
@@ -689,7 +689,7 @@ class GraphHistoryPostgreSQLDB(GraphHistoryRelationalInterface):
             for edge in whole.edges
             if edge.source in induced_nodes and edge.target in induced_nodes
         ]
-        return DynamicSubnet(nodes=list(induced_nodes.values()), edges=induced_edges)
+        return DynamicSubgraph(nodes=list(induced_nodes.values()), edges=induced_edges)
 
     def search_nodes(
         self,
@@ -705,7 +705,7 @@ class GraphHistoryPostgreSQLDB(GraphHistoryRelationalInterface):
         For keys like title, scope, description, etc., perform case-insensitive
         substring matches. For node_type or status, accept single values or lists.
         """
-        subnet = self.get_whole_network()
+        graph = self.get_whole_graph()
         results = []
 
         # Build a dict of non-null filters:
@@ -719,7 +719,7 @@ class GraphHistoryPostgreSQLDB(GraphHistoryRelationalInterface):
         }
         active_filters = {k: v for k, v in all_filters.items() if v is not None}
 
-        for node in subnet.nodes:
+        for node in graph.nodes:
             self.logger.debug(
                 f"Checking node {node.node_id} with title: {getattr(node, 'title', None)}"
             )
@@ -789,7 +789,7 @@ class GraphHistoryPostgreSQLDB(GraphHistoryRelationalInterface):
         return results
 
     def get_random_node(self, node_type: str = None) -> NodeBase:
-        nodes = self.get_whole_network().nodes
+        nodes = self.get_whole_graph().nodes
         if node_type is not None:
             nodes = [
                 node for node in nodes if getattr(node, "node_type", None) == node_type

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from backend.auth import get_current_user, get_user_db, logger, router
+from backend.api.auth import get_current_user, get_user_db, logger, router
 from backend.db.base import UserDatabaseInterface
 from backend.db.connections import get_user_db
 from backend.models import User, UserRead

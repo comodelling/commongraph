@@ -31,9 +31,9 @@ from backend.db.base import (
     RatingHistoryRelationalInterface,
 )
 from backend.db.janusgraph import JanusGraphDB
-from backend.auth import router as auth_router
+from backend.api.auth import router as auth_router
 from backend.api.users import router as users_router
-from backend.auth import get_current_user
+from backend.api.auth import get_current_user
 from backend.config import (PLATFORM_NAME, NODE_TYPE_PROPS, EDGE_TYPE_PROPS, EDGE_TYPE_BETWEEN,
                     NODE_TYPE_STYLE, EDGE_TYPE_STYLE)
 from backend.dynamic_models import (NodeTypeModels,

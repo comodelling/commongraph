@@ -4,7 +4,7 @@ import datetime
 from fastapi.testclient import TestClient
 
 from backend.main import app
-from backend.auth import get_current_user
+from backend.api.auth import get_current_user
 from backend.models import RatingEvent, EntityType
 
 # Configure test database and secret key

@@ -14,14 +14,14 @@ from backend.utils.security import verify_password, hash_password
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter()
+router = APIRouter(prefix="/auth", tags=["auth"])
 
 SECRET_KEY = os.getenv("SECRET_KEY", "yourSecretKey")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 REFRESH_TOKEN_EXPIRE_DAYS = 7
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login", auto_error=False)
 
 
 def create_access_token(data: dict, expires_delta: timedelta = None):
@@ -55,7 +55,7 @@ def get_user_db() -> UserDatabaseInterface:
     return UserPostgreSQLDB(database_url)
 
 
-@router.post("/auth/refresh")
+@router.post("/refresh")
 def refresh_token(
     token: str = Depends(oauth2_scheme),  # send refresh token as bearer token
     db: UserDatabaseInterface = Depends(get_user_db),
@@ -111,7 +111,7 @@ async def get_current_user(
     return user
 
 
-@router.post("/auth/signup", response_model=UserRead)
+@router.post("/signup", response_model=UserRead)
 def signup(user: UserCreate, db: UserDatabaseInterface = Depends(get_user_db)):
     logger.info(f"Signup attempt for username: {user.username}")
     created_user = db.create_user(user)
@@ -119,7 +119,7 @@ def signup(user: UserCreate, db: UserDatabaseInterface = Depends(get_user_db)):
     return created_user
 
 
-@router.post("/auth/login")
+@router.post("/login")
 def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: UserDatabaseInterface = Depends(get_user_db),
@@ -139,7 +139,7 @@ def login(
     }
 
 
-@router.get("/auth/security-question")
+@router.get("/security-question")
 def get_security_question(
     username: str, db: UserDatabaseInterface = Depends(get_user_db)
 ):
@@ -157,7 +157,7 @@ class VerifySecurityQuestionRequest(BaseModel):
     answer: str
 
 
-@router.post("/auth/verify-security-question")
+@router.post("/verify-security-question")
 def verify_security_question(
     request: VerifySecurityQuestionRequest,
     db: UserDatabaseInterface = Depends(get_user_db),
@@ -181,7 +181,7 @@ class ResetPasswordRequest(BaseModel):
     new_password: str
 
 
-@router.post("/auth/reset-password")
+@router.post("/reset-password")
 def reset_password(
     request: ResetPasswordRequest, db: UserDatabaseInterface = Depends(get_user_db)
 ):
@@ -207,7 +207,7 @@ def reset_password(
     return {"msg": "Password reset successful"}
 
 
-@router.post("/auth/logout")
+@router.post("/logout")
 def logout():
     logger.info("User logout requested")
     # With JWT, logout is managed on the client side by simply deleting the token.

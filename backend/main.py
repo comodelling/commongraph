@@ -8,25 +8,15 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from backend.settings import settings
 from backend.version import __version__
-from backend.db.connections import (
-    get_graph_db,
-    get_rating_history_db
-)
-from backend.models import (
-    MigrateLabelRequest,
-    UserRead,
-    RatingEvent,
-)
-from backend.db.base import (
-    RatingHistoryRelationalInterface,
-)
+from backend.db.connections import get_graph_db
+from backend.models import MigrateLabelRequest
+
 from backend.db.janusgraph import JanusGraphDB
 from backend.api.auth import router as auth_router
 from backend.api.users import router as users_router
 from backend.api.nodes import router as nodes_router
 from backend.api.edges import router as edges_router
 from backend.api.graph import router as graph_router
-from backend.api.auth import get_current_user
 from backend.config import (PLATFORM_NAME, NODE_TYPE_PROPS, EDGE_TYPE_PROPS, EDGE_TYPE_BETWEEN,
                     NODE_TYPE_STYLE, EDGE_TYPE_STYLE)
 
@@ -57,7 +47,6 @@ async def root():
     return {"message": "CommonGraph API", "version": __version__}
 
 
-
 @app.get("/config")
 def get_config():
     # Here we combine both properties and styles for each type.
@@ -76,25 +65,6 @@ def get_config():
         "node_types": node_types,  #TODO: might deprecate and use graph/schema instead
         "edge_types": edge_types,
     }
-    
-
-
-### ratings ###
-
-# @app.post("/rating/log", status_code=201)
-# def log_rating(
-#     rating: RatingEvent,
-#     db: RatingHistoryRelationalInterface = Depends(get_rating_history_db),
-#     user: UserRead = Depends(get_current_user),
-# ) -> RatingEvent:
-#     """
-#     Log a rating event. The username will be set from the authenticated user.
-#     """
-#     rating.username = user.username
-#     return db.log_rating(rating)
-
-
-### others ###
 
 
 @app.post("/migrate_label_to_property")

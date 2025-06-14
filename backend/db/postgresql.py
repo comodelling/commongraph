@@ -13,7 +13,7 @@ from .base import (
     GraphHistoryRelationalInterface,
     RatingHistoryRelationalInterface,
 )
-from models import (
+from backend.models import (
     NodeBase,
     EdgeBase,
     NodeId,

@@ -2,7 +2,7 @@ import logging
 from abc import ABC, ABCMeta, abstractmethod
 from functools import wraps
 
-from models import (
+from backend.models import (
     NodeBase,
     EdgeBase,
     SubnetBase,

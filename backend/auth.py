@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel
 
-from models import UserCreate, UserRead
+from backend.models import UserCreate, UserRead
 from db.base import UserDatabaseInterface
 from db.postgresql import UserPostgreSQLDB
 from utils.security import verify_password, hash_password

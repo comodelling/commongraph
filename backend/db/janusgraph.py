@@ -12,7 +12,7 @@ from janusgraph_python.driver.serializer import JanusGraphSONSerializersV3d0
 from janusgraph_python.process.traversal import Text
 
 from contextlib import contextmanager
-from models import (
+from backend.models import (
     NodeBase,
     EdgeBase,
     SubnetBase,

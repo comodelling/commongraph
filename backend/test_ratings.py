@@ -3,8 +3,8 @@ import pytest
 import datetime
 from fastapi.testclient import TestClient
 from main import app
-from auth import get_current_user
-from models import RatingEvent, EntityType
+from backend.auth import get_current_user
+from backend.models import RatingEvent, EntityType
 
 # Configure test database and secret key
 TEST_DB_URL = "postgresql://postgres:postgres@localhost/testdb"
@@ -14,7 +14,7 @@ os.environ["SECRET_KEY"] = "testsecret"
 client = TestClient(app)
 
 # Override authentication dependency for testing
-from models import UserRead
+from backend.models import UserRead
 
 app.dependency_overrides[get_current_user] = lambda: UserRead(
     username="testuser", preferences={}

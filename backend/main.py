@@ -12,14 +12,12 @@ from backend.settings import settings
 from backend.version import __version__
 from backend.db.connections import (
     get_graph_db,
-    get_user_db,
     get_graph_history_db,
     get_rating_history_db
 )
-from models import (
+from backend.models import (
     NodeId,
     MigrateLabelRequest,
-    User,
     UserRead,
     GraphHistoryEvent,
     RatingEvent,
@@ -29,13 +27,13 @@ from models import (
 from properties import NodeStatus
 from db.base import (
     GraphDatabaseInterface,
-    UserDatabaseInterface,
     GraphHistoryRelationalInterface,
     RatingHistoryRelationalInterface,
 )
 from db.janusgraph import JanusGraphDB
-from auth import router as auth_router
-from auth import get_current_user
+from backend.auth import router as auth_router
+from api.users import router as users_router
+from backend.auth import get_current_user
 from config import (PLATFORM_NAME, NODE_TYPE_PROPS, EDGE_TYPE_PROPS, EDGE_TYPE_BETWEEN,
                     NODE_TYPE_STYLE, EDGE_TYPE_STYLE)
 from dynamic_models import (NodeTypeModels,
@@ -51,7 +49,6 @@ QUOTES_FILE = settings.QUOTES_FILE
 origins = settings.ALLOWED_ORIGINS
 
 app = FastAPI(title="CommonGraph API", version=__version__)
-app.include_router(auth_router)
 
 app.add_middleware(
     CORSMiddleware,
@@ -60,6 +57,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(auth_router)
+app.include_router(users_router)
+
 
 
 @app.get("/config")
@@ -124,28 +125,6 @@ def get_schema():
 @app.get("/")
 async def root():
     return {"message": "Welcome to CommonGraph!"}
-
-
-### /user/ ###
-
-
-@app.post("/users", status_code=201)
-def create_user(
-    user: User, db: UserDatabaseInterface = Depends(get_user_db)
-) -> User:
-    """Create a new user."""
-    return db.create_user(user)
-
-
-@app.get("/users/{username}")
-def get_user(
-    username: str, db: UserDatabaseInterface = Depends(get_user_db)
-) -> User:
-    """Get a user by username."""
-    user = db.get_user(username)
-    if user:
-        return user
-    raise HTTPException(status_code=404, detail="User not found")
 
 
 ### /network/ ###

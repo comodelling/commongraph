@@ -5,7 +5,7 @@ import datetime
 import json
 import random
 
-from fastapi import Body, Query, Depends, FastAPI, status, HTTPException
+from fastapi import Query, Depends, FastAPI, status, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.settings import settings
@@ -19,7 +19,6 @@ from backend.models import (
     NodeId,
     MigrateLabelRequest,
     UserRead,
-    GraphHistoryEvent,
     RatingEvent,
     RatingType,
 )
@@ -32,12 +31,11 @@ from backend.db.janusgraph import JanusGraphDB
 from backend.api.auth import router as auth_router
 from backend.api.users import router as users_router
 from backend.api.nodes import router as nodes_router
+from backend.api.edges import router as edges_router
 from backend.api.auth import get_current_user
 from backend.config import (PLATFORM_NAME, NODE_TYPE_PROPS, EDGE_TYPE_PROPS, EDGE_TYPE_BETWEEN,
                     NODE_TYPE_STYLE, EDGE_TYPE_STYLE)
-from backend.dynamic_models import (EdgeTypeModels,
-                            DynamicEdge,
-                            DynamicSubnet,
+from backend.dynamic_models import (DynamicSubnet,
                             DynamicNetworkExport)
 
 logger = logging.getLogger(__name__)
@@ -58,7 +56,7 @@ app.add_middleware(
 app.include_router(auth_router)
 app.include_router(users_router)
 app.include_router(nodes_router)
-
+app.include_router(edges_router)
 
 @app.get("/config")
 def get_config():
@@ -201,94 +199,7 @@ def get_induced_subnet(
 
 
 
-### /edge/ ###
-
-
-@app.get("/edge/{source_id}/{target_id}")
-def get_edge(
-    source_id: NodeId,
-    target_id: NodeId,
-    db_history: GraphHistoryRelationalInterface = Depends(
-        get_graph_history_db
-    ),
-) -> DynamicEdge: #type: ignore
-    """Return the edge associated with the provided ID."""
-    return db_history.get_edge(source_id, target_id)
-
-
-@app.post("/edge", status_code=201)
-def create_edge(
-    payload: dict = Body(...),
-    db_graph: GraphDatabaseInterface | None = Depends(get_graph_db),
-    db_history: GraphHistoryRelationalInterface = Depends(
-        get_graph_history_db
-    ),
-    user: UserRead = Depends(get_current_user),
-) -> DynamicEdge: #type: ignore
-    """Create an edge."""
-    et = payload.get("edge_type")
-    Model = EdgeTypeModels.get(et)
-    if not Model:
-        raise HTTPException(400, f"Unknown edge_type {et!r}")
-    edge = Model(**payload)
-    out_edge = db_history.create_edge(edge, username=user.username)
-    if db_graph is not None:
-        db_graph.create_edge(edge)
-    return out_edge
-
-
-@app.delete("/edge/{source_id}/{target_id}")
-def delete_edge(
-    source_id: NodeId,
-    target_id: NodeId,
-    edge_type: str | None = None,
-    db_graph: GraphDatabaseInterface | None = Depends(get_graph_db),
-    db_history: GraphHistoryRelationalInterface = Depends(
-        get_graph_history_db
-    ),
-    user: UserRead = Depends(get_current_user),
-):
-    """Delete the edge between two nodes and for an optional edge_type."""
-    db_history.delete_edge(source_id, target_id, edge_type, username=user.username)
-    if db_graph is not None:
-        db_graph.delete_edge(source_id, target_id, edge_type)
-
-
-@app.put("/edge")
-def update_edge(
-    payload: dict = Body(...),
-    db_graph: GraphDatabaseInterface | None = Depends(get_graph_db),
-    db_history: GraphHistoryRelationalInterface = Depends(
-        get_graph_history_db
-    ),
-    user: UserRead = Depends(get_current_user),
-) -> DynamicEdge: #type: ignore
-    """Update the properties of an edge."""
-    et = payload.get("edge_type")
-    Model = EdgeTypeModels.get(et)
-    if not Model:
-        raise HTTPException(400, f"Unknown edge_type {et!r}")
-    edge = Model(**payload)
-    out_edge = db_history.update_edge(edge, username=user.username)
-    if db_graph is not None:
-        db_graph.update_edge(edge)
-    return out_edge
-
-
-@app.get("/edge/{source_id}/{target_id}/history")
-def get_edge_history(
-    source_id: NodeId,
-    target_id: NodeId,
-    db_history: GraphHistoryRelationalInterface = Depends(
-        get_graph_history_db
-    ),
-) -> list[GraphHistoryEvent]:
-    """Return the history of the edge associated with the provided source and target IDs."""
-    return db_history.get_edge_history(source_id, target_id)
-
-
 ### ratings ###
-
 
 @app.post("/rating/log", status_code=201)
 def log_rating(

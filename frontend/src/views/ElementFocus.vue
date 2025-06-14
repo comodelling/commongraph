@@ -300,7 +300,7 @@ export default {
     async updateEdgeFromBackend(source_id, target_id) {
       try {
         const response = await api.get(
-          `${import.meta.env.VITE_BACKEND_URL}/edge/${source_id}/${target_id}`,
+          `${import.meta.env.VITE_BACKEND_URL}/edges/${source_id}/${target_id}`,
         );
         this.edge = response.data || undefined;
       } catch (error) {

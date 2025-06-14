@@ -229,14 +229,14 @@ export default {
         if (this.editedEdge.new) {
           delete this.editedEdge.new;
           response = await api.post(
-            `${import.meta.env.VITE_BACKEND_URL}/edge/`,
+            `${import.meta.env.VITE_BACKEND_URL}/edges/`,
             this.editedEdge,
             token ? { headers: { Authorization: `Bearer ${token}` } } : {},
           );
           console.log("Created edge returned:", response.data);
         } else {
           response = await api.put(
-            `${import.meta.env.VITE_BACKEND_URL}/edge`,
+            `${import.meta.env.VITE_BACKEND_URL}/edges`,
             this.editedEdge,
             token ? { headers: { Authorization: `Bearer ${token}` } } : {},
           );

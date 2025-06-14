@@ -446,7 +446,7 @@ const onEdgesChange = async (changes) => {
         const token = getAccessToken();
         try {
           const response = await api.delete(
-            `${import.meta.env.VITE_BACKEND_URL}/edge/${source_id}/${target_id}`,
+            `${import.meta.env.VITE_BACKEND_URL}/edges/${source_id}/${target_id}`,
             { edge_type: edge_type },
             token ? { headers: { Authorization: `Bearer ${token}` } } : {},
           );

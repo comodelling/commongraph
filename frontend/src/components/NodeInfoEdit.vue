@@ -335,7 +335,7 @@ export default {
               };
               console.log("Creating edge (as connection to created target):", newEdge);
               await api.post(
-                `${import.meta.env.VITE_BACKEND_URL}/edge`,
+                `${import.meta.env.VITE_BACKEND_URL}/edges`,
                 newEdge,
                 token
                   ? { headers: { Authorization: `Bearer ${token}` } }

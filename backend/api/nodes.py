@@ -7,8 +7,8 @@ from backend.api.auth import get_current_user
 from backend.db.base import GraphDatabaseInterface, GraphHistoryRelationalInterface, RatingHistoryRelationalInterface
 from backend.db.connections import get_graph_db, get_graph_history_db, get_rating_history_db
 from backend.db.janusgraph import JanusGraphDB
-from backend.dynamic_models import DynamicNode, NodeTypeModels
-from backend.models import GraphHistoryEvent, LikertScale, NodeId, RatingEvent, RatingType, UserRead, EntityType
+from backend.models.dynamic import DynamicNode, NodeTypeModels
+from backend.models.fixed import GraphHistoryEvent, LikertScale, NodeId, RatingEvent, RatingType, UserRead, EntityType
 from backend.properties import NodeStatus
 
 logger = logging.getLogger(__name__)

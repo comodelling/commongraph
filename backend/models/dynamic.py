@@ -4,7 +4,7 @@ from typing import Any, Dict, Type, Union
 from pydantic import create_model
 from sqlmodel import SQLModel
 
-from backend.models import NodeBase, EdgeBase, SubgraphBase, GraphExportBase
+from backend.models.base import NodeBase, EdgeBase, SubgraphBase, GraphExportBase
 from backend.properties import PredefinedProperties
 from backend.config import NODE_TYPE_PROPS, EDGE_TYPE_PROPS
 

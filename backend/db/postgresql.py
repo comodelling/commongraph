@@ -13,23 +13,25 @@ from backend.db.base import (
     GraphHistoryRelationalInterface,
     RatingHistoryRelationalInterface,
 )
-from backend.models import (
+from backend.models.base import (
     NodeBase,
     EdgeBase,
+    SubgraphBase,
+)
+from backend.models.fixed import (
     NodeId,
     LikertScale,
     User,
     UserRead,
     UserCreate,
     GraphHistoryEvent,
-    SubgraphBase,
     EntityType,
     EntityState,
     RatingEvent,
     RatingType,
 )
 from backend.properties import NodeStatus
-from backend.dynamic_models import NodeTypeModels, EdgeTypeModels, DynamicSubgraph
+from backend.models.dynamic import NodeTypeModels, EdgeTypeModels, DynamicSubgraph
 from backend.utils.security import hash_password
 from backend.db.config import get_engine
 

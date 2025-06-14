@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from backend.settings import settings
 from backend.version import __version__
 from backend.db.connections import get_graph_db
-from backend.models import MigrateLabelRequest
+from backend.models.fixed import MigrateLabelRequest
 
 from backend.db.janusgraph import JanusGraphDB
 from backend.api.auth import router as auth_router

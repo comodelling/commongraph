@@ -12,14 +12,14 @@ from gremlin_python.structure.graph import Vertex as Gremlin_vertex
 from janusgraph_python.driver.serializer import JanusGraphSONSerializersV3d0
 from janusgraph_python.process.traversal import Text
 
-from backend.models import (
+from backend.models.base import (
     NodeBase,
     EdgeBase,
     SubgraphBase,
-    NodeId,
     PartialNodeBase,
     EdgeBase,
 )
+from backend.models.fixed import NodeId
 from backend.properties import NodeStatus
 from backend.db.base import GraphDatabaseInterface
 

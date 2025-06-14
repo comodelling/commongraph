@@ -8,8 +8,8 @@ from backend.api.auth import get_current_user
 from backend.config import EDGE_TYPE_BETWEEN, EDGE_TYPE_PROPS, NODE_TYPE_PROPS
 from backend.db.base import GraphDatabaseInterface, GraphHistoryRelationalInterface
 from backend.db.connections import get_graph_db, get_graph_history_db
-from backend.dynamic_models import DynamicGraphExport, DynamicSubgraph
-from backend.models import NodeId, UserRead
+from backend.models.dynamic import DynamicGraphExport, DynamicSubgraph
+from backend.models.fixed import NodeId, UserRead
 from backend.version import __version__
 
 logger = logging.getLogger(__name__)

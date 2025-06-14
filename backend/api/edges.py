@@ -6,8 +6,8 @@ from fastapi import Body, Depends, APIRouter, HTTPException, Query, status, Path
 from backend.api.auth import get_current_user
 from backend.db.base import GraphDatabaseInterface, GraphHistoryRelationalInterface, RatingHistoryRelationalInterface
 from backend.db.connections import get_graph_db, get_graph_history_db, get_rating_history_db
-from backend.dynamic_models import DynamicEdge, EdgeTypeModels
-from backend.models import GraphHistoryEvent, NodeId, RatingEvent, RatingType, UserRead, EntityType
+from backend.models.dynamic import DynamicEdge, EdgeTypeModels
+from backend.models.fixed import GraphHistoryEvent, NodeId, RatingEvent, RatingType, UserRead, EntityType
 
 
 logger = logging.getLogger(__name__)

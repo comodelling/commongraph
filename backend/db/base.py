@@ -2,10 +2,12 @@ import logging
 from abc import ABC, ABCMeta, abstractmethod
 from functools import wraps
 
-from backend.models import (
+from backend.models.base import (
     NodeBase,
     EdgeBase,
-    SubgraphBase,
+    SubgraphBase
+)
+from backend.models.fixed import (
     User,
     UserRead,
     UserCreate,

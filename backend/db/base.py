@@ -2,10 +2,12 @@ import logging
 from abc import ABC, ABCMeta, abstractmethod
 from functools import wraps
 
-from models import (
+from backend.models.base import (
     NodeBase,
     EdgeBase,
-    SubnetBase,
+    SubgraphBase
+)
+from backend.models.fixed import (
     User,
     UserRead,
     UserCreate,
@@ -148,23 +150,23 @@ class GraphDatabaseInterface(ABC, metaclass=LogMeta):
         self.logger = logging.getLogger(self.__class__.__name__)
 
     @abstractmethod
-    def get_whole_network(self) -> SubnetBase:
+    def get_whole_graph(self) -> SubgraphBase:
         pass
 
     @abstractmethod
-    def get_network_summary(self) -> dict:
+    def get_graph_summary(self) -> dict:
         pass
 
     @abstractmethod
-    def reset_whole_network(self) -> None:
+    def reset_whole_graph(self) -> None:
         pass
 
     @abstractmethod
-    def update_subnet(self, subnet: SubnetBase) -> SubnetBase:
+    def update_graph(self, subgraph: SubgraphBase) -> SubgraphBase:
         pass
 
     @abstractmethod
-    def get_induced_subnet(self, node_id: NodeId, levels: NodeId) -> SubnetBase:
+    def get_induced_subgraph(self, node_id: NodeId, levels: NodeId) -> SubgraphBase:
         pass
 
     @abstractmethod
@@ -224,11 +226,11 @@ class GraphHistoryRelationalInterface(GraphDatabaseInterface):
 
     # some inherited methods have added parameter username
     @abstractmethod
-    def reset_whole_network(self, username: str) -> None:
+    def reset_whole_graph(self, username: str) -> None:
         pass
 
     @abstractmethod
-    def update_subnet(self, subnet: SubnetBase, username: str) -> SubnetBase:
+    def update_graph(self, subgraph: SubgraphBase, username: str) -> SubgraphBase:
         pass
 
     @abstractmethod

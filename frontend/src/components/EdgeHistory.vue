@@ -32,7 +32,7 @@ export default {
   async created() {
     try {
       const response = await api.get(
-        `${import.meta.env.VITE_BACKEND_URL}/edge/${this.sourceId}/${this.targetId}/history`,
+        `${import.meta.env.VITE_BACKEND_URL}/edges/${this.sourceId}/${this.targetId}/history`,
       );
       this.history = response.data.reverse(); // Reverse the order to show the most recent first
     } catch (error) {

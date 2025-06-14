@@ -4,9 +4,9 @@ from typing import Any, Dict, Type, Union
 from pydantic import create_model
 from sqlmodel import SQLModel
 
-from models import NodeBase, EdgeBase, SubnetBase, NetworkExportBase
-from properties import PredefinedProperties
-from config import NODE_TYPE_PROPS, EDGE_TYPE_PROPS
+from backend.models.base import NodeBase, EdgeBase, SubgraphBase, GraphExportBase
+from backend.properties import PredefinedProperties
+from backend.config import NODE_TYPE_PROPS, EDGE_TYPE_PROPS
 
 logger = logging.getLogger(__name__)
 
@@ -60,12 +60,12 @@ logger.debug(f"Dynamic edge models: {EdgeTypeModels}")
 DynamicNode = Union[tuple(NodeTypeModels.values())]
 DynamicEdge = Union[tuple(EdgeTypeModels.values())]
 
-class DynamicSubnet(SubnetBase):
-    """Subnet model with dynamic node and edge types."""
+class DynamicSubgraph(SubgraphBase):
+    """Subgraph model with dynamic node and edge types."""
     nodes: list[DynamicNode]   # type: ignore
     edges: list[DynamicEdge]   # type: ignore
 
-class DynamicNetworkExport(NetworkExportBase):
-    """Network Export model with dynamic node and edge types."""
+class DynamicGraphExport(GraphExportBase):
+    """Graph Export model with dynamic node and edge types."""
     nodes: list[DynamicNode]   # type: ignore
     edges: list[DynamicEdge]   # type: ignore

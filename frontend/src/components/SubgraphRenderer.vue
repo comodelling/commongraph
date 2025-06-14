@@ -109,8 +109,8 @@ onInit((vueFlowInstance) => {
   // instance is the same as the return of `useVueFlow`
   // vueFlowInstance.fitView()
   // set nodes and edges from props
-  // console.log("initiating subnet viz");
-  // updateSubnetFromData(props.data);
+  // console.log("initiating subgraph viz");
+  // updateSubgraphFromData(props.data);
   // fitView()
   console.log("VueFlow instance initialised");
   console.log("onInit, selected direction", selectedDirection.value);
@@ -120,10 +120,10 @@ onInit((vueFlowInstance) => {
 watch(
   () => props.data,
   (newData) => {
-    console.log("updating subnet data following props change");
-    updateSubnetFromData(newData);
+    console.log("updating subgraph data following props change");
+    updateSubgraphFromData(newData);
     setTimeout(() => {
-      layoutSubnet(selectedDirection.value);
+      layoutSubgraph(selectedDirection.value);
     }, 16); // leave time for nodes to initialise (size)
   },
   { immediate: false },
@@ -189,7 +189,7 @@ watch(
             position: node.position,
           };
           updateNode(node.id, formattedNode);
-        } else warn("Node not found in subnet", formattedNode);
+        } else warn("Node not found in subgraph", formattedNode);
       }
     }
   },
@@ -218,8 +218,8 @@ watch(
   { immediate: true },
 );
 
-function updateSubnetFromData(data) {
-  console.log("Updating subnet from data:", data);
+function updateSubgraphFromData(data) {
+  console.log("Updating subgraph from data:", data);
   setNodes(data.nodes || []);
   setEdges(data.edges || []);
 
@@ -237,14 +237,14 @@ function updateSubnetFromData(data) {
 function selectDirection(direction, layout = false) {
   selectedDirection.value = direction;
   if (layout) {
-    layoutSubnet(direction);
+    layoutSubgraph(direction);
   } else {
     nodes.value = affectDirection(getNodes.value, direction);
   }
 }
 
-async function layoutSubnet(direction) {
-  console.log("layouting subnet with", direction);
+async function layoutSubgraph(direction) {
+  console.log("layouting subgraph with", direction);
   const currentNodes = getNodes.value;
   const currentEdges = getEdges.value;
 
@@ -256,7 +256,7 @@ async function layoutSubnet(direction) {
     });
     return;
   } else if (currentNodes.length === 0 || currentEdges.length === 0) {
-    console.warn("Nodes or edges are empty, cannot layout subnet");
+    console.warn("Nodes or edges are empty, cannot layout subgraph");
     return;
   }
   nodes.value = layout(currentNodes, currentEdges, direction);
@@ -266,7 +266,7 @@ async function layoutSubnet(direction) {
   });
 }
 
-function exportSubnet() {
+function exportSubgraph() {
   if (!getNodes.value.length) {
     console.warn("No nodes to export");
     return;
@@ -289,9 +289,9 @@ function exportSubnet() {
   }));
   edges = edges.filter((edge) => edge.source && edge.target);
 
-  const subnetData = { nodes, edges };
-  console.log("Exporting subnet data:", subnetData);
-  const blob = new Blob([JSON.stringify(subnetData, null, 2)], {
+  const subgraphData = { nodes, edges };
+  console.log("Exporting subgraph data:", subgraphData);
+  const blob = new Blob([JSON.stringify(subgraphData, null, 2)], {
     type: "application/json",
   });
   const currentDate = new Date();
@@ -401,7 +401,7 @@ const onNodesChange = async (changes) => {
         const token = getAccessToken();
         try {
           const response = await api.delete(
-            `${import.meta.env.VITE_BACKEND_URL}/node/${node_id}`,
+            `${import.meta.env.VITE_BACKEND_URL}/nodes/${node_id}`,
             token ? { headers: { Authorization: `Bearer ${token}` } } : {},
           );
         } catch (error) {
@@ -446,7 +446,7 @@ const onEdgesChange = async (changes) => {
         const token = getAccessToken();
         try {
           const response = await api.delete(
-            `${import.meta.env.VITE_BACKEND_URL}/edge/${source_id}/${target_id}`,
+            `${import.meta.env.VITE_BACKEND_URL}/edges/${source_id}/${target_id}`,
             { edge_type: edge_type },
             token ? { headers: { Authorization: `Bearer ${token}` } } : {},
           );
@@ -631,7 +631,7 @@ async function handleSearchResultClick(id, event) {
   console.log("search result clicked", id);
   try {
     const response = await api.get(
-      `${import.meta.env.VITE_BACKEND_URL}/node/${id}/`,
+      `${import.meta.env.VITE_BACKEND_URL}/nodes/${id}/`,
     );
     const node = response.data;
     // console.log("Fetched node:", node);
@@ -820,7 +820,7 @@ onEdgeMouseLeave(({ edge }) => {
 </script>
 
 <template>
-  <div class="subnet-renderer">
+  <div class="subgraph-renderer">
     <VueFlow
       :nodes="nodes"
       :edges="edges"
@@ -959,7 +959,7 @@ onEdgeMouseLeave(({ edge }) => {
         position="top-right"
         style="margin-top: 72px; margin-right: 20px"
       >
-        <ControlButton title="Export subnet as JSON" @click="exportSubnet">
+        <ControlButton title="Export subgraph as JSON" @click="exportSubgraph">
           <!-- style="background-color: var(--node-color); border-color: var(--node-color);" -->
           <Icon name="export" />
         </ControlButton>
@@ -969,7 +969,7 @@ onEdgeMouseLeave(({ edge }) => {
 </template>
 
 <style>
-.subnet-renderer {
+.subgraph-renderer {
   flex-grow: 1;
   border: 1px solid var(--border-color);
   margin: 1px;
@@ -1090,7 +1090,7 @@ onEdgeMouseLeave(({ edge }) => {
   width: 10px; /* Icon size */
   height: 10px;
 }
-.subnet-renderer {
+.subgraph-renderer {
   width: 100%; /* Ensure it fits inside the parent */
   height: 99.5%;
   min-height: 300px;

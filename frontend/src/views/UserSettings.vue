@@ -62,7 +62,7 @@ export default {
       if (token) {
         try {
           const response = await api.patch(
-            `${import.meta.env.VITE_BACKEND_URL}/user/preferences`,
+            `${import.meta.env.VITE_BACKEND_URL}/users/preferences`,
             { theme: newTheme },
             { headers: { Authorization: `Bearer ${token}` } },
           );
@@ -78,7 +78,7 @@ export default {
       error.value = null;
       try {
         const response = await api.get(
-          `${import.meta.env.VITE_BACKEND_URL}/user/me`,
+          `${import.meta.env.VITE_BACKEND_URL}/users/me`,
           { headers: { Authorization: `Bearer ${token}` } },
         );
         user.value = response.data;

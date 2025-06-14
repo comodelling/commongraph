@@ -79,8 +79,8 @@
     </div>
 
     <div class="right-panel">
-      <SubnetRenderer
-        :data="subnetData"
+      <SubgraphRenderer
+        :data="subgraphData"
         @nodeClick="updateNodeFromBackend"
         @edgeClick="updateEdgeFromBackend"
         @newNodeCreated="openNewlyCreatedNode"
@@ -98,7 +98,7 @@ import { useConfig } from "../composables/useConfig";
 import NodeInfo from "../components/NodeInfo.vue";
 import EdgeInfo from "../components/EdgeInfo.vue";
 import ElementRating from "../components/ElementRating.vue";
-import SubnetRenderer from "../components/SubnetRenderer.vue";
+import SubgraphRenderer from "../components/SubgraphRenderer.vue";
 import {
   formatFlowEdgeProps,
   formatFlowNodeProps,
@@ -110,7 +110,7 @@ export default {
     NodeInfo,
     EdgeInfo,
     ElementRating,
-    SubnetRenderer,
+    SubgraphRenderer,
   },
   setup() {
     const { nodeTypes, edgeTypes, defaultNodeType} = useConfig()
@@ -125,7 +125,7 @@ export default {
       edge: undefined,
       updatedNode: undefined,
       updatedEdge: undefined,
-      subnetData: {},
+      subgraphData: {},
       ratings: {},
       causalDirection: "LeftToRight",
     };
@@ -188,19 +188,19 @@ export default {
       formattedNode.label = "New Node";
       // small delay so VueFlow has time to mount
       setTimeout(() => {
-        this.subnetData = { nodes: [formattedNode], edges: [] };
+        this.subgraphData = { nodes: [formattedNode], edges: [] };
       }, 45);
     } else {
-      this.fetchElementAndSubnetData();
+      this.fetchElementAndSubgraphData();
     }
   },
   methods: {
-    async fetchElementAndSubnetData() {
-      console.log("fetchElementAndSubnetData");
+    async fetchElementAndSubgraphData() {
+      console.log("fetchElementAndSubgraphData");
       try {
         const seed = this.nodeId || this.sourceId || this.targetId;
         const response = await api.get(
-          `${import.meta.env.VITE_BACKEND_URL}/subnet/${seed}`,
+          `${import.meta.env.VITE_BACKEND_URL}/graph/${seed}`,
           { params: { levels: 10 } },
         );
         let fetched_nodes = response.data.nodes || [];
@@ -224,55 +224,47 @@ export default {
                 edge.target === parseInt(this.targetId),
             ) || null;
         }
-        // Build subnetData using formatted nodes/edges.
-        this.subnetData = {
+        // Build subgraphData using formatted nodes/edges.
+        this.subgraphData = {
           nodes: fetched_nodes.map((node) => formatFlowNodeProps(node)),
           edges: updatedEdges.map((edge) => formatFlowEdgeProps(edge)),
         };
       } catch (error) {
-        console.error("Error fetching induced subnet:", error);
+        console.error("Error fetching induced subgraph:", error);
         this.node = null;
         this.edge = null;
-        this.subnetData = { nodes: [], edges: [] };
+        this.subgraphData = { nodes: [], edges: [] };
       }
     },
     async fetchNodeRatings(nodeIds) {
       if (!nodeIds.length) return;
       try {
-        const response = await api.get(
-          `${import.meta.env.VITE_BACKEND_URL}/rating/nodes/median`,
-          { params: { node_ids: nodeIds } },
-        );
-        this.ratings = response.data; // Ratings stored separately
-        console.log("Fetched ratings:", this.ratings);
-        // Once ratings are fetched, update the node colours.
-      } catch (error) {
-        console.error("Error fetching node ratings:", error);
+        const { data } = await api.get("/nodes/ratings/median", {
+          params: { node_ids: nodeIds },
+        });
+        this.ratings = data;
+        console.log("Fetched node ratings:", this.ratings);
+      } catch (err) {
+        console.error("Error fetching node ratings:", err);
       }
     },
 
     async fetchEdgeRatings(edges) {
       if (!edges.length) return edges;
       try {
-        // Build an array of keys from edges in the form "source-target"
-        const edgeKeys = edges.map((edge) => `${edge.source}-${edge.target}`);
-        const response = await api.get(
-          `${import.meta.env.VITE_BACKEND_URL}/rating/edges/median`,
-          { params: { edge_ids: edgeKeys } },
+        const edgeKeys = edges.map((e) => `${e.source}-${e.target}`);
+        const { data: edgeRatings } = await api.get(
+          "/edges/ratings/median",
+          { params: { edge_ids: edgeKeys } }
         );
-        const edgeRatings = response.data; // Expecting an object keyed by "source-target"
-        // Update each edge with the median rating, stored as causal_strength_rating.
         return edges.map((edge) => {
           const key = `${edge.source}-${edge.target}`;
-          edge.causal_strength =
-            edgeRatings[key] && edgeRatings[key].median_rating
-              ? edgeRatings[key].median_rating
-              : null;
+          edge.causal_strength = edgeRatings[key]?.median_rating ?? null;
           return edge;
         });
-      } catch (error) {
-        console.error("Error fetching edge ratings:", error);
-        return edges; // Fallback: return original edges
+      } catch (err) {
+        console.error("Error fetching edge ratings:", err);
+        return edges;
       }
     },
     updateNodesWithRatings(rawNodes) {
@@ -289,7 +281,7 @@ export default {
     async updateNodeFromBackend(node_id) {
       try {
         const response = await api.get(
-          `${import.meta.env.VITE_BACKEND_URL}/node/${node_id}`,
+          `${import.meta.env.VITE_BACKEND_URL}/nodes/${node_id}`,
         );
         this.node = response.data || undefined;
       } catch (error) {
@@ -300,7 +292,7 @@ export default {
     async updateEdgeFromBackend(source_id, target_id) {
       try {
         const response = await api.get(
-          `${import.meta.env.VITE_BACKEND_URL}/edge/${source_id}/${target_id}`,
+          `${import.meta.env.VITE_BACKEND_URL}/edges/${source_id}/${target_id}`,
         );
         this.edge = response.data || undefined;
       } catch (error) {
@@ -333,28 +325,22 @@ export default {
       };
       this.$router.push({ name: "NodeEdit", params: { id: newNode.id } });
     },
-    async openNewlyCreatedEdge(newEdge) {
-      const { edgeTypes } = useConfig();
-      const allowed = edgeTypes.value[newEdge.data.edge_type].properties || [];
-      console.log("Allowed edge props:", allowed);
-
+    openNewlyCreatedEdge(newEdge) {
+      // use this.edgeTypes instead of calling useConfig() again
+      const allowed = this.edgeTypes[newEdge.data.edge_type].properties || [];
       this.edge = {
         source: parseInt(newEdge.data.source),
         target: parseInt(newEdge.data.target),
         edge_type: newEdge.data.edge_type,
-        // references: [],
         new: true,
       };
-      if (allowed.includes("description")) 
-        this.edge.description = "";
-      if (allowed.includes("references"))
-        this.edge.references = [];
-
+      if (allowed.includes("description"))    this.edge.description = "";
+      if (allowed.includes("references"))     this.edge.references = [];
       this.$router.push({
         name: "EdgeEdit",
         params: {
-          source_id: parseInt(newEdge.data.source),
-          target_id: parseInt(newEdge.data.target)
+          source_id: this.edge.source,
+          target_id: this.edge.target,
         },
       });
     },
@@ -392,7 +378,7 @@ export default {
   /* background-color: var(--background-color); */
 }
 
-/* Right panel for subnet renderer; ensures full available space */
+/* Right panel for subgraph renderer; ensures full available space */
 .right-panel {
   flex: 1;
   padding: 3px 9px 4px 2px;

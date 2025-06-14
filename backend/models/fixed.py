@@ -1,13 +1,13 @@
-from typing import Annotated, Dict, Any
-from enum import Enum
 import datetime
+from typing import Annotated, Any, Dict
+from enum import Enum
 
 from pydantic import model_validator
 from sqlalchemy import JSON, Column
-from sqlmodel import SQLModel, Field
+from sqlmodel import Field, SQLModel
 
-from config import valid_node_types, valid_edge_types
-from properties import LikertScale
+from backend.properties import LikertScale
+
 
 NodeId = Annotated[
     int,
@@ -16,72 +16,6 @@ NodeId = Annotated[
         ge=0,
     ),
 ]
-
-
-class NodeBase(SQLModel):
-    """Base Node model"""
-    node_id: NodeId | None = None  # node id is not created by client
-    node_type: str
-
-    @model_validator(mode="before")
-    def check_node_type(cls, values):
-        # if we’re already dealing with a built model, skip this validator:
-        if not isinstance(values, dict):
-            return values
-        nt = values.get("node_type")
-        if nt and nt not in valid_node_types():
-            raise ValueError(f"{nt!r} not in configured node_types")
-        return values
-
-
-class PartialNodeBase(NodeBase):
-    """Partial Node model
-    None here might mean that the field is not present in the request
-    """
-
-    node_id: NodeId
-    node_type: str | None = None
-
-
-class EdgeBase(SQLModel):
-    """Base Edge model"""
-    edge_type: str
-    source: NodeId
-    target: NodeId
-
-    @model_validator(mode="before")
-    def check_edge_type(cls, values):
-        if not isinstance(values, dict):
-            return values
-        et = values.get("edge_type")
-        if et and et not in valid_edge_types():
-            raise ValueError(f"{et!r} not in configured edge_types")
-        return values
-
-
-class PartialEdgeBase(EdgeBase):
-    edge_type: str | None = None
-
-
-class SubnetBase(SQLModel):
-    """Subnet model"""
-
-    nodes: list[NodeBase | dict]
-    edges: list[EdgeBase | dict]
-
-
-class NetworkExportBase(SQLModel):
-    """Network Export model"""
-
-    commongraph_version: str
-    timestamp: datetime.datetime
-    nodes: list[NodeBase | dict]
-    edges: list[EdgeBase | dict]
-
-
-class MigrateLabelRequest(SQLModel):
-    property_name: str
-
 
 class User(SQLModel, table=True):
     """
@@ -173,6 +107,10 @@ class GraphHistoryEvent(SQLModel, table=True):
         return values
 
 
+class MigrateLabelRequest(SQLModel):
+    property_name: str
+
+
 class RatingType(str, Enum):
     support = "support"
     causal_strength = "causal_strength"
@@ -208,3 +146,5 @@ class RatingEvent(SQLModel, table=True):
                 "For entity_type 'edge', both source_id and target_id must be provided."
             )
         return values
+
+

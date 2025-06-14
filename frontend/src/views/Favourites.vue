@@ -41,14 +41,14 @@ export default {
     const fetchFavourites = async () => {
       try {
         // Get favourite node IDs from the user's preferences
-        const response = await api.get("/user/me");
+        const response = await api.get("/users/me");
         const favouriteIds = response.data.preferences?.favourites || [];
 
         // For each favourite id, fetch node details (title and scope).
         const nodes = await Promise.all(
           favouriteIds.map(async (nodeId) => {
             try {
-              const res = await api.get(`/node/${nodeId}`);
+              const res = await api.get(`/nodes/${nodeId}`);
               return res.data;
             } catch (err) {
               console.error("Error fetching node details for id", nodeId);

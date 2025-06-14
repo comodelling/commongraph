@@ -1,14 +1,14 @@
 import axios from "axios";
-// import * as JWT from "jwt-decode";
-// import { default as jwtDecode } from "jwt-decode";
+import qs    from "qs";           // <— new import
 import { jwtDecode } from "jwt-decode";
-
 import { useAuth } from "./composables/useAuth";
 
 const { getAccessToken, getRefreshToken, setTokens, clearTokens } = useAuth();
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_BACKEND_URL,
+  paramsSerializer: params =>    // <— add this block
+    qs.stringify(params, { arrayFormat: "repeat" }),
 });
 
 // Request interceptor to add token and refresh if needed
@@ -17,7 +17,6 @@ api.interceptors.request.use(
     let token = getAccessToken();
     if (token) {
       try {
-        // const decoded = JWT.default(token);
         const decoded = jwtDecode(token);
         const currentTime = Date.now() / 1000;
         if (decoded.exp < currentTime) {

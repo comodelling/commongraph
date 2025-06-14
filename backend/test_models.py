@@ -2,7 +2,7 @@ import pytest
 import warnings
 from pydantic import ValidationError
 
-from models import NodeBase, EdgeBase
+from backend.models.base import NodeBase, EdgeBase
 
 
 correct_node_types = [

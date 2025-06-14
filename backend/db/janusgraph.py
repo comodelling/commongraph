@@ -1,5 +1,6 @@
 import warnings
 import logging
+from contextlib import contextmanager
 
 from fastapi import HTTPException, Query
 from gremlin_python.process.anonymous_traversal import traversal
@@ -11,17 +12,16 @@ from gremlin_python.structure.graph import Vertex as Gremlin_vertex
 from janusgraph_python.driver.serializer import JanusGraphSONSerializersV3d0
 from janusgraph_python.process.traversal import Text
 
-from contextlib import contextmanager
-from models import (
+from backend.models.base import (
     NodeBase,
     EdgeBase,
-    SubnetBase,
-    NodeId,
+    SubgraphBase,
     PartialNodeBase,
     EdgeBase,
 )
-from properties import NodeStatus
-from .base import GraphDatabaseInterface
+from backend.models.fixed import NodeId
+from backend.properties import NodeStatus
+from backend.db.base import GraphDatabaseInterface
 
 
 class JanusGraphDB(GraphDatabaseInterface):
@@ -46,29 +46,29 @@ class JanusGraphDB(GraphDatabaseInterface):
         finally:
             connection.close()
 
-    def get_whole_network(self) -> SubnetBase:
+    def get_whole_graph(self) -> SubgraphBase:
         with self.connection() as g:
             nodes = [convert_gremlin_vertex(vertex) for vertex in g.V().to_list()]
             edges = [convert_gremlin_edge(edge) for edge in g.E().to_list()]
-        return SubnetBase(nodes=nodes, edges=edges)
+        return SubgraphBase(nodes=nodes, edges=edges)
 
-    def get_network_summary(self) -> dict:
+    def get_graph_summary(self) -> dict:
         with self.connection() as g:
             vertex_count = g.V().count().next()
             edge_count = g.E().count().next()
         return {"nodes": vertex_count, "edges": edge_count}
 
-    def reset_whole_network(self) -> None:
+    def reset_whole_graph(self) -> None:
         with self.connection() as g:
             warnings.warn("Deleting all nodes and edges in the database!")
             g.V().drop().iterate()
 
-    def update_subnet(self, subnet: SubnetBase) -> SubnetBase:
+    def update_graph(self, subgraph: SubgraphBase) -> SubgraphBase:
         with self.connection() as g:
             mapping = {}
             nodes_out = []
             edges_out = []
-            for node in subnet.nodes:
+            for node in subgraph.nodes:
                 try:
                     if (
                         node.node_id is not None and g.V(node.node_id).has_next()
@@ -89,7 +89,7 @@ class JanusGraphDB(GraphDatabaseInterface):
                     nodes_out.append(node_out)
                 except StopIteration:
                     ...
-            for edge in subnet.edges:
+            for edge in subgraph.edges:
                 try:
                     if (
                         g.V(edge.source)
@@ -118,7 +118,7 @@ class JanusGraphDB(GraphDatabaseInterface):
 
             return {"nodes": nodes_out, "edges": edges_out}
 
-    def get_induced_subnet(self, node_id: int, levels: int) -> SubnetBase:
+    def get_induced_subgraph(self, node_id: int, levels: int) -> SubgraphBase:
         with self.connection() as g:
             try:
                 # Start traversal from the given node

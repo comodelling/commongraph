@@ -23,7 +23,7 @@ export default {
           .trim() || "#000";
 
       // 1) fetch schema
-      const { data } = await api.get("/schema");
+      const { data } = await api.get("/graph/schema");
       const types: string[] = data.node_types;
       const relations: {
         source_type: string;

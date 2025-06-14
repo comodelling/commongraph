@@ -6,9 +6,10 @@ import json
 from fastapi.testclient import TestClient
 import threading
 
-from main import app, get_graph_db_connection, get_graph_history_db_connection
-from database.janusgraph import JanusGraphDB
-from database.postgresql import GraphHistoryPostgreSQLDB
+from backend.db.connections import get_graph_db, get_graph_history_db
+from backend.main import app
+from backend.db.janusgraph import JanusGraphDB
+from backend.db.postgresql import GraphHistoryPostgreSQLDB
 
 
 POSTGRES_TEST_DB_URL = "postgresql://postgres:postgres@localhost/testdb"
@@ -26,7 +27,7 @@ def graph_db(request):
         try:
             graph_db = JanusGraphDB("localhost", "g_test")
             with graph_db.connection():
-                graph_db.reset_whole_network()
+                graph_db.reset_whole_graph()
         except Exception:
             pytest.skip("JanusGraph server not running.")
     elif db_type is None:
@@ -41,20 +42,20 @@ def graph_db(request):
 def override_db_connections(graph_db):
 
     graph_history_db = GraphHistoryPostgreSQLDB(POSTGRES_TEST_DB_URL)
-    graph_history_db.reset_whole_network()
+    graph_history_db.reset_whole_graph()
 
-    app.dependency_overrides[get_graph_history_db_connection] = lambda: graph_history_db
+    app.dependency_overrides[get_graph_history_db] = lambda: graph_history_db
 
     # Only override the graph DB dependency if ENABLE_GRAPH_DB is true.
     if graph_db is not None:
-        app.dependency_overrides[get_graph_db_connection] = lambda: graph_db
+        app.dependency_overrides[get_graph_db] = lambda: graph_db
     else:
-        app.dependency_overrides[get_graph_db_connection] = lambda: None
+        app.dependency_overrides[get_graph_db] = lambda: None
 
     yield
 
-    app.dependency_overrides.pop(get_graph_db_connection, None)
-    app.dependency_overrides.pop(get_graph_history_db_connection, None)
+    app.dependency_overrides.pop(get_graph_db, None)
+    app.dependency_overrides.pop(get_graph_history_db, None)
 
 
 @pytest.fixture(scope="module")
@@ -65,10 +66,10 @@ def client(override_db_connections):
 @pytest.fixture(scope="module")
 def initial_node(graph_db, client):
     warnings.filterwarnings("ignore", category=UserWarning)
-    client.delete("/network")
+    client.delete("/graph")
 
     result = client.post(
-        "/node",
+        "/nodes",
         json={
             "title": "test",
             "node_type": "objective",
@@ -81,7 +82,7 @@ def initial_node(graph_db, client):
 
     yield node_dict
     warnings.filterwarnings("ignore", category=UserWarning)
-    client.delete("/network")
+    client.delete("/graph")
 
 
 def test_read_main(client):
@@ -89,18 +90,18 @@ def test_read_main(client):
     assert response.status_code == 200, print(response.json())
 
 
-def test_get_whole_network(graph_db, client):
-    response = client.get("/network")
+def test_get_whole_graph(graph_db, client):
+    response = client.get("/graph")
     assert response.status_code == 200, print(response.json())
     assert "nodes" in response.json()
     assert "edges" in response.json()
     # assert len(response.json()["nodes"])
 
 
-def test_reset_whole_network(graph_db, client):
+def test_reset_whole_graph(graph_db, client):
     # Ensure there are nodes and edges before reset
     # client.post(
-    #     "/node",
+    #     "/nodes",
     #     json={
     #         "title": "test",
     #         "node_type": "objective",
@@ -109,33 +110,33 @@ def test_reset_whole_network(graph_db, client):
     #     },
     # )
     warnings.filterwarnings("ignore", category=UserWarning)
-    response = client.delete("/network")
+    response = client.delete("/graph")
     assert response.status_code == 205
 
-    summary_response = client.get("/network/summary")
+    summary_response = client.get("/graph/summary")
     summary = json.loads(summary_response.content.decode("utf-8"))
     assert summary["nodes"] == 0
     assert summary["edges"] == 0
 
 
-def test_update_subnet(graph_db, client):
-    n_nodes = json.loads(client.get("/network/summary").content.decode("utf-8"))[
+def test_update_subgraph(graph_db, client):
+    n_nodes = json.loads(client.get("/graph/summary").content.decode("utf-8"))[
         "nodes"
     ]
     response = client.put(
-        "/subnet",
+        "/graph",
         json={"nodes": [{"title": "test", "scope": "test scope"}], "edges": []},
     )
     assert response.status_code == 200, print(response.json())
     assert (
-        json.loads(client.get("/network/summary").content.decode("utf-8"))["nodes"]
+        json.loads(client.get("/graph/summary").content.decode("utf-8"))["nodes"]
         == n_nodes + 1
     )
 
 
-def test_get_subnet(initial_node, client):
+def test_get_subgraph(initial_node, client):
     node_id = initial_node["node_id"]
-    response = client.get(f"/subnet/{node_id}")
+    response = client.get(f"/graph/{node_id}")
     assert response.status_code == 200, print(response.json())
     assert node_id in [
         node["node_id"]
@@ -143,8 +144,8 @@ def test_get_subnet(initial_node, client):
     ]
 
 
-def test_network_summary(graph_db, client):
-    response = client.get("/network/summary")
+def test_graph_summary(graph_db, client):
+    response = client.get("/graph/summary")
     assert response.status_code == 200, print(response.json())
 
 
@@ -155,29 +156,29 @@ def test_get_nodes_list(graph_db, client):
 
 
 def test_create_and_delete_node(graph_db, client):
-    n_nodes = json.loads(client.get("/network/summary").content.decode("utf-8"))[
+    n_nodes = json.loads(client.get("/graph/summary").content.decode("utf-8"))[
         "nodes"
     ]
     response = client.post(
-        "/node",
+        "/nodes",
         json={"title": "test", "scope": "unscoped", "description": "test"},
     )
     assert response.status_code == 201, print(response.json())
     assert (
-        json.loads(client.get("/network/summary").content.decode("utf-8"))["nodes"]
+        json.loads(client.get("/graph/summary").content.decode("utf-8"))["nodes"]
         == n_nodes + 1
     )
 
     node_id = json.loads(response.content.decode("utf-8"))["node_id"]
 
-    response = client.get(f"/node/{node_id}")
+    response = client.get(f"/nodes/{node_id}")
     assert response.status_code == 200, print(response.json())
 
     warnings.filterwarnings("ignore", category=UserWarning)
-    response = client.delete(f"/node/{node_id}")
+    response = client.delete(f"/nodes/{node_id}")
     assert response.status_code == 200, print(response.json())
     assert (
-        json.loads(client.get("/network/summary").content.decode("utf-8"))["nodes"]
+        json.loads(client.get("/graph/summary").content.decode("utf-8"))["nodes"]
         == n_nodes
     )
 
@@ -185,7 +186,7 @@ def test_create_and_delete_node(graph_db, client):
 @pytest.mark.skip
 def test_create_node_specific_id(graph_db, client):
     response = client.post(
-        "/node",
+        "/nodes",
         json={
             "title": "test",
             "node_type": "objective",
@@ -195,13 +196,13 @@ def test_create_node_specific_id(graph_db, client):
         },
     )
     assert response.status_code == 201, print(response.json())
-    response = client.get(f"/node/777777")
+    response = client.get(f"/nodes/777777")
     assert response.status_code == 200, print(response.json())
 
 
 def test_create_node_with_missing_fields(client):
     response = client.post(
-        "/node",
+        "/nodes",
         json={
             "node_type": "objective",
             "scope": "test scope",
@@ -214,7 +215,7 @@ def test_create_node_with_missing_fields(client):
 
 def create_node_concurrently(client, title, results, index):
     response = client.post(
-        "/node",
+        "/nodes",
         json={
             "title": title,
             "node_type": "objective",
@@ -242,22 +243,22 @@ def test_concurrent_node_creations(client):
 
 
 def test_get_random_node(graph_db, client):
-    response = client.get("/node/random")
+    response = client.get("/nodes/random")
     assert response.status_code == 200, print(response.json())
 
 
 def test_get_node_wrong_id(initial_node, client):
-    response = client.get(f"/node/{initial_node['node_id']}")
+    response = client.get(f"/nodes/{initial_node['node_id']}")
     assert response.status_code == 200, print(response.json())
 
-    response = client.get("/node/999999999")
+    response = client.get("/nodes/999999999")
     assert response.status_code == 404, print(response.json())
 
 
 def test_search_nodes(graph_db, client):
     # Ensure the node with title "test" exists
     response = client.post(
-        "/node",
+        "/nodes",
         json={
             "title": "testtesttest",
             "node_type": "objective",
@@ -280,7 +281,7 @@ def test_search_nodes(graph_db, client):
 
 def test_search_nodes_with_node_type(graph_db, client):
     client.post(
-        "/node",
+        "/nodes",
         json={
             "title": "Objective Node",
             "node_type": "objective",
@@ -288,11 +289,11 @@ def test_search_nodes_with_node_type(graph_db, client):
         },
     )
     client.post(
-        "/node",
+        "/nodes",
         json={"title": "Action Node", "node_type": "action", "scope": "test scope"},
     )
     client.post(
-        "/node",
+        "/nodes",
         json={
             "title": "Potentiality Node",
             "node_type": "potentiality",
@@ -321,7 +322,7 @@ def test_search_nodes_with_node_type(graph_db, client):
 
 def test_update_node(initial_node, client):
     response = client.put(
-        "/node",
+        "/nodes",
         json={
             "node_id": initial_node["node_id"],
             "title": "test modified",
@@ -331,12 +332,12 @@ def test_update_node(initial_node, client):
     assert response.status_code == 200, print(response.json())
     assert json.loads(response.content.decode("utf-8"))["title"] == "test modified"
 
-    response = client.put("/node", json={"title": "test", "description": "test"})
+    response = client.put("/nodes", json={"title": "test", "description": "test"})
     assert response.status_code == 422, print(response.json())
 
 
 def test_delete_node_wrong_id(graph_db, client):
-    response = client.delete("/node/999999999")
+    response = client.delete("/nodes/999999999")
     assert response.status_code == 404, print(response.json())
 
 
@@ -346,11 +347,11 @@ def test_get_edge_list(graph_db, client):
 
 
 def test_create_update_and_delete_edge(initial_node, client):
-    n_edges = json.loads(client.get("/network/summary").content.decode("utf-8"))[
+    n_edges = json.loads(client.get("/graph/summary").content.decode("utf-8"))[
         "edges"
     ]
     response = client.post(
-        "/edge",
+        "/edges",
         json={
             "edge_type": "imply",
             "source": initial_node["node_id"],
@@ -359,12 +360,12 @@ def test_create_update_and_delete_edge(initial_node, client):
     )
     assert response.status_code == 201, print(response.json())
     assert (
-        json.loads(client.get("/network/summary").content.decode("utf-8"))["edges"]
+        json.loads(client.get("/graph/summary").content.decode("utf-8"))["edges"]
         == n_edges + 1
     )
 
     response = client.put(
-        "/edge",
+        "/edges",
         json={
             "edge_type": "imply",
             "source": initial_node["node_id"],
@@ -375,18 +376,18 @@ def test_create_update_and_delete_edge(initial_node, client):
     assert response.status_code == 200, print(response.json())
 
     response = client.delete(
-        f"/edge/{initial_node['node_id']}/{initial_node['node_id']}",
+        f"/edges/{initial_node['node_id']}/{initial_node['node_id']}",
         params={"edge_type": "imply"},
     )
     assert response.status_code == 200, print(response.json())
 
-    response = client.get(f"/edge/{initial_node['node_id']}/{initial_node['node_id']}")
+    response = client.get(f"/edges/{initial_node['node_id']}/{initial_node['node_id']}")
     assert response.status_code == 404, print(response.json())
 
 
 def test_create_edge_with_nonexistent_nodes(graph_db, client):
     response = client.post(
-        "/edge",
+        "/edges",
         json={
             "edge_type": "imply",
             "source": 999999,  # Nonexistent source
@@ -406,7 +407,7 @@ def test_find_edges(graph_db, client):
 
 def test_create_node_with_references(graph_db, client):
     response = client.post(
-        "/node",
+        "/nodes",
         json={
             "title": "test node with references",
             "description": "test description",
@@ -420,12 +421,12 @@ def test_create_node_with_references(graph_db, client):
     assert len(node["references"]) == 3
     assert set(node["references"]) == {"ref1", "ref2", "ref3"}
 
-    response = client.get("/network")
+    response = client.get("/graph")
 
 
 def test_update_node_with_references(graph_db, client):
     response = client.post(
-        "/node",
+        "/nodes",
         json={
             "title": "test node for update",
             "node_type": "potentiality",
@@ -439,7 +440,7 @@ def test_update_node_with_references(graph_db, client):
     node_id = node["node_id"]
 
     response = client.put(
-        "/node",
+        "/nodes",
         json={
             "node_id": node_id,
             "title": "updated title",
@@ -456,7 +457,7 @@ def test_update_node_with_references(graph_db, client):
 
 def test_create_edge_with_references(initial_node, client):
     response = client.post(
-        "/edge",
+        "/edges",
         json={
             "edge_type": "imply",
             "source": initial_node["node_id"],
@@ -474,7 +475,7 @@ def test_create_edge_with_references(initial_node, client):
 def test_update_edge_with_references(initial_node, client):
 
     response = client.post(
-        "/edge",
+        "/edges",
         json={
             "edge_type": "require",
             "source": initial_node["node_id"],
@@ -486,7 +487,7 @@ def test_update_edge_with_references(initial_node, client):
     edge = json.loads(response.content.decode("utf-8"))
 
     response = client.put(
-        "/edge",
+        "/edges",
         json={
             "edge_type": "imply",
             "source": initial_node["node_id"],

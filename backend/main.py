@@ -81,46 +81,6 @@ def get_config():
     }
     
 
-@app.get("/schema")
-def get_schema():
-    """Return the schema of the graph database, as a graph."""
-    edge_types = []
-    for edge_type in EDGE_TYPE_PROPS.keys():
-        if edge_type in EDGE_TYPE_BETWEEN and EDGE_TYPE_BETWEEN[edge_type] is not None:
-            logger.info(f"EDGE_TYPE_BETWEEN: {EDGE_TYPE_BETWEEN}")
-            for node_type1, node_type2 in EDGE_TYPE_BETWEEN[edge_type]:
-                if node_type1 == node_type2:
-                    #TODO: check this in config read
-                    continue
-                edge_types += [
-                    {
-                        "source_type": node_type1,
-                        "target_type": node_type2,
-                        "label": edge_type,
-                    }
-                ]
-        else:
-            for node_type1 in NODE_TYPE_PROPS.keys():
-                for node_type2 in NODE_TYPE_PROPS.keys():
-                    if node_type1 == node_type2:
-                        continue
-                    edge_types += [
-                        {
-                            "source_type": node_type1,
-                            "target_type": node_type2,
-                            "label": edge_type,
-                        }
-                    ]
-    return {
-        "node_types": list(NODE_TYPE_PROPS.keys()),
-        "edge_types": edge_types,
-    }
-
-
-### root ###
-
-
-
 
 ### ratings ###
 

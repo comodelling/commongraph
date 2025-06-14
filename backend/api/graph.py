@@ -1,15 +1,18 @@
 import datetime
 from typing import Annotated
+import logging
 
 from fastapi import Depends, Query, status, APIRouter
 
 from backend.api.auth import get_current_user
+from backend.config import EDGE_TYPE_BETWEEN, EDGE_TYPE_PROPS, NODE_TYPE_PROPS
 from backend.db.base import GraphDatabaseInterface, GraphHistoryRelationalInterface
 from backend.db.connections import get_graph_db, get_graph_history_db
 from backend.dynamic_models import DynamicGraphExport, DynamicSubgraph
 from backend.models import NodeId, UserRead
 from backend.version import __version__
 
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/graph", tags=["graph"])
 
@@ -67,6 +70,43 @@ def get_graph_summary(
     return db_history.get_graph_summary()
 
 
+@router.get("/schema")
+def get_schema():
+    """Return the schema of the graph database, as a graph."""
+    edge_types = []
+    for edge_type in EDGE_TYPE_PROPS.keys():
+        if edge_type in EDGE_TYPE_BETWEEN and EDGE_TYPE_BETWEEN[edge_type] is not None:
+            logger.info(f"EDGE_TYPE_BETWEEN: {EDGE_TYPE_BETWEEN}")
+            for node_type1, node_type2 in EDGE_TYPE_BETWEEN[edge_type]:
+                if node_type1 == node_type2:
+                    #TODO: check this in config read
+                    continue
+                edge_types += [
+                    {
+                        "source_type": node_type1,
+                        "target_type": node_type2,
+                        "label": edge_type,
+                    }
+                ]
+        else:
+            for node_type1 in NODE_TYPE_PROPS.keys():
+                for node_type2 in NODE_TYPE_PROPS.keys():
+                    if node_type1 == node_type2:
+                        continue
+                    edge_types += [
+                        {
+                            "source_type": node_type1,
+                            "target_type": node_type2,
+                            "label": edge_type,
+                        }
+                    ]
+    return {
+        "node_types": list(NODE_TYPE_PROPS.keys()),
+        "edge_types": edge_types,
+    }
+
+
+# needs to be placed after /schema and /summary
 @router.get("/{node_id}")
 def get_induced_subgraph(
     node_id: NodeId,
@@ -82,3 +122,5 @@ def get_induced_subgraph(
     if db_graph is not None:
         return db_graph.get_induced_subgraph(node_id, levels)
     return db_history.get_induced_subgraph(node_id, levels)
+
+

@@ -1,5 +1,5 @@
 # The allowed origins for the frontend
-ALLOWED_ORIGINS=http://localhost:5173
+ALLOWED_ORIGINS_RAW=http://localhost:5173
 
 # Wether to enable the graph database or not
 ENABLE_GRAPH_DB=false

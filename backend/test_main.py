@@ -6,7 +6,8 @@ import json
 from fastapi.testclient import TestClient
 import threading
 
-from main import app, get_graph_db_connection, get_graph_history_db_connection
+from backend.db.connections import get_graph_db, get_graph_history_db
+from main import app
 from db.janusgraph import JanusGraphDB
 from db.postgresql import GraphHistoryPostgreSQLDB
 
@@ -43,18 +44,18 @@ def override_db_connections(graph_db):
     graph_history_db = GraphHistoryPostgreSQLDB(POSTGRES_TEST_DB_URL)
     graph_history_db.reset_whole_network()
 
-    app.dependency_overrides[get_graph_history_db_connection] = lambda: graph_history_db
+    app.dependency_overrides[get_graph_history_db] = lambda: graph_history_db
 
     # Only override the graph DB dependency if ENABLE_GRAPH_DB is true.
     if graph_db is not None:
-        app.dependency_overrides[get_graph_db_connection] = lambda: graph_db
+        app.dependency_overrides[get_graph_db] = lambda: graph_db
     else:
-        app.dependency_overrides[get_graph_db_connection] = lambda: None
+        app.dependency_overrides[get_graph_db] = lambda: None
 
     yield
 
-    app.dependency_overrides.pop(get_graph_db_connection, None)
-    app.dependency_overrides.pop(get_graph_history_db_connection, None)
+    app.dependency_overrides.pop(get_graph_db, None)
+    app.dependency_overrides.pop(get_graph_history_db, None)
 
 
 @pytest.fixture(scope="module")

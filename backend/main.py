@@ -1,16 +1,21 @@
 import os
-import warnings
-from pathlib import Path as PathlibPath
 from typing import Annotated
 import logging
 import datetime
 import json
 import random
 
-from dotenv import load_dotenv
 from fastapi import Body, Query, Depends, FastAPI, status, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
+from backend.settings import settings
+from backend.version import __version__
+from backend.db.connections import (
+    get_graph_db,
+    get_user_db,
+    get_graph_history_db,
+    get_rating_history_db
+)
 from models import (
     NodeId,
     MigrateLabelRequest,
@@ -22,7 +27,6 @@ from models import (
     LikertScale,
 )
 from properties import NodeStatus
-
 from db.base import (
     GraphDatabaseInterface,
     UserDatabaseInterface,
@@ -30,11 +34,6 @@ from db.base import (
     RatingHistoryRelationalInterface,
 )
 from db.janusgraph import JanusGraphDB
-from db.postgresql import (
-    UserPostgreSQLDB,
-    GraphHistoryPostgreSQLDB,
-    RatingHistoryPostgreSQLDB,
-)
 from auth import router as auth_router
 from auth import get_current_user
 from config import (PLATFORM_NAME, NODE_TYPE_PROPS, EDGE_TYPE_PROPS, EDGE_TYPE_BETWEEN,
@@ -48,43 +47,15 @@ from dynamic_models import (NodeTypeModels,
 
 logger = logging.getLogger(__name__)
 
-
-if os.getenv("DOCKER_ENV"):
-    _version_path = PathlibPath("/app/VERSION")
-    _env_path = PathlibPath("/app/backend/.env")
-elif os.getcwd().endswith("backend"):
-    _version_path = PathlibPath("../VERSION")
-    _env_path = PathlibPath(".env")
-elif os.getcwd().endswith("commongraph"):
-    _version_path = PathlibPath("VERSION")
-    _env_path = PathlibPath("backend/.env")
-else:
-    raise FileNotFoundError("VERSION file not found")
-with open(_version_path) as f:
-    __version__ = f.read().strip()
-
-if _env_path.exists():
-    load_dotenv(dotenv_path=_env_path)
-else:
-    warnings.warn(
-        f".env file not found at {_env_path}, using default environment variables"
-    )
-
-QUOTES_FILE = os.getenv("QUOTES_FILE", "")
-
-origins = (
-    [origin.strip() for origin in os.getenv("ALLOWED_ORIGINS", "").split(",")]
-    if os.getenv("ALLOWED_ORIGINS")
-    else []
-)
-
+QUOTES_FILE = settings.QUOTES_FILE
+origins = settings.ALLOWED_ORIGINS
 
 app = FastAPI(title="CommonGraph API", version=__version__)
 app.include_router(auth_router)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=settings.ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -147,51 +118,6 @@ def get_schema():
     }
 
 
-def get_graph_db_connection(
-    enable_graph_db: str = os.getenv("ENABLE_GRAPH_DB"),
-) -> GraphDatabaseInterface:
-    enable_graph_db = enable_graph_db.lower() in ["true", "True"]
-    if enable_graph_db:
-        logger.info("Using JanusGraph database")
-        janusgraph_host = os.getenv("JANUSGRAPH_HOST", "localhost")
-        traversal_source = os.getenv("TRAVERSAL_SOURCE", "g_test")
-        return JanusGraphDB(janusgraph_host, traversal_source)
-    return None
-
-
-def get_user_db_connection(
-    db_type: str = "postgresql",
-) -> UserDatabaseInterface:
-    if db_type == "postgresql":
-        database_url = os.getenv("POSTGRES_DB_URL")
-        print(f"Using User PostgreSQL database at {database_url}")
-        return UserPostgreSQLDB(database_url)
-    else:
-        raise ValueError(f"Unsupported db type: {db_type} for user_db")
-
-
-def get_graph_history_db_connection(
-    db_type: str = "postgresql",
-) -> GraphHistoryRelationalInterface:
-    if db_type == "postgresql":
-        database_url = os.getenv("POSTGRES_DB_URL")
-        print(f"Using Graph History PostgreSQL database at {database_url}")
-        return GraphHistoryPostgreSQLDB(database_url)
-    else:
-        raise ValueError(f"Unsupported db type: {db_type} for graph_history_db")
-
-
-def get_rating_history_db_connection(
-    db_type: str = "postgresql",
-) -> RatingHistoryRelationalInterface:
-    if db_type == "postgresql":
-        database_url = os.getenv("POSTGRES_DB_URL")
-        print(f"Using Rating History PostgreSQL database at {database_url}")
-        return RatingHistoryPostgreSQLDB(database_url)
-    else:
-        raise ValueError(f"Unsupported db type: {db_type} for graph_history_db")
-
-
 ### root ###
 
 
@@ -205,7 +131,7 @@ async def root():
 
 @app.post("/users", status_code=201)
 def create_user(
-    user: User, db: UserDatabaseInterface = Depends(get_user_db_connection)
+    user: User, db: UserDatabaseInterface = Depends(get_user_db)
 ) -> User:
     """Create a new user."""
     return db.create_user(user)
@@ -213,7 +139,7 @@ def create_user(
 
 @app.get("/users/{username}")
 def get_user(
-    username: str, db: UserDatabaseInterface = Depends(get_user_db_connection)
+    username: str, db: UserDatabaseInterface = Depends(get_user_db)
 ) -> User:
     """Get a user by username."""
     user = db.get_user(username)
@@ -228,7 +154,7 @@ def get_user(
 @app.get("/network")
 def get_whole_network(
     db_history: GraphHistoryRelationalInterface = Depends(
-        get_graph_history_db_connection
+        get_graph_history_db
     ),
 ) -> DynamicNetworkExport:
     """Return full network of nodes and edges from the database."""
@@ -241,7 +167,7 @@ def get_whole_network(
 @app.get("/network/summary")
 def get_network_summary(
     db_history: GraphHistoryRelationalInterface = Depends(
-        get_graph_history_db_connection
+        get_graph_history_db
     ),
 ) -> dict[str, int]:
     """Count nodes and edges."""
@@ -250,9 +176,9 @@ def get_network_summary(
 
 @app.delete("/network", status_code=status.HTTP_205_RESET_CONTENT)
 def reset_whole_network(
-    db_graph: GraphDatabaseInterface | None = Depends(get_graph_db_connection),
+    db_graph: GraphDatabaseInterface | None = Depends(get_graph_db),
     db_history: GraphHistoryRelationalInterface = Depends(
-        get_graph_history_db_connection
+        get_graph_history_db
     ),
     user: UserRead = Depends(get_current_user),
 ) -> None:
@@ -268,9 +194,9 @@ def reset_whole_network(
 @app.put("/subnet")
 def update_subnet(
     subnet: DynamicSubnet,
-    db_graph: GraphDatabaseInterface | None = Depends(get_graph_db_connection),
+    db_graph: GraphDatabaseInterface | None = Depends(get_graph_db),
     db_history: GraphHistoryRelationalInterface = Depends(
-        get_graph_history_db_connection
+        get_graph_history_db
     ),
     user: UserRead = Depends(get_current_user),
 )  -> DynamicSubnet:
@@ -285,9 +211,9 @@ def update_subnet(
 def get_induced_subnet(
     node_id: NodeId,
     levels: Annotated[int, Query(get=0)] = 2,
-    db_graph: GraphDatabaseInterface | None = Depends(get_graph_db_connection),
+    db_graph: GraphDatabaseInterface | None = Depends(get_graph_db),
     db_history: GraphHistoryRelationalInterface = Depends(
-        get_graph_history_db_connection
+        get_graph_history_db
     ),
 ) -> DynamicSubnet:
     """Return the subnet induced from a particular element with an optional limit number of connections.
@@ -310,12 +236,12 @@ def search_nodes(
     tags: list[str] | None = Query(None),
     rating: LikertScale | None = None,
     description: str | None = None,
-    db_graph: GraphDatabaseInterface | None = Depends(get_graph_db_connection),
+    db_graph: GraphDatabaseInterface | None = Depends(get_graph_db),
     db_history: GraphHistoryRelationalInterface = Depends(
-        get_graph_history_db_connection
+        get_graph_history_db
     ),
     db_ratings: RatingHistoryRelationalInterface = Depends(
-        get_rating_history_db_connection
+        get_rating_history_db
     ),
 ) -> list[DynamicNode]: #type: ignore
     """Search in nodes on a field by field level."""
@@ -350,9 +276,9 @@ def search_nodes(
 @app.get("/node/random")
 def get_random_node(
     node_type: str | None = None,
-    db: GraphDatabaseInterface | None = Depends(get_graph_db_connection),
+    db: GraphDatabaseInterface | None = Depends(get_graph_db),
     db_history: GraphHistoryRelationalInterface = Depends(
-        get_graph_history_db_connection
+        get_graph_history_db
     ),
 ) -> DynamicNode: #type: ignore
     """Return a random node with optional node_type."""
@@ -365,7 +291,7 @@ def get_random_node(
 def get_node(
     node_id: NodeId,
     db_history: GraphHistoryRelationalInterface = Depends(
-        get_graph_history_db_connection
+        get_graph_history_db
     ),
 ) -> DynamicNode: #type: ignore
     """Return the node associated with the provided ID."""
@@ -375,9 +301,9 @@ def get_node(
 @app.post("/node", status_code=status.HTTP_201_CREATED)
 def create_node(
     payload: dict = Body(...),
-    db_graph: GraphDatabaseInterface | None = Depends(get_graph_db_connection),
+    db_graph: GraphDatabaseInterface | None = Depends(get_graph_db),
     db_history: GraphHistoryRelationalInterface = Depends(
-        get_graph_history_db_connection
+        get_graph_history_db
     ),
     user: UserRead = Depends(get_current_user),
 ) -> DynamicNode: #type: ignore
@@ -401,9 +327,9 @@ def create_node(
 @app.delete("/node/{node_id}")
 def delete_node(
     node_id: NodeId,
-    db_graph: GraphDatabaseInterface | None = Depends(get_graph_db_connection),
+    db_graph: GraphDatabaseInterface | None = Depends(get_graph_db),
     db_history: GraphHistoryRelationalInterface = Depends(
-        get_graph_history_db_connection
+        get_graph_history_db
     ),
     user: UserRead = Depends(get_current_user),
 ):
@@ -416,9 +342,9 @@ def delete_node(
 @app.put("/node")
 def update_node(
     payload: dict = Body(...),
-    db_graph: GraphDatabaseInterface | None = Depends(get_graph_db_connection),
+    db_graph: GraphDatabaseInterface | None = Depends(get_graph_db),
     db_history: GraphHistoryRelationalInterface = Depends(
-        get_graph_history_db_connection
+        get_graph_history_db
     ),
     user: UserRead = Depends(get_current_user),
 ) -> DynamicNode: #type: ignore
@@ -438,7 +364,7 @@ def update_node(
 def get_node_history(
     node_id: NodeId,
     db_history: GraphHistoryRelationalInterface = Depends(
-        get_graph_history_db_connection
+        get_graph_history_db
     ),
 ) -> list[GraphHistoryEvent]:
     """Return the history of the node associated with the provided ID."""
@@ -451,7 +377,7 @@ def get_node_history(
 @app.get("/edges")
 def get_edge_list(
     db_history: GraphHistoryRelationalInterface = Depends(
-        get_graph_history_db_connection
+        get_graph_history_db
     ),
 ) -> list[DynamicEdge]: #type: ignore
     """Return all edges in the database."""
@@ -464,7 +390,7 @@ def find_edges(
     target_id: NodeId = None,
     edge_type: str = None,
     db_history: GraphHistoryRelationalInterface = Depends(
-        get_graph_history_db_connection
+        get_graph_history_db
     ),
 ) -> list[DynamicEdge]: #type: ignore
     """Return the edge associated with the provided ID."""
@@ -481,7 +407,7 @@ def get_edge(
     source_id: NodeId,
     target_id: NodeId,
     db_history: GraphHistoryRelationalInterface = Depends(
-        get_graph_history_db_connection
+        get_graph_history_db
     ),
 ) -> DynamicEdge: #type: ignore
     """Return the edge associated with the provided ID."""
@@ -491,9 +417,9 @@ def get_edge(
 @app.post("/edge", status_code=201)
 def create_edge(
     payload: dict = Body(...),
-    db_graph: GraphDatabaseInterface | None = Depends(get_graph_db_connection),
+    db_graph: GraphDatabaseInterface | None = Depends(get_graph_db),
     db_history: GraphHistoryRelationalInterface = Depends(
-        get_graph_history_db_connection
+        get_graph_history_db
     ),
     user: UserRead = Depends(get_current_user),
 ) -> DynamicEdge: #type: ignore
@@ -514,9 +440,9 @@ def delete_edge(
     source_id: NodeId,
     target_id: NodeId,
     edge_type: str | None = None,
-    db_graph: GraphDatabaseInterface | None = Depends(get_graph_db_connection),
+    db_graph: GraphDatabaseInterface | None = Depends(get_graph_db),
     db_history: GraphHistoryRelationalInterface = Depends(
-        get_graph_history_db_connection
+        get_graph_history_db
     ),
     user: UserRead = Depends(get_current_user),
 ):
@@ -529,9 +455,9 @@ def delete_edge(
 @app.put("/edge")
 def update_edge(
     payload: dict = Body(...),
-    db_graph: GraphDatabaseInterface | None = Depends(get_graph_db_connection),
+    db_graph: GraphDatabaseInterface | None = Depends(get_graph_db),
     db_history: GraphHistoryRelationalInterface = Depends(
-        get_graph_history_db_connection
+        get_graph_history_db
     ),
     user: UserRead = Depends(get_current_user),
 ) -> DynamicEdge: #type: ignore
@@ -552,7 +478,7 @@ def get_edge_history(
     source_id: NodeId,
     target_id: NodeId,
     db_history: GraphHistoryRelationalInterface = Depends(
-        get_graph_history_db_connection
+        get_graph_history_db
     ),
 ) -> list[GraphHistoryEvent]:
     """Return the history of the edge associated with the provided source and target IDs."""
@@ -565,7 +491,7 @@ def get_edge_history(
 @app.post("/rating/log", status_code=201)
 def log_rating(
     rating: RatingEvent,
-    db: RatingHistoryRelationalInterface = Depends(get_rating_history_db_connection),
+    db: RatingHistoryRelationalInterface = Depends(get_rating_history_db),
     user: UserRead = Depends(get_current_user),
 ) -> RatingEvent:
     """
@@ -579,7 +505,7 @@ def log_rating(
 def get_node_rating(
     node_id: int,
     rating_type: RatingType = RatingType.support,
-    db: RatingHistoryRelationalInterface = Depends(get_rating_history_db_connection),
+    db: RatingHistoryRelationalInterface = Depends(get_rating_history_db),
     user: UserRead = Depends(get_current_user),
 ) -> RatingEvent | None:
     """
@@ -592,7 +518,7 @@ def get_node_rating(
 def get_node_ratings(
     node_id: int,
     rating_type: RatingType = RatingType.support,
-    db: RatingHistoryRelationalInterface = Depends(get_rating_history_db_connection),
+    db: RatingHistoryRelationalInterface = Depends(get_rating_history_db),
 ) -> dict:
     """
     Retrieve all ratings for a given node.
@@ -607,7 +533,7 @@ def get_edge_rating(
     source_id: int,
     target_id: int,
     rating_type: RatingType,
-    db: RatingHistoryRelationalInterface = Depends(get_rating_history_db_connection),
+    db: RatingHistoryRelationalInterface = Depends(get_rating_history_db),
     user: UserRead = Depends(get_current_user),
 ) -> RatingEvent | None:
     """
@@ -621,7 +547,7 @@ def get_edge_ratings(
     source_id: int,
     target_id: int,
     rating_type: RatingType = RatingType.causal_strength,
-    db: RatingHistoryRelationalInterface = Depends(get_rating_history_db_connection),
+    db: RatingHistoryRelationalInterface = Depends(get_rating_history_db),
 ) -> dict:
     """
     Retrieve all ratings for a given edge.
@@ -635,7 +561,7 @@ def get_edge_ratings(
 def get_node_median_rating(
     node_id: int,
     rating_type: RatingType = RatingType.support,
-    db: RatingHistoryRelationalInterface = Depends(get_rating_history_db_connection),
+    db: RatingHistoryRelationalInterface = Depends(get_rating_history_db),
 ) -> dict | None:
     """
     Retrieve the median rating for a given node.
@@ -649,7 +575,7 @@ def get_edge_median_rating(
     source_id: int,
     target_id: int,
     rating_type: RatingType,
-    db: RatingHistoryRelationalInterface = Depends(get_rating_history_db_connection),
+    db: RatingHistoryRelationalInterface = Depends(get_rating_history_db),
 ) -> dict | None:
     """
     Retrieve the median rating for a given edge.
@@ -665,7 +591,7 @@ def get_nodes_median_ratings(
         ..., alias="node_ids[]", description="List of node IDs"
     ),
     rating_type: RatingType = RatingType.support,
-    db: RatingHistoryRelationalInterface = Depends(get_rating_history_db_connection),
+    db: RatingHistoryRelationalInterface = Depends(get_rating_history_db),
 ) -> dict[int, dict | None]:
     """
     Retrieve the median ratings for multiple nodes.
@@ -691,7 +617,7 @@ def get_edges_median_ratings(
         ..., alias="edge_ids[]", description="List of edges in form 'source-target'"
     ),
     rating_type: RatingType = RatingType.causal_strength,
-    db: RatingHistoryRelationalInterface = Depends(get_rating_history_db_connection),
+    db: RatingHistoryRelationalInterface = Depends(get_rating_history_db),
 ) -> dict[str, dict | None]:
     """
     Retrieve the median ratings for multiple edges.
@@ -729,7 +655,7 @@ def get_edges_median_ratings(
 
 @app.post("/migrate_label_to_property")
 def migrate_label_to_property(
-    request: MigrateLabelRequest, db: JanusGraphDB = Depends(get_graph_db_connection)
+    request: MigrateLabelRequest, db: JanusGraphDB = Depends(get_graph_db)
 ):
     """Migrate the label of each vertex to a property called 'property_name'."""
     property_name = request.property_name

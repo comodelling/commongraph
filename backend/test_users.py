@@ -72,7 +72,7 @@ def test_get_current_user():
     assert login_resp.status_code == 200
     token = login_resp.json()["access_token"]
     headers = {"Authorization": f"Bearer {token}"}
-    me_resp = client.get("/user/me", headers=headers)
+    me_resp = client.get("/users/me", headers=headers)
     assert me_resp.status_code == 200
     json_me = me_resp.json()
     assert json_me["username"] == "testuser"

@@ -41,7 +41,7 @@ export default {
     const fetchFavourites = async () => {
       try {
         // Get favourite node IDs from the user's preferences
-        const response = await api.get("/user/me");
+        const response = await api.get("/users/me");
         const favouriteIds = response.data.preferences?.favourites || [];
 
         // For each favourite id, fetch node details (title and scope).

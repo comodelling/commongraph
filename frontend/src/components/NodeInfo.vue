@@ -136,7 +136,7 @@ export default {
       const token = getAccessToken();
       if (!token) return;
       api
-        .get(`${import.meta.env.VITE_BACKEND_URL}/user/me`, {
+        .get(`${import.meta.env.VITE_BACKEND_URL}/users/me`, {
           headers: { Authorization: `Bearer ${token}` },
         })
         .then((response) => {
@@ -164,7 +164,7 @@ export default {
       }
       api
         .patch(
-          `${import.meta.env.VITE_BACKEND_URL}/user/preferences`,
+          `${import.meta.env.VITE_BACKEND_URL}/users/preferences`,
           { favourites: updatedFavourites },
           { headers: { Authorization: `Bearer ${token}` } },
         )

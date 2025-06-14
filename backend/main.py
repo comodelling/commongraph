@@ -1,10 +1,9 @@
 import os
 import logging
-import datetime
 import json
 import random
 
-from fastapi import Query, Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.settings import settings
@@ -14,11 +13,9 @@ from backend.db.connections import (
     get_rating_history_db
 )
 from backend.models import (
-    NodeId,
     MigrateLabelRequest,
     UserRead,
     RatingEvent,
-    RatingType,
 )
 from backend.db.base import (
     RatingHistoryRelationalInterface,
@@ -84,166 +81,17 @@ def get_config():
 
 ### ratings ###
 
-@app.post("/rating/log", status_code=201)
-def log_rating(
-    rating: RatingEvent,
-    db: RatingHistoryRelationalInterface = Depends(get_rating_history_db),
-    user: UserRead = Depends(get_current_user),
-) -> RatingEvent:
-    """
-    Log a rating event. The username will be set from the authenticated user.
-    """
-    rating.username = user.username
-    return db.log_rating(rating)
-
-
-@app.get("/rating/node/{node_id}")
-def get_node_rating(
-    node_id: int,
-    rating_type: RatingType = RatingType.support,
-    db: RatingHistoryRelationalInterface = Depends(get_rating_history_db),
-    user: UserRead = Depends(get_current_user),
-) -> RatingEvent | None:
-    """
-    Retrieve a user's rating for a node.
-    """
-    return db.get_node_rating(node_id, rating_type, user.username)
-
-
-@app.get("/ratings/node/")
-def get_node_ratings(
-    node_id: int,
-    rating_type: RatingType = RatingType.support,
-    db: RatingHistoryRelationalInterface = Depends(get_rating_history_db),
-) -> dict:
-    """
-    Retrieve all ratings for a given node.
-    """
-    ratings = db.get_node_ratings(node_id, rating_type)
-    # Convert each RatingEvent to dict.
-    return {"ratings": ratings}
-
-
-@app.get("/rating/edge/{source_id}/{target_id}")
-def get_edge_rating(
-    source_id: int,
-    target_id: int,
-    rating_type: RatingType,
-    db: RatingHistoryRelationalInterface = Depends(get_rating_history_db),
-    user: UserRead = Depends(get_current_user),
-) -> RatingEvent | None:
-    """
-    Retrieve a user's rating for an edge.
-    """
-    return db.get_edge_rating(source_id, target_id, rating_type, user.username)
-
-
-@app.get("/ratings/edge/{source_id}/{target_id}")
-def get_edge_ratings(
-    source_id: int,
-    target_id: int,
-    rating_type: RatingType = RatingType.causal_strength,
-    db: RatingHistoryRelationalInterface = Depends(get_rating_history_db),
-) -> dict:
-    """
-    Retrieve all ratings for a given edge.
-    """
-    ratings = db.get_edge_ratings(source_id, target_id, rating_type)
-    # Convert each RatingEvent to dict.
-    return {"ratings": ratings}
-
-
-@app.get("/rating/node/{node_id}/median")
-def get_node_median_rating(
-    node_id: int,
-    rating_type: RatingType = RatingType.support,
-    db: RatingHistoryRelationalInterface = Depends(get_rating_history_db),
-) -> dict | None:
-    """
-    Retrieve the median rating for a given node.
-    """
-    median = db.get_node_median_rating(node_id, rating_type)
-    return {"median_rating": median}
-
-
-@app.get("/rating/edge/median/")
-def get_edge_median_rating(
-    source_id: int,
-    target_id: int,
-    rating_type: RatingType,
-    db: RatingHistoryRelationalInterface = Depends(get_rating_history_db),
-) -> dict | None:
-    """
-    Retrieve the median rating for a given edge.
-    """
-    logger.warning("Function may not be working as expected")
-    median = db.get_edge_median_rating(source_id, target_id, rating_type)
-    return {"median_rating": median}
-
-
-@app.get("/rating/nodes/median")
-def get_nodes_median_ratings(
-    node_ids: list[NodeId] = Query(
-        ..., alias="node_ids[]", description="List of node IDs"
-    ),
-    rating_type: RatingType = RatingType.support,
-    db: RatingHistoryRelationalInterface = Depends(get_rating_history_db),
-) -> dict[int, dict | None]:
-    """
-    Retrieve the median ratings for multiple nodes.
-    Returns a mapping: { node_id: {'median_rating': <value> } }.
-    If a node doesn't have ratings, the value will be None.
-    """
-    start_time = datetime.datetime.now()
-    medians = db.get_nodes_median_ratings(node_ids, rating_type)
-    duration = datetime.datetime.now() - start_time
-    duration_ms = duration.total_seconds() * 1000
-    logger.info(
-        f"Retrieved median ratings for ({len(node_ids)}) nodes in {duration_ms:.2f}ms"
-    )
-    return {
-        node_id: {"median_rating": (median.value if median is not None else None)}
-        for node_id, median in medians.items()
-    }
-
-
-@app.get("/rating/edges/median")
-def get_edges_median_ratings(
-    edge_ids: list[str] = Query(
-        ..., alias="edge_ids[]", description="List of edges in form 'source-target'"
-    ),
-    rating_type: RatingType = RatingType.causal_strength,
-    db: RatingHistoryRelationalInterface = Depends(get_rating_history_db),
-) -> dict[str, dict | None]:
-    """
-    Retrieve the median ratings for multiple edges.
-    Returns a mapping: { "source-target": {"median_rating": <value>} }.
-    If an edge doesn't have ratings, the value will be None.
-    """
-    start_time = datetime.datetime.now()
-    # Convert string keys to a list of (source_id, target_id) for the DB method
-    edges = []
-    for key in edge_ids:
-        src_str, tgt_str = key.split("-")
-        edges.append((int(src_str), int(tgt_str)))
-
-    medians = db.get_edges_median_ratings(edges, rating_type)
-    duration = datetime.datetime.now() - start_time
-    logger.info(
-        f"Retrieved median ratings for {len(edge_ids)} edges in {duration.total_seconds() * 1000:.2f}ms"
-    )
-
-    return {
-        key: {
-            "median_rating": (
-                medians[(int(src), int(tgt))].value
-                if medians[(int(src), int(tgt))]
-                else None
-            )
-        }
-        for key in edge_ids
-        for src, tgt in [key.split("-")]
-    }
+# @app.post("/rating/log", status_code=201)
+# def log_rating(
+#     rating: RatingEvent,
+#     db: RatingHistoryRelationalInterface = Depends(get_rating_history_db),
+#     user: UserRead = Depends(get_current_user),
+# ) -> RatingEvent:
+#     """
+#     Log a rating event. The username will be set from the authenticated user.
+#     """
+#     rating.username = user.username
+#     return db.log_rating(rating)
 
 
 ### others ###

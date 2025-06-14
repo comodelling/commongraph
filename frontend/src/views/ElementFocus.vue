@@ -239,40 +239,32 @@ export default {
     async fetchNodeRatings(nodeIds) {
       if (!nodeIds.length) return;
       try {
-        const response = await api.get(
-          `${import.meta.env.VITE_BACKEND_URL}/rating/nodes/median`,
-          { params: { node_ids: nodeIds } },
-        );
-        this.ratings = response.data; // Ratings stored separately
-        console.log("Fetched ratings:", this.ratings);
-        // Once ratings are fetched, update the node colours.
-      } catch (error) {
-        console.error("Error fetching node ratings:", error);
+        const { data } = await api.get("/nodes/ratings/median", {
+          params: { node_ids: nodeIds },
+        });
+        this.ratings = data;
+        console.log("Fetched node ratings:", this.ratings);
+      } catch (err) {
+        console.error("Error fetching node ratings:", err);
       }
     },
 
     async fetchEdgeRatings(edges) {
       if (!edges.length) return edges;
       try {
-        // Build an array of keys from edges in the form "source-target"
-        const edgeKeys = edges.map((edge) => `${edge.source}-${edge.target}`);
-        const response = await api.get(
-          `${import.meta.env.VITE_BACKEND_URL}/rating/edges/median`,
-          { params: { edge_ids: edgeKeys } },
+        const edgeKeys = edges.map((e) => `${e.source}-${e.target}`);
+        const { data: edgeRatings } = await api.get(
+          "/edges/ratings/median",
+          { params: { edge_ids: edgeKeys } }
         );
-        const edgeRatings = response.data; // Expecting an object keyed by "source-target"
-        // Update each edge with the median rating, stored as causal_strength_rating.
         return edges.map((edge) => {
           const key = `${edge.source}-${edge.target}`;
-          edge.causal_strength =
-            edgeRatings[key] && edgeRatings[key].median_rating
-              ? edgeRatings[key].median_rating
-              : null;
+          edge.causal_strength = edgeRatings[key]?.median_rating ?? null;
           return edge;
         });
-      } catch (error) {
-        console.error("Error fetching edge ratings:", error);
-        return edges; // Fallback: return original edges
+      } catch (err) {
+        console.error("Error fetching edge ratings:", err);
+        return edges;
       }
     },
     updateNodesWithRatings(rawNodes) {
@@ -333,28 +325,22 @@ export default {
       };
       this.$router.push({ name: "NodeEdit", params: { id: newNode.id } });
     },
-    async openNewlyCreatedEdge(newEdge) {
-      const { edgeTypes } = useConfig();
-      const allowed = edgeTypes.value[newEdge.data.edge_type].properties || [];
-      console.log("Allowed edge props:", allowed);
-
+    openNewlyCreatedEdge(newEdge) {
+      // use this.edgeTypes instead of calling useConfig() again
+      const allowed = this.edgeTypes[newEdge.data.edge_type].properties || [];
       this.edge = {
         source: parseInt(newEdge.data.source),
         target: parseInt(newEdge.data.target),
         edge_type: newEdge.data.edge_type,
-        // references: [],
         new: true,
       };
-      if (allowed.includes("description")) 
-        this.edge.description = "";
-      if (allowed.includes("references"))
-        this.edge.references = [];
-
+      if (allowed.includes("description"))    this.edge.description = "";
+      if (allowed.includes("references"))     this.edge.references = [];
       this.$router.push({
         name: "EdgeEdit",
         params: {
-          source_id: parseInt(newEdge.data.source),
-          target_id: parseInt(newEdge.data.target)
+          source_id: this.edge.source,
+          target_id: this.edge.target,
         },
       });
     },

@@ -1,13 +1,17 @@
-from fastapi import Body, Depends, HTTPException, Query, APIRouter, status
+import logging
+import datetime
+
+from fastapi import Body, Depends, HTTPException, Query, APIRouter, status, Path
 
 from backend.api.auth import get_current_user
 from backend.db.base import GraphDatabaseInterface, GraphHistoryRelationalInterface, RatingHistoryRelationalInterface
 from backend.db.connections import get_graph_db, get_graph_history_db, get_rating_history_db
 from backend.db.janusgraph import JanusGraphDB
 from backend.dynamic_models import DynamicNode, NodeTypeModels
-from backend.models import GraphHistoryEvent, LikertScale, NodeId, RatingType, UserRead
+from backend.models import GraphHistoryEvent, LikertScale, NodeId, RatingEvent, RatingType, UserRead, EntityType
 from backend.properties import NodeStatus
 
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/nodes", tags=["nodes"])
 
@@ -151,3 +155,121 @@ def get_node_history(
 ) -> list[GraphHistoryEvent]:
     """Return the history of the node associated with the provided ID."""
     return db_history.get_node_history(node_id)
+
+
+# **** ratings for batches of nodes ****
+
+
+@router.get("/ratings/median")
+def get_nodes_median_ratings(
+    node_ids: list[NodeId] = Query(
+        ..., description="List of node IDs"
+    ),
+    rating_type: RatingType = RatingType.support,
+    db: RatingHistoryRelationalInterface = Depends(get_rating_history_db),
+) -> dict[int, dict | None]:
+    """
+    Retrieve the median ratings for multiple nodes.
+    Returns a mapping: { node_id: {'median_rating': <value> } }.
+    If a node doesn't have ratings, the value will be None.
+    """
+    start_time = datetime.datetime.now()
+    medians = db.get_nodes_median_ratings(node_ids, rating_type)
+    duration = datetime.datetime.now() - start_time
+    duration_ms = duration.total_seconds() * 1000
+    logger.info(
+        f"Retrieved median ratings for ({len(node_ids)}) nodes in {duration_ms:.2f}ms"
+    )
+    return {
+        node_id: {"median_rating": (median.value if median is not None else None)}
+        for node_id, median in medians.items()
+    }
+
+
+@router.get(
+    "/ratings", 
+    response_model=dict[int, list[RatingEvent]],
+    summary="Batch: list ratings for multiple nodes",
+)
+def get_nodes_ratings(
+    node_ids: list[NodeId] = Query(..., description="List of node IDs"),
+    rating_type: RatingType = Query(RatingType.support),
+    db: RatingHistoryRelationalInterface = Depends(get_rating_history_db),
+) -> dict[int, list[RatingEvent]]:
+    return db.get_nodes_ratings(node_ids, rating_type)
+
+
+# **** per-node ratings ****
+
+ratings_router = APIRouter(
+    prefix="/{node_id}/ratings", 
+    tags=["ratings"], 
+    responses={404: {"description": "Not found"}},
+)
+
+
+@ratings_router.post(
+    "", status_code=status.HTTP_201_CREATED, response_model=RatingEvent
+)
+def log_node_rating(
+    node_id: int = Path(..., description="ID of the node"),
+    rating: RatingEvent = Body(...),
+    user: UserRead = Depends(get_current_user),
+    db: RatingHistoryRelationalInterface = Depends(get_rating_history_db),
+) -> RatingEvent:
+    evt = RatingEvent(
+      username=user.username,
+      entity_type=EntityType.node,
+      node_id=node_id,
+      rating_type=rating.rating_type,
+      rating=rating.rating
+    )
+    return db.log_rating(evt)
+
+
+@ratings_router.get(
+    "/me", 
+    response_model= RatingEvent | None,
+    summary="Get my rating for one node",
+)
+def get_my_node_rating(
+    node_id: int,
+    rating_type: RatingType = Query(RatingType.support),
+    user: UserRead = Depends(get_current_user),
+    db: RatingHistoryRelationalInterface = Depends(get_rating_history_db),
+) -> RatingEvent | None:
+    return db.get_node_rating(node_id, rating_type, user.username)
+
+
+@ratings_router.get(
+    "/median", 
+    summary="Get median rating for one node",
+)
+def get_node_median_rating(
+    node_id: int,
+    rating_type: RatingType = RatingType.support,
+    db: RatingHistoryRelationalInterface = Depends(get_rating_history_db),
+) -> dict | None:
+    """
+    Retrieve the median rating for a given node.
+    """
+    median = db.get_node_median_rating(node_id, rating_type)
+    return {"median_rating": median}
+
+
+@ratings_router.get("",
+                    summary="List all ratings for one node")
+def get_node_ratings(
+    node_id: int,
+    rating_type: RatingType = RatingType.support,
+    db: RatingHistoryRelationalInterface = Depends(get_rating_history_db),
+) -> dict:
+    """
+    Retrieve all ratings for a given node.
+    """
+    ratings = db.get_node_ratings(node_id, rating_type)
+    # Convert each RatingEvent to dict.
+    return {"ratings": ratings}
+
+
+router.include_router(ratings_router)

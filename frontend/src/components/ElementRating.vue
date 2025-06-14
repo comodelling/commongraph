@@ -119,7 +119,7 @@ export default {
         let response;
         if (props.element && props.element.node_id) {
           response = await api.get(
-            `${import.meta.env.VITE_BACKEND_URL}/rating/node/${props.element.node_id}`,
+            `${import.meta.env.VITE_BACKEND_URL}/nodes/${props.element.node_id}/ratings/me`,
             {
               params: { rating_type: props.property },
               headers: { Authorization: `Bearer ${token}` },
@@ -132,7 +132,7 @@ export default {
           props.element.edge.target
         ) {
           response = await api.get(
-            `${import.meta.env.VITE_BACKEND_URL}/rating/edge/${props.element.edge.source}/${props.element.edge.target}`,
+            `${import.meta.env.VITE_BACKEND_URL}/edges/${props.element.edge.source}/${props.element.edge.target}/ratings/me`,
             {
               params: {
                 rating_type: props.property,
@@ -156,6 +156,7 @@ export default {
         alert("You must be logged in to rate.");
         return;
       }
+      var response = null;
       try {
         const ratingData = {
           rating_type: props.property,
@@ -164,6 +165,12 @@ export default {
         if (props.element && props.element.node_id) {
           ratingData.node_id = props.element.node_id;
           ratingData.entity_type = "node";
+
+          response = await api.post(
+            `${import.meta.env.VITE_BACKEND_URL}/nodes/${props.element.node_id}/ratings`,
+            ratingData,
+            { headers: { Authorization: `Bearer ${token}` } },
+          );
         } else if (
           props.element &&
           props.element.edge &&
@@ -173,13 +180,14 @@ export default {
           ratingData.source_id = props.element.edge.source;
           ratingData.target_id = props.element.edge.target;
           ratingData.entity_type = "edge";
+          response = await api.post(
+            `${import.meta.env.VITE_BACKEND_URL}/edges/${props.element.edge.source}/${props.element.edge.target}/ratings`,
+            ratingData,
+            { headers: { Authorization: `Bearer ${token}` } },
+          );
         }
         // console.log("Rating data:", ratingData);
-        const response = await api.post(
-          `${import.meta.env.VITE_BACKEND_URL}/rating/log`,
-          ratingData,
-          { headers: { Authorization: `Bearer ${token}` } },
-        );
+
         currentRating.value = response.data.rating;
         // After updating the rating, refresh the histogram data
         if (histogram.value && histogram.value.fetchRatings) {

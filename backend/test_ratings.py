@@ -41,7 +41,7 @@ def test_log_and_get_node_rating():
         "rating": "B",
         "timestamp": datetime.datetime.utcnow().isoformat() + "Z",
     }
-    response = client.post("/rating/log", json=rating_data)
+    response = client.post("/nodes/1/ratings", json=rating_data)
     assert response.status_code == 201
     logged = response.json()
     assert logged["node_id"] == 1
@@ -50,7 +50,7 @@ def test_log_and_get_node_rating():
     assert logged["username"] == "testuser"
 
     # Retrieve the logged rating
-    response = client.get("/rating/node/1")
+    response = client.get("/node/ratings/1")
     assert response.status_code == 200
     fetched = response.json()
     assert fetched["node_id"] == 1
@@ -84,9 +84,9 @@ def test_node_median_rating():
         },
     ]
     for r in ratings:
-        client.post("/rating/log", json=r)
+        client.post("/nodes/2/ratings", json=r)
 
-    response = client.get("/rating/node/2/median")
+    response = client.get("/nodes/2/ratings/median")
     assert response.status_code == 200
     data = response.json()
     # Assuming scale order: A, B, C, D, E and lower median is chosen when even.
@@ -105,7 +105,7 @@ def test_log_and_get_edge_rating():
         "rating": "D",
         "timestamp": datetime.datetime.utcnow().isoformat() + "Z",
     }
-    response = client.post("/rating/log", json=rating_data)
+    response = client.post("/edges/10/20/ratings", json=rating_data)
     assert response.status_code == 201
     logged = response.json()
     assert logged["source_id"] == 10
@@ -116,7 +116,7 @@ def test_log_and_get_edge_rating():
 
     # Retrieve the logged edge rating (explicitly pass rating_type)
     response = client.get(
-        "/rating/edge/10/20/",
+        "/edges/10/20/ratings",
         params={"rating_type": "necessity"},
     )
     assert response.status_code == 200
@@ -156,11 +156,11 @@ def test_edge_median_rating():
         },
     ]
     for r in ratings:
-        client.post("/rating/log", json=r)
+        client.post("/edges/30/40/ratings", json=r)
 
     response = client.get(
-        "/rating/edge/median",
-        params={"source_id": 30, "target_id": 40, "rating_type": "sufficiency"},
+        "/edges/30/40/ratings/median",
+        params={"rating_type": "sufficiency"},
     )
     assert response.status_code == 200
     data = response.json()

@@ -1,5 +1,5 @@
 <script setup>
-import api from "../axios";
+import api from "../api/axios.js";
 import { useAuth } from "../composables/useAuth";
 import { saveAs } from "file-saver";
 import { nextTick, ref, warn, watch, computed, onMounted } from "vue";
@@ -9,7 +9,7 @@ import { Background } from "@vue-flow/background";
 import { ControlButton, Controls } from "@vue-flow/controls";
 import { MiniMap } from "@vue-flow/minimap";
 import Icon from "./Icon.vue";
-import { useLayout } from "../composables/useLayout";
+import { useLayout } from "../composables/useLayout.js";
 import VueSimpleContextMenu from "vue-simple-context-menu";
 import "vue-simple-context-menu/dist/vue-simple-context-menu.css";
 import SearchBar from "./SearchBar.vue";

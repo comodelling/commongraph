@@ -156,7 +156,7 @@
 </template>
 
 <script>
-import api from "../axios";
+import api from "../api/axios";
 import _ from "lodash";
 import tooltips from "../assets/tooltips.json";
 import { useAuth } from "../composables/useAuth";

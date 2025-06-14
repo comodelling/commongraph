@@ -18,7 +18,7 @@
 
 <script>
 import { ref, watch, onMounted, nextTick } from "vue";
-import api from "../axios";
+import api from "../api/axios";
 import Chart from "chart.js/auto";
 
 export default {

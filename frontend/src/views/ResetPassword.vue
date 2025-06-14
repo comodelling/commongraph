@@ -17,7 +17,7 @@
 
 <script>
 import { ref } from "vue";
-import api from "../axios";
+import api from "../api/axios";
 import { useRoute } from "vue-router";
 import { useRouter } from "vue-router";
 

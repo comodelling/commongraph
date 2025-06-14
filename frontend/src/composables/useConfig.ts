@@ -1,5 +1,5 @@
 import { ref, computed } from "vue";
-import api from "../axios";
+import api from "../api/axios";
 
 /* module‐scope singletons */
 const nodeTypes     = ref<Record<string, any>>({});

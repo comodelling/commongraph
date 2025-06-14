@@ -40,7 +40,7 @@
 </template>
 
 <script>
-import api from "../axios";
+import api from "../api/axios";
 import qs from "qs";
 import { useRouter, useRoute } from "vue-router";
 import SearchBar from "../components/SearchBar.vue";

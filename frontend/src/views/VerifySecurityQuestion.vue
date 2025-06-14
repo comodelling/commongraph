@@ -30,7 +30,7 @@
 
 <script>
 import { ref } from "vue";
-import api from "../axios";
+import api from "../api/axios";
 import { useRouter } from "vue-router";
 
 export default {

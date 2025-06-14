@@ -31,7 +31,7 @@
 
 <script>
 import { ref, onMounted, watch } from "vue";
-import api from "../axios";
+import api from "../api/axios";
 import router from "../router";
 import { useAuth } from "../composables/useAuth";
 

@@ -26,7 +26,7 @@
 
 <script>
 import { ref, onMounted } from "vue";
-import api from "../axios";
+import api from "../api/axios";
 import router from "../router";
 import { useAuth } from "../composables/useAuth";
 

@@ -26,7 +26,7 @@ import { onMounted } from "vue";
 import SearchBar from "../components/SearchBar.vue";
 import { buildSearchParams } from "../utils/searchParser.js";
 import { useConfig } from "../composables/useConfig";
-import api from "../axios";
+import api from "../api/axios.js";
 
 export default {
   components: { SearchBar },

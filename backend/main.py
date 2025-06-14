@@ -22,9 +22,7 @@ from backend.models import (
     GraphHistoryEvent,
     RatingEvent,
     RatingType,
-    LikertScale,
 )
-from backend.properties import NodeStatus
 from backend.db.base import (
     GraphDatabaseInterface,
     GraphHistoryRelationalInterface,
@@ -33,6 +31,7 @@ from backend.db.base import (
 from backend.db.janusgraph import JanusGraphDB
 from backend.api.auth import router as auth_router
 from backend.api.users import router as users_router
+from backend.api.nodes import router as nodes_router
 from backend.api.auth import get_current_user
 from backend.config import (PLATFORM_NAME, NODE_TYPE_PROPS, EDGE_TYPE_PROPS, EDGE_TYPE_BETWEEN,
                     NODE_TYPE_STYLE, EDGE_TYPE_STYLE)
@@ -60,7 +59,7 @@ app.add_middleware(
 
 app.include_router(auth_router)
 app.include_router(users_router)
-
+app.include_router(nodes_router)
 
 
 @app.get("/config")
@@ -203,51 +202,6 @@ def get_induced_subnet(
     return db_history.get_induced_subnet(node_id, levels)
 
 
-### /nodes/ ###
-
-
-@app.get("/nodes")
-def search_nodes(
-    node_type: list[str] | str = Query(None),
-    title: str | None = None,
-    scope: str | None = None,
-    status: list[NodeStatus] | NodeStatus = Query(None),
-    tags: list[str] | None = Query(None),
-    rating: LikertScale | None = None,
-    description: str | None = None,
-    db_graph: GraphDatabaseInterface | None = Depends(get_graph_db),
-    db_history: GraphHistoryRelationalInterface = Depends(
-        get_graph_history_db
-    ),
-    db_ratings: RatingHistoryRelationalInterface = Depends(
-        get_rating_history_db
-    ),
-) -> list[DynamicNode]: #type: ignore
-    """Search in nodes on a field by field level."""
-    if db_graph is not None:
-        nodes = db_graph.search_nodes(
-            node_type=node_type,
-            title=title,
-            scope=scope,
-            status=status,
-            tags=tags,
-            description=description,
-        )
-    nodes = db_history.search_nodes(
-        node_type=node_type,
-        title=title,
-        scope=scope,
-        status=status,
-        tags=tags,
-        description=description,
-    )
-    if rating is None:
-        return nodes
-    else:
-        nodes_ids = [el.node_id for el in nodes]
-        medians = db_ratings.get_nodes_median_ratings(nodes_ids, RatingType.support)
-        return [node for node in nodes if medians[node.node_id] == rating]
-
 
 ### /node/ ###
 
@@ -348,34 +302,6 @@ def get_node_history(
 ) -> list[GraphHistoryEvent]:
     """Return the history of the node associated with the provided ID."""
     return db_history.get_node_history(node_id)
-
-
-### /edges/ ###
-
-
-@app.get("/edges")
-def get_edge_list(
-    db_history: GraphHistoryRelationalInterface = Depends(
-        get_graph_history_db
-    ),
-) -> list[DynamicEdge]: #type: ignore
-    """Return all edges in the database."""
-    return db_history.get_edge_list()
-
-
-@app.post("/edges/find")
-def find_edges(
-    source_id: NodeId = None,
-    target_id: NodeId = None,
-    edge_type: str = None,
-    db_history: GraphHistoryRelationalInterface = Depends(
-        get_graph_history_db
-    ),
-) -> list[DynamicEdge]: #type: ignore
-    """Return the edge associated with the provided ID."""
-    return db_history.find_edges(
-        source_id=source_id, target_id=target_id, edge_type=edge_type
-    )
 
 
 ### /edge/ ###

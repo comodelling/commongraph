@@ -48,7 +48,7 @@ export default {
         const nodes = await Promise.all(
           favouriteIds.map(async (nodeId) => {
             try {
-              const res = await api.get(`/node/${nodeId}`);
+              const res = await api.get(`/nodes/${nodeId}`);
               return res.data;
             } catch (err) {
               console.error("Error fetching node details for id", nodeId);

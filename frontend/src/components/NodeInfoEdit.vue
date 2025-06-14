@@ -311,7 +311,7 @@ export default {
           delete this.editedNode.new;
           delete this.editedNode.node_id;
           const response = await api.post(
-            `${import.meta.env.VITE_BACKEND_URL}/node`,
+            `${import.meta.env.VITE_BACKEND_URL}/nodes`,
             this.editedNode,
             token
               ? { headers: { Authorization: `Bearer ${token}` } }
@@ -354,7 +354,7 @@ export default {
       } else {
         try {
           const response = await api.put(
-            `${import.meta.env.VITE_BACKEND_URL}/node`,
+            `${import.meta.env.VITE_BACKEND_URL}/nodes`,
             this.editedNode
           );
           this.$emit("publish-node", response.data);

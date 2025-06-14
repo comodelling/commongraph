@@ -35,9 +35,7 @@ from backend.api.nodes import router as nodes_router
 from backend.api.auth import get_current_user
 from backend.config import (PLATFORM_NAME, NODE_TYPE_PROPS, EDGE_TYPE_PROPS, EDGE_TYPE_BETWEEN,
                     NODE_TYPE_STYLE, EDGE_TYPE_STYLE)
-from backend.dynamic_models import (NodeTypeModels,
-                            EdgeTypeModels,
-                            DynamicNode,
+from backend.dynamic_models import (EdgeTypeModels,
                             DynamicEdge,
                             DynamicSubnet,
                             DynamicNetworkExport)
@@ -201,107 +199,6 @@ def get_induced_subnet(
         return db_graph.get_induced_subnet(node_id, levels)
     return db_history.get_induced_subnet(node_id, levels)
 
-
-
-### /node/ ###
-
-
-@app.get("/node/random")
-def get_random_node(
-    node_type: str | None = None,
-    db: GraphDatabaseInterface | None = Depends(get_graph_db),
-    db_history: GraphHistoryRelationalInterface = Depends(
-        get_graph_history_db
-    ),
-) -> DynamicNode: #type: ignore
-    """Return a random node with optional node_type."""
-    if isinstance(db, JanusGraphDB):
-        return db.get_random_node(node_type)
-    return db_history.get_random_node(node_type)
-
-
-@app.get("/node/{node_id}")
-def get_node(
-    node_id: NodeId,
-    db_history: GraphHistoryRelationalInterface = Depends(
-        get_graph_history_db
-    ),
-) -> DynamicNode: #type: ignore
-    """Return the node associated with the provided ID."""
-    return db_history.get_node(node_id)
-
-
-@app.post("/node", status_code=status.HTTP_201_CREATED)
-def create_node(
-    payload: dict = Body(...),
-    db_graph: GraphDatabaseInterface | None = Depends(get_graph_db),
-    db_history: GraphHistoryRelationalInterface = Depends(
-        get_graph_history_db
-    ),
-    user: UserRead = Depends(get_current_user),
-) -> DynamicNode: #type: ignore
-    """Create a node."""
-    nt = payload.get("node_type")
-    Model = NodeTypeModels.get(nt)
-    if not Model:
-        raise HTTPException(400, f"Unknown node_type {nt!r}")
-    node = Model(**payload)
-    
-    if db_graph is not None:
-        node = db_graph.create_node(node)
-        # logger.info(f"User {user.username} created node {node_out.node_id} in graph database too")
-
-    node_out = db_history.create_node(
-        node, username=user.username
-    )  # reuse the ID allocated from the graph database
-    return node_out
-
-
-@app.delete("/node/{node_id}")
-def delete_node(
-    node_id: NodeId,
-    db_graph: GraphDatabaseInterface | None = Depends(get_graph_db),
-    db_history: GraphHistoryRelationalInterface = Depends(
-        get_graph_history_db
-    ),
-    user: UserRead = Depends(get_current_user),
-):
-    """Delete the node with provided ID."""
-    db_history.delete_node(node_id, username=user.username)
-    if db_graph is not None:
-        db_graph.delete_node(node_id)
-
-
-@app.put("/node")
-def update_node(
-    payload: dict = Body(...),
-    db_graph: GraphDatabaseInterface | None = Depends(get_graph_db),
-    db_history: GraphHistoryRelationalInterface = Depends(
-        get_graph_history_db
-    ),
-    user: UserRead = Depends(get_current_user),
-) -> DynamicNode: #type: ignore
-    """Update the properties of an existing node."""
-    nt = payload.get("node_type")
-    Model = NodeTypeModels.get(nt)
-    if not Model:
-        raise HTTPException(400, f"Unknown node_type {nt!r}")
-    node = Model(**payload)
-    node_out = db_history.update_node(node, username=user.username)
-    if db_graph is not None:
-        db_graph.update_node(node)
-    return node_out
-
-
-@app.get("/node/{node_id}/history")
-def get_node_history(
-    node_id: NodeId,
-    db_history: GraphHistoryRelationalInterface = Depends(
-        get_graph_history_db
-    ),
-) -> list[GraphHistoryEvent]:
-    """Return the history of the node associated with the provided ID."""
-    return db_history.get_node_history(node_id)
 
 
 ### /edge/ ###

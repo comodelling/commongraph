@@ -289,7 +289,7 @@ export default {
     async updateNodeFromBackend(node_id) {
       try {
         const response = await api.get(
-          `${import.meta.env.VITE_BACKEND_URL}/node/${node_id}`,
+          `${import.meta.env.VITE_BACKEND_URL}/nodes/${node_id}`,
         );
         this.node = response.data || undefined;
       } catch (error) {

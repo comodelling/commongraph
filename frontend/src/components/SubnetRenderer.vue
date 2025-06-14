@@ -401,7 +401,7 @@ const onNodesChange = async (changes) => {
         const token = getAccessToken();
         try {
           const response = await api.delete(
-            `${import.meta.env.VITE_BACKEND_URL}/node/${node_id}`,
+            `${import.meta.env.VITE_BACKEND_URL}/nodes/${node_id}`,
             token ? { headers: { Authorization: `Bearer ${token}` } } : {},
           );
         } catch (error) {
@@ -631,7 +631,7 @@ async function handleSearchResultClick(id, event) {
   console.log("search result clicked", id);
   try {
     const response = await api.get(
-      `${import.meta.env.VITE_BACKEND_URL}/node/${id}/`,
+      `${import.meta.env.VITE_BACKEND_URL}/nodes/${id}/`,
     );
     const node = response.data;
     // console.log("Fetched node:", node);

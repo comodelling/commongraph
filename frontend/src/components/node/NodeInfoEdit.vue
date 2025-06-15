@@ -29,6 +29,7 @@
              v-for="(props, type) in nodeTypes"
              :key="type"
              :value="type"
+             :disabled="!isTypeAllowed(type)"
              :title="tooltips.node[type] || tooltips.node.type"
            >
              {{ capitalise(type) }}
@@ -163,7 +164,13 @@ import { useAuth } from "../../composables/useAuth";
 import { useUnsaved } from "../../composables/useUnsaved";
 // Import the meta config composable
 import { useConfig } from "../../composables/useConfig";
-import { onBeforeMount } from "vue";
+import { onBeforeMount, onMounted } from "vue";
+import {
+  loadGraphSchema,
+  getAllowedTargetNodeTypes,
+  getAllowedSourceNodeTypes,
+  getAllowedEdgeTypes,
+} from "../../composables/useGraphSchema";
 
 export default {
   props: {
@@ -174,6 +181,7 @@ export default {
      const { nodeTypes, load, defaultEdgeType } = useConfig();
      // block here until both nodeTypes & edgeTypes are populated
      onBeforeMount(load);
+     onMounted(loadGraphSchema);
      return { nodeTypes, defaultEdgeType, load };
    },
   data() {
@@ -196,6 +204,16 @@ export default {
       }
       return this.nodeTypes[this.editedNode.node_type].properties || [];
     },
+    allowedNodeTypes() {
+      const fc = this.editedNode.fromConnection;
+      if (!fc) {
+        return Object.keys(this.nodeTypes);
+      }
+      const otherType = fc.node_type;
+      return fc.handle_type === "source"
+        ? getAllowedTargetNodeTypes(otherType)
+        : getAllowedSourceNodeTypes(otherType);
+    },
     actionLabel() {
       return this.editedNode.new ? "Create" : "Submit";
     },
@@ -212,6 +230,9 @@ export default {
     isAllowed(field) {
       const allowed = this.allowedFields;       // ← allowedFields is already an Array
       return allowed.includes(field);
+    },
+    isTypeAllowed(type) {
+      return this.allowedNodeTypes.includes(type);
     },
     capitalise(string) {
       return string.charAt(0).toUpperCase() + string.slice(1);
@@ -310,37 +331,29 @@ export default {
           delete this.editedNode.fromConnection;
           delete this.editedNode.new;
           delete this.editedNode.node_id;
-          const response = await api.post(
-            `/nodes`,
-            this.editedNode,
-            token
-              ? { headers: { Authorization: `Bearer ${token}` } }
-              : {}
-          );
+
+          const response = await api.post("/nodes", this.editedNode, token ? { headers: { Authorization: `Bearer ${token}` }} : {});
           const nodeReturned = response.data;
           const target = nodeReturned.node_id;
           nodeReturned.new = true;
+
+          // If node is created *from* a connection, pick the first valid edgeType
           if (fromConnection) {
             try {
-              const newEdge = {
-                source:
-                  fromConnection.handle_type === "source"
-                    ? parseInt(fromConnection.id)
-                    : target,
-                target:
-                  fromConnection.handle_type === "source"
-                    ? target
-                    : parseInt(fromConnection.id),
-                edge_type: this.defaultEdgeType,
-              };
-              console.log("Creating edge (as connection to created target):", newEdge);
-              await api.post(
-                `/edges`,
-                newEdge,
-                token
-                  ? { headers: { Authorization: `Bearer ${token}` } }
-                  : {}
+              const possibleLabels = getAllowedEdgeTypes(
+                fromConnection.handle_type === "source" ? fromConnection.node_type : nodeReturned.node_type,
+                fromConnection.handle_type === "source" ? nodeReturned.node_type : fromConnection.node_type
               );
+              if (!possibleLabels.length) {
+                console.warn("No valid edge type found to connect new node. Aborting edge creation.");
+              } else {
+                const newEdge = {
+                  source: fromConnection.handle_type === "source" ? parseInt(fromConnection.id) : target,
+                  target: fromConnection.handle_type === "source" ? target : parseInt(fromConnection.id),
+                  edge_type: possibleLabels[0], // pick first allowed
+                };
+                await api.post("/edges", newEdge, token ? { headers: { Authorization: `Bearer ${token}` }} : {});
+              }
             } catch (error) {
               console.error("Failed to create edge:", error);
             }

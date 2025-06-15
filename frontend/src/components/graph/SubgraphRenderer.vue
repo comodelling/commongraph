@@ -591,6 +591,7 @@ function createNodeAndEdge(event = null) {
     fromConnection = {
       id: nodeId,
       handle_type: handleType,
+      node_type: sourceNode.data.node_type
       // edge_type: handleType === "source" ? "imply" : "require",
     }; // to be used to update edge data
     eventPosition = connectionInfo.value.position || {
@@ -618,6 +619,20 @@ function createNodeAndEdge(event = null) {
     tags: tags,
     fromConnection: fromConnection,
   });
+
+  // if (connectionInfo.value) {
+  //   // Get allowed node types from the source node’s type
+  //   const fc = fromConnection; // { node_type, handle_type, ... }
+  //   const allowedNodeTypes =
+  //     fc.handle_type === "source"
+  //       ? getAllowedTargetNodeTypes(fc.node_type)
+  //       : getAllowedSourceNodeTypes(fc.node_type);
+  //   // If defaultNodeType isn’t allowed, use the first allowed or fallback to default
+  //   if (!allowedNodeTypes.includes(defaultNodeType.value)) {
+  //     newNodeData.node_type = allowedNodeTypes[0] || defaultNodeType.value;
+  //   }
+  // }
+
   // Remove properties not allowed by the default node type
   const allowedProps = nodeTypes.value[defaultNodeType.value].properties || [];
   if (!allowedProps.includes("status")) {

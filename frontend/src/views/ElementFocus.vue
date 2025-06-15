@@ -104,6 +104,10 @@ import {
   formatFlowNodeProps,
 } from "../composables/formatFlowComponents";
 import api from "../api/axios";
+import {
+  getAllowedTargetNodeTypes,
+  getAllowedSourceNodeTypes
+} from "../composables/useGraphSchema";
 
 export default {
   components: {
@@ -319,9 +323,23 @@ export default {
       }
     },
     openNewlyCreatedNode(newNode) {
-      this.node = {...newNode.data,
+      // Ensure the default node type is actually part of the allowed list
+      if (newNode.data.fromConnection) {
+        const fc = newNode.data.fromConnection;
+        const allowed = fc.handle_type === "source"
+          ? getAllowedTargetNodeTypes(fc.node_type)
+          : getAllowedSourceNodeTypes(fc.node_type);
+
+        if (!allowed.includes(this.defaultNodeType)) {
+          // Fallback to the first allowed type if default isn’t valid
+          const fallback = allowed[0] || this.defaultNodeType;
+          newNode.data.node_type = fallback;
+        }
+      }
+      this.node = {
+        ...newNode.data,
         new: true,
-        fromConnection: newNode.data.fromConnection,
+        fromConnection: newNode.data.fromConnection
       };
       this.$router.push({ name: "NodeEdit", params: { id: newNode.id } });
     },

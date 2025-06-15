@@ -8,7 +8,7 @@
             v-for="(props, type) in edgeTypes"
             :key="type"
             :value="type"
-            :disabled="!isTypeAllowed(type)"
+            :disabled="!computedEdgeTypeOptions.includes(type)" 
             :title="tooltips.edge[type] || tooltips.edge.type"
           >
             {{ capitalise(type) }}
@@ -100,7 +100,6 @@ export default {
     return { edgeTypes };
   },
   data() {
-    const editedEdge = _.cloneDeep(this.edge);
     return {
       editingField: null,
       editedEdge: _.cloneDeep(this.edge),
@@ -114,6 +113,14 @@ export default {
         return Object.keys(this.editedEdge);
       }
       return this.edgeTypes[this.editedEdge.edge_type].properties || [];
+    },
+    computedEdgeTypeOptions() {
+      // If both ends are known, only return allowed; else return all
+      console.log("Source type:", this.sourceType, "Target type:", this.targetType);
+      if (this.sourceType && this.targetType) {
+        return getAllowedEdgeTypes(this.sourceType, this.targetType);
+      }
+      return Object.keys(this.edgeTypes);
     },
     actionLabel() {
       return this.editedEdge.new ? "Create" : "Submit";

@@ -29,6 +29,8 @@
           :edge="edge"
           :sourceId="edge.source"
           :targetId="edge.target"
+          :sourceType="edge.sourceNodeType"
+          :targetType="edge.targetNodeType"
           @publish-edge="updateEdgeFromEditor"
         />
       </template>
@@ -52,6 +54,7 @@
 import EdgeInfoView from "./EdgeInfoView.vue";
 import EdgeInfoEdit from "./EdgeInfoEdit.vue";
 import EdgeHistory from "./EdgeHistory.vue";
+// import api from "../../api/axios";
 
 export default {
   props: {

@@ -22,7 +22,7 @@ import {
 } from "../../composables/formatFlowComponents.js";
 import { useUnsaved } from "../../composables/useUnsaved.js";
 import { useConfig } from "../../composables/useConfig.js";
-import { loadGraphSchema, getAllowedEdgeTypes } from "../../composables/useGraphSchema";
+import { loadGraphSchema, getAllowedEdgeTypes, getAllowedTargetNodeTypes, getAllowedSourceNodeTypes } from "../../composables/useGraphSchema";
 
 const {
   nodeTypes,
@@ -620,18 +620,18 @@ function createNodeAndEdge(event = null) {
     fromConnection: fromConnection,
   });
 
-  // if (connectionInfo.value) {
-  //   // Get allowed node types from the source node’s type
-  //   const fc = fromConnection; // { node_type, handle_type, ... }
-  //   const allowedNodeTypes =
-  //     fc.handle_type === "source"
-  //       ? getAllowedTargetNodeTypes(fc.node_type)
-  //       : getAllowedSourceNodeTypes(fc.node_type);
-  //   // If defaultNodeType isn’t allowed, use the first allowed or fallback to default
-  //   if (!allowedNodeTypes.includes(defaultNodeType.value)) {
-  //     newNodeData.node_type = allowedNodeTypes[0] || defaultNodeType.value;
-  //   }
-  // }
+  if (connectionInfo.value) {
+    // Get allowed node types from the source node’s type
+    const fc = fromConnection; // { node_type, handle_type, ... }
+    const allowedNodeTypes =
+      fc.handle_type === "source"
+        ? getAllowedTargetNodeTypes(fc.node_type)
+        : getAllowedSourceNodeTypes(fc.node_type);
+    // If defaultNodeType isn’t allowed, use the first allowed or fallback to default
+    if (!allowedNodeTypes.includes(defaultNodeType.value)) {
+      newNodeData.node_type = allowedNodeTypes[0] || defaultNodeType.value;
+    }
+  }
 
   // Remove properties not allowed by the default node type
   const allowedProps = nodeTypes.value[defaultNodeType.value].properties || [];

@@ -93,7 +93,6 @@
 </template>
 
 <script>
-import { onBeforeMount, ref } from 'vue'
 import { useConfig } from "../composables/useConfig";
 import NodeInfo from "../components/node/NodeInfo.vue";
 import EdgeInfo from "../components/edge/EdgeInfo.vue";
@@ -104,6 +103,7 @@ import {
   formatFlowNodeProps,
 } from "../composables/formatFlowComponents";
 import api from "../api/axios";
+import { hydrate } from "vue";
 
 export default {
   components: {
@@ -129,6 +129,24 @@ export default {
       ratings: {},
       causalDirection: "LeftToRight",
     };
+  },
+  watch: {
+    '$route.params.id'() {
+      if (this.id) {
+        this.hydrateNodeFromCache();
+      }
+    },
+    '$route.params.source_id'() {
+      console.log("Source ID changed to:", this.sourceId);
+      if (this.sourceId) {
+        this.hydrateEdgeFromCache();
+      }
+    },
+    '$route.params.target_id'() {
+      if (this.targetId) {
+        this.hydrateEdgeFromCache();
+      }
+    },
   },
   computed: {
     nodeId() {
@@ -223,6 +241,16 @@ export default {
                 edge.source === parseInt(this.sourceId) &&
                 edge.target === parseInt(this.targetId),
             ) || null;
+          const sourceNode = fetched_nodes.find(n => n.node_id === parseInt(this.sourceId));
+          const targetNode = fetched_nodes.find(n => n.node_id === parseInt(this.targetId));
+          this.edge = {
+           ...this.edge,
+           sourceNodeType: sourceNode?.node_type,
+           targetNodeType: targetNode?.node_type
+          };
+          console.log("Edge found !!!!!!!!!! :", this.edge);
+        } else {
+          this.edge = null;
         }
         // Build subgraphData using formatted nodes/edges.
         this.subgraphData = {
@@ -234,6 +262,53 @@ export default {
         this.node = null;
         this.edge = null;
         this.subgraphData = { nodes: [], edges: [] };
+      }
+    },
+    hydrateEdgeFromCache() {
+      const s = Number(this.sourceId)
+      const t = Number(this.targetId)
+      const nodes = this.subgraphData.nodes
+      const edges = this.subgraphData.edges
+
+      const sourceNode = nodes.find((n) => n.node_id === s)
+      const targetNode = nodes.find((n) => n.node_id === t)
+      const edgeRaw    = edges.find((e) => e.source === s && e.target === t)
+
+      if (sourceNode && targetNode && edgeRaw) {
+        // no network needed
+        this.edge = {
+          ...edgeRaw,
+          sourceNodeType: sourceNode.node_type,
+          targetNodeType: targetNode.node_type
+        }
+      }
+      else {
+        // fallback to two cheap calls
+        Promise.all([
+          api.get(`/edges/${s}/${t}`),
+          api.get(`/nodes/${s}`),
+          api.get(`/nodes/${t}`)
+        ]).then(([eRes, sRes, tRes])=>{
+          this.edge = {
+            ...eRes.data,
+            sourceNodeType: sRes.data.node_type,
+            targetNodeType: tRes.data.node_type
+          }
+        })
+      }
+    },
+    hydrateNodeFromCache() {
+      const nodeId = this.nodeId
+      const nodes = this.subgraphData.nodes
+      const nodeRaw = nodes.find((n) => n.node_id === Number(nodeId))
+
+      if (nodeRaw) {
+        this.node = nodeRaw
+      } else {
+        // fallback to a single call
+        api.get(`/nodes/${nodeId}`).then((res) => {
+          this.node = res.data
+        })
       }
     },
     async fetchNodeRatings(nodeIds) {
@@ -345,6 +420,7 @@ export default {
       });
     },
   },
+  
 };
 </script>
 

@@ -8,6 +8,7 @@
             v-for="(props, type) in edgeTypes"
             :key="type"
             :value="type"
+            :disabled="!computedEdgeTypeOptions.includes(type)" 
             :title="tooltips.edge[type] || tooltips.edge.type"
           >
             {{ capitalise(type) }}
@@ -83,22 +84,25 @@ import { onMounted } from "vue";
 import { useAuth } from "../../composables/useAuth";
 import { useUnsaved } from "../../composables/useUnsaved";
 import { useConfig } from "../../composables/useConfig";
+import { loadGraphSchema, getAllowedEdgeTypes } from "../../composables/useGraphSchema";
 
 export default {
   props: {
-    edge: Object,
+    edge:       { type: Object, required: true },
+    sourceType: { type: String, required: false, default: null },
+    targetType: { type: String, required: false, default: null },
   },
   emits: ["publish-edge"],
   setup() {
     const { edgeTypes, load } = useConfig();
     onMounted(load);
+    onMounted(loadGraphSchema);
     return { edgeTypes };
   },
   data() {
-    const editedEdge = _.cloneDeep(this.edge);
     return {
       editingField: null,
-      editedEdge: editedEdge,
+      editedEdge: _.cloneDeep(this.edge),
       tooltips,
       isSubmitting: false,
     };
@@ -109,6 +113,14 @@ export default {
         return Object.keys(this.editedEdge);
       }
       return this.edgeTypes[this.editedEdge.edge_type].properties || [];
+    },
+    computedEdgeTypeOptions() {
+      // If both ends are known, only return allowed; else return all
+      console.log("Source type:", this.sourceType, "Target type:", this.targetType);
+      if (this.sourceType && this.targetType) {
+        return getAllowedEdgeTypes(this.sourceType, this.targetType);
+      }
+      return Object.keys(this.edgeTypes);
     },
     actionLabel() {
       return this.editedEdge.new ? "Create" : "Submit";
@@ -156,6 +168,13 @@ export default {
   methods: {
     isAllowed(field) {
       return this.allowedFields.includes(field);
+    },
+    isTypeAllowed(type) {
+      // only disable when both ends are known
+      if (this.sourceType && this.targetType) {
+        return getAllowedEdgeTypes(this.sourceType, this.targetType).includes(type);
+      }
+      return true;
     },
     capitalise(str) {
       return str.charAt(0).toUpperCase() + str.slice(1);

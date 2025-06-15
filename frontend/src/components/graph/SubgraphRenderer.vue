@@ -22,6 +22,7 @@ import {
 } from "../../composables/formatFlowComponents.js";
 import { useUnsaved } from "../../composables/useUnsaved.js";
 import { useConfig } from "../../composables/useConfig.js";
+import { loadGraphSchema, getAllowedEdgeTypes, getAllowedTargetNodeTypes, getAllowedSourceNodeTypes } from "../../composables/useGraphSchema";
 
 const {
   nodeTypes,
@@ -33,6 +34,7 @@ const {
 
 onMounted(async () => {
   await loadConfig()
+  await loadGraphSchema()
 })
 
 const { getAccessToken } = useAuth();
@@ -513,14 +515,33 @@ function determinePositionWithinWindow(event) {
 // direct connection between existing handles
 function createEdgeOnConnection(targetId) {
   const { nodeId, handleType } = connectionInfo.value;
-  console.log("connecting to node", targetId);
-  console.log("from node", nodeId);
   const source = handleType === "source" ? nodeId.toString() : targetId;
   const target = handleType === "source" ? targetId : nodeId.toString();
+
+  const aNode = findNode(source);
+  const bNode = findNode(target);
+
+  // if the node is “new” its id is "new" → treat its type as undefined
+  const isSourceNew = source === "new";
+  const isTargetNew = target === "new";
+
+  const sourceType = isSourceNew ? undefined : aNode?.data.node_type;
+  const targetType = isTargetNew ? undefined : bNode?.data.node_type;
+
+  const allowed = getAllowedEdgeTypes(sourceType, targetType);
+  if (allowed.length === 0) {
+    window.alert(
+      `Cannot create any edge type between ${
+        sourceType || "new"
+      } → ${targetType || "new"}`
+    );
+    return null;
+  }
+  const chosenType = allowed[0];
   const newEdgeData = formatFlowEdgeProps({
     source: source,
     target: target,
-    edge_type: defaultEdgeType.value, //handleType === "source" ? "imply" : "require",
+    edge_type: chosenType
   });
   console.log("New edge data (direct connection):", newEdgeData);
   return newEdgeData;
@@ -570,6 +591,7 @@ function createNodeAndEdge(event = null) {
     fromConnection = {
       id: nodeId,
       handle_type: handleType,
+      node_type: sourceNode.data.node_type
       // edge_type: handleType === "source" ? "imply" : "require",
     }; // to be used to update edge data
     eventPosition = connectionInfo.value.position || {
@@ -597,6 +619,20 @@ function createNodeAndEdge(event = null) {
     tags: tags,
     fromConnection: fromConnection,
   });
+
+  if (connectionInfo.value) {
+    // Get allowed node types from the source node’s type
+    const fc = fromConnection; // { node_type, handle_type, ... }
+    const allowedNodeTypes =
+      fc.handle_type === "source"
+        ? getAllowedTargetNodeTypes(fc.node_type)
+        : getAllowedSourceNodeTypes(fc.node_type);
+    // If defaultNodeType isn’t allowed, use the first allowed or fallback to default
+    if (!allowedNodeTypes.includes(defaultNodeType.value)) {
+      newNodeData.node_type = allowedNodeTypes[0] || defaultNodeType.value;
+    }
+  }
+
   // Remove properties not allowed by the default node type
   const allowedProps = nodeTypes.value[defaultNodeType.value].properties || [];
   if (!allowedProps.includes("status")) {

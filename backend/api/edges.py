@@ -98,6 +98,7 @@ def create_edge(
     Model = EdgeTypeModels.get(et)
     if not Model:
         raise HTTPException(400, f"Unknown edge_type {et!r}")
+    #TODO: validate payload further, within graph, against Graph Schema
     edge = Model(**payload)
     out_edge = db_history.create_edge(edge, username=user.username)
     if db_graph is not None:
@@ -118,6 +119,7 @@ def update_edge(
     Model = EdgeTypeModels.get(et)
     if not Model:
         raise HTTPException(400, f"Unknown edge_type {et!r}")
+    #TODO: validate payload further, within graph, against Graph Schema
     edge = Model(**payload)
     out_edge = db_history.update_edge(edge, username=user.username)
     if db_graph is not None:

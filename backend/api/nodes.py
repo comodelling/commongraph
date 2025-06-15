@@ -98,6 +98,7 @@ def create_node(
     Model = NodeTypeModels.get(nt)
     if not Model:
         raise HTTPException(400, f"Unknown node_type {nt!r}")
+    #TODO: validate payload further, within graph, against Graph Schema
     node = Model(**payload)
 
     if db_graph is not None:
@@ -139,6 +140,7 @@ def update_node(
     Model = NodeTypeModels.get(nt)
     if not Model:
         raise HTTPException(400, f"Unknown node_type {nt!r}")
+    #TODO: validate payload further, within graph, against Graph Schema
     node = Model(**payload)
     node_out = db_history.update_node(node, username=user.username)
     if db_graph is not None:

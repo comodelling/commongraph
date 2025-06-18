@@ -14,7 +14,7 @@ from backend.api.nodes import router as nodes_router
 from backend.api.edges import router as edges_router
 from backend.api.graph import router as graph_router
 from backend.config import (PLATFORM_NAME, NODE_TYPE_PROPS, EDGE_TYPE_PROPS, EDGE_TYPE_BETWEEN,
-                            NODE_TYPE_STYLE, EDGE_TYPE_STYLE)
+                            NODE_TYPE_STYLE, EDGE_TYPE_STYLE, NODE_TYPE_POLLS, EDGE_TYPE_POLLS)
 
 logger = logging.getLogger(__name__)
 
@@ -45,12 +45,15 @@ async def root():
 def get_config():
     # Here we combine both properties and styles for each type.
     node_types = {
-        nt: {"properties": list(props), "style": NODE_TYPE_STYLE.get(nt, {})}
+        nt: {"properties": list(props),
+             "polls": NODE_TYPE_POLLS.get(nt, {}),
+             "style": NODE_TYPE_STYLE.get(nt, {})}
         for nt, props in NODE_TYPE_PROPS.items()
     }
     edge_types = {
         et: {"properties": list(props),
              "between": EDGE_TYPE_BETWEEN.get(et, None),
+             "polls": EDGE_TYPE_POLLS.get(et, {}),
              "style": EDGE_TYPE_STYLE.get(et, {})}
         for et, props in EDGE_TYPE_PROPS.items()
     }

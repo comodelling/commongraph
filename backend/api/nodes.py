@@ -168,28 +168,28 @@ def get_node_history(
 
 @router.get("/ratings/median")
 def get_nodes_median_ratings(
-    node_ids: list[NodeId] = Query(
-        ..., description="List of node IDs"
-    ),
-    poll_label: str = Query(..., description="Label of the poll to filter ratings"),
-    db: RatingHistoryRelationalInterface = Depends(get_rating_history_db),
-) -> dict[int, dict | None]:
-    """
-    Retrieve the median ratings for multiple nodes.
-    Returns a mapping: { node_id: {'median_rating': <value> } }.
-    If a node doesn't have ratings, the value will be None.
-    """
-    start_time = datetime.datetime.now()
-    medians = db.get_nodes_median_ratings(node_ids, poll_label)
-    duration = datetime.datetime.now() - start_time
-    duration_ms = duration.total_seconds() * 1000
-    logger.info(
-        f"Retrieved median ratings for ({len(node_ids)}) nodes in {duration_ms:.2f}ms"
-    )
-    return {
-        node_id: {"median_rating": (median.value if median is not None else None)}
-        for node_id, median in medians.items()
+  node_ids: list[NodeId] = Query(...),
+  poll_labels: list[str] | None = Query(
+    None, description="List of polls; if omitted, return all"
+  ),
+  db: RatingHistoryRelationalInterface = Depends(get_rating_history_db),
+):
+    # default = all polls in your config
+    from backend.config import POLLS_CFG
+    labels = poll_labels or list(POLLS_CFG.keys())
+
+    # for each poll, get a map node_id → median
+    per_poll = {
+      pl: db.get_nodes_median_ratings(node_ids, pl)
+      for pl in labels
     }
+
+    # invert into node-centric structure
+    out: dict[int, dict[str, float|None]] = {
+      nid: {pl: per_poll[pl].get(nid) for pl in labels}
+      for nid in node_ids
+    }
+    return out
 
 
 @router.get(

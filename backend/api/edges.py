@@ -39,7 +39,7 @@ def get_edges_median_ratings(
         ...,   # no alias
         description="List of edges in form 'source-target'"
     ),
-    poll_label: str = Query(..., description="Label of the poll to filter ratings"),
+    poll_label: str | None = Query(None, description="Label of the poll to filter ratings"),
     db: RatingHistoryRelationalInterface = Depends(get_rating_history_db),
 ) -> dict[str, dict | None]:
     """

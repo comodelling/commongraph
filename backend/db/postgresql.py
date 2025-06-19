@@ -20,7 +20,6 @@ from backend.models.base import (
 )
 from backend.models.fixed import (
     NodeId,
-    LikertScale,
     User,
     UserRead,
     UserCreate,
@@ -28,7 +27,6 @@ from backend.models.fixed import (
     EntityType,
     EntityState,
     RatingEvent,
-    RatingType,
 )
 from backend.properties import NodeStatus
 from backend.models.dynamic import NodeTypeModels, EdgeTypeModels, DynamicSubgraph
@@ -135,7 +133,7 @@ class RatingHistoryPostgreSQLDB(RatingHistoryRelationalInterface):
             return rating
 
     def get_node_rating(
-        self, node_id: int, rating_type: RatingType, username: str
+        self, node_id: int, poll_label: str, username: str
     ) -> RatingEvent | None:
         """
         Retrieve the latest rating of a given node by a given user.
@@ -146,7 +144,7 @@ class RatingHistoryPostgreSQLDB(RatingHistoryRelationalInterface):
                 .where(
                     RatingEvent.entity_type == EntityType.node,
                     RatingEvent.node_id == node_id,
-                    RatingEvent.rating_type == rating_type,
+                    RatingEvent.poll_label == poll_label,
                     RatingEvent.username == username,
                 )
                 .order_by(RatingEvent.timestamp.desc())
@@ -156,7 +154,7 @@ class RatingHistoryPostgreSQLDB(RatingHistoryRelationalInterface):
             return rating
 
     def get_node_ratings(
-        self, node_id: int, rating_type: RatingType
+        self, node_id: int, poll_label: str
     ) -> list[RatingEvent]:
         """
         Retrieve the most recent rating per user for a given node using PostgreSQL's DISTINCT ON.
@@ -168,21 +166,21 @@ class RatingHistoryPostgreSQLDB(RatingHistoryRelationalInterface):
             FROM {RatingEvent.__tablename__}
             WHERE entity_type = :entity_type
               AND node_id = :node_id
-              AND rating_type = :rating_type
+              AND poll_label = :poll_label
             ORDER BY username, timestamp DESC
         """
         )
         params = {
             "entity_type": EntityType.node,
             "node_id": node_id,
-            "rating_type": rating_type,
+            "poll_label": poll_label,
         }
         with Session(self.engine) as session:
             results = session.exec(query, params=params).fetchall()
             return [RatingEvent.model_validate(row) for row in results]
 
     def get_nodes_ratings(
-        self, node_ids: list[NodeId], rating_type: RatingType
+        self, node_ids: list[NodeId], poll_label: str
     ) -> dict[NodeId, list[RatingEvent]]:
         """
         Retrieve the most recent rating per user for multiple nodes.
@@ -196,7 +194,7 @@ class RatingHistoryPostgreSQLDB(RatingHistoryRelationalInterface):
                 FROM {RatingEvent.__tablename__}
                 WHERE entity_type = :entity_type
                 AND node_id = ANY(:node_ids)
-                AND rating_type = :rating_type
+                AND poll_label = :poll_label
                 ORDER BY node_id, username, timestamp DESC
             )
             SELECT * FROM latest;
@@ -205,7 +203,7 @@ class RatingHistoryPostgreSQLDB(RatingHistoryRelationalInterface):
         params = {
             "entity_type": EntityType.node,
             "node_ids": node_ids,
-            "rating_type": rating_type,
+            "poll_label": poll_label,
         }
         with Session(self.engine) as session:
             rows = session.exec(query, params=params).fetchall()
@@ -216,7 +214,7 @@ class RatingHistoryPostgreSQLDB(RatingHistoryRelationalInterface):
             return result
 
     def get_edge_rating(
-        self, source_id: int, target_id: int, rating_type: RatingType, username: str
+        self, source_id: int, target_id: int, poll_label: str, username: str
     ) -> RatingEvent | None:
         """
         Retrieve the latest rating of a given edge by a given user.
@@ -228,7 +226,7 @@ class RatingHistoryPostgreSQLDB(RatingHistoryRelationalInterface):
                     RatingEvent.entity_type == EntityType.edge,
                     RatingEvent.source_id == source_id,
                     RatingEvent.target_id == target_id,
-                    RatingEvent.rating_type == rating_type,
+                    RatingEvent.poll_label == poll_label,
                     RatingEvent.username == username,
                 )
                 .order_by(RatingEvent.timestamp.desc())
@@ -237,38 +235,37 @@ class RatingHistoryPostgreSQLDB(RatingHistoryRelationalInterface):
             return rating
 
     def get_node_median_rating(
-        self, node_id: int, rating_type: RatingType
-    ) -> LikertScale | None:
+        self, node_id: int, poll_label: str
+    ) -> float | None:
         """
-        Retrieve the median of latest ratings (LikertScale) for a given node.
+        Compute the median rating for a node + poll_label,
+        considering only each user’s latest rating.
         """
-        # Use get_node_ratings to get the latest ratings per user
-        latest_ratings = self.get_node_ratings(node_id, rating_type)
-        if not latest_ratings:
-            raise HTTPException(status_code=404, detail="No ratings found for node")
-
-        scale_order = [
-            LikertScale.a,
-            LikertScale.b,
-            LikertScale.c,
-            LikertScale.d,
-            LikertScale.e,
-        ]
-        # Convert ratings to their index values
-        indices = [scale_order.index(r.rating) for r in latest_ratings]
-        indices.sort()
-        # Compute median index using the lower median in case of even count.
-        mid = len(indices) // 2
-        median_index = indices[mid] if len(indices) % 2 == 1 else indices[mid - 1]
-        median_rating = scale_order[median_index]
-        if hasattr(self, "logger"):
-            self.logger.debug(
-                f"Computed median rating for node {node_id} is {median_rating}"
-            )
-        return median_rating
+        with Session(self.engine) as session:
+            stmt = text("""
+            SELECT percentile_cont(0.5)
+                    WITHIN GROUP (ORDER BY rating) AS median
+                FROM (
+                SELECT DISTINCT ON (username) rating
+                    FROM rating_event
+                WHERE entity_type = :etype
+                    AND node_id    = :nid
+                    AND poll_label = :pl
+                ORDER BY username, timestamp DESC
+                ) AS latest;
+            """)
+            row = session.exec(
+                stmt,
+                {
+                    "etype": EntityType.node.value,
+                    "nid": node_id,
+                    "pl": poll_label,
+                },
+            ).first()
+            return row.median if row and row.median is not None else None
 
     def get_edge_ratings(
-        self, source_id: int, target_id: int, rating_type: RatingType
+        self, source_id: int, target_id: int, poll_label: str
     ) -> list[RatingEvent]:
         """
         Retrieve the most recent rating per user for a given edge using PostgreSQL's DISTINCT ON.
@@ -280,7 +277,7 @@ class RatingHistoryPostgreSQLDB(RatingHistoryRelationalInterface):
             WHERE entity_type = :entity_type
               AND source_id = :source_id
               AND target_id = :target_id
-              AND rating_type = :rating_type
+              AND poll_label = :poll_label
             ORDER BY username, timestamp DESC
         """
         )
@@ -288,97 +285,86 @@ class RatingHistoryPostgreSQLDB(RatingHistoryRelationalInterface):
             "entity_type": EntityType.edge,
             "source_id": source_id,
             "target_id": target_id,
-            "rating_type": rating_type,
+            "poll_label": poll_label,
         }
         with Session(self.engine) as session:
             results = session.exec(query, params=params).fetchall()
             return [RatingEvent.model_validate(row) for row in results]
 
     def get_edge_median_rating(
-        self, source_id: int, target_id: int, rating_type: RatingType
-    ) -> LikertScale | None:
+        self, source_id: int, target_id: int, poll_label: str
+    ) -> float | None:
         """
-        Retrieve the median of latest ratings (LikertScale) for a given edge.
+        Compute the median rating for an edge + poll_label,
+        considering only each user’s latest rating.
         """
-        # TODO: implement and use get_edge_ratings
         with Session(self.engine) as session:
-            statement = (
-                select(RatingEvent)
-                .where(
-                    RatingEvent.entity_type == EntityType.edge,
-                    RatingEvent.source_id == source_id,
-                    RatingEvent.target_id == target_id,
-                    RatingEvent.rating_type == rating_type,
-                )
-                .order_by(RatingEvent.timestamp.desc())
-            )
-            ratings = session.exec(statement).all()
-            if not ratings:
-                raise HTTPException(status_code=404, detail="No ratings found for edge")
-            scale_order = [
-                LikertScale.a,
-                LikertScale.b,
-                LikertScale.c,
-                LikertScale.d,
-                LikertScale.e,
-            ]
-            indices = [scale_order.index(r.rating) for r in ratings]
-            indices.sort()
-            mid = len(indices) // 2
-            median_index = indices[mid] if len(indices) % 2 == 1 else indices[mid - 1]
-            median_rating = scale_order[median_index]
-            if hasattr(self, "logger"):
-                self.logger.debug(
-                    f"Computed median rating for edge {source_id}->{target_id} is {median_rating}"
-                )
-            return median_rating
+            stmt = text("""
+            SELECT percentile_cont(0.5)
+                    WITHIN GROUP (ORDER BY rating) AS median
+                FROM (
+                SELECT DISTINCT ON (username) rating
+                    FROM rating_event
+                WHERE entity_type = :etype
+                    AND source_id  = :sid
+                    AND target_id  = :tid
+                    AND poll_label = :pl
+                ORDER BY username, timestamp DESC
+                ) AS latest;
+            """)
+            row = session.exec(
+                stmt,
+                {
+                    "etype": EntityType.edge.value,
+                    "sid": source_id,
+                    "tid": target_id,
+                    "pl": poll_label,
+                },
+            ).first()
+            return row.median if row and row.median is not None else None
 
     def get_nodes_median_ratings(
-        self, node_ids: list[NodeId], rating_type: RatingType
-    ) -> dict[NodeId, LikertScale | None]:
+        self, node_ids: list[NodeId], poll_label: str
+    ) -> dict[NodeId, float | None]:
         """
-        Retrieve the latest median ratings for multiple nodes.
-        Leverages get_nodes_ratings to group the latest rating per user for each node,
-        then computes the median rating using the defined LikertScale order.
+        Compute per‐node median over each user's latest rating, in one query.
         """
-        # Get the latest ratings per user for each node
-        ratings_by_node = self.get_nodes_ratings(node_ids, rating_type)
-
-        # Define the order of LikertScale values.
-        scale_order = [
-            LikertScale.a,
-            LikertScale.b,
-            LikertScale.c,
-            LikertScale.d,
-            LikertScale.e,
-        ]
-
-        results: dict[int, LikertScale | None] = {}
-        for node_id in node_ids:
-            node_ratings = ratings_by_node.get(node_id, [])
-            if not node_ratings:
-                results[node_id] = None
-            else:
-                # Convert ratings to indices per the scale_order,
-                # sort them and compute the median (using lower median in even cases)
-                indices = sorted(scale_order.index(r.rating) for r in node_ratings)
-                mid = len(indices) // 2
-                median_index = (
-                    indices[mid] if len(indices) % 2 == 1 else indices[mid - 1]
-                )
-                results[node_id] = scale_order[median_index]
-
-            if hasattr(self, "logger"):
-                self.logger.debug(
-                    f"Computed median rating for node {node_id} is {results[node_id]}"
-                )
-
-        return results
+        if not node_ids:
+            return {}
+        with Session(self.engine) as session:
+            stmt = text("""
+              SELECT node_id,
+                     percentile_cont(0.5)
+                       WITHIN GROUP (ORDER BY rating) AS median
+                FROM (
+                  SELECT DISTINCT ON (node_id, username)
+                         node_id, username, rating
+                    FROM rating_event
+                   WHERE entity_type = :etype
+                     AND poll_label = :pl
+                     AND node_id IN :nids
+                   ORDER BY node_id, username, timestamp DESC
+                ) AS latest
+               GROUP BY node_id;
+            """)
+            rows = session.exec(
+                stmt,
+                {
+                  "etype": EntityType.node.value,
+                  "pl": poll_label,
+                  "nids": tuple(node_ids),
+                },
+            ).all()
+            # map missing ids → None
+            result = {nid: None for nid in node_ids}
+            for r in rows:
+                result[r.node_id] = r.median
+            return result
 
     def get_edges_ratings(
         self,
         edges: list[tuple[int, int]],
-        rating_type: RatingType,
+        poll_label: str,
     ) -> dict[tuple[int, int], list[RatingEvent]]:
         """
         Retrieve the most recent rating per user for a set of edges in one query
@@ -402,7 +388,7 @@ class RatingHistoryPostgreSQLDB(RatingHistoryRelationalInterface):
                 SELECT DISTINCT ON (source_id, target_id, username) *
                 FROM {RatingEvent.__tablename__}
                 WHERE entity_type = :entity_type
-                  AND rating_type = :rating_type
+                  AND poll_label = :poll_label
                   AND (source_id, target_id) IN (
                       {edge_values}
                   )
@@ -414,7 +400,7 @@ class RatingHistoryPostgreSQLDB(RatingHistoryRelationalInterface):
 
         params = {
             "entity_type": EntityType.edge,
-            "rating_type": rating_type,
+            "poll_label": poll_label,
         }
 
         with Session(self.engine) as session:
@@ -432,39 +418,41 @@ class RatingHistoryPostgreSQLDB(RatingHistoryRelationalInterface):
     def get_edges_median_ratings(
         self,
         edges: list[tuple[int, int]],
-        rating_type: RatingType,
-    ) -> dict[tuple[int, int], LikertScale | None]:
+        poll_label: str,
+    ) -> dict[tuple[int, int], float | None]:
         """
-        Retrieve the median rating (LikertScale) for each specified edge.
-        Similar to get_nodes_median_ratings, but grouping by (source_id, target_id).
+        Compute per‐edge median over each user's latest rating, in one query.
         """
-        # Use the batch get_edges_ratings to fetch all distinct-latest ratings at once
-        ratings_by_edge = self.get_edges_ratings(edges, rating_type)
-        scale_order = [
-            LikertScale.a,
-            LikertScale.b,
-            LikertScale.c,
-            LikertScale.d,
-            LikertScale.e,
-        ]
-        medians: dict[tuple[int, int], LikertScale | None] = {}
-
-        for edge_key, ratings_list in ratings_by_edge.items():
-            if not ratings_list:
-                medians[edge_key] = None
-                continue
-            # Convert each rating to its index in [a,b,c,d,e]
-            indices = sorted(scale_order.index(r.rating) for r in ratings_list)
-            mid = len(indices) // 2
-            median_index = indices[mid] if len(indices) % 2 == 1 else indices[mid - 1]
-            medians[edge_key] = scale_order[median_index]
-
-        # For any edges that weren’t returned at all, set to None
-        for edge_key in edges:
-            if edge_key not in medians:
-                medians[edge_key] = None
-
-        return medians
+        if not edges:
+            return {}
+        with Session(self.engine) as session:
+            stmt = text("""
+              SELECT source_id, target_id,
+                     percentile_cont(0.5)
+                       WITHIN GROUP (ORDER BY rating) AS median
+                FROM (
+                  SELECT DISTINCT ON (source_id, target_id, username)
+                         source_id, target_id, username, rating
+                    FROM rating_event
+                   WHERE entity_type = :etype
+                     AND poll_label = :pl
+                     AND (source_id, target_id) IN :pairs
+                   ORDER BY source_id, target_id, username, timestamp DESC
+                ) AS latest
+               GROUP BY source_id, target_id;
+            """)
+            rows = session.exec(
+                stmt,
+                {
+                  "etype": EntityType.edge.value,
+                  "pl": poll_label,
+                  "pairs": tuple(edges),
+                },
+            ).all()
+            result = {(s, t): None for s, t in edges}
+            for r in rows:
+                result[(r.source_id, r.target_id)] = r.median
+            return result
 
 
 class GraphHistoryPostgreSQLDB(GraphHistoryRelationalInterface):

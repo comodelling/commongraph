@@ -6,7 +6,6 @@ from pydantic import model_validator
 from sqlalchemy import JSON, Column
 from sqlmodel import Field, SQLModel
 
-from backend.properties import LikertScale
 
 
 NodeId = Annotated[
@@ -111,13 +110,6 @@ class MigrateLabelRequest(SQLModel):
     property_name: str
 
 
-class RatingType(str, Enum):
-    support = "support"
-    causal_strength = "causal_strength"
-    necessity = "necessity"
-    sufficiency = "sufficiency"
-
-
 class RatingEvent(SQLModel, table=True):
     """RatingEvent model"""
 
@@ -126,9 +118,9 @@ class RatingEvent(SQLModel, table=True):
     entity_type: EntityType = Field(..., description="Type of entity (node or edge)")
     node_id: NodeId | None = Field(..., description="ID of the node")
     source_id: NodeId | None = Field(None, description="Edge's source node ID")
-    target_id: NodeId | None = Field(None, description="Edge's rarget node ID")
-    rating_type: str = Field(..., description="Type of rating")   #TODO: rename as rating_name?
-    rating: LikertScale = Field(..., description="Rating value")  #TODO: allow different types of rating? 
+    target_id: NodeId | None = Field(None, description="Edge's target node ID")
+    poll_label: str = Field(index=True, description="Must match a key in your config.yaml polls")
+    rating: float = Field(description="Discrete or continuous value, interpretation driven by config")
     timestamp: datetime.datetime = Field(
         default_factory=lambda: datetime.datetime.now(datetime.timezone.utc),
         description="Timestamp of the rating",

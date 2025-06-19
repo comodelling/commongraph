@@ -7,7 +7,7 @@ from backend.api.auth import get_current_user
 from backend.db.base import GraphDatabaseInterface, GraphHistoryRelationalInterface, RatingHistoryRelationalInterface
 from backend.db.connections import get_graph_db, get_graph_history_db, get_rating_history_db
 from backend.models.dynamic import DynamicEdge, EdgeTypeModels
-from backend.models.fixed import GraphHistoryEvent, NodeId, RatingEvent, RatingType, UserRead, EntityType
+from backend.models.fixed import GraphHistoryEvent, NodeId, RatingEvent, UserRead, EntityType
 
 
 logger = logging.getLogger(__name__)
@@ -25,11 +25,11 @@ router = APIRouter(prefix="/edges", tags=["edges"])
 )
 def get_edges_ratings(
     edge_ids: list[str] = Query(..., description="List of 'src-tgt' edge IDs"),
-    rating_type: RatingType = Query(RatingType.causal_strength),
+    poll_label: str = Query(..., description="Label of the poll to filter ratings"),
     db: RatingHistoryRelationalInterface = Depends(get_rating_history_db),
 ) -> dict[str, list[RatingEvent]]:
     pairs = [(int(s), int(t)) for s, t in (e.split("-") for e in edge_ids)]
-    raw = db.get_edges_ratings(pairs, rating_type)
+    raw = db.get_edges_ratings(pairs, poll_label)
     return { f"{s}-{t}": evs for (s, t), evs in raw.items() }
 
 
@@ -39,7 +39,7 @@ def get_edges_median_ratings(
         ...,   # no alias
         description="List of edges in form 'source-target'"
     ),
-    rating_type: RatingType = Query(RatingType.causal_strength),
+    poll_label: str = Query(..., description="Label of the poll to filter ratings"),
     db: RatingHistoryRelationalInterface = Depends(get_rating_history_db),
 ) -> dict[str, dict | None]:
     """
@@ -54,7 +54,7 @@ def get_edges_median_ratings(
         src_str, tgt_str = key.split("-")
         edges.append((int(src_str), int(tgt_str)))
 
-    medians = db.get_edges_median_ratings(edges, rating_type)
+    medians = db.get_edges_median_ratings(edges, poll_label)
     duration = datetime.datetime.now() - start_time
     logger.info(
         f"Retrieved median ratings for {len(edge_ids)} edges in {duration.total_seconds() * 1000:.2f}ms"
@@ -212,28 +212,28 @@ def log_edge_rating(
 def get_edge_rating(
     source_id: int,
     target_id: int,
-    rating_type: RatingType,
+    poll_label: str,
     db: RatingHistoryRelationalInterface = Depends(get_rating_history_db),
     user: UserRead = Depends(get_current_user),
 ) -> RatingEvent | None:
     """
     Retrieve a user's rating for an edge.
     """
-    return db.get_edge_rating(source_id, target_id, rating_type, user.username)
+    return db.get_edge_rating(source_id, target_id, poll_label, user.username)
 
 
 @ratings_router.get("/median")
 def get_edge_median_rating(
     source_id: int,
     target_id: int,
-    rating_type: RatingType,
+    poll_label: str,
     db: RatingHistoryRelationalInterface = Depends(get_rating_history_db),
 ) -> dict | None:
     """
     Retrieve the median rating for a given edge.
     """
     logger.warning("Function may not be working as expected")
-    median = db.get_edge_median_rating(source_id, target_id, rating_type)
+    median = db.get_edge_median_rating(source_id, target_id, poll_label)
     return {"median_rating": median}
 
 
@@ -241,13 +241,15 @@ def get_edge_median_rating(
 def get_edge_ratings(
     source_id: int,
     target_id: int,
-    rating_type: RatingType = RatingType.causal_strength,
+    poll_label: str | None = Query(
+        None, description="Optional poll label to filter ratings"
+    ),
     db: RatingHistoryRelationalInterface = Depends(get_rating_history_db),
 ) -> dict:
     """
     Retrieve all ratings for a given edge.
     """
-    ratings = db.get_edge_ratings(source_id, target_id, rating_type)
+    ratings = db.get_edge_ratings(source_id, target_id, poll_label)
     # Convert each RatingEvent to dict.
     return {"ratings": ratings}
 

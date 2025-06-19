@@ -121,7 +121,7 @@ export default {
           response = await api.get(
             `/nodes/${props.element.node_id}/ratings/me`,
             {
-              params: { rating_type: props.property },
+              params: { poll_label: props.property },
               headers: { Authorization: `Bearer ${token}` },
             },
           );
@@ -135,7 +135,7 @@ export default {
             `/edges/${props.element.edge.source}/${props.element.edge.target}/ratings/me`,
             {
               params: {
-                rating_type: props.property,
+                poll_label: props.property,
               },
               headers: { Authorization: `Bearer ${token}` },
             },
@@ -159,7 +159,7 @@ export default {
       var response = null;
       try {
         const ratingData = {
-          rating_type: props.property,
+          poll_label: props.property,
           rating: val,
         };
         if (props.element && props.element.node_id) {

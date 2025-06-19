@@ -32,18 +32,3 @@ class PredefinedProperties(SQLModel):
     
 Proba = Annotated[float, Query(title="conditional proba", ge=0, le=1)]
 
-
-class LikertScale(str, Enum):
-    a = "A"  # strongly agree
-    b = "B"  # agree
-    c = "C"  # neutral
-    d = "D"  # disagree
-    e = "E"  # strongly disagree
-
-    @classmethod
-    def _missing_(cls, value):
-        if isinstance(value, str):
-            uppercase = value.upper()
-            if uppercase in cls._value2member_map_:
-                return cls._value2member_map_[uppercase]
-        raise ValueError(f"{value} is not a valid {cls.__name__}")

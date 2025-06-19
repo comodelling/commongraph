@@ -106,7 +106,7 @@ export default {
               `/edges/${props.edge.source}/${props.edge.target}/ratings`,
               {
                 params: {
-                  rating_type: props.property,
+                  poll_label: props.property,
                 },
               },
             );

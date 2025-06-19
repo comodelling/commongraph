@@ -5,12 +5,11 @@
 
     <!-- Histogram of past ratings: always mounted, just hidden until the “me” rating has loaded -->
     <RatingHistogram
-      v-show="currentRatingLoaded"
-      :element="element"
-      :poll-label="pollLabel"
-      :poll-config="pollConfig"
-      :aggregate="false"
       ref="histogram"
+      :element="element"
+      :pollLabel="pollLabel"
+      :pollConfig="pollConfig"
+      :aggregate="false"
     />
 
     <div v-if="!currentRatingLoaded" class="loading">Loading your rating…</div>
@@ -135,8 +134,13 @@ export default {
     };
 
     onMounted(fetchRating);
-    watch(() => props.element, fetchRating);
-
+    watch(
+      [() => props.element, () => props.pollLabel],
+      () => {
+        histogram.value?.fetchRatings();
+      },
+      { immediate: true, deep: true }
+    );
     return {
       currentRating,
       currentRatingLoaded,

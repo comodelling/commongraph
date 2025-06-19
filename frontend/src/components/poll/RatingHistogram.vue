@@ -11,23 +11,26 @@
 <script>
 import { ref, watch, onMounted, nextTick, computed } from "vue";
 import api from "../../api/axios";
+import qs from "qs";
 import Chart from "chart.js/auto";
 
 export default {
   name: "RatingHistogram",
   props: {
-    // element: either { node_id } or { edge: { source, target } }
+    // element is required only when not in aggregate mode
     element: {
       type: Object,
-      required: true,
+      required: false,
+      default: () => ({})
     },
-    // which poll to fetch
     pollLabel: {
       type: String,
       required: true,
     },
-    pollConfig: { type: Object, required: true },
-    // if true we expect 'nodes' array; else we use 'element'
+    pollConfig: {
+      type: Object,
+      required: true,
+    },
     aggregate: {
       type: Boolean,
       default: true,
@@ -73,31 +76,53 @@ export default {
     };
 
     const fetchRatings = async () => {
-      if (!props.aggregate && props.element.node_id === "new") return;
       loading.value = true;
       error.value = null;
+
       try {
         if (props.aggregate) {
-          // existing aggregate logic...
+          // In aggregate mode, pull medians for all node_ids
+          if (!props.nodes.length) {
+            ratings.value = [];
+          } else {
+            const resp = await api.get("/nodes/ratings/median", {
+              params: {
+                node_ids: props.nodes.map((n) => n.node_id),
+                poll_label: props.pollLabel,
+              },
+              paramsSerializer: (p) => qs.stringify(p, { arrayFormat: "repeat" }),
+            });
+            ratings.value = Object.values(resp.data)
+              .map((item) => item[props.pollLabel])
+              .filter((val) => val != null)
+              .map((val) => ({ median_rating: val }));
+          }
         } else {
-          // single‐element mode
-          if (props.element.node_id != null) {
-            const resp = await api.get(
+          // Single‐element mode
+          let resp;
+          if (props.element.node_id) {
+            resp = await api.get(
               `/nodes/${props.element.node_id}/ratings`,
               { params: { poll_label: props.pollLabel } }
             );
-            ratings.value = resp.data.ratings;
-          } else if (props.element.edge) {
+          } else {
             const { source, target } = props.element.edge;
-            const resp = await api.get(
+            resp = await api.get(
               `/edges/${source}/${target}/ratings`,
               { params: { poll_label: props.pollLabel } }
             );
-            ratings.value = resp.data.ratings;
+          }
+          const data = resp.data;
+          // Ensure we assign an Array
+          if (Array.isArray(data)) {
+            ratings.value = data;
+          } else if (data && Array.isArray(data.ratings)) {
+            ratings.value = data.ratings;
           } else {
-            throw new Error("element.node_id or element.edge required");
+            ratings.value = [];
           }
         }
+
         updateHistogram();
       } catch (e) {
         console.error(e);
@@ -106,6 +131,7 @@ export default {
         loading.value = false;
       }
     };
+
 
    const updateHistogram = async () => {
     await nextTick();
@@ -220,6 +246,12 @@ export default {
   };
 
     onMounted(fetchRatings);
+    watch(
+      () => props.nodes,
+      () => props.aggregate && fetchRatings(),
+      { deep: true }
+    );
+
     expose({ fetchRatings });
 
     const onChartClick = (evt) => {

@@ -1,4 +1,3 @@
-<!-- filepath: /Users/mario/CODE/commongraph/frontend/src/views/SearchPage.vue -->
 <template>
   <div class="search-page">
     <div class="search-header">
@@ -33,7 +32,21 @@
         </div>
       </div>
       <div class="visualization-column">
-        <SupportView :nodes="nodes" @filter-by-rating="applyRatingFilter" />
+        <!-- Iterate over each node poll configured -->
+        <div
+          v-for="(pollConfig, pollLabel) in nodePolls"
+          :key="pollLabel"
+          class="histogram-container"
+        >
+           <h4>Median {{ pollLabel }} ratings</h4>
+          <RatingHistogram
+            :nodes="nodes"
+            :pollLabel="pollLabel"
+            :pollConfig="pollConfig"
+            aggregate
+            @filter-by-rating="applyRatingFilter"
+          />
+        </div>
       </div>
     </div>
   </div>
@@ -43,12 +56,14 @@
 import api from "../api/axios";
 import qs from "qs";
 import { useRouter, useRoute } from "vue-router";
+import { computed } from "vue";
+import { useConfig } from "../composables/useConfig";
 import SearchBar from "../components/common/SearchBar.vue";
-import SupportView from "../components/poll/RatingHistogram.vue";
+import RatingHistogram from "../components/poll/RatingHistogram.vue";
 import NodeListItem from "../components/node/NodeListItem.vue";
 
 export default {
-  components: { SearchBar, SupportView, NodeListItem },
+  components: { SearchBar, RatingHistogram, NodeListItem },
   data() {
     return {
       title: "",
@@ -156,34 +171,32 @@ export default {
           rating: apiRating,
         });
         const startTime = performance.now();
-        const response = await api.get(
-          `/nodes`,
-          {
-            params: {
-              title,
-              node_type,
-              status,
-              tags: tagsArray.length ? tagsArray : undefined,
-              scope,
-              rating: apiRating,
-            },
-            paramsSerializer: (params) =>
-              qs.stringify(params, { arrayFormat: "repeat" }),
+        const response = await api.get(`/nodes`, {
+          params: {
+            title,
+            node_type,
+            status,
+            tags: tagsArray.length ? tagsArray : undefined,
+            scope,
+            rating: apiRating,
           },
-        );
+          paramsSerializer: (params) =>
+            qs.stringify(params, { arrayFormat: "repeat" }),
+        });
         const endTime = performance.now();
         console.log(`Search completed in ${endTime - startTime} milliseconds`);
         this.nodes = response.data;
       } catch (error) {
         console.error("Error fetching nodes:", error);
-        // Optionally, show error to the user or handle it appropriately
       }
     },
   },
   setup() {
     const router = useRouter();
     const route = useRoute();
-    return { router, route };
+    const { defaultNodeType, getNodePolls } = useConfig();
+    const nodePolls = computed(() => getNodePolls(defaultNodeType.value));
+    return { router, route, nodePolls };
   },
 };
 </script>

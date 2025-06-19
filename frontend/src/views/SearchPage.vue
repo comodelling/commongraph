@@ -44,7 +44,7 @@ import api from "../api/axios";
 import qs from "qs";
 import { useRouter, useRoute } from "vue-router";
 import SearchBar from "../components/common/SearchBar.vue";
-import SupportView from "../components/rating/SupportHistogram.vue";
+import SupportView from "../components/poll/RatingHistogram.vue";
 import NodeListItem from "../components/node/NodeListItem.vue";
 
 export default {

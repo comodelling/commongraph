@@ -96,7 +96,7 @@
 import { useConfig } from "../composables/useConfig";
 import NodeInfo from "../components/node/NodeInfo.vue";
 import EdgeInfo from "../components/edge/EdgeInfo.vue";
-import ElementRating from "../components/rating/ElementRating.vue";
+import ElementRating from "../components/poll/ElementPollPane.vue";
 import SubgraphRenderer from "../components/graph/SubgraphRenderer.vue";
 import {
   formatFlowEdgeProps,

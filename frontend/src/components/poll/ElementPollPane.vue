@@ -92,7 +92,7 @@
 import { ref, onMounted } from "vue";
 import api from "../../api/axios";
 import { useAuth } from "../../composables/useAuth";
-import SupportHistogram from "./SupportHistogram.vue";
+import SupportHistogram from "./RatingHistogram.vue";
 
 export default {
   components: { SupportHistogram },

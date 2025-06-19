@@ -3,14 +3,17 @@
     <!-- Question from config -->
     <h3 class="poll-question">{{ pollConfig.question }}</h3>
 
-    <!-- Histogram of past ratings -->
+    <!-- Histogram of past ratings: always mounted, just hidden until the “me” rating has loaded -->
     <RatingHistogram
-      v-if="currentRatingLoaded"
+      v-show="currentRatingLoaded"
       :element="element"
       :poll-label="pollLabel"
+      :poll-config="pollConfig"
       :aggregate="false"
       ref="histogram"
     />
+
+    <div v-if="!currentRatingLoaded" class="loading">Loading your rating…</div>
 
     <!-- Discrete buttons -->
     <div v-if="pollConfig.scale === 'discrete'" class="buttons-row">
@@ -18,7 +21,7 @@
         v-for="(label, key) in pollConfig.options"
         :key="key"
         class="rating-button"
-        :class="{ selected: currentRating === key }"
+        :class="{ selected: String(currentRating) === key }"
         @click="rate(key)"
         :title="label"
       >
@@ -87,7 +90,7 @@ export default {
           );
         }
         if (response.data) {
-          currentRating.value = response.data.rating;
+          currentRating.value = Number(response.data.rating);
           if (props.pollConfig.scale === "continuous") {
             sliderValue.value = Number(currentRating.value);
           }
@@ -105,7 +108,8 @@ export default {
         alert("Please log in to rate.");
         return;
       }
-      currentRating.value = val;
+      const num = Number(val);
+      currentRating.value = num;
       const payload = {
         poll_label: props.pollLabel,
         rating: val,
@@ -127,7 +131,7 @@ export default {
         );
       }
       // refresh histogram
-      histogram.value?.fetchRatings();
+      await histogram.value?.fetchRatings();
     };
 
     onMounted(fetchRating);

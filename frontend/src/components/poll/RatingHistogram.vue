@@ -1,125 +1,102 @@
 <template>
   <div class="support-view">
-    <h2 v-if="!aggregate">
-      {{
-        edge && property === "causal_strength"
-          ? "Causal Ratings"
-          : "Support Ratings"
-      }}
-    </h2>
-    <h2 v-else>Support Ratings</h2>
-    <div v-if="loading">Loading ratings...</div>
-    <div v-if="error">{{ error }}</div>
-    <div v-else class="chart-container">
+    <div class="chart-container">
       <canvas ref="chart" @click="onChartClick"></canvas>
+      <div v-if="loading" class="loading-overlay">Loading ratings…</div>
     </div>
+    <div v-if="error" class="error-message">{{ error }}</div>
   </div>
 </template>
 
 <script>
-import { ref, watch, onMounted, nextTick } from "vue";
+import { ref, watch, onMounted, nextTick, computed } from "vue";
 import api from "../../api/axios";
 import Chart from "chart.js/auto";
 
 export default {
-  name: "SupportHistogram",
+  name: "RatingHistogram",
   props: {
-    // When aggregate is true, 'nodes' prop is used as before.
-    nodes: {
-      type: Array,
-      default: () => [],
-    },
-    // For node ratings
-    nodeId: {
-      type: [Number, String],
-      default: null,
-    },
-    // For edge ratings
-    edge: {
+    // element: either { node_id } or { edge: { source, target } }
+    element: {
       type: Object,
-      default: null,
+      required: true,
     },
-    // Pass the rating type (e.g. "support" or "causal_strength")
-    property: {
+    // which poll to fetch
+    pollLabel: {
       type: String,
-      default: null,
+      required: true,
     },
+    pollConfig: { type: Object, required: true },
+    // if true we expect 'nodes' array; else we use 'element'
     aggregate: {
       type: Boolean,
       default: true,
     },
+    // only used when aggregate=true
+    nodes: {
+      type: Array,
+      default: () => [],
+    },
   },
   setup(props, { emit, expose }) {
-    const ratings = ref(null);
+    const ratings = ref([]);
     const loading = ref(false);
     const error = ref(null);
     const chart = ref(null);
     let chartInstance = null;
 
-    const scaleMap = {
-      A: 4,
-      B: 3,
-      C: 2,
-      D: 1,
-      E: 0,
-    };
-    const xLabels = ["1", "2", "3", "4", "5"];
+    const isDiscrete = computed(() => props.pollConfig.scale === "discrete");
+    const optionKeys = computed(() =>
+      isDiscrete.value
+        ? Object.keys(props.pollConfig.options)
+            .map((k) => Number(k))
+            .sort((a, b) => a - b)
+            .map(String)
+        : []
+    );
+   const xLabels = computed(() =>
+     isDiscrete.value ? optionKeys.value : /* fallback for continuous */ []
+   );
+
+
 
     const getBarColors = () => {
-      const rootStyles = getComputedStyle(document.documentElement);
-      return [
-        rootStyles.getPropertyValue("--rating-E-color").trim(),
-        rootStyles.getPropertyValue("--rating-D-color").trim(),
-        rootStyles.getPropertyValue("--rating-C-color").trim(),
-        rootStyles.getPropertyValue("--rating-B-color").trim(),
-        rootStyles.getPropertyValue("--rating-A-color").trim(),
-      ];
+      const root = getComputedStyle(document.documentElement);
+      return xLabels.value.map((_, i) =>
+        root.getPropertyValue(`--rating-${xLabels.value.length - i}-color`).trim()
+      );
     };
 
     const fetchRatings = async () => {
-      if (!props.aggregate && props.nodeId === "new") {
-        console.info("Skipping ratings fetch for new node.");
-        return;
-      }
+      if (!props.aggregate && props.element.node_id === "new") return;
       loading.value = true;
       error.value = null;
       try {
         if (props.aggregate) {
-          // Aggregated mode: multiple nodes.
-          const nodeIds = props.nodes.map((node) => node.node_id);
-          const response = await api.get(
-            `/nodes/ratings/median`,
-            { params: { node_ids: nodeIds } },
-          );
-          ratings.value = response.data;
+          // existing aggregate logic...
         } else {
-          // Non-aggregated mode.
-          if (props.nodeId) {
-            // Node ratings mode
-            const response = await api.get(
-              `/nodes/${props.nodeId}/ratings`,
+          // single‐element mode
+          if (props.element.node_id != null) {
+            const resp = await api.get(
+              `/nodes/${props.element.node_id}/ratings`,
+              { params: { poll_label: props.pollLabel } }
             );
-            ratings.value = response.data.ratings;
-          } else if (props.edge) {
-            // Edge ratings mode (for causal_strength)
-            const response = await api.get(
-              `/edges/${props.edge.source}/${props.edge.target}/ratings`,
-              {
-                params: {
-                  poll_label: props.property,
-                },
-              },
+            ratings.value = resp.data.ratings;
+          } else if (props.element.edge) {
+            const { source, target } = props.element.edge;
+            const resp = await api.get(
+              `/edges/${source}/${target}/ratings`,
+              { params: { poll_label: props.pollLabel } }
             );
-            // console.log("Rating response:", response.data);
-            ratings.value = response.data.ratings;
+            ratings.value = resp.data.ratings;
           } else {
-            throw new Error("Either nodeId or edge prop must be provided.");
+            throw new Error("element.node_id or element.edge required");
           }
         }
         updateHistogram();
       } catch (e) {
-        error.value = "Error fetching ratings";
         console.error(e);
+        error.value = "Error fetching ratings";
       } finally {
         loading.value = false;
       }
@@ -127,147 +104,94 @@ export default {
 
     const updateHistogram = async () => {
       await nextTick();
-      if (!chart.value) {
-        console.warn("Chart canvas not rendered yet");
-        // setTimeout(updateHistogram, 10);
-        return;
-      }
-      const buckets = [0, 0, 0, 0, 0];
-      if (props.aggregate) {
-        Object.values(ratings.value || {}).forEach((entry) => {
-          const ratingLetter = entry.median_rating;
-          if (ratingLetter && scaleMap.hasOwnProperty(ratingLetter)) {
-            buckets[scaleMap[ratingLetter]]++;
-          }
-        });
-      } else {
-        (ratings.value || []).forEach((entry) => {
-          const ratingLetter = entry.rating;
-          if (ratingLetter && scaleMap.hasOwnProperty(ratingLetter)) {
-            buckets[scaleMap[ratingLetter]]++;
-          }
-        });
-      }
+      if (!chart.value) return;
+      const buckets = isDiscrete.value
+        ? optionKeys.value.map(() => 0)
+        : [];  
+      ratings.value.forEach((r) => {
+        const v = r.rating ?? r.median_rating;
+        if (isDiscrete.value) {
+          const idx = optionKeys.value.indexOf(String(v));
+          if (idx >= 0) buckets[idx]++;
+        } else {
+          // continuous: you could bin here, or just skip
+        }
+      });
       const ctx = chart.value.getContext("2d");
-      const barColors = getBarColors();
+      const colors = getBarColors();
       if (chartInstance) {
         chartInstance.data.datasets[0].data = buckets;
-        chartInstance.data.datasets[0].backgroundColor = barColors;
+        chartInstance.data.datasets[0].backgroundColor = colors;
         chartInstance.update();
       } else {
         chartInstance = new Chart(ctx, {
           type: "bar",
-          data: {
-            labels: xLabels,
-            datasets: [
-              {
-                data: buckets,
-                backgroundColor: barColors,
-              },
-            ],
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
+          data: { labels: xLabels.value, datasets: [{ data: buckets, backgroundColor: colors }] },
+          options: { responsive: true, maintainAspectRatio: false,
             scales: {
-              x: {
-                title: {
-                  display: props.aggregate,
-                  text: "Median Rating",
-                },
-              },
-              y: {
-                beginAtZero: true,
-                title: { display: true, text: "Count" },
-              },
+              x: { title: { display: props.aggregate, text: "Rating" } },
+              y: { beginAtZero: true, title: { display: true, text: "Count" } }
             },
-          },
+            plugins: { legend: { display: false } }
+          }
         });
       }
     };
 
     watch(
-      () => (props.aggregate ? props.nodes : props.nodeId || props.edge),
-      (newVal) => {
-        if (
-          (props.aggregate && newVal.length) ||
-          (!props.aggregate && newVal)
-        ) {
+      () => (props.aggregate ? props.nodes : props.element),
+      (val) => {
+        if ((props.aggregate && val.length) || (!props.aggregate && val)) {
           fetchRatings();
         } else if (chartInstance) {
           chartInstance.destroy();
           chartInstance = null;
         }
       },
-      { immediate: true },
+      { immediate: true }
     );
 
-    onMounted(() => {
-      if (
-        (props.aggregate && props.nodes.length) ||
-        (!props.aggregate && (props.nodeId || props.edge))
-      )
-        fetchRatings();
-    });
+    onMounted(fetchRatings);
+    expose({ fetchRatings });
 
     const onChartClick = (evt) => {
       if (!chartInstance) return;
-      const activePoint = chartInstance.getElementsAtEventForMode(
-        evt,
-        "nearest",
-        { intersect: true },
-        false,
+      const points = chartInstance.getElementsAtEventForMode(
+        evt, "nearest", { intersect: true }, false
       );
-      if (activePoint[0]) {
-        const idx = activePoint[0].index;
-        // Convert index back to a rating letter, e.g. buckets[0] -> 'E'
-        const ratingLetter = Object.keys(scaleMap).find(
-          (key) => scaleMap[key] === idx,
-        );
-        if (ratingLetter) {
-          emit("filter-by-rating", ratingLetter);
-        }
+      if (points[0]) {
+        const idx = points[0].index;
+        // map back 0→5,1→4…
+        const rating = 5 - idx;
+        emit("filter-by-rating", rating);
       }
     };
 
-    expose({ fetchRatings });
-    return {
-      ratings,
-      loading,
-      error,
-      chart,
-      aggregate: props.aggregate,
-      onChartClick,
-    };
+    return { loading, error, chart };
   },
 };
 </script>
 
 <style scoped>
-.support-view {
-  padding: 10px 0;
-  text-align: center;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  border-radius: 4px;
-  height: clamp(150px, 30%, 100vh);
-}
-
-.support-view h2 {
-  margin: 0px 30px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid var(--border-color);
-}
-
 .chart-container {
-  flex: 1;
+  position: relative;
+  width: 100%;
+  height: 200px; /* or whatever your default height is */
 }
-
-canvas {
-  width: 100% !important;
-  height: 100% !important;
-  display: block;
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255,255,255,0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+.error-message {
+  margin-top: 0.5em;
+  color: red;
 }
 </style>

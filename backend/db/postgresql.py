@@ -242,26 +242,27 @@ class RatingHistoryPostgreSQLDB(RatingHistoryRelationalInterface):
         considering only each user’s latest rating.
         """
         with Session(self.engine) as session:
-            stmt = text("""
+            stmt = text(f"""
             SELECT percentile_cont(0.5)
                     WITHIN GROUP (ORDER BY rating) AS median
                 FROM (
                 SELECT DISTINCT ON (username) rating
-                    FROM rating_event
+                    FROM {RatingEvent.__tablename__}
                 WHERE entity_type = :etype
                     AND node_id    = :nid
                     AND poll_label = :pl
                 ORDER BY username, timestamp DESC
                 ) AS latest;
             """)
-            row = session.exec(
+            result = session.exec(
                 stmt,
-                {
+                params={
                     "etype": EntityType.node.value,
                     "nid": node_id,
                     "pl": poll_label,
                 },
-            ).first()
+            )
+            row = result.first()
             return row.median if row and row.median is not None else None
 
     def get_edge_ratings(
@@ -299,12 +300,12 @@ class RatingHistoryPostgreSQLDB(RatingHistoryRelationalInterface):
         considering only each user’s latest rating.
         """
         with Session(self.engine) as session:
-            stmt = text("""
+            stmt = text(f"""
             SELECT percentile_cont(0.5)
                     WITHIN GROUP (ORDER BY rating) AS median
                 FROM (
                 SELECT DISTINCT ON (username) rating
-                    FROM rating_event
+                    FROM {RatingEvent.__tablename__}
                 WHERE entity_type = :etype
                     AND source_id  = :sid
                     AND target_id  = :tid
@@ -314,7 +315,7 @@ class RatingHistoryPostgreSQLDB(RatingHistoryRelationalInterface):
             """)
             row = session.exec(
                 stmt,
-                {
+                params={
                     "etype": EntityType.edge.value,
                     "sid": source_id,
                     "tid": target_id,
@@ -332,14 +333,14 @@ class RatingHistoryPostgreSQLDB(RatingHistoryRelationalInterface):
         if not node_ids:
             return {}
         with Session(self.engine) as session:
-            stmt = text("""
+            stmt = text(f"""
               SELECT node_id,
                      percentile_cont(0.5)
                        WITHIN GROUP (ORDER BY rating) AS median
                 FROM (
                   SELECT DISTINCT ON (node_id, username)
                          node_id, username, rating
-                    FROM rating_event
+                    FROM {RatingEvent.__tablename__}
                    WHERE entity_type = :etype
                      AND poll_label = :pl
                      AND node_id IN :nids
@@ -349,7 +350,7 @@ class RatingHistoryPostgreSQLDB(RatingHistoryRelationalInterface):
             """)
             rows = session.exec(
                 stmt,
-                {
+                params={
                   "etype": EntityType.node.value,
                   "pl": poll_label,
                   "nids": tuple(node_ids),
@@ -426,14 +427,14 @@ class RatingHistoryPostgreSQLDB(RatingHistoryRelationalInterface):
         if not edges:
             return {}
         with Session(self.engine) as session:
-            stmt = text("""
+            stmt = text(f"""
               SELECT source_id, target_id,
                      percentile_cont(0.5)
                        WITHIN GROUP (ORDER BY rating) AS median
                 FROM (
                   SELECT DISTINCT ON (source_id, target_id, username)
                          source_id, target_id, username, rating
-                    FROM rating_event
+                    FROM {RatingEvent.__tablename__}
                    WHERE entity_type = :etype
                      AND poll_label = :pl
                      AND (source_id, target_id) IN :pairs
@@ -443,7 +444,7 @@ class RatingHistoryPostgreSQLDB(RatingHistoryRelationalInterface):
             """)
             rows = session.exec(
                 stmt,
-                {
+                params={
                   "etype": EntityType.edge.value,
                   "pl": poll_label,
                   "pairs": tuple(edges),

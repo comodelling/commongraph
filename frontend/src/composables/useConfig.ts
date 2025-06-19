@@ -26,13 +26,19 @@ const defaultEdgeType = computed(() => Object.keys(edgeTypes.value)[0] || "");
 
 
 export function useConfig() {
+  const defaultNodeType = computed(() => Object.keys(nodeTypes.value)[0]||"");
+  const defaultEdgeType = computed(() => Object.keys(edgeTypes.value)[0]||"");
+
+  function getNodePolls(type: string) {
+    return nodeTypes.value[type]?.polls || {};
+  }
+  function getEdgePolls(type: string) {
+    return edgeTypes.value[type]?.polls || {};
+  }
+
   return {
-    nodeTypes,
-    edgeTypes,
-    platformName,
-    configLoaded,
-    load,
-    defaultNodeType,
-    defaultEdgeType,
+    nodeTypes, edgeTypes, platformName, load, configLoaded,
+    defaultNodeType, defaultEdgeType,
+    getNodePolls, getEdgePolls,
   };
 }

@@ -58,7 +58,12 @@ export default {
      isDiscrete.value ? optionKeys.value : /* fallback for continuous */ []
    );
 
-
+   const bucketCount = computed(() => {
+     const n = ratings.value.length;
+     return Math.min(50, Math.max(3, n));
+   });
+   const continuousMin = computed(() => props.pollConfig.range?.[0] ?? 0);
+   const continuousMax = computed(() => props.pollConfig.range?.[1] ?? 100);
 
     const getBarColors = () => {
       const root = getComputedStyle(document.documentElement);
@@ -102,54 +107,117 @@ export default {
       }
     };
 
-    const updateHistogram = async () => {
-      await nextTick();
-      if (!chart.value) return;
-      const buckets = isDiscrete.value
-        ? optionKeys.value.map(() => 0)
-        : [];  
+   const updateHistogram = async () => {
+    await nextTick();
+    if (!chart.value) return;
+
+    if (isDiscrete.value) {
+      // Discrete histogram
+      const buckets = optionKeys.value.map(() => 0);
       ratings.value.forEach((r) => {
         const v = r.rating ?? r.median_rating;
-        if (isDiscrete.value) {
-          const idx = optionKeys.value.indexOf(String(v));
-          if (idx >= 0) buckets[idx]++;
-        } else {
-          // continuous: you could bin here, or just skip
-        }
+        const idx = optionKeys.value.indexOf(String(v));
+        if (idx >= 0) buckets[idx]++;
       });
-      const ctx = chart.value.getContext("2d");
+      const labels = xLabels.value;
+      const root = getComputedStyle(document.documentElement);
       const colors = getBarColors();
+
+      const ctx = chart.value.getContext("2d");
       if (chartInstance) {
+        chartInstance.data.labels = labels;
         chartInstance.data.datasets[0].data = buckets;
         chartInstance.data.datasets[0].backgroundColor = colors;
         chartInstance.update();
       } else {
         chartInstance = new Chart(ctx, {
           type: "bar",
-          data: { labels: xLabels.value, datasets: [{ data: buckets, backgroundColor: colors }] },
-          options: { responsive: true, maintainAspectRatio: false,
+          data: {
+            labels,
+            datasets: [
+              {
+                data: buckets,
+                backgroundColor: colors,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
             scales: {
               x: { title: { display: props.aggregate, text: "Rating" } },
-              y: { beginAtZero: true, title: { display: true, text: "Count" } }
+              y: { beginAtZero: true, title: { display: true, text: "Count" } },
             },
-            plugins: { legend: { display: false } }
-          }
+            plugins: { legend: { display: false } },
+          },
         });
       }
-    };
+    } else {
+      // Continuous histogram: use configured range
+      const minR = continuousMin.value;
+      const maxR = continuousMax.value;
+      const span = maxR - minR || 1;
+      const nbuckets = bucketCount.value;
+      const bucketWidth = span / nbuckets;
+      const buckets = Array(nbuckets).fill(0);
 
-    watch(
-      () => (props.aggregate ? props.nodes : props.element),
-      (val) => {
-        if ((props.aggregate && val.length) || (!props.aggregate && val)) {
-          fetchRatings();
-        } else if (chartInstance) {
-          chartInstance.destroy();
-          chartInstance = null;
-        }
-      },
-      { immediate: true }
-    );
+      ratings.value.forEach((r) => {
+        const v = r.rating ?? r.median_rating;
+        const idx = Math.min(nbuckets - 1, Math.floor(((v - minR) / span) * nbuckets));
+        buckets[idx]++;
+      });
+
+      // Create numeric data points centered in each bucket
+      const dataPoints = buckets.map((count, i) => ({
+        x: minR + (i + 0.5) * bucketWidth,
+        y: count,
+      }));
+
+      const root = getComputedStyle(document.documentElement);
+      const barColor = root.getPropertyValue("--accent-color").trim() || "#888";
+
+      const ctx = chart.value.getContext("2d");
+      if (chartInstance) {
+        chartInstance.data.datasets[0].data = dataPoints;
+        chartInstance.data.datasets[0].backgroundColor = barColor;
+        chartInstance.options.scales.x.min = minR;
+        chartInstance.options.scales.x.max = maxR;
+        chartInstance.options.scales.x.ticks.stepSize = bucketWidth;
+        chartInstance.update();
+      } else {
+        chartInstance = new Chart(ctx, {
+          type: "bar",
+          data: {
+            // When using a linear x-axis, Chart.js ignores labels and uses the x values in dataPoints
+            datasets: [
+              {
+                data: dataPoints,
+                backgroundColor: barColor,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              x: {
+                type: "linear",
+                min: minR,
+                max: maxR,
+                title: { display: props.aggregate, text: "Rating" },
+                ticks: { stepSize: bucketWidth },
+              },
+              y: {
+                beginAtZero: true,
+                title: { display: true, text: "Count" },
+              },
+            },
+            plugins: { legend: { display: false } },
+          },
+        });
+      }
+    }
+  };
 
     onMounted(fetchRatings);
     expose({ fetchRatings });

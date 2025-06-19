@@ -32,21 +32,11 @@
         </div>
       </div>
       <div class="visualization-column">
-        <!-- Iterate over each node poll configured -->
-        <div
-          v-for="(pollConfig, pollLabel) in nodePolls"
-          :key="pollLabel"
-          class="histogram-container"
-        >
-           <h4>Median {{ pollLabel }} ratings</h4>
-          <RatingHistogram
-            :nodes="nodes"
-            :pollLabel="pollLabel"
-            :pollConfig="pollConfig"
-            aggregate
-            @filter-by-rating="applyRatingFilter"
-          />
-        </div>
+        <AggRatingMultipane
+          :nodes="nodes"
+          :poll-configs="nodePolls"
+          @filter-by-rating="applyRatingFilter"
+        />
       </div>
     </div>
   </div>
@@ -61,9 +51,10 @@ import { useConfig } from "../composables/useConfig";
 import SearchBar from "../components/common/SearchBar.vue";
 import RatingHistogram from "../components/poll/RatingHistogram.vue";
 import NodeListItem from "../components/node/NodeListItem.vue";
+import AggRatingMultipane from "../components/poll/AggRatingMultipane.vue";
 
 export default {
-  components: { SearchBar, RatingHistogram, NodeListItem },
+  components: { SearchBar, RatingHistogram, NodeListItem, AggRatingMultipane },
   data() {
     return {
       title: "",
@@ -261,7 +252,7 @@ export default {
   flex: 1;
   overflow-y: auto;
   /* padding: 20px; */
-  border: 1px solid var(--border-color);
+  /* border: 1px solid var(--border-color); */
   border-radius: 4px;
   margin: 2px 4px 4px 2px;
 }

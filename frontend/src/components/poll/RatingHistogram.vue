@@ -249,7 +249,7 @@ export default {
     watch(
       () => props.nodes,
       () => props.aggregate && fetchRatings(),
-      { deep: true }
+      () => props.pollLabel, () => {fetchRatings();}, { deep: true }
     );
 
     expose({ fetchRatings });

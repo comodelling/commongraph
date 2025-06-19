@@ -23,58 +23,28 @@
 
       <!-- Second card: show rating for node or edge -->
 
-      <template v-if="isNode && !isBrandNewNode && this.allowedNodeFields.includes('support_rating')">
-        <div class="card">
-          <ElementRating
-            :key="node ? node.node_id : nodeId"
-            :element="{ node_id: node ? node.node_id : nodeId }"
-            property="support"
+       <template v-if="isNode && nodePollsCount">
+        <div class="card" 
+             v-for="(pollConfig, pollLabel) in nodePolls" 
+             :key="`node-${pollLabel}-${node.node_id}`">
+          <ElementPollPane
+            :element="{ node_id: node.node_id }"
+            :poll-label="pollLabel"
+            :poll-config="pollConfig"
           />
         </div>
       </template>
-      
-      <template v-else-if="isEdge && this.allowedEdgeFields.includes('causal_strength_rating')" >
-        <div class="card">
-          <ElementRating
-            :key="
-              edge ? `${edge.source}-${edge.target}` : `${sourceId}-${targetId}`
-            "
-            :element="{
-              edge: edge
-                ? { source: edge.source, target: edge.target }
-                : { source: sourceId, target: targetId },
-            }"
-            property="causal_strength"
+
+      <template v-else-if="isEdge && edgePollsCount">
+        <div class="card"
+             v-for="(pollConfig, pollLabel) in edgePolls"
+             :key="`edge-${pollLabel}-${edge.source}-${edge.target}`">
+          <ElementPollPane
+            :element="{ edge: { source: edge.source, target: edge.target } }"
+            :poll-label="pollLabel"
+            :poll-config="pollConfig"
           />
         </div>
-        <!-- <div class="card">
-          <ElementRating
-            :key="
-              edge ? `${edge.source}-${edge.target}` : `${sourceId}-${targetId}`
-            "
-            :element="{
-              edge: edge
-                ? { source: edge.source, target: edge.target }
-                : { source: sourceId, target: targetId },
-            }"
-            property="necessity"
-          />
-        </div>
-        <div class="card">
-          <ElementRating
-            :key="
-              edge
-                ? `${edge.source}-${edge.target}-sufficiency`
-                : `${sourceId}-${targetId}-sufficiency`
-            "
-            :element="{
-              edge: edge
-                ? { source: edge.source, target: edge.target }
-                : { source: sourceId, target: targetId },
-            }"
-            property="sufficiency"
-          />
-        </div> -->
       </template>
     </div>
 
@@ -96,7 +66,7 @@
 import { useConfig } from "../composables/useConfig";
 import NodeInfo from "../components/node/NodeInfo.vue";
 import EdgeInfo from "../components/edge/EdgeInfo.vue";
-import ElementRating from "../components/poll/ElementPollPane.vue";
+import ElementPollPane from "../components/poll/ElementPollPane.vue";
 import SubgraphRenderer from "../components/graph/SubgraphRenderer.vue";
 import {
   formatFlowEdgeProps,
@@ -109,7 +79,7 @@ export default {
   components: {
     NodeInfo,
     EdgeInfo,
-    ElementRating,
+    ElementPollPane,
     SubgraphRenderer,
   },
   setup() {
@@ -180,6 +150,20 @@ export default {
     allowedEdgeFields() {
       if (!this.edge?.edge_type) return []
       return this.edgeTypes[this.edge.edge_type].properties || []
+    },
+      nodePolls() {
+      if (!this.node?.node_type) return {};
+      return this.nodeTypes[this.node.node_type].polls || {};
+    },
+    nodePollsCount() {
+      return Object.keys(this.nodePolls).length;
+    },
+    edgePolls() {
+      if (!this.edge?.edge_type) return {};
+      return this.edgeTypes[this.edge.edge_type].polls || {};
+    },
+    edgePollsCount() {
+      return Object.keys(this.edgePolls).length;
     },
   },
   // when opening a brand-new node, use defaultNodeType and only include allowed props

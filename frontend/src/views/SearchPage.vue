@@ -124,33 +124,8 @@ export default {
             : tags
           : [];
 
-        let apiRating = undefined;
         if (rating) {
-          const ratingMap = { 1: "E", 2: "D", 3: "C", 4: "B", 5: "A" };
-          const validLetters = ["A", "B", "C", "D", "E"];
-          const convertRating = (r) => {
-            let letter = ratingMap[r];
-            if (!letter) {
-              letter = r.toUpperCase();
-            }
-            return validLetters.includes(letter) ? letter : undefined;
-          };
-
-          if (Array.isArray(rating)) {
-            apiRating = rating.map(convertRating);
-            if (apiRating.includes(undefined)) {
-              throw new Error(
-                `Invalid rating value provided in URL: ${rating}`,
-              );
-            }
-          } else {
-            apiRating = convertRating(rating);
-            if (!apiRating) {
-              throw new Error(
-                `Invalid rating value provided in URL: ${rating}`,
-              );
-            }
-          }
+          console.warn("search currently ignores rating filter")
         }
 
         console.log("Searching for nodes with:", {
@@ -159,7 +134,6 @@ export default {
           status,
           tags: tagsArray,
           scope,
-          rating: apiRating,
         });
         const startTime = performance.now();
         const response = await api.get(`/nodes`, {
@@ -169,7 +143,6 @@ export default {
             status,
             tags: tagsArray.length ? tagsArray : undefined,
             scope,
-            rating: apiRating,
           },
           paramsSerializer: (params) =>
             qs.stringify(params, { arrayFormat: "repeat" }),

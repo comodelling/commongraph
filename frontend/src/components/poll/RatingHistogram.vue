@@ -267,7 +267,7 @@ export default {
       }
     };
 
-    return { loading, error, chart };
+    return { loading, error, chart, onChartClick };
   },
 };
 </script>

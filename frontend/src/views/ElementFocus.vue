@@ -23,7 +23,7 @@
 
       <!-- Second card: show rating for node or edge -->
 
-       <template v-if="isNode && nodePollsCount">
+       <template v-if="isNode && nodePollsCount && !node.new"">
         <div class="card" 
              v-for="(pollConfig, pollLabel) in nodePolls" 
              :key="`node-${pollLabel}-${node.node_id}`">
@@ -35,7 +35,7 @@
         </div>
       </template>
 
-      <template v-else-if="isEdge && edgePollsCount">
+      <template v-else-if="isEdge && edgePollsCount && !edge.new">
         <div class="card"
              v-for="(pollConfig, pollLabel) in edgePolls"
              :key="`edge-${pollLabel}-${edge.source}-${edge.target}`">

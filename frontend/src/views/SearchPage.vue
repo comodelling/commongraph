@@ -124,8 +124,8 @@ export default {
             : tags
           : [];
 
-        if (rating) {
-          console.warn("search currently ignores rating filter")
+        if (rating && rating.length) {
+          console.warn("rating passed is: ", rating, " but search currently ignores rating filter")
         }
 
         console.log("Searching for nodes with:", {

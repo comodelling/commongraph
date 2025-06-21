@@ -276,7 +276,8 @@ export default {
 .chart-container {
   position: relative;
   width: 100%;
-  height: 200px; /* or whatever your default height is */
+  max-height: 150px;
+  /* min-height: 100px; */
 }
 .loading-overlay {
   position: absolute;

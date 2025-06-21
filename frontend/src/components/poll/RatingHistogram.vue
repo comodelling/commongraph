@@ -92,6 +92,7 @@ export default {
               },
               paramsSerializer: (p) => qs.stringify(p, { arrayFormat: "repeat" }),
             });
+            console.log("Median ratings response:", resp.data);
             ratings.value = Object.values(resp.data)
               .map((item) => item[props.pollLabel])
               .filter((val) => val != null)

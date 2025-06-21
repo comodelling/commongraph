@@ -169,14 +169,14 @@ def get_node_history(
 @router.get("/ratings/median")
 def get_nodes_median_ratings(
   node_ids: list[NodeId] = Query(...),
-  poll_labels: list[str] | None = Query(
-    None, description="List of polls; if omitted, return all"
+  poll_label: str | None = Query(
+    None, description="Optional poll_label; if omitted, return all"
   ),
   db: RatingHistoryRelationalInterface = Depends(get_rating_history_db),
 ):
     # default = all polls in your config
     from backend.config import POLLS_CFG
-    labels = poll_labels or list(POLLS_CFG.keys())
+    labels = [poll_label] if poll_label else list(POLLS_CFG.keys())
 
     # for each poll, get a map node_id → median
     per_poll = {

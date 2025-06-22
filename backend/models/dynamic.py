@@ -1,7 +1,8 @@
+import datetime
 import logging
 from typing import Any, Dict, Type, Union
 
-from pydantic import create_model
+from pydantic import create_model, Field
 from sqlmodel import SQLModel
 
 from backend.models.base import NodeBase, EdgeBase, SubgraphBase, GraphExportBase
@@ -51,21 +52,33 @@ def _make_dynamic(
         print(f"Dynamic model created: {name}, fields: {list(fields.keys())}")
     return out
 
+
 NodeTypeModels = _make_dynamic(NodeBase, NODE_TYPE_PROPS)
 EdgeTypeModels = _make_dynamic(EdgeBase, EDGE_TYPE_PROPS)
 
 logger.debug(f"Dynamic node models: {NodeTypeModels}")
 logger.debug(f"Dynamic edge models: {EdgeTypeModels}")
 
+
 DynamicNode = Union[tuple(NodeTypeModels.values())]
 DynamicEdge = Union[tuple(EdgeTypeModels.values())]
+
 
 class DynamicSubgraph(SubgraphBase):
     """Subgraph model with dynamic node and edge types."""
     nodes: list[DynamicNode]   # type: ignore
     edges: list[DynamicEdge]   # type: ignore
 
+
 class DynamicGraphExport(GraphExportBase):
     """Graph Export model with dynamic node and edge types."""
     nodes: list[DynamicNode]   # type: ignore
     edges: list[DynamicEdge]   # type: ignore
+
+
+class NodeSearchResult(NodeBase, SQLModel):  # not allowed to inherit from DynamicNode
+    last_modified: datetime.datetime = Field(
+        ..., description="When this node was last updated"
+    )
+    class Config:
+        extra = "allow"   # accept all DynamicNode fields

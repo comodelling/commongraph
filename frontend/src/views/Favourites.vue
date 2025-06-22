@@ -41,8 +41,12 @@ export default {
         const nodes = await Promise.all(
           favouriteIds.map(async (nodeId) => {
             try {
-              const res = await api.get(`/nodes/${nodeId}`);
-              return res.data;
+              const res = await api.get(`/nodes/${nodeId}/history`);
+              console.log("Fetched node details for id", nodeId, res.data[0]);
+              let node = res.data[0].payload;
+              node.last_modified = res.data[0].timestamp;
+              console.log("Node payload:", node);
+              return node;
             } catch (err) {
               console.error("Error fetching node details for id", nodeId);
               return { node_id: nodeId, title: `Node ${nodeId}`, scope: "" };

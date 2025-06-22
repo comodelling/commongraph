@@ -5,10 +5,11 @@
     </router-link>
     <div class="subtitle">
       {{ node.node_type }}
+      <span v-if="node.last_modified">— {{ formatDate(node.last_modified) }}</span>
+      <span v-else>— no date</span>
     </div>
   </div>
 </template>
-
 
 <script>
 export default {
@@ -19,8 +20,22 @@ export default {
       required: true,
     },
   },
+  methods: {
+    formatDate(iso) {
+      const d = new Date(iso)
+      return d.toLocaleString(undefined, {
+        year:   "numeric",
+        month:  "short",
+        day:    "2-digit",
+        hour:   "2-digit",
+        minute: "2-digit",
+      })
+      // e.g. "Jun 21, 2025, 03:30 PM"
+    },
+  },
 };
 </script>
+
 
 <style scoped>
 .node-item {

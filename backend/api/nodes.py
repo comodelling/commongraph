@@ -7,8 +7,8 @@ from backend.api.auth import get_current_user
 from backend.db.base import GraphDatabaseInterface, GraphHistoryRelationalInterface, RatingHistoryRelationalInterface
 from backend.db.connections import get_graph_db, get_graph_history_db, get_rating_history_db
 from backend.db.janusgraph import JanusGraphDB
-from backend.models.dynamic import DynamicNode, NodeTypeModels
 from backend.models.fixed import GraphHistoryEvent, NodeId, RatingEvent, UserRead, EntityType
+from backend.models.dynamic import DynamicNode, NodeTypeModels, NodeSearchResult
 from backend.properties import NodeStatus
 
 logger = logging.getLogger(__name__)
@@ -16,7 +16,8 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/nodes", tags=["nodes"])
 
 
-@router.get("")
+
+@router.get("", response_model=list[NodeSearchResult])
 def search_nodes(
     node_type: list[str] | str = Query(None),
     title: str | None = None,
@@ -32,7 +33,7 @@ def search_nodes(
     db_ratings: RatingHistoryRelationalInterface = Depends(
         get_rating_history_db
     ),
-) -> list[DynamicNode]: #type: ignore
+):
     """Search in nodes on a field by field level."""
     if db_graph is not None:
         nodes = db_graph.search_nodes(
@@ -43,16 +44,27 @@ def search_nodes(
             tags=tags,
             description=description,
         )
-    nodes = db_history.search_nodes(
-        node_type=node_type,
-        title=title,
-        scope=scope,
-        status=status,
-        tags=tags,
-        description=description,
-    )
+    else:
+        nodes = db_history.search_nodes(
+            node_type=node_type,
+            title=title,
+            scope=scope,
+            status=status,
+            tags=tags,
+            description=description,
+        )
+    out: list[NodeSearchResult] = []
+    for node in nodes:
+        # grab last event timestamp
+        history = db_history.get_node_history(node.node_id)
+        last_ts = history[-1].timestamp if history else datetime.datetime.now(datetime.timezone.utc)
+        # merge node → NodeSearchResult
+        payload = node.model_dump()
+        payload["last_modified"] = last_ts
+        out.append(NodeSearchResult(**payload))
+    
     if rating is None:
-        return nodes
+        return out
     else:
         raise HTTPException(
             status_code=400,

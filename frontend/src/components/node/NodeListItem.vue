@@ -1,10 +1,14 @@
 <template>
-  <li class="node-item">
-    <router-link :to="`/node/${node.node_id}`">
-      {{ node.title }} <span v-if="node.scope"></span>
+  <div class="node-item">
+    <router-link :to="`/node/${node.node_id}`" class="title">
+      ➜ {{ node.title }}
     </router-link>
-  </li>
+    <div class="subtitle">
+      {{ node.node_type }}
+    </div>
+  </div>
 </template>
+
 
 <script>
 export default {
@@ -20,8 +24,21 @@ export default {
 
 <style scoped>
 .node-item {
-  cursor: pointer;
-  margin-bottom: 5px;
-  font-size: 12px;
+  margin-bottom: 12px;
+}
+.title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-color);
+  text-decoration: none;
+  color: blue
+}
+.title:hover {
+  text-decoration: underline;
+}
+.subtitle {
+  font-size: 11px;
+  color: var(--muted-text-color);
+  margin-top: -3px;
 }
 </style>

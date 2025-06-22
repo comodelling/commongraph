@@ -937,7 +937,7 @@ onEdgeMouseLeave(({ edge }) => {
                 : 'Fetching unnconnected nodes is not yet supported'
             "
           >
-            <span style="margin-right: 5px">➔</span>{{ result.title }}
+            <span style="margin-right: 5px">➔</span>{{ result.title }} ({{ result.node_type || "— no type —" }})
           </li>
         </ul>
         <p

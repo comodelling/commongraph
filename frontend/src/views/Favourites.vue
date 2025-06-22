@@ -5,21 +5,14 @@
     <div v-if="loading">Loading favourites...</div>
     <div v-else-if="error" class="error">{{ error }}</div>
     <div v-else>
-      <div v-if="Object.keys(groupedFavourites).length">
-        <div
-          v-for="(nodes, scope) in groupedFavourites"
-          :key="scope"
-          class="scope-group"
-        >
-          <h4>{{ scope }}</h4>
-          <ul>
-            <NodeListItem
-              v-for="node in nodes"
-              :key="node.node_id"
-              :node="node"
-            />
-          </ul>
-        </div>
+      <div v-if="favourites.length">
+        <ul>
+          <NodeListItem
+            v-for="node in favourites"
+            :key="node.node_id"
+            :node="node"
+          />
+        </ul>
       </div>
       <div v-else>No favourites added yet.</div>
     </div>
@@ -27,7 +20,7 @@
 </template>
 
 <script>
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted } from "vue";
 import api from "../api/axios";
 import NodeListItem from "../components/node/NodeListItem.vue";
 
@@ -68,18 +61,7 @@ export default {
       fetchFavourites();
     });
 
-    const groupedFavourites = computed(() => {
-      return favourites.value.reduce((groups, node) => {
-        const scope = node.scope || "Uncategorized";
-        if (!groups[scope]) {
-          groups[scope] = [];
-        }
-        groups[scope].push(node);
-        return groups;
-      }, {});
-    });
-
-    return { favourites, loading, error, groupedFavourites };
+    return { favourites, loading, error };
   },
 };
 </script>
@@ -92,9 +74,6 @@ export default {
 }
 .error {
   color: red;
-}
-.scope-group {
-  margin-bottom: 20px;
 }
 .node-item {
   cursor: pointer;

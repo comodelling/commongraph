@@ -6,31 +6,20 @@
         <SearchBar :initialQuery="title" @search="search" />
       </div>
     </div>
-    <div class="search-content">
-      <div class="results-column">
-        <h2>Search Results</h2>
-        <div class="results-list">
-          <div v-if="!nodes.length && title">
-            <p>No results found for "{{ title }}"</p>
-          </div>
-          <div v-if="groupedNodes">
-            <div
-              v-for="(nodes, scope) in groupedNodes"
-              :key="scope"
-              class="scope-group"
-            >
-              <h4>{{ scope }}</h4>
-              <ul>
-                <NodeListItem
-                  v-for="node in nodes"
-                  :key="node.node_id"
-                  :node="node"
-                />
-              </ul>
-            </div>
-          </div>
+  <div class="search-content">
+    <div class="results-column">
+      <h2>Search Results</h2>
+      <div class="results-list">
+        <div v-if="!nodes.length && title">
+          <p>No results found for "{{ title }}"</p>
         </div>
+        <ul v-else>
+          <div v-for="node in nodes" :key="node.node_id">
+            <NodeListItem :node="node" />
+          </div>
+        </ul>
       </div>
+    </div>
       <div class="visualization-column">
         <AggRatingMultipane
           :nodes="nodes"
@@ -38,9 +27,10 @@
           @filter-by-rating="applyRatingFilter"
         />
       </div>
-    </div>
+  </div>
   </div>
 </template>
+
 
 <script>
 import api from "../api/axios";
@@ -197,7 +187,7 @@ export default {
 
 .results-column {
   flex: 1;
-  padding: 10px 0 5px 100px;
+  padding: 10px 0 5px 0px;
   /* padding-left: 100px; */
   /* border-right: 1px solid #ddd; */
   display: flex;

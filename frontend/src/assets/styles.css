@@ -197,10 +197,25 @@ body.dark .vue-flow__edge.selected .vue-flow__edge-path {
   /* width: 350px; */
   /* border: 1px solid var(--border-color); */
   /* margin: 1px; */
-  padding: 20px;
+  margin-top: -18px;
+  padding: 0px;
+  padding: 10px;
   font-size: 13px;
   /* border-radius: 5px; */
   position: relative;
+}
+
+
+.pane-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5em 1em;
+  margin-left: -20px; /* Adjusted to align with the tab card */
+}
+.pane-header h4 {
+  margin: 0;
+  font-size: 1.1em;
 }
 
 .tab-card {
@@ -221,8 +236,10 @@ body.dark .vue-flow__edge.selected .vue-flow__edge-path {
 
 .tabs button {
   flex: 1;
-  padding: 4px 12px;
-  margin: -18px -5px 4px;
+  padding: 4px 20px;
+  /* margin: -18px -5px 4px; */
+  margin-right: -16px;
+  margin-top: -18px;
   cursor: pointer;
   background: none;
   border-radius: 3px;

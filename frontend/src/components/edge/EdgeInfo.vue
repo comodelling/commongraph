@@ -1,52 +1,59 @@
 <template>
   <div class="element-info">
-    <div class="tabs">
-      <button
-        :class="{ active: currentTab === 'view' }"
-        @click="switchTab('view')"
-      >
-        View
-      </button>
-      <button
-        :class="{ active: currentTab === 'edit' }"
-        @click="switchTab('edit')"
-      >
-        Edit
-      </button>
-      <button
-        :class="{ active: currentTab === 'history' }"
-        @click="switchTab('history')"
-      >
-        History
-      </button>
-    </div>
-    <div v-if="edge">
-      <template v-if="currentTab === 'edit'">
-        <!-- Add a ref so we can inspect unsaved changes in the edit component -->
-        <component
-          ref="edgeEdit"
-          :is="currentTabComponent"
-          :edge="edge"
-          :sourceId="edge.source"
-          :targetId="edge.target"
-          :sourceType="edge.sourceNodeType"
-          :targetType="edge.targetNodeType"
-          @publish-edge="updateEdgeFromEditor"
-        />
-      </template>
-      <template v-else>
-        <component
-          :is="currentTabComponent"
-          :edge="edge"
-          :sourceId="edge.source"
-          :targetId="edge.target"
-          @publish-edge="updateEdgeFromEditor"
-        />
-      </template>
-    </div>
-    <div v-else>
-      <p>Edge not found</p>
-    </div>
+    <div class="pane-header">
+      <div class="title-group">
+        <h4>Edge Info</h4>
+        <div class="tabs">
+          <button
+            :class="{ active: currentTab === 'view' }"
+            @click="switchTab('view')"
+          >
+            View
+          </button>
+          <button
+            :class="{ active: currentTab === 'edit' }"
+            @click="switchTab('edit')"
+          >
+            Edit
+          </button>
+          <button
+            :class="{ active: currentTab === 'history' }"
+            @click="switchTab('history')"
+          >
+            History
+          </button>
+          </div>
+        </div>
+      </div>
+      <!-- <hr class="header-separator" /> -->
+      <div v-if="edge">
+        <template v-if="currentTab === 'edit'">
+          <!-- Add a ref so we can inspect unsaved changes in the edit component -->
+          <component
+            ref="edgeEdit"
+            :is="currentTabComponent"
+            :edge="edge"
+            :sourceId="edge.source"
+            :targetId="edge.target"
+            :sourceType="edge.sourceNodeType"
+            :targetType="edge.targetNodeType"
+            @publish-edge="updateEdgeFromEditor"
+          />
+        </template>
+        <template v-else>
+          <component
+            :is="currentTabComponent"
+            :edge="edge"
+            :sourceId="edge.source"
+            :targetId="edge.target"
+            @publish-edge="updateEdgeFromEditor"
+          />
+        </template>
+      </div>
+      <div v-else>
+        <p>Edge not found</p>
+      </div>
+    
   </div>
 </template>
 
@@ -122,8 +129,9 @@ export default {
 
 .tabs {
   position: absolute;
-  top: 8px;
-  right: 0px;
+  right: 5px;
+  top: 25px;
+  padding: 0px;
 }
 
 

@@ -1,51 +1,59 @@
 <template>
   <div class="element-info">
-    <div class="favourite-toggle">
-      <button class="favourite-btn" @click="toggleFavourite">
-        {{ isFavourite ? "★" : "☆" }}
-      </button>
+    <div class="pane-header">
+      <div class="title-group">
+        <h4>Node Info</h4>
+        <div class="favourite-toggle">
+          <button class="favourite-btn" @click="toggleFavourite">
+            {{ isFavourite ? "★" : "☆" }}
+          </button>
+        </div>
+      </div>
+      <div class="tabs">
+        <button
+          :class="{ active: currentTab === 'view' }"
+          @click="switchTab('view')"
+        >
+          View
+        </button>
+        <button
+          :class="{ active: currentTab === 'edit' }"
+          @click="switchTab('edit')"
+        >
+          Edit
+        </button>
+        <button
+          :class="{ active: currentTab === 'history' }"
+          @click="switchTab('history')"
+        >
+          History
+        </button>
+      </div>
     </div>
-    <div class="tabs">
-      <button
-        :class="{ active: currentTab === 'view' }"
-        @click="switchTab('view')"
-      >
-        View
-      </button>
-      <button
-        :class="{ active: currentTab === 'edit' }"
-        @click="switchTab('edit')"
-      >
-        Edit
-      </button>
-      <button
-        :class="{ active: currentTab === 'history' }"
-        @click="switchTab('history')"
-      >
-        History
-      </button>
-    </div>
-    <div v-if="node">
-      <template v-if="currentTab === 'edit'">
-        <component
-          ref="nodeEdit"
-          :is="currentTabComponent"
-          :node="node"
-          :nodeId="node.node_id"
-          @publish-node="updateNodeFromEditor"
-        />
-      </template>
-      <template v-else>
-        <component
-          :is="currentTabComponent"
-          :node="node"
-          :nodeId="node.node_id"
-          @publish-node="updateNodeFromEditor"
-        />
-      </template>
-    </div>
-    <div v-else>
-      <p>Node not found</p>
+    <!-- <hr class="header-separator" /> -->
+    <div class="tab-content">
+      <div v-if="node">
+        <template v-if="currentTab === 'edit'">
+          <component
+            ref="nodeEdit"
+            :is="currentTabComponent"
+            :node="node"
+            :nodeId="node.node_id"
+            @publish-node="updateNodeFromEditor"
+          />
+        </template>
+        <template v-else>
+          <component
+            :is="currentTabComponent"
+            :node="node"
+            :nodeId="node.node_id"
+            @publish-node="updateNodeFromEditor"
+          />
+        </template>
+      </div>
+      <div v-else>
+        <p>Node not found</p>
+      </div>
     </div>
   </div>
 </template>
@@ -182,16 +190,12 @@ export default {
 </script>
 
 <style scoped>
-.element-info {
-  position: relative;
-  padding-top: 2rem;
-}
 
 /* Favourite toggle style */
 .favourite-toggle {
   position: absolute;
-  top: 2px; /* Adjust as needed */
-  right: -23px; /* Adjust as needed */
+  top: 3px;
+  left: 54px; /* Adjust as needed */
 }
 .favourite-btn {
   background: none;
@@ -204,12 +208,8 @@ export default {
   opacity: 0.8;
 }
 
-/* Tabs styles (unchanged) */
 .tabs {
-  position: absolute;
-  top: 8px;
-  right: 0px;
-}
-
+  right: -16px;
+ }
 
 </style>

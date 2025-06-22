@@ -1,19 +1,21 @@
 <template>
   <div class="agg-rating-multipane tab-card">
     <div class="pane-header">
-      <h3>User evaluations</h3>
-      <div class="tabs">
-        <button
-          v-for="label in pollLabels"
-          :key="label"
-          :class="{ active: currentTab === label }"
-          @click="currentTab = label"
-        >
-          {{ label }}
-        </button>
-      </div>
+        <div class="title-group">
+            <h3>User evaluations</h3>
+        </div>
+        <div class="tabs">
+            <button
+            v-for="label in pollLabels"
+            :key="label"
+            :class="{ active: currentTab === label }"
+            @click="currentTab = label"
+            >
+            {{ label }}
+            </button>
+        </div>
     </div>
-    <hr class="header-separator" />
+    <!-- <hr class="header-separator" /> -->
     <div class="tab-content">
       <RatingHistogram
         :key="currentTab"
@@ -64,6 +66,7 @@ export default {
 }
 .pane-header h3 {
   margin: 0;
+  margin-left: 15px;
   font-size: 1.1em;
 }
 /* ensure tabs container is flush right */
@@ -80,7 +83,6 @@ export default {
   border-bottom: 1px solid var(--border-color);
   margin: 0;
 }
-
 
 .info-icon-bottom {
   position: absolute;

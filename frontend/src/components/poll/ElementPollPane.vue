@@ -17,11 +17,12 @@
     <!-- Discrete buttons -->
     <div v-if="pollConfig.scale === 'discrete'" class="buttons-row">
       <button
-        v-for="(label, key) in pollConfig.options"
+        v-for="(label, key, idx) in pollConfig.options"
         :key="key"
         class="rating-button"
         :class="{ selected: String(currentRating) === key }"
         @click="rate(key)"
+        :style="{ backgroundColor: buttonColors[idx] }"
         :title="label"
       >
         {{ key }}
@@ -48,6 +49,7 @@ import { ref, onMounted, watch, computed } from "vue";
 import api from "../../api/axios";
 import { useAuth } from "../../composables/useAuth";
 import RatingHistogram from "./RatingHistogram.vue";
+import { triColorGradient } from "../../utils/colorUtils";
 
 export default {
   name: "ElementPollPane",
@@ -69,6 +71,15 @@ export default {
     const rangeMax = computed(() => props.pollConfig.range?.[1] ?? 100);
     const rangeStep = computed(() => props.pollConfig.step ?? 1);
     const sliderValue = ref((rangeMin.value + rangeMax.value) / 2);
+
+    const optionKeys = computed(() =>
+      Object.keys(props.pollConfig.options).map(x=>Number(x)).sort((a,b)=>a-b)
+    );
+    const buttonColors = computed(()=>{
+      const n = optionKeys.value.length;
+      return triColorGradient("#cc8400", "#cccccc", "#008000", n);
+    });
+
 
     // load my existing rating
     const fetchRating = async () => {
@@ -152,6 +163,8 @@ export default {
       rangeMax,
       rangeStep,
       sliderValue,
+      buttonColors,
+      optionKeys,
     };
   },
 };

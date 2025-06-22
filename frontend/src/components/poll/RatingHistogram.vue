@@ -13,6 +13,7 @@ import { ref, watch, onMounted, nextTick, computed } from "vue";
 import api from "../../api/axios";
 import qs from "qs";
 import Chart from "chart.js/auto";
+import { triColorGradient } from "../../utils/colorUtils";
 
 export default {
   name: "RatingHistogram",
@@ -68,13 +69,10 @@ export default {
    const continuousMin = computed(() => props.pollConfig.range?.[0] ?? 0);
    const continuousMax = computed(() => props.pollConfig.range?.[1] ?? 100);
 
-    const getBarColors = () => {
-      const root = getComputedStyle(document.documentElement);
-      return xLabels.value.map((_, i) =>
-        root.getPropertyValue(`--rating-${xLabels.value.length - i}-color`).trim()
-      );
-    };
-
+    function getBarColors(count) {
+      // Orange → grey → green
+      return triColorGradient("#cc8400", "#cccccc", "#008000", count);
+    }
     const fetchRatings = async () => {
       loading.value = true;
       error.value = null;
@@ -148,7 +146,7 @@ export default {
       });
       const labels = xLabels.value;
       const root = getComputedStyle(document.documentElement);
-      const colors = getBarColors();
+      const colors = getBarColors(buckets.length);
 
       const ctx = chart.value.getContext("2d");
       if (chartInstance) {
@@ -201,12 +199,13 @@ export default {
       }));
 
       const root = getComputedStyle(document.documentElement);
-      const barColor = root.getPropertyValue("--accent-color").trim() || "#888";
+      // const barColor = root.getPropertyValue("--accent-color").trim() || "#888";
+      const colors = getBarColors(nbuckets);
 
       const ctx = chart.value.getContext("2d");
       if (chartInstance) {
         chartInstance.data.datasets[0].data = dataPoints;
-        chartInstance.data.datasets[0].backgroundColor = barColor;
+        chartInstance.data.datasets[0].backgroundColor = colors;
         chartInstance.options.scales.x.min = minR;
         chartInstance.options.scales.x.max = maxR;
         chartInstance.options.scales.x.ticks.stepSize = bucketWidth;
@@ -219,7 +218,7 @@ export default {
             datasets: [
               {
                 data: dataPoints,
-                backgroundColor: barColor,
+                backgroundColor: colors,
               },
             ],
           },

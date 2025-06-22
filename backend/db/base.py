@@ -13,8 +13,6 @@ from backend.models.fixed import (
     UserCreate,
     NodeId,
     RatingEvent,
-    RatingType,
-    LikertScale,
 )
 
 
@@ -83,7 +81,7 @@ class RatingHistoryRelationalInterface(ABC):
         pass
 
     def get_node_rating(
-        self, node_id: NodeId, rating_type: RatingType, username: str
+        self, node_id: NodeId, poll_label: str, username: str
     ) -> RatingEvent | None:
         """
         Retrieve the rating of a given node by a given user.
@@ -91,7 +89,7 @@ class RatingHistoryRelationalInterface(ABC):
         pass
 
     def get_node_ratings(
-        self, node_id: int, rating_type: RatingType
+        self, node_id: int, poll_label: str
     ) -> list[RatingEvent]:
         """
         Retrieve the most recent rating per user for a given node using PostgreSQL's DISTINCT ON.
@@ -102,7 +100,7 @@ class RatingHistoryRelationalInterface(ABC):
         self,
         source_id: NodeId,
         target_id: NodeId,
-        rating_type: RatingType,
+        poll_label: str,
         username: str,
     ) -> RatingEvent | None:
         """
@@ -111,7 +109,7 @@ class RatingHistoryRelationalInterface(ABC):
         pass
 
     def get_edge_ratings(
-        self, source_id: int, target_id: int, rating_type: RatingType
+        self, source_id: int, target_id: int, poll_label: str
     ) -> list[RatingEvent]:
         """
         Retrieve the most recent rating per user for a given edge using PostgreSQL's DISTINCT ON.
@@ -119,24 +117,24 @@ class RatingHistoryRelationalInterface(ABC):
         pass
 
     def get_node_median_rating(
-        self, node_id: NodeId, rating_type: RatingType
-    ) -> LikertScale | None:
+        self, node_id: NodeId, poll_label: str
+    ) -> float | None:
         """
-        Retrieve the latest median rating (LikertScale) of a given node.
+        Retrieve the latest median rating of a given node.
         """
         pass
 
     def get_edge_median_rating(
-        self, source_id: NodeId, target_id: NodeId, rating_type: RatingType
-    ) -> LikertScale | None:
+        self, source_id: NodeId, target_id: NodeId, poll_label: str
+    ) -> float | None:
         """
-        Retrieve the median rating (LikertScale) of a given edge.
+        Retrieve the median rating of a given edge.
         """
         pass
 
     def get_nodes_median_ratings(
-        self, node_ids: list[NodeId], rating_type: RatingType
-    ) -> dict[NodeId, LikertScale | None]:
+        self, node_ids: list[NodeId], poll_label: str
+    ) -> dict[NodeId, float | None]:
         """
         Retrieve the latest median ratings for multiple nodes.
         Returns a mapping: { node_id: median_rating }.

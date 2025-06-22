@@ -8,7 +8,7 @@ from backend.db.base import GraphDatabaseInterface, GraphHistoryRelationalInterf
 from backend.db.connections import get_graph_db, get_graph_history_db, get_rating_history_db
 from backend.db.janusgraph import JanusGraphDB
 from backend.models.dynamic import DynamicNode, NodeTypeModels
-from backend.models.fixed import GraphHistoryEvent, LikertScale, NodeId, RatingEvent, RatingType, UserRead, EntityType
+from backend.models.fixed import GraphHistoryEvent, NodeId, RatingEvent, UserRead, EntityType
 from backend.properties import NodeStatus
 
 logger = logging.getLogger(__name__)
@@ -23,7 +23,7 @@ def search_nodes(
     scope: str | None = None,
     status: list[NodeStatus] | NodeStatus = Query(None),
     tags: list[str] | None = Query(None),
-    rating: LikertScale | None = None,
+    rating: float | None = None,
     description: str | None = None,
     db_graph: GraphDatabaseInterface | None = Depends(get_graph_db),
     db_history: GraphHistoryRelationalInterface = Depends(
@@ -54,9 +54,13 @@ def search_nodes(
     if rating is None:
         return nodes
     else:
-        nodes_ids = [el.node_id for el in nodes]
-        medians = db_ratings.get_nodes_median_ratings(nodes_ids, RatingType.support)
-        return [node for node in nodes if medians[node.node_id] == rating]
+        raise HTTPException(
+            status_code=400,
+            detail="Search by rating is not supported currently. "
+        )
+        # nodes_ids = [el.node_id for el in nodes]
+        # medians = db_ratings.get_nodes_median_ratings(nodes_ids, RatingType.support)
+        # return [node for node in nodes if medians[node.node_id] == rating]
 
 
 @router.get("/random")
@@ -164,28 +168,28 @@ def get_node_history(
 
 @router.get("/ratings/median")
 def get_nodes_median_ratings(
-    node_ids: list[NodeId] = Query(
-        ..., description="List of node IDs"
-    ),
-    rating_type: RatingType = RatingType.support,
-    db: RatingHistoryRelationalInterface = Depends(get_rating_history_db),
-) -> dict[int, dict | None]:
-    """
-    Retrieve the median ratings for multiple nodes.
-    Returns a mapping: { node_id: {'median_rating': <value> } }.
-    If a node doesn't have ratings, the value will be None.
-    """
-    start_time = datetime.datetime.now()
-    medians = db.get_nodes_median_ratings(node_ids, rating_type)
-    duration = datetime.datetime.now() - start_time
-    duration_ms = duration.total_seconds() * 1000
-    logger.info(
-        f"Retrieved median ratings for ({len(node_ids)}) nodes in {duration_ms:.2f}ms"
-    )
-    return {
-        node_id: {"median_rating": (median.value if median is not None else None)}
-        for node_id, median in medians.items()
+  node_ids: list[NodeId] = Query(...),
+  poll_label: str | None = Query(
+    None, description="Optional poll_label; if omitted, return all"
+  ),
+  db: RatingHistoryRelationalInterface = Depends(get_rating_history_db),
+):
+    # default = all polls in your config
+    from backend.config import POLLS_CFG
+    labels = [poll_label] if poll_label else list(POLLS_CFG.keys())
+
+    # for each poll, get a map node_id → median
+    per_poll = {
+      pl: db.get_nodes_median_ratings(node_ids, pl)
+      for pl in labels
     }
+
+    # invert into node-centric structure
+    out: dict[int, dict[str, float|None]] = {
+      nid: {pl: per_poll[pl].get(nid) for pl in labels}
+      for nid in node_ids
+    }
+    return out
 
 
 @router.get(
@@ -195,10 +199,12 @@ def get_nodes_median_ratings(
 )
 def get_nodes_ratings(
     node_ids: list[NodeId] = Query(..., description="List of node IDs"),
-    rating_type: RatingType = Query(RatingType.support),
+    poll_label: str = Query(
+        ..., description="Optional poll label to filter ratings"
+    ),
     db: RatingHistoryRelationalInterface = Depends(get_rating_history_db),
 ) -> dict[int, list[RatingEvent]]:
-    return db.get_nodes_ratings(node_ids, rating_type)
+    return db.get_nodes_ratings(node_ids, poll_label)
 
 
 # **** per-node ratings ****
@@ -223,7 +229,7 @@ def log_node_rating(
       username=user.username,
       entity_type=EntityType.node,
       node_id=node_id,
-      rating_type=rating.rating_type,
+      poll_label=rating.poll_label,
       rating=rating.rating
     )
     return db.log_rating(evt)
@@ -236,11 +242,11 @@ def log_node_rating(
 )
 def get_my_node_rating(
     node_id: int,
-    rating_type: RatingType = Query(RatingType.support),
+    poll_label: str = Query(..., description="Label of the poll to filter ratings"),
     user: UserRead = Depends(get_current_user),
     db: RatingHistoryRelationalInterface = Depends(get_rating_history_db),
 ) -> RatingEvent | None:
-    return db.get_node_rating(node_id, rating_type, user.username)
+    return db.get_node_rating(node_id, poll_label, user.username)
 
 
 @ratings_router.get(
@@ -249,13 +255,13 @@ def get_my_node_rating(
 )
 def get_node_median_rating(
     node_id: int,
-    rating_type: RatingType = RatingType.support,
+    poll_label: str = Query(..., description="Label of the poll to filter ratings"),
     db: RatingHistoryRelationalInterface = Depends(get_rating_history_db),
 ) -> dict | None:
     """
     Retrieve the median rating for a given node.
     """
-    median = db.get_node_median_rating(node_id, rating_type)
+    median = db.get_node_median_rating(node_id, poll_label)
     return {"median_rating": median}
 
 
@@ -263,13 +269,13 @@ def get_node_median_rating(
                     summary="List all ratings for one node")
 def get_node_ratings(
     node_id: int,
-    rating_type: RatingType = RatingType.support,
+    poll_label: str = Query(..., description="Label of the poll to filter ratings"),
     db: RatingHistoryRelationalInterface = Depends(get_rating_history_db),
 ) -> dict:
     """
     Retrieve all ratings for a given node.
     """
-    ratings = db.get_node_ratings(node_id, rating_type)
+    ratings = db.get_node_ratings(node_id, poll_label)
     # Convert each RatingEvent to dict.
     return {"ratings": ratings}
 

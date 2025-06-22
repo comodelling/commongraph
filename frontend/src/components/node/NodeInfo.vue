@@ -190,7 +190,7 @@ export default {
 /* Favourite toggle style */
 .favourite-toggle {
   position: absolute;
-  top: -17px; /* Adjust as needed */
+  top: 2px; /* Adjust as needed */
   right: -23px; /* Adjust as needed */
 }
 .favourite-btn {
@@ -198,7 +198,7 @@ export default {
   border: none;
   font-size: 1.2rem; /* Smaller star */
   cursor: pointer;
-  color: gold;
+  color: gold;  
 }
 .favourite-btn:hover {
   opacity: 0.8;
@@ -207,20 +207,9 @@ export default {
 /* Tabs styles (unchanged) */
 .tabs {
   position: absolute;
-  top: -10px;
-  left: -10px;
+  top: 8px;
+  right: 0px;
 }
-.tabs button {
-  flex: 1;
-  padding: 3px 10px;
-  cursor: pointer;
-  background: none;
-  border-radius: 3px;
-  border-bottom: 1px solid var(--border-color);
-  font-size: 11px;
-}
-.tabs button.active {
-  border-bottom: 2px solid #007bff;
-  font-weight: bold;
-}
+
+
 </style>

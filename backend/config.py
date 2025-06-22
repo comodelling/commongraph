@@ -6,10 +6,9 @@ _CONFIG_PATH = Path(__file__).parent.parent / "config.yaml"
 _CONFIG = yaml.safe_load(_CONFIG_PATH.read_text())
 
 PLATFORM_NAME = _CONFIG.get("platform_name", "CommonGraph")
-
-METAMODEL      = _CONFIG["metamodel"]
-NODE_TYPE_CFG  = METAMODEL["node_types"]
-EDGE_TYPE_CFG  = METAMODEL["edge_types"]
+NODE_TYPE_CFG  = _CONFIG["node_types"]
+EDGE_TYPE_CFG  = _CONFIG["edge_types"]
+POLLS_CFG  = _CONFIG["polls"]
 
 # 2. Build maps for properties
 NODE_TYPE_PROPS = {
@@ -36,6 +35,27 @@ EDGE_TYPE_BETWEEN = {
     et: defn.get("between", None)
     for et, defn in EDGE_TYPE_CFG.items()
 }
+
+# .5 Polls configuration
+
+def get_node_type_polls() -> dict:
+    """Return the polls configuration per node or edge type."""
+    out = {k: {} for k in NODE_TYPE_CFG}
+    for k, v in POLLS_CFG.items():
+        for tp in v['node_types']:
+            out[tp][k] = v
+    return out
+
+def get_edge_type_polls() -> dict:
+    """Return the polls configuration per edge type."""
+    out = {k: {} for k in EDGE_TYPE_CFG}
+    for k, v in POLLS_CFG.items():
+        for tp in v['edge_types']:
+            out[tp][k] = v
+    return out
+
+NODE_TYPE_POLLS = get_node_type_polls()
+EDGE_TYPE_POLLS = get_edge_type_polls()
 
 
 # 5. Helpers

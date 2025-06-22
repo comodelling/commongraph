@@ -117,3 +117,14 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+
+.tabs {
+  position: absolute;
+  top: 8px;
+  right: 0px;
+}
+
+
+</style>

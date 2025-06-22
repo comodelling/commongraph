@@ -1,4 +1,3 @@
-<!-- filepath: /Users/mario/CODE/commongraph/frontend/src/views/SearchPage.vue -->
 <template>
   <div class="search-page">
     <div class="search-header">
@@ -33,7 +32,11 @@
         </div>
       </div>
       <div class="visualization-column">
-        <SupportView :nodes="nodes" @filter-by-rating="applyRatingFilter" />
+        <AggRatingMultipane
+          :nodes="nodes"
+          :poll-configs="nodePolls"
+          @filter-by-rating="applyRatingFilter"
+        />
       </div>
     </div>
   </div>
@@ -43,12 +46,15 @@
 import api from "../api/axios";
 import qs from "qs";
 import { useRouter, useRoute } from "vue-router";
+import { computed } from "vue";
+import { useConfig } from "../composables/useConfig";
 import SearchBar from "../components/common/SearchBar.vue";
-import SupportView from "../components/rating/SupportHistogram.vue";
+import RatingHistogram from "../components/poll/RatingHistogram.vue";
 import NodeListItem from "../components/node/NodeListItem.vue";
+import AggRatingMultipane from "../components/poll/AggRatingMultipane.vue";
 
 export default {
-  components: { SearchBar, SupportView, NodeListItem },
+  components: { SearchBar, RatingHistogram, NodeListItem, AggRatingMultipane },
   data() {
     return {
       title: "",
@@ -118,33 +124,8 @@ export default {
             : tags
           : [];
 
-        let apiRating = undefined;
-        if (rating) {
-          const ratingMap = { 1: "E", 2: "D", 3: "C", 4: "B", 5: "A" };
-          const validLetters = ["A", "B", "C", "D", "E"];
-          const convertRating = (r) => {
-            let letter = ratingMap[r];
-            if (!letter) {
-              letter = r.toUpperCase();
-            }
-            return validLetters.includes(letter) ? letter : undefined;
-          };
-
-          if (Array.isArray(rating)) {
-            apiRating = rating.map(convertRating);
-            if (apiRating.includes(undefined)) {
-              throw new Error(
-                `Invalid rating value provided in URL: ${rating}`,
-              );
-            }
-          } else {
-            apiRating = convertRating(rating);
-            if (!apiRating) {
-              throw new Error(
-                `Invalid rating value provided in URL: ${rating}`,
-              );
-            }
-          }
+        if (rating && rating.length) {
+          console.warn("rating passed is: ", rating, " but search currently ignores rating filter")
         }
 
         console.log("Searching for nodes with:", {
@@ -153,37 +134,33 @@ export default {
           status,
           tags: tagsArray,
           scope,
-          rating: apiRating,
         });
         const startTime = performance.now();
-        const response = await api.get(
-          `/nodes`,
-          {
-            params: {
-              title,
-              node_type,
-              status,
-              tags: tagsArray.length ? tagsArray : undefined,
-              scope,
-              rating: apiRating,
-            },
-            paramsSerializer: (params) =>
-              qs.stringify(params, { arrayFormat: "repeat" }),
+        const response = await api.get(`/nodes`, {
+          params: {
+            title,
+            node_type,
+            status,
+            tags: tagsArray.length ? tagsArray : undefined,
+            scope,
           },
-        );
+          paramsSerializer: (params) =>
+            qs.stringify(params, { arrayFormat: "repeat" }),
+        });
         const endTime = performance.now();
         console.log(`Search completed in ${endTime - startTime} milliseconds`);
         this.nodes = response.data;
       } catch (error) {
         console.error("Error fetching nodes:", error);
-        // Optionally, show error to the user or handle it appropriately
       }
     },
   },
   setup() {
     const router = useRouter();
     const route = useRoute();
-    return { router, route };
+    const { defaultNodeType, getNodePolls } = useConfig();
+    const nodePolls = computed(() => getNodePolls(defaultNodeType.value));
+    return { router, route, nodePolls };
   },
 };
 </script>
@@ -248,7 +225,7 @@ export default {
   flex: 1;
   overflow-y: auto;
   /* padding: 20px; */
-  border: 1px solid var(--border-color);
+  /* border: 1px solid var(--border-color); */
   border-radius: 4px;
   margin: 2px 4px 4px 2px;
 }

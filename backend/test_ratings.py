@@ -36,7 +36,7 @@ def test_log_and_get_node_rating():
     rating_data = {
         "entity_type": "node",
         "node_id": 1,
-        "rating_type": "support",
+        "poll_label": "support",
         "rating": "B",
         "timestamp": datetime.datetime.utcnow().isoformat() + "Z",
     }
@@ -63,21 +63,21 @@ def test_node_median_rating():
         {
             "entity_type": "node",
             "node_id": 2,
-            "rating_type": "support",
+            "poll_label": "support",
             "rating": "A",
             "timestamp": datetime.datetime.utcnow().isoformat() + "Z",
         },
         {
             "entity_type": "node",
             "node_id": 2,
-            "rating_type": "support",
+            "poll_label": "support",
             "rating": "C",
             "timestamp": datetime.datetime.utcnow().isoformat() + "Z",
         },
         {
             "entity_type": "node",
             "node_id": 2,
-            "rating_type": "support",
+            "poll_label": "support",
             "rating": "B",
             "timestamp": datetime.datetime.utcnow().isoformat() + "Z",
         },
@@ -100,7 +100,7 @@ def test_log_and_get_edge_rating():
         "node_id": None,  # not used for edge rating
         "source_id": 10,
         "target_id": 20,
-        "rating_type": "necessity",
+        "poll_label": "necessity",
         "rating": "D",
         "timestamp": datetime.datetime.utcnow().isoformat() + "Z",
     }
@@ -113,10 +113,10 @@ def test_log_and_get_edge_rating():
     assert logged["entity_type"] == "edge"
     assert logged["username"] == "testuser"
 
-    # Retrieve the logged edge rating (explicitly pass rating_type)
+    # Retrieve the logged edge rating (explicitly pass poll_label)
     response = client.get(
         "/edges/10/20/ratings",
-        params={"rating_type": "necessity"},
+        params={"poll_label": "necessity"},
     )
     assert response.status_code == 200
     fetched = response.json()
@@ -133,7 +133,7 @@ def test_edge_median_rating():
             "entity_type": "edge",
             "source_id": 30,
             "target_id": 40,
-            "rating_type": "sufficiency",
+            "poll_label": "sufficiency",
             "rating": "B",
             "timestamp": datetime.datetime.utcnow().isoformat() + "Z",
         },
@@ -141,7 +141,7 @@ def test_edge_median_rating():
             "entity_type": "edge",
             "source_id": 30,
             "target_id": 40,
-            "rating_type": "sufficiency",
+            "poll_label": "sufficiency",
             "rating": "E",
             "timestamp": datetime.datetime.utcnow().isoformat() + "Z",
         },
@@ -149,7 +149,7 @@ def test_edge_median_rating():
             "entity_type": "edge",
             "source_id": 30,
             "target_id": 40,
-            "rating_type": "sufficiency",
+            "poll_label": "sufficiency",
             "rating": "C",
             "timestamp": datetime.datetime.utcnow().isoformat() + "Z",
         },
@@ -159,7 +159,7 @@ def test_edge_median_rating():
 
     response = client.get(
         "/edges/30/40/ratings/median",
-        params={"rating_type": "sufficiency"},
+        params={"poll_label": "sufficiency"},
     )
     assert response.status_code == 200
     data = response.json()

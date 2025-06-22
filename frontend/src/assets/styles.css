@@ -203,17 +203,26 @@ body.dark .vue-flow__edge.selected .vue-flow__edge-path {
   position: relative;
 }
 
+.tab-card {
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--background-color);
+  padding: 0;
+  position: relative;
+}
+
 .tabs {
-  /* display: flex; */
-  position: absolute;
-  top: -10px;
-  left: -10px;
-  /* left: 0px; */
+  display: flex;
+  justify-content: flex-end; /* Flush tabs to the right */
+  position: relative;        /* Use relative positioning for normal flow */
+  /* margin: 0 -5px; */
+  /* padding: 0; */
 }
 
 .tabs button {
   flex: 1;
-  padding: 3px 10px;
+  padding: 4px 12px;
+  margin: -18px -5px 4px;
   cursor: pointer;
   background: none;
   border-radius: 3px;
@@ -221,13 +230,13 @@ body.dark .vue-flow__edge.selected .vue-flow__edge-path {
   font-size: 11px;
 }
 
-.tabs button.active {
-  border-bottom: 2px solid #007bff;
-  font-weight: bold;
+.tabs button:hover {
+  background: var(--hover-bg-color);
 }
 
-.references-list li {
-  margin: 2px 0;
+.tabs button.active {
+  border-bottom-color: var(--accent-color);
+  font-weight: bold;
 }
 
 .submit-button {

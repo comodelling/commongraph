@@ -46,6 +46,11 @@ class User(SQLModel, table=True):
         default=not REQUIRE_ADMIN_APPROVAL,
         description="User must be approved by an admin before activation"
     )
+    is_admin: bool = Field(
+        default=False,
+        description="Global admin user"
+    )
+
 
 class UserRead(SQLModel):
     username: str

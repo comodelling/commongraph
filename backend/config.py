@@ -30,13 +30,13 @@ EDGE_TYPE_STYLE = {
     for et, defn in EDGE_TYPE_CFG.items()
 }
 
-#. 4
+# 4. between specifics for graph schema
 EDGE_TYPE_BETWEEN = {
     et: defn.get("between", None)
     for et, defn in EDGE_TYPE_CFG.items()
 }
 
-# .5 Polls configuration
+# 5. Polls configuration
 
 def get_node_type_polls() -> dict:
     """Return the polls configuration per node or edge type."""
@@ -56,6 +56,11 @@ def get_edge_type_polls() -> dict:
 
 NODE_TYPE_POLLS = get_node_type_polls()
 EDGE_TYPE_POLLS = get_edge_type_polls()
+
+# 6. Authentication configuration
+AUTH_CFG = _CONFIG.get("auth", {})
+ALLOW_SIGNUP = AUTH_CFG.get("allow_signup", True)
+REQUIRE_ADMIN_APPROVAL = AUTH_CFG.get("require_admin_approval", False)
 
 
 # 5. Helpers

@@ -49,7 +49,7 @@ def _make_dynamic(
 
         name = f"{type_name.title()}{base.__name__}"
         out[type_name] = create_model(name, __base__=base, **fields)
-        print(f"Dynamic model created: {name}, fields: {list(fields.keys())}")
+        logger.info(f"Dynamic model created: {name}, fields: {list(fields.keys())}")
     return out
 
 

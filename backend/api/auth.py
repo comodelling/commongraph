@@ -11,6 +11,8 @@ from backend.models.fixed import UserCreate, UserRead
 from backend.db.base import UserDatabaseInterface
 from backend.db.postgresql import UserPostgreSQLDB
 from backend.utils.security import verify_password, hash_password
+from backend.config import ALLOW_SIGNUP, REQUIRE_ADMIN_APPROVAL
+
 
 logger = logging.getLogger(__name__)
 
@@ -113,10 +115,13 @@ async def get_current_user(
 
 @router.post("/signup", response_model=UserRead)
 def signup(user: UserCreate, db: UserDatabaseInterface = Depends(get_user_db)):
-    logger.info(f"Signup attempt for username: {user.username}")
-    created_user = db.create_user(user)
-    logger.info(f"User created successfully: {created_user.username}")
-    return created_user
+    if not ALLOW_SIGNUP:
+        raise HTTPException(status_code=403, detail="Signups are currently disabled")
+    data = user.dict()
+    data["is_active"] = not REQUIRE_ADMIN_APPROVAL
+    created = db.create_user(User(**data))
+    # TODO: notify admin if REQUIRE_ADMIN_APPROVAL
+    return created
 
 
 @router.post("/login")
@@ -129,6 +134,8 @@ def login(
     if not full_user or not verify_password(form_data.password, full_user.password):
         logger.warning(f"Failed login for user: {form_data.username}")
         raise HTTPException(status_code=400, detail="Incorrect username or password")
+    if not full_user.is_active:
+        raise HTTPException(status_code=403, detail="Account pending approval")
     access_token = create_access_token(data={"sub": full_user.username})
     refresh_token = create_refresh_token(data={"sub": full_user.username})
     logger.info(f"Access and refresh tokens issued for user: {full_user.username}")

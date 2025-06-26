@@ -2,6 +2,7 @@ import os
 import logging
 import json
 import random
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -15,11 +16,38 @@ from backend.api.edges import router as edges_router
 from backend.api.graph import router as graph_router
 from backend.config import (PLATFORM_NAME, NODE_TYPE_PROPS, EDGE_TYPE_PROPS, EDGE_TYPE_BETWEEN,
                             NODE_TYPE_STYLE, EDGE_TYPE_STYLE, NODE_TYPE_POLLS, EDGE_TYPE_POLLS)
+from backend.db.postgresql import UserPostgreSQLDB
+from backend.utils.security import hash_password
+from backend.models.fixed import UserCreate
 
 logger = logging.getLogger(__name__)
 
 
-app = FastAPI(title="CommonGraph API", version=__version__)
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # --- startup ---
+    # seed the initial admin if needed
+    admin_user = settings.INITIAL_ADMIN_USER
+    admin_pw   = settings.INITIAL_ADMIN_PASSWORD
+    if admin_user and admin_pw:
+        db = UserPostgreSQLDB(settings.POSTGRES_DB_URL)
+        if not db.get_user(admin_user):
+            db.create_user(
+                UserCreate(
+                    username=admin_user,
+                    password=admin_pw,
+                    is_active=True,
+                    is_admin=True,
+                    security_question=None,
+                    security_answer=None,
+                )
+            )
+    yield
+
+
+app = FastAPI(title="CommonGraph API", 
+              version=__version__,
+              lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -34,6 +62,8 @@ app.include_router(users_router)
 app.include_router(nodes_router)
 app.include_router(edges_router)
 app.include_router(graph_router)
+
+
 
 
 @app.get("/")

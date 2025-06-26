@@ -54,6 +54,8 @@ class UserPostgreSQLDB(UserDatabaseInterface):
                 preferences=user.preferences,
                 security_question=user.security_question,
                 security_answer=user.security_answer,
+                is_active=user.is_active,
+                is_admin=user.is_admin,
             )
             session.add(db_user)
             try:

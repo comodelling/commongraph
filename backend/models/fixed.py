@@ -67,7 +67,14 @@ class UserCreate(SQLModel):
     security_answer: str | None = Field(
         ..., description="Answer to the security question"
     )
-
+    is_active: bool = Field(
+        default=not REQUIRE_ADMIN_APPROVAL,
+        description="set by admin or signup logic"
+    )
+    is_admin: bool = Field(
+        default=False,
+        description="grant admin rights"
+    )
 
 class EntityState(str, Enum):
     created = "created"

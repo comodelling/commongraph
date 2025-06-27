@@ -9,6 +9,16 @@
           style="max-width: 600px; width: 450px"
         />
       </div>
+      <div class="graph-container">
+        <SigmaGraphVis
+          :height="'500px'"
+          :show-controls="true"
+          :auto-start-force-atlas="true"
+          @node-click="handleNodeClick"
+          @edge-click="handleEdgeClick"
+          @graph-loaded="handleGraphLoaded"
+        />
+      </div>
     </div>
   </div>
 </template>
@@ -16,11 +26,12 @@
 <script>
 import { onMounted } from "vue";
 import SearchBar from "../components/common/SearchBar.vue";
+import SigmaGraphVis from "../components/graph/SigmaGraphVis.vue";
 import { buildSearchParams } from "../utils/searchParser.js";
 import { useConfig } from "../composables/useConfig";
 
 export default {
-  components: { SearchBar },
+  components: { SearchBar, SigmaGraphVis },
   data() {
     return {
       quote: null,
@@ -36,6 +47,18 @@ export default {
       const params = buildSearchParams(parsedQuery);
       this.$router.push({ name: "SearchPage", query: params });
     },
+    handleNodeClick(nodeId) {
+      console.log("Node clicked:", nodeId);
+      // Navigate to node focus view
+      this.$router.push({ name: "NodeFocus", params: { id: nodeId } });
+    },
+    handleEdgeClick(edgeId) {
+      console.log("Edge clicked:", edgeId);
+      // Handle edge click - you might need to parse edge ID to get source/target
+    },
+    handleGraphLoaded(data) {
+      console.log("Graph loaded with", data.nodes?.length, "nodes and", data.edges?.length, "edges");
+    }
   },
 };
 </script>
@@ -56,7 +79,15 @@ export default {
 .search-container {
   display: flex;
   justify-content: center;
-  margin-bottom: 100px;
+  margin-bottom: 30px;
+}
+
+.graph-container {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 </style>

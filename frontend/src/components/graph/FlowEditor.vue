@@ -22,7 +22,7 @@ import {
 } from "../../composables/formatFlowComponents.js";
 import { useUnsaved } from "../../composables/useUnsaved.js";
 import { useConfig } from "../../composables/useConfig.js";
-import { loadGraphSchema, getAllowedEdgeTypes, getAllowedTargetNodeTypes, getAllowedSourceNodeTypes } from "../../composables/useGraphSchema";
+import { loadGraphSchema, getAllowedEdgeTypes, getAllowedTargetNodeTypes, getAllowedSourceNodeTypes } from "../../composables/useGraphSchema.js";
 
 const {
   nodeTypes,

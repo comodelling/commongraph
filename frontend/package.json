@@ -23,6 +23,8 @@
     "esbuild": ">=0.25.0",
     "file-saver": "^2.0.5",
     "graphology": "^0.26.0",
+    "graphology-layout": "^0.6.1",
+    "graphology-layout-forceatlas2": "^0.10.1",
     "jwt-decode": "^4.0.0",
     "qs": "^6.13.1",
     "sigma": "^3.0.2",

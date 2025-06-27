@@ -119,7 +119,7 @@ def signup(user: UserCreate, db: UserDatabaseInterface = Depends(get_user_db)):
         raise HTTPException(status_code=403, detail="Signups are currently disabled")
     data = user.dict()
     data["is_active"] = not REQUIRE_ADMIN_APPROVAL
-    created = db.create_user(User(**data))
+    created = db.create_user(UserCreate(**data))
     # TODO: notify admin if REQUIRE_ADMIN_APPROVAL
     return created
 

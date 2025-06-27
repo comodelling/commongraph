@@ -139,11 +139,16 @@ export default {
           `/auth/signup`,
           user_data,
         );
-        success.value = `Signup successful for ${response.data.username}. Please log in.`;
-        router.push({
-          path: "/login",
-          query: { message: "Signup successful. Please log in." },
-        });
+        if (response.data.is_active) {
+          success.value = `Signup successful for ${response.data.username}. Please log in.`;
+          router.push({
+            path: "/login",
+            query: { message: "Signup successful. Please log in." },
+          });
+        } else {
+          success.value = `Signup successful for ${response.data.username}. Waiting for admin approval.`;
+          // do not redirect; user must await admin approval
+        }
       } catch (err) {
         error.value =
           "Signup failed. " + (err.response?.data.detail || "Try again later.");

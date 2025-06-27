@@ -76,13 +76,28 @@ def get_edges_median_ratings(
 # **** Edge CRUD operations ****
 
 @router.get("")
-def get_edge_list(
-    db_history: GraphHistoryRelationalInterface = Depends(
-        get_graph_history_db
-    ),
-) -> list[DynamicEdge]: #type: ignore
-    """Return all edges in the database."""
-    return db_history.get_edge_list()
+def get_edges(
+    node_ids: list[NodeId] = Query(None, description="Optional list of node IDs to filter connections"),
+    db_history: GraphHistoryRelationalInterface = Depends(get_graph_history_db),
+) -> list[DynamicEdge]:
+    """Return edges, optionally filtered by node connections."""
+    if node_ids:
+        # Get connections between the specified nodes
+        edge_list = []
+        for i, node_id in enumerate(node_ids):
+            for target_id in node_ids[i + 1:]:
+                try:
+                    edge = db_history.get_edge(node_id, target_id)
+                    if edge:
+                        edge_list.append(edge)
+                except Exception:
+                    # Edge doesn't exist, continue to next pair
+                    continue
+        return edge_list
+    else:
+        # Return all edges
+        return db_history.get_edge_list()
+
 
 @router.post("", status_code=201)
 def create_edge(

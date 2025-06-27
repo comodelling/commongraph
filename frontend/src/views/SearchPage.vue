@@ -21,6 +21,18 @@
       </div>
     </div>
       <div class="visualization-column">
+        <div class="graph-container">
+          <SigmaGraphVis
+            :graph-data="subgraphData"
+            :height="'300px'"
+            :show-controls="true"
+            :auto-start-force-atlas="true"
+            @node-click="handleNodeClick"
+            @edge-click="handleEdgeClick"
+            @graph-loaded="handleGraphLoaded"
+          />
+        </div>
+
         <AggRatingMultipane
           :nodes="nodes"
           :poll-configs="nodePolls"
@@ -42,13 +54,15 @@ import SearchBar from "../components/common/SearchBar.vue";
 import RatingHistogram from "../components/poll/RatingHistogram.vue";
 import NodeListItem from "../components/node/NodeListItem.vue";
 import AggRatingMultipane from "../components/poll/AggRatingMultipane.vue";
+import SigmaGraphVis from "../components/graph/SigmaGraphVis.vue";
 
 export default {
-  components: { SearchBar, RatingHistogram, NodeListItem, AggRatingMultipane },
+  components: { SearchBar, RatingHistogram, NodeListItem, AggRatingMultipane, SigmaGraphVis },
   data() {
     return {
       title: "",
       nodes: [],
+      relationships: [], // Add relationships data
     };
   },
   computed: {
@@ -62,6 +76,39 @@ export default {
         return groups;
       }, {});
     },
+    subgraphData() {
+      if (!this.nodes.length) {
+        return { nodes: [], edges: [] };
+      }
+
+      // Transform search result nodes into graph format
+      const graphNodes = this.nodes.map(node => ({
+        node_id: node.node_id,
+        id: node.node_id,
+        title: node.title,
+        label: node.title,
+        node_type: node.node_type,
+        scope: node.scope
+      }));
+
+      // Use actual relationships/edges from the API
+      const graphEdges = this.relationships.map(rel => ({
+        source_id: rel.source,
+        target_id: rel.target,
+        edge_type: rel.edge_type || rel.relationship_type || rel.type,
+        type: rel.edge_type || rel.relationship_type || rel.type
+      }));
+
+      const result = {
+        nodes: graphNodes,
+        edges: graphEdges
+      };
+      
+      console.log("subgraphData computed:", result);
+      console.log("Raw relationships:", this.relationships);
+      
+      return result;
+    }
   },
   watch: {
     "$route.query": {
@@ -101,6 +148,18 @@ export default {
     applyRatingFilter(rating) {
       this.search({ text: [this.title], rating });
     },
+    handleNodeClick(nodeId) {
+      console.log("Node clicked in search:", nodeId);
+      // Navigate to node focus view
+      this.$router.push({ name: "NodeView", params: { id: nodeId } });
+    },
+    handleEdgeClick(edgeId) {
+      console.log("Edge clicked in search:", edgeId);
+      // You could show edge details or filter results
+    },
+    handleGraphLoaded(data) {
+      console.log("Search graph loaded with", data.nodes?.length, "nodes and", data.edges?.length, "edges");
+    },
     async performSearch() {
       try {
         const { title, node_type, status, tags, scope, rating } =
@@ -126,6 +185,8 @@ export default {
           scope,
         });
         const startTime = performance.now();
+        
+        // Fetch nodes first (fast response)
         const response = await api.get(`/nodes`, {
           params: {
             title,
@@ -137,11 +198,47 @@ export default {
           paramsSerializer: (params) =>
             qs.stringify(params, { arrayFormat: "repeat" }),
         });
+        
+        this.nodes = response.data;
+        this.relationships = []; // Clear previous relationships immediately
+        
         const endTime = performance.now();
         console.log(`Search completed in ${endTime - startTime} milliseconds`);
-        this.nodes = response.data;
+        console.log(`Found ${this.nodes.length} nodes`);
+        
+        // Fetch relationships in the background (non-blocking)
+        this.fetchRelationshipsInBackground();
+        
       } catch (error) {
         console.error("Error fetching nodes:", error);
+        this.nodes = [];
+        this.relationships = [];
+      }
+    },
+    
+    async fetchRelationshipsInBackground() {
+      if (this.nodes.length === 0) {
+        return;
+      }
+      
+      const nodeIds = this.nodes.map(node => node.node_id);
+      console.log(`Fetching relationships for ${nodeIds.length} nodes in background...`);
+      
+      try {
+        const relationshipsResponse = await api.get(`/edges`, {
+          params: {
+            node_ids: nodeIds
+          },
+          paramsSerializer: (params) =>
+            qs.stringify(params, { arrayFormat: "repeat" }),
+        });
+        
+        this.relationships = relationshipsResponse.data || [];
+        console.log(`Loaded ${this.relationships.length} relationships - graph will update automatically`);
+        
+      } catch (relError) {
+        console.warn("Could not fetch relationships:", relError);
+        this.relationships = [];
       }
     },
   },
@@ -214,10 +311,19 @@ export default {
 .visualization-column {
   flex: 1;
   overflow-y: auto;
-  /* padding: 20px; */
-  /* border: 1px solid var(--border-color); */
   border-radius: 4px;
   margin: 2px 4px 4px 2px;
+  display: flex;
+  flex-direction: column;
+}
+
+.graph-container {
+  height: 300px;
+  margin-bottom: 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
 }
 
 .scope-group {

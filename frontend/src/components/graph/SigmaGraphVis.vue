@@ -100,7 +100,7 @@ export default {
             if (graph.value.hasNode(sourceId) && graph.value.hasNode(targetId)) {
               // Create a unique edge ID if not provided
               const edgeId = edge.edge_id || edge.id || `edge_${sourceId}_${targetId}_${index}`;
-              console.log(`Adding edge: ${edgeId} from ${sourceId} to ${targetId} (type: ${edge.edge_type || edge.type})`);
+            //   console.log(`Adding edge: ${edgeId} from ${sourceId} to ${targetId} (type: ${edge.edge_type || edge.type})`);
               
               // Ensure we're passing string IDs, not numbers
               const sourceIdStr = String(sourceId);
@@ -119,18 +119,18 @@ export default {
                 // Try the method with key first, then fallback to auto-key
                 if (typeof graph.value.addEdgeWithKey === 'function') {
                   graph.value.addEdgeWithKey(edgeIdStr, sourceIdStr, targetIdStr, edgeAttributes);
-                  console.log(`Successfully added edge during init with key: ${edgeIdStr}`);
+                //   console.log(`Successfully added edge during init with key: ${edgeIdStr}`);
                 } else {
                   // Use auto-generated key method
                   const autoEdgeId = graph.value.addEdge(sourceIdStr, targetIdStr, edgeAttributes);
-                  console.log(`Successfully added edge during init with auto key: ${autoEdgeId}`);
+                //   console.log(`Successfully added edge during init with auto key: ${autoEdgeId}`);
                 }
               } catch (error) {
                 console.error(`Failed to add edge during init ${edgeIdStr}:`, error);
                 console.error(`Graph methods available:`, Object.getOwnPropertyNames(graph.value).filter(name => name.includes('Edge')));
               }
             } else {
-              console.warn(`Skipping edge - missing nodes: ${sourceId} -> ${targetId}`);
+            //   console.warn(`Skipping edge - missing nodes: ${sourceId} -> ${targetId}`);
             }
           });
         }

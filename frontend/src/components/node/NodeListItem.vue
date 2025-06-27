@@ -44,12 +44,13 @@ export default {
 .title {
   font-size: 14px;
   font-weight: 500;
-  color: var(--text-color);
+  /* color: var(--text-color); */
   text-decoration: none;
-  color: blue
+  color: #646cff;
 }
 .title:hover {
   text-decoration: underline;
+  color: #535bf2;
 }
 .subtitle {
   font-size: 11px;

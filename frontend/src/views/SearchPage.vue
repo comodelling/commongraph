@@ -231,15 +231,15 @@ export default {
   font-size: 12px;
 }
 
-.node-item a {
+/* .node-item a {
   text-decoration: none;
-}
+} */
 
-.node-item a:hover {
+/* .node-item a:hover {
   text-decoration: underline;
-}
+} */
 
-.node-item:hover {
+/* .node-item:hover {
   background-color: #f0f0f0;
-}
+} */
 </style>

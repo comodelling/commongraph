@@ -50,7 +50,7 @@ export default {
     handleNodeClick(nodeId) {
       console.log("Node clicked:", nodeId);
       // Navigate to node focus view
-      this.$router.push({ name: "NodeFocus", params: { id: nodeId } });
+      this.$router.push({ name: "NodeView", params: { id: nodeId } });
     },
     handleEdgeClick(edgeId) {
       console.log("Edge clicked:", edgeId);

@@ -249,6 +249,9 @@ export default {
       }
     },
     hydrateEdgeFromCache() {
+      if (this.edge?.new) {
+        return;
+      }
       const s = Number(this.sourceId)
       const t = Number(this.targetId)
       const nodes = this.subgraphData.nodes

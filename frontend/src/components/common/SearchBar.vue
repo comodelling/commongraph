@@ -21,7 +21,7 @@ export default {
     },
     placeholder: {
       type: String,
-      default: "Search for changes...",
+      default: "Search for nodes...",
     },
     showButton: {
       type: Boolean,

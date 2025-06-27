@@ -24,6 +24,7 @@
 <script>
 import { useRouter } from "vue-router";
 import { useAuth } from "../../composables/useAuth";
+import api from "../../api/axios";
 
 
 export default {

@@ -93,27 +93,3 @@ def get_config():
         "edge_types": edge_types,
     }
 
-
-@app.get("/quote")
-def get_random_quote():
-    """Return a random quote from the quotes file.
-    The quotes file is specified in the QUOTES_FILE environment variable, which should be a path to a JSON file.
-    The JSON file should contain a list of dictionaries, each with a "quote" key and optional "author" and "where" keys.
-    """
-    if not os.path.exists(settings.QUOTES_FILE):
-        logger.warning("Quotes file not found")
-        raise HTTPException(status_code=404, detail="Quotes file not found")
-
-    with open(settings.QUOTES_FILE, "r", encoding="utf-8") as file:
-        try:
-            quotes = json.load(file)
-        except json.JSONDecodeError as e:
-            logger.error(f"Invalid JSON format: {e}")
-            raise HTTPException(status_code=500, detail="Invalid JSON format")
-
-    if not quotes:
-        logger.error("No quotes found")
-        raise HTTPException(status_code=404, detail="No quotes found")
-
-    random_quote = random.choice(quotes)
-    return random_quote

@@ -9,14 +9,6 @@
           style="max-width: 600px; width: 450px"
         />
       </div>
-      <div v-if="quote" class="quote-container">
-        <blockquote>{{ quote.quote }}</blockquote>
-        <p>
-          &mdash; {{ quote.author
-          }}<span v-if="quote.where">, in {{ quote.where }}</span>
-        </p>
-        <small v-if="quote.comments">({{ quote.comments }})</small>
-      </div>
     </div>
   </div>
 </template>
@@ -26,7 +18,6 @@ import { onMounted } from "vue";
 import SearchBar from "../components/common/SearchBar.vue";
 import { buildSearchParams } from "../utils/searchParser.js";
 import { useConfig } from "../composables/useConfig";
-import api from "../api/axios.js";
 
 export default {
   components: { SearchBar },
@@ -40,22 +31,10 @@ export default {
     onMounted(load);
     return { platformName };
   },
-  mounted() {
-    this.fetchQuote();
-  },
   methods: {
     goToSearch(parsedQuery) {
       const params = buildSearchParams(parsedQuery);
       this.$router.push({ name: "SearchPage", query: params });
-    },
-    async fetchQuote() {
-      try {
-        const response = await api.get(`/quote`);
-        this.quote = response.data;
-        console.log("Quote fetched:", this.quote);
-      } catch (error) {
-        console.error("Error fetching quote:", error);
-      }
     },
   },
 };
@@ -80,12 +59,4 @@ export default {
   margin-bottom: 100px;
 }
 
-.quote-container blockquote {
-  margin: 0;
-  font-style: italic;
-}
-
-.quote-container p {
-  margin: 0;
-}
 </style>

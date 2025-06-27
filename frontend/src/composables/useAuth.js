@@ -21,8 +21,9 @@ async function loadUser() {
 loadUser();
 
 export function useAuth() {
+  // refresh user info whenever composable is used
+  loadUser();
   const isLoggedIn = computed(() => !!state.accessToken);
-
   const setTokens = ({ accessToken, refreshToken }) => {
     state.accessToken = accessToken;
     state.refreshToken = refreshToken;

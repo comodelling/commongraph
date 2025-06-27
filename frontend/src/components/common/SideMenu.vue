@@ -22,7 +22,6 @@
 </template>
 
 <script>
-import api from "../../api/axios";
 import { useRouter } from "vue-router";
 import { useAuth } from "../../composables/useAuth";
 
@@ -30,7 +29,7 @@ import { useAuth } from "../../composables/useAuth";
 export default {
   setup() {
     const router = useRouter();
-    const { isLoggedIn, isAdmin, clearTokens, getAccessToken } = useAuth();
+    const { isLoggedIn, isAdmin, clearTokens } = useAuth();
 
     const fetchRandomNode = async () => {
       try {

@@ -1,5 +1,6 @@
 import { reactive, computed } from "vue";
-import api from "../api/axios";
+// Breaking circular import: use fetch instead of axios
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
 const state = reactive({
   accessToken: localStorage.getItem("accessToken") || null,
@@ -10,8 +11,15 @@ const state = reactive({
 async function loadUser() {
   if (!state.accessToken) return;
   try {
-    const res = await api.get("/users/me", { headers: { Authorization: `Bearer ${state.accessToken}` } });
-    state.isAdmin = res.data.is_admin;
+    const res = await fetch(`${BACKEND_URL}/users/me`, {
+      headers: { Authorization: `Bearer ${state.accessToken}` },
+    });
+    if (res.ok) {
+      const data = await res.json();
+      state.isAdmin = data.is_admin;
+    } else {
+      state.isAdmin = false;
+    }
   } catch {
     state.isAdmin = false;
   }

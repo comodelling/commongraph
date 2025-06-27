@@ -167,13 +167,7 @@ export default {
 </script>
 
 <style scoped>
-.container {
-  height: 80vh;
-}
 
-.form-wrapper {
-  width: 400px;
-}
 
 form {
   display: flex;

@@ -1,30 +1,32 @@
 <template>
-  <div>
-    <h2>User Settings</h2>
-    <div v-if="loading">Loading settings...</div>
-    <div v-else-if="error">{{ error }}</div>
-    <div v-else>
-      <p><strong>Username:</strong> {{ user.username }}</p>
-      <div class="theme-selector">
-        <label>
-          <strong>Preferred Theme:</strong>
-          <input type="radio" value="system" v-model="preferredTheme" />
-          System Default
-        </label>
-        <label>
-          <input type="radio" value="light" v-model="preferredTheme" />
-          Light
-        </label>
-        <label>
-          <input type="radio" value="dark" v-model="preferredTheme" />
-          Dark
-        </label>
+  <div class="container">
+    <div class="form-wrapper">
+      <h2>User Settings</h2>
+      <div v-if="loading">Loading settings...</div>
+      <div v-else-if="error">{{ error }}</div>
+      <div v-else>
+        <p><strong>Username:</strong> {{ user.username }}</p>
+        <div class="theme-selector">
+          <label>
+            <strong>Preferred Theme:</strong>
+            <input type="radio" value="system" v-model="preferredTheme" />
+            System Default
+          </label>
+          <label>
+            <input type="radio" value="light" v-model="preferredTheme" />
+            Light
+          </label>
+          <label>
+            <input type="radio" value="dark" v-model="preferredTheme" />
+            Dark
+          </label>
+        </div>
+        <button @click="navigateToUpdateSecurityQuestion">
+          Update Security Question
+        </button>
+        <br /><br />
+        <button @click="logout">Logout</button>
       </div>
-      <button @click="navigateToUpdateSecurityQuestion">
-        Update Security Question
-      </button>
-      <br /><br />
-      <button @click="logout">Logout</button>
     </div>
   </div>
 </template>
@@ -133,4 +135,9 @@ export default {
 .theme-selector label {
   margin-right: 1rem;
 }
+
+.form-wrapper {
+  width: 450px;
+}
+
 </style>

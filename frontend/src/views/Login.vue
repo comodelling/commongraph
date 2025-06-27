@@ -12,7 +12,7 @@
           Password:
           <input type="password" v-model="password" required />
         </label>
-        <button type="submit">Login</button>
+        <button type="submit">Log in</button>
       </form>
       <p v-if="error" style="color: red">{{ error }}</p>
       <div class="links">
@@ -84,11 +84,8 @@ form {
   margin-top: 1rem;
 }
 
-label {
-  text-align: left;
-}
-
 .links {
   font-size: 13px;
+  text-align: center;
 }
 </style>

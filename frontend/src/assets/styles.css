@@ -119,14 +119,17 @@ button:focus-visible {
 }
 
 .form-wrapper {
-  width: 300px;
-  text-align: center;
+  width: 400px;
+  text-align: left;
   border: 1px solid var(--border-color);
   background-color: var(--background-color);
   border-radius: 8px;
   padding: 20px;
   /* background-color: var(--background-color); */
   color: var(--text-color);
+}
+.form-wrapper h2 {
+  text-align: center;
 }
 
 .vue-flow__minimap {

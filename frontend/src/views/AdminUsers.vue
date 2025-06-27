@@ -1,15 +1,19 @@
 <template>
-  <div v-if="isAdmin">  <!-- only show if current user is admin -->
-    <h1>Manage Users</h1>
-    <div v-for="user in users" :key="user.username" class="user-row">
-      <span>{{ user.username }}</span>
-      <span v-if="!user.is_active"><button @click="approve(user.username)">Approve</button></span>
-      <span v-if="!user.is_admin"><button @click="promote(user.username)">Promote to Admin</button></span>
+    <div class="container">
+        <div class="form-wrapper">
+            <div v-if="isAdmin">  <!-- only show if current user is admin -->
+                <h2>Manage Users</h2>
+                <div v-for="user in users" :key="user.username" class="user-row">
+                <span>{{ user.username }}</span>
+                <span v-if="!user.is_active"><button @click="approve(user.username)">Approve</button></span>
+                <span v-if="!user.is_admin"><button @click="promote(user.username)">Promote to Admin</button></span>
+                </div>
+            </div>
+            <div v-else>
+                <p>Not authorized.</p>
+            </div>
+        </div>
     </div>
-  </div>
-  <div v-else>
-    <p>Not authorized.</p>
-  </div>
 </template>
 
 <script setup>

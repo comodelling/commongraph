@@ -1,20 +1,22 @@
 <template>
   <div class="container">
-    <h1>Favourite Nodes</h1>
-    <br />
-    <div v-if="loading">Loading favourites...</div>
-    <div v-else-if="error" class="error">{{ error }}</div>
-    <div v-else>
-      <div v-if="favourites.length">
-        <ul>
-          <NodeListItem
-            v-for="node in favourites"
-            :key="node.node_id"
-            :node="node"
-          />
-        </ul>
+    <div class="form-wrapper">
+      <h2>Favourite Nodes</h2>
+      <br />
+      <div v-if="loading">Loading favourites...</div>
+      <div v-else-if="error" class="error">{{ error }}</div>
+      <div v-else>
+        <div v-if="favourites.length">
+          <ul>
+            <NodeListItem
+              v-for="node in favourites"
+              :key="node.node_id"
+              :node="node"
+            />
+          </ul>
+        </div>
+        <div v-else>No favourites added yet.</div>
       </div>
-      <div v-else>No favourites added yet.</div>
     </div>
   </div>
 </template>

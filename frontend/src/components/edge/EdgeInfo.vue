@@ -7,6 +7,7 @@
           <button
             :class="{ active: currentTab === 'view' }"
             @click="switchTab('view')"
+            :disabled="isBrandNewEdge"
           >
             View
           </button>
@@ -19,6 +20,7 @@
           <button
             :class="{ active: currentTab === 'history' }"
             @click="switchTab('history')"
+            :disabled="isBrandNewEdge"
           >
             History
           </button>
@@ -75,6 +77,7 @@ export default {
   data() {
     return {
       currentTab: this.getCurrentTab(),
+      localIsBrandNewEdge: this.edge?.new === true,  // track new state locally
     };
   },
   watch: {
@@ -88,7 +91,11 @@ export default {
       if (this.currentTab === "edit") return EdgeInfoEdit;
       if (this.currentTab === "history") return EdgeHistory;
     },
+    isBrandNewEdge() {
+      return this.localIsBrandNewEdge;
+    },
   },
+
   methods: {
     getCurrentTab() {
       if (this.$route.path.endsWith("/edit")) return "edit";
@@ -97,6 +104,9 @@ export default {
     },
     switchTab(tab) {
       if (this.currentTab === tab) return;
+      if (this.isBrandNewEdge && (tab === "view" || tab === "history")) {
+        return;
+      }
       // If currently in edit mode, check with the edit component if there are unsaved changes.
       if (
         this.currentTab === "edit" &&
@@ -118,6 +128,7 @@ export default {
       }
     },
     updateEdgeFromEditor(updatedEdge) {
+      this.localIsBrandNewEdge = false;  // clear local flag
       this.$emit("update-edge-from-editor", updatedEdge);
       this.switchTab("view");
     },

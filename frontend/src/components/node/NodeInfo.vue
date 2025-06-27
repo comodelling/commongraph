@@ -3,16 +3,19 @@
     <div class="pane-header">
       <div class="title-group">
         <h4>Node Info</h4>
-        <div class="favourite-toggle">
-          <button class="favourite-btn" @click="toggleFavourite">
-            {{ isFavourite ? "★" : "☆" }}
-          </button>
-        </div>
+        <template  v-if="!isBrandNewNode">
+          <div class="favourite-toggle">
+            <button class="favourite-btn" @click="toggleFavourite">
+              {{ isFavourite ? "★" : "☆" }}
+            </button>
+          </div>
+        </template>
       </div>
       <div class="tabs">
         <button
-          :class="{ active: currentTab === 'view' }"
+          :class="{ active: currentTab === 'view', disabled: isBrandNewNode }"
           @click="switchTab('view')"
+          :disabled="isBrandNewNode"
         >
           View
         </button>
@@ -23,8 +26,9 @@
           Edit
         </button>
         <button
-          :class="{ active: currentTab === 'history' }"
+          :class="{ active: currentTab === 'history', disabled: isBrandNewNode }"
           @click="switchTab('history')"
+          :disabled="isBrandNewNode"
         >
           History
         </button>
@@ -90,6 +94,11 @@ export default {
       if (this.currentTab === "edit") return NodeInfoEdit;
       if (this.currentTab === "history") return NodeHistoryView;
     },
+    isBrandNewNode() {
+      const isBrandNewNode =  this.node.node_id === "new";
+      console.log("isBrandNewNode:", isBrandNewNode, this.node.node_id);
+      return this.node && this.node.node_id === "new";
+    },
   },
   mounted() {
     if (this.node && this.node.node_id) {
@@ -116,6 +125,10 @@ export default {
   },
   methods: {
     switchTab(tab) {
+      // Prevent switching to view/history if node is brand new
+      if (this.isBrandNewNode && (tab === "view" || tab === "history")) {
+        return;
+      }
       if (this.currentTab === "edit" && this.$refs.nodeEdit) {
         if (this.$refs.nodeEdit.hasLocalUnsavedChanges) {
           if (
@@ -210,6 +223,5 @@ export default {
 
 .tabs {
   right: -16px;
- }
-
+}
 </style>

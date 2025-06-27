@@ -258,6 +258,11 @@ body.dark .vue-flow__edge.selected .vue-flow__edge-path {
   border-bottom-color: var(--accent-color);
   font-weight: bold;
 }
+.tabs button.disabled {
+  opacity: 0.5;
+  pointer-events: none;
+  cursor: not-allowed;
+}
 
 .submit-button {
   /* margin-top: 20px; */

@@ -64,7 +64,12 @@ class UserPostgreSQLDB(UserDatabaseInterface):
             except IntegrityError:
                 session.rollback()
                 raise HTTPException(status_code=400, detail="User already exists")
-            return UserRead(username=db_user.username, preferences=db_user.preferences)
+            return UserRead(
+                username=db_user.username,
+                preferences=db_user.preferences,
+                is_active=db_user.is_active,
+                is_admin=db_user.is_admin,
+            )
 
     def get_user(self, username: str) -> User | None:
         with Session(self.engine) as session:
@@ -77,7 +82,12 @@ class UserPostgreSQLDB(UserDatabaseInterface):
             session.add(user)
             session.commit()
             session.refresh(user)
-            return UserRead(username=user.username, preferences=user.preferences)
+            return UserRead(
+                username=user.username,
+                preferences=user.preferences,
+                is_active=user.is_active,
+                is_admin=user.is_admin,
+            )
 
     def update_preferences(self, username: str, new_prefs: dict) -> UserRead:
         with Session(self.engine) as session:
@@ -99,12 +109,32 @@ class UserPostgreSQLDB(UserDatabaseInterface):
             self.logger.info(
                 f"Final preferences in database after commit: {user.preferences}"
             )
-            return UserRead(username=user.username, preferences=user.preferences)
+            return UserRead(
+                username=user.username,
+                preferences=user.preferences,
+                is_active=user.is_active,
+                is_admin=user.is_admin,
+            )
 
     def reset_user_table(self):
         """Reset the database by dropping all tables and recreating them."""
         SQLModel.metadata.drop_all(self.engine)
         SQLModel.metadata.create_all(self.engine)
+
+    def list_users(self) -> List[UserRead]:
+        """Fetch and return all users as UserRead."""
+        with Session(self.engine) as session:
+            statement = select(User)
+            results = session.exec(statement).all()
+            return [
+                UserRead(
+                    username=u.username,
+                    preferences=u.preferences,
+                    is_active=u.is_active,
+                    is_admin=u.is_admin,
+                )
+                for u in results
+            ]
 
 
 class RatingHistoryPostgreSQLDB(RatingHistoryRelationalInterface):

@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from typing import List
 
 from backend.api.auth import get_current_user, get_user_db, logger, router
 from backend.db.base import UserDatabaseInterface
@@ -66,3 +67,43 @@ def get_user(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user
+
+
+@router.get("/", response_model=List[UserRead])
+def list_users(
+    current_user: UserRead = Depends(get_current_user),
+    db: UserDatabaseInterface = Depends(get_user_db),
+) -> List[UserRead]:
+    if not current_user.is_admin:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    return db.list_users()
+
+
+@router.patch("/{username}/approve", response_model=UserRead)
+def approve_user(
+    username: str,
+    current_user: UserRead = Depends(get_current_user),
+    db: UserDatabaseInterface = Depends(get_user_db),
+) -> UserRead:
+    if not current_user.is_admin:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    user = db.get_user(username)
+    if not user:
+        raise HTTPException(404, "User not found")
+    user.is_active = True
+    return db.update_user(user)
+
+
+@router.patch("/{username}/promote", response_model=UserRead)
+def promote_user(
+    username: str,
+    current_user: UserRead = Depends(get_current_user),
+    db: UserDatabaseInterface = Depends(get_user_db),
+) -> UserRead:
+    if not current_user.is_admin:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    user = db.get_user(username)
+    if not user:
+        raise HTTPException(404, "User not found")
+    user.is_admin = True
+    return db.update_user(user)

@@ -55,6 +55,8 @@ class User(SQLModel, table=True):
 class UserRead(SQLModel):
     username: str
     preferences: Dict[str, Any] | None = Field(default_factory=dict)
+    is_active: bool
+    is_admin: bool
 
 
 class UserCreate(SQLModel):

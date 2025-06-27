@@ -15,6 +15,7 @@
     <div v-else>
       <router-link to="/favourites">Favourites</router-link><br />
       <router-link to="/settings">Settings</router-link><br />
+      <router-link v-if="isAdmin" to="/admin/users">Manage Users<br /></router-link>
       <a href="#" @click="logout">Log out</a>
     </div>
   </div>
@@ -29,8 +30,7 @@ import { useAuth } from "../../composables/useAuth";
 export default {
   setup() {
     const router = useRouter();
-    const { isLoggedIn, clearTokens } = useAuth();
-    console.log("isLoggedIn", isLoggedIn);
+    const { isLoggedIn, isAdmin, clearTokens, getAccessToken } = useAuth();
 
     const fetchRandomNode = async () => {
       try {
@@ -60,7 +60,7 @@ export default {
 
     const logout = () => {
       clearTokens();
-      router.push("/login");
+      router.push('/login');
     };
 
     return {
@@ -68,6 +68,7 @@ export default {
       createNewNode,
       logout,
       isLoggedIn,
+      isAdmin,
     };
   },
 };

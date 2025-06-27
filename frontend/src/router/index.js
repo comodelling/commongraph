@@ -12,6 +12,7 @@ import Favourites from "../views/Favourites.vue";
 import VerifySecurityQuestion from "../views/VerifySecurityQuestion.vue";
 import UpdateSecurityQuestion from "../views/UpdateSecurityQuestion.vue";
 import Schema from "../views/Schema.vue";
+import AdminUsers from "../views/AdminUsers.vue";
 import { useUnsaved } from "../composables/useUnsaved";
 
 const routes = [
@@ -80,6 +81,7 @@ const routes = [
         component: Focus,
         props: true,
       },
+      { path: "/admin/users", name: "AdminUsers", component: AdminUsers, meta: { requiresAdmin: true } },
     ],
   },
 ];

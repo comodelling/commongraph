@@ -68,6 +68,11 @@ class UserDatabaseInterface(ABC):
     def reset_user_table(self):
         pass
 
+    @abstractmethod
+    def list_users(self) -> list[UserRead]:
+        """Return a list of all users."""
+        pass
+
 
 class RatingHistoryRelationalInterface(ABC):
     def __init__(self):

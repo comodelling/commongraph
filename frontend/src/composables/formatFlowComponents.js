@@ -5,6 +5,9 @@ const defaultStrengthColors = {
   A: "#006d2c", B: "#74c476", C: "#e3c100", D: "#fb6a4a", E: "#a50f15",
 };
 
+const defaultNodeBorderWidth = "2px";
+const defaultNodeBorderRadius = "5px";
+
 export function formatFlowEdgeProps(data) {
   const { source, target, edge_type, selected, causal_strength } = data;
   const conf = edgeTypes.value[edge_type]?.style || {};

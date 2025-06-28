@@ -6,7 +6,17 @@ from typing import Dict, Any, List, Tuple
 
 # 1. Locate & load your YAML
 _CONFIG_PATH = Path(__file__).parent.parent / "config.yaml"
-_CONFIG = yaml.safe_load(_CONFIG_PATH.read_text())
+
+def load_config() -> Dict[str, Any]:
+    """Load configuration from YAML file"""
+    return yaml.safe_load(_CONFIG_PATH.read_text())
+
+def get_current_config() -> Dict[str, Any]:
+    """Get the current configuration (reloads from file)"""
+    return load_config()
+
+# Initial load for backward compatibility
+_CONFIG = load_config()
 
 PLATFORM_NAME = _CONFIG.get("platform_name", "CommonGraph")
 NODE_TYPE_CFG  = _CONFIG["node_types"]
@@ -71,12 +81,23 @@ def _compute_config_hash(config: Dict[str, Any]) -> str:
     config_str = json.dumps(config, sort_keys=True)
     return hashlib.sha256(config_str.encode()).hexdigest()
 
-def _get_config_version() -> str:
+def _get_config_version(config: Dict[str, Any]) -> str:
     """Extract version from config or generate one"""
-    return _CONFIG.get("config_version", "1.0.0")
+    return config.get("config_version", "1.0.0")
 
+def get_current_config_hash() -> str:
+    """Get hash of current config (reloads from file)"""
+    return _compute_config_hash(get_current_config())
+
+def get_current_config_version() -> str:
+    """Get version based on config hash (short, readable)"""
+    full_hash = get_current_config_hash()
+    # Use first 12 characters of hash as version
+    return f"v{full_hash[:12]}"
+
+# Initial values for backward compatibility
 CONFIG_HASH = _compute_config_hash(_CONFIG)
-CONFIG_VERSION = _get_config_version()
+CONFIG_VERSION = _get_config_version(_CONFIG)
 
 
 class SchemaChangeDetector:
@@ -187,30 +208,37 @@ class SchemaChangeDetector:
         """Validate changes against existing database data"""
         warnings = []
         
-        for change in changes:
-            if change["type"] == "remove_node_type":
-                # Check if nodes of this type exist
-                from sqlmodel import text
-                result = session.exec(text(
-                    "SELECT COUNT(*) FROM graphhistoryevent WHERE entity_type = 'node' AND payload->>'node_type' = :node_type AND state != 'deleted'"
-                ), {"node_type": change["node_type"]}).first()
-                if result and result[0] > 0:
-                    warnings.append(f"Removing node type '{change['node_type']}' will affect {result[0]} existing nodes")
-            
-            elif change["type"] == "remove_edge_type":
-                # Check if edges of this type exist
-                from sqlmodel import text
-                result = session.exec(text(
-                    "SELECT COUNT(*) FROM graphhistoryevent WHERE entity_type = 'edge' AND payload->>'edge_type' = :edge_type AND state != 'deleted'"
-                ), {"edge_type": change["edge_type"]}).first()
-                if result and result[0] > 0:
-                    warnings.append(f"Removing edge type '{change['edge_type']}' will affect {result[0]} existing edges")
-            
-            elif change["type"] == "remove_node_property":
-                warnings.append(f"Removing property '{change['property']}' from '{change['node_type']}' will lose data")
-            
-            elif change["type"] == "remove_edge_property":
-                warnings.append(f"Removing property '{change['property']}' from '{change['edge_type']}' will lose data")
+        try:
+            for change in changes:
+                if change["type"] == "remove_node_type":
+                    # Check if nodes of this type exist
+                    from sqlmodel import text
+                    stmt = text(
+                        "SELECT COUNT(*) FROM graphhistoryevent WHERE entity_type = 'node' AND payload->>'node_type' = :node_type AND state != 'deleted'"
+                    )
+                    result = session.exec(stmt, {"node_type": change["node_type"]}).first()
+                    if result and result > 0:
+                        warnings.append(f"Removing node type '{change['node_type']}' will affect {result} existing nodes")
+                
+                elif change["type"] == "remove_edge_type":
+                    # Check if edges of this type exist
+                    from sqlmodel import text
+                    stmt = text(
+                        "SELECT COUNT(*) FROM graphhistoryevent WHERE entity_type = 'edge' AND payload->>'edge_type' = :edge_type AND state != 'deleted'"
+                    )
+                    result = session.exec(stmt, {"edge_type": change["edge_type"]}).first()
+                    if result and result > 0:
+                        warnings.append(f"Removing edge type '{change['edge_type']}' will affect {result} existing edges")
+                
+                elif change["type"] == "remove_node_property":
+                    warnings.append(f"Removing property '{change['property']}' from '{change['node_type']}' will lose data")
+                
+                elif change["type"] == "remove_edge_property":
+                    warnings.append(f"Removing property '{change['property']}' from '{change['edge_type']}' will lose data")
+        
+        except Exception as e:
+            # If database queries fail, just return basic warnings
+            warnings.append(f"Could not validate against existing data: {str(e)}")
         
         return warnings
 

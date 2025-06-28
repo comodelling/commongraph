@@ -25,10 +25,25 @@ async def get_schema_status(
     current_user: User = Depends(get_current_user)
 ):
     """Get current schema status and check for changes"""
+    # Allow anonymous users to check status, but limit information
     manager = SchemaManager(session)
     has_changes, changes, warnings = manager.check_for_schema_changes()
     active_schema = manager.get_active_schema()
     
+    # For anonymous users, provide basic information but hide sensitive details
+    if current_user.username == "anonymous":
+        return {
+            "has_changes": has_changes,  # Show if there are changes
+            "changes": len(changes),     # Show count but not details
+            "warnings": len(warnings),   # Show count but not details
+            "active_schema": {
+                "version": active_schema.version if active_schema else None,
+                "created_at": active_schema.created_at if active_schema else None
+            } if active_schema else None,
+            "note": "Login as admin to see change details and apply migrations"
+        }
+    
+    # For authenticated users, provide full information
     return {
         "has_changes": has_changes,
         "changes": changes,

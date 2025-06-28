@@ -88,7 +88,11 @@ async def get_current_user(
     db: UserDatabaseInterface = Depends(get_user_db),
 ) -> UserRead:
     if not token:
-        return UserRead(username="anonymous")
+        return UserRead(
+            username="anonymous", 
+            is_active=False, 
+            is_admin=False
+        )
     logger.info("Validating current user from token")
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,

@@ -91,7 +91,7 @@ async def root():
 @app.get("/config")
 def get_config():
     # Here we combine both properties and styles for each type.
-    from backend.config import CONFIG_VERSION, CONFIG_HASH
+    from backend.config import get_current_config_version, get_current_config_hash
     
     node_types = {
         nt: {"properties": list(props),
@@ -110,7 +110,7 @@ def get_config():
         "platform_name": PLATFORM_NAME,
         "node_types": node_types,
         "edge_types": edge_types,
-        "schema_version": CONFIG_VERSION,
-        "schema_hash": CONFIG_HASH,
+        "schema_version": get_current_config_version(),
+        "schema_hash": get_current_config_hash(),
     }
 

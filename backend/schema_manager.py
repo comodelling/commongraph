@@ -3,7 +3,13 @@ from sqlmodel import Session, select
 from packaging import version
 
 from backend.models.schema import GraphSchema, SchemaMigration
-from backend.config import SchemaChangeDetector, CONFIG_HASH, CONFIG_VERSION, _CONFIG
+from backend.config import get_current_config, get_current_config_hash, get_current_config_version, SchemaChangeDetector
+from backend.config import (
+    SchemaChangeDetector, 
+    get_current_config, 
+    get_current_config_hash, 
+    get_current_config_version
+)
 
 
 class SchemaManager:
@@ -21,12 +27,14 @@ class SchemaManager:
     def check_for_schema_changes(self) -> Tuple[bool, List[Dict], List[str]]:
         """Check if the YAML config has changed compared to the active schema"""
         active_schema = self.get_active_schema()
+        current_config = get_current_config()
+        current_hash = get_current_config_hash()
         
         if not active_schema:
             # No schema in DB yet, this is the first time
             return True, [{"type": "initial_schema"}], []
         
-        if active_schema.config_hash == CONFIG_HASH:
+        if active_schema.config_hash == current_hash:
             return False, [], []  # No changes
         
         # Reconstruct old config
@@ -37,7 +45,7 @@ class SchemaManager:
             "auth": active_schema.auth
         }
         
-        changes = self.detector.detect_changes(old_config, _CONFIG)
+        changes = self.detector.detect_changes(old_config, current_config)
         warnings = self.detector.validate_against_existing_data(changes, self.session)
         
         return True, changes, warnings
@@ -45,6 +53,8 @@ class SchemaManager:
     def apply_schema_update(self, username: str, force: bool = False) -> GraphSchema:
         """Apply the current YAML config as a new schema version"""
         has_changes, changes, warnings = self.check_for_schema_changes()
+        current_config = get_current_config()
+        current_hash = get_current_config_hash()
         
         if not has_changes:
             raise ValueError("No schema changes detected")
@@ -60,15 +70,15 @@ class SchemaManager:
             active.is_active = False
             self.session.add(active)
         
-        # Create new schema version
-        new_version = self._increment_version(active.version if active else "0.0.0")
+        # Create new schema version based on config hash
+        new_version = get_current_config_version()
         new_schema = GraphSchema(
             version=new_version,
-            config_hash=CONFIG_HASH,
-            node_types=_CONFIG["node_types"],
-            edge_types=_CONFIG["edge_types"],
-            polls=_CONFIG["polls"],
-            auth=_CONFIG.get("auth", {}),
+            config_hash=current_hash,
+            node_types=current_config["node_types"],
+            edge_types=current_config["edge_types"],
+            polls=current_config["polls"],
+            auth=current_config.get("auth", {}),
             is_active=True
         )
         
@@ -98,26 +108,27 @@ class SchemaManager:
         stmt = select(SchemaMigration).order_by(SchemaMigration.applied_at.desc())
         return list(self.session.exec(stmt).all())
     
-    def _increment_version(self, current: str) -> str:
-        """Increment version number"""
-        try:
-            v = version.parse(current)
-            return f"{v.major}.{v.minor}.{v.micro + 1}"
-        except:
-            return "1.0.0"
+    def _increment_version(self, current_hash: str) -> str:
+        """Generate new version based on current config hash"""
+        current_config_hash = get_current_config_hash()
+        return f"v{current_config_hash[:12]}"
     
     def ensure_schema_in_db(self, username: str = "system") -> GraphSchema:
         """Ensure the current YAML config is stored in the database"""
         active = self.get_active_schema()
         if not active:
             # First time - store the current config
+            current_config = get_current_config()
+            current_version = get_current_config_version()
+            current_hash = get_current_config_hash()
+            
             schema = GraphSchema(
-                version=CONFIG_VERSION,
-                config_hash=CONFIG_HASH,
-                node_types=_CONFIG["node_types"],
-                edge_types=_CONFIG["edge_types"],
-                polls=_CONFIG["polls"],
-                auth=_CONFIG.get("auth", {}),
+                version=current_version,
+                config_hash=current_hash,
+                node_types=current_config["node_types"],
+                edge_types=current_config["edge_types"],
+                polls=current_config["polls"],
+                auth=current_config.get("auth", {}),
                 is_active=True
             )
             self.session.add(schema)

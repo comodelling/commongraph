@@ -2,9 +2,23 @@
   <div>
     <h2>Edge History</h2>
     <ul>
-      <li v-for="event in history" :key="event.event_id">
+      <li v-for="(event, index) in history" :key="event.event_id">
         {{ formatTimestamp(event.timestamp) }}:
         {{ formatState(event.state) }} by {{ event.username }}.
+        <span
+          v-if="event.state === 'updated' || event.state === 'created'"
+          class="diff-link"
+          @click="toggleDiff(event, index)"
+        >
+          ({{ diffVisible[event.event_id] ? 'Hide' : 'Diff' }})
+        </span>
+        <div v-if="diffVisible[event.event_id]" class="diff">
+          <ul>
+            <li v-for="diff in diffData[event.event_id]" :key="diff.field">
+              <strong>{{ diff.field }}</strong>: {{ diff.from }} -> {{ diff.to }}
+            </li>
+          </ul>
+        </div>
       </li>
     </ul>
   </div>
@@ -27,6 +41,8 @@ export default {
   data() {
     return {
       history: [],
+      diffVisible: {},
+      diffData: {},
     };
   },
   async created() {
@@ -66,6 +82,44 @@ export default {
           return state;
       }
     },
+    toggleDiff(event, index) {
+      const id = event.event_id;
+      // Compute diff once
+      if (!(id in this.diffData)) {
+        const current = event.payload || {};
+        const previous = this.history[index + 1]?.payload || {};
+        const diffs = this.comparePayloads(previous, current);
+        this.diffData[id] = diffs;
+      }
+      this.diffVisible[id] = !this.diffVisible[id];
+    },
+    comparePayloads(oldObj, newObj) {
+      const diffs = [];
+      const keys = new Set([...Object.keys(oldObj), ...Object.keys(newObj)]);
+      keys.forEach((key) => {
+        const oldVal = oldObj[key];
+        const newVal = newObj[key];
+        if (JSON.stringify(oldVal) !== JSON.stringify(newVal)) {
+          diffs.push({ field: key, from: oldVal, to: newVal });
+        }
+      });
+      return diffs;
+    },
   },
 };
 </script>
+
+
+<style>
+.diff-link {
+  color: #42b983;
+  cursor: pointer;
+  margin-left: 1px;
+}
+
+/* Remove default ul padding and margin */
+ul {
+  padding-left: 15px;
+  /* margin: 0; */
+}
+</style>

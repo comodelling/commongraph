@@ -6,7 +6,7 @@
         {{ formatTimestamp(event.timestamp) }}:
         {{ formatState(event.state) }} by {{ event.username }}.
         <span
-          v-if="event.state === 'updated'"
+          v-if="event.state === 'updated'  || event.state === 'created'"
           class="diff-link"
           @click="toggleDiff(event, index)"
         >

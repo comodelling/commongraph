@@ -72,6 +72,8 @@ class DynamicSubgraph(SubgraphBase):
 
 class DynamicGraphExport(GraphExportBase):
     """Graph Export model with dynamic node and edge types."""
+    schema_version: str = Field(..., description="Schema version used for this export")
+    schema_hash: str = Field(..., description="Hash of the schema configuration")
     nodes: list[DynamicNode]   # type: ignore
     edges: list[DynamicEdge]   # type: ignore
 

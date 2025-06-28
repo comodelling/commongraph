@@ -96,6 +96,8 @@ multidict==6.1.0
     #   yarl
 nest-asyncio==1.6.0
     # via gremlinpython
+packaging==25.0
+    # via -r backend/requirements.in
 passlib==1.7.4
     # via -r backend/requirements.in
 propcache==0.2.0

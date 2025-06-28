@@ -19,3 +19,5 @@ PyJWT>=2.0.0
 
 # migration
 alembic
+
+packaging

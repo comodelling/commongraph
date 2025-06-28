@@ -1,5 +1,19 @@
-import os
+import os 
 from logging.config import fileConfig
+
+from sqlalchemy import engine_from_config
+from sqlalchemy import pool
+from sqlmodel import SQLModel
+from alembic import context
+
+from backend.models.base import *
+from backend.models.fixed import *    # import all your models
+from backend.models.dynamic import *  # if you've any there
+from backend.models.schema import *   # schema versioning models logging.config import fileConfig
+from backend.models.base import *
+from backend.models.fixed import *    # import all your models
+from backend.models.dynamic import *  # if you've any there
+from backend.models.schema import *   # schema versioning modelsrom logging.config import fileConfig
 
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool

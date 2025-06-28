@@ -24,9 +24,13 @@ def get_whole_graph(
     ),
 ) -> DynamicGraphExport:
     """Return full graph of nodes and edges from the database."""
+    from backend.config import CONFIG_VERSION, CONFIG_HASH
+    
     out = db_history.get_whole_graph().model_dump()
     out["commongraph_version"] = __version__
     out["timestamp"] = datetime.datetime.now().isoformat()
+    out["schema_version"] = CONFIG_VERSION
+    out["schema_hash"] = CONFIG_HASH
     return out
 
 

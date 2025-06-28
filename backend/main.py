@@ -14,6 +14,7 @@ from backend.api.users import router as users_router
 from backend.api.nodes import router as nodes_router
 from backend.api.edges import router as edges_router
 from backend.api.graph import router as graph_router
+from backend.api.schema import router as schema_router
 from backend.config import (PLATFORM_NAME, NODE_TYPE_PROPS, EDGE_TYPE_PROPS, EDGE_TYPE_BETWEEN,
                             NODE_TYPE_STYLE, EDGE_TYPE_STYLE, NODE_TYPE_POLLS, EDGE_TYPE_POLLS)
 from backend.db.postgresql import UserPostgreSQLDB
@@ -42,6 +43,21 @@ async def lifespan(app: FastAPI):
                     security_answer=None,
                 )
             )
+    
+    # Initialize schema in database
+    from backend.db.connections import get_graph_history_db
+    from backend.schema_manager import SchemaManager
+    from sqlmodel import Session
+    
+    try:
+        graph_db = get_graph_history_db()
+        with Session(graph_db.engine) as session:
+            manager = SchemaManager(session)
+            manager.ensure_schema_in_db("system")
+            logger.info("Schema initialized in database")
+    except Exception as e:
+        logger.error(f"Failed to initialize schema: {e}")
+    
     yield
 
 
@@ -62,6 +78,7 @@ app.include_router(users_router)
 app.include_router(nodes_router)
 app.include_router(edges_router)
 app.include_router(graph_router)
+app.include_router(schema_router)
 
 
 
@@ -74,6 +91,8 @@ async def root():
 @app.get("/config")
 def get_config():
     # Here we combine both properties and styles for each type.
+    from backend.config import CONFIG_VERSION, CONFIG_HASH
+    
     node_types = {
         nt: {"properties": list(props),
              "polls": NODE_TYPE_POLLS.get(nt, {}),
@@ -91,5 +110,7 @@ def get_config():
         "platform_name": PLATFORM_NAME,
         "node_types": node_types,
         "edge_types": edge_types,
+        "schema_version": CONFIG_VERSION,
+        "schema_hash": CONFIG_HASH,
     }
 

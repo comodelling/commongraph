@@ -1,5 +1,8 @@
 import yaml
+import hashlib
+import json
 from pathlib import Path
+from typing import Dict, Any, List, Tuple
 
 # 1. Locate & load your YAML
 _CONFIG_PATH = Path(__file__).parent.parent / "config.yaml"
@@ -62,6 +65,154 @@ AUTH_CFG = _CONFIG.get("auth", {})
 ALLOW_SIGNUP = AUTH_CFG.get("allow_signup", True)
 REQUIRE_ADMIN_APPROVAL = AUTH_CFG.get("require_admin_approval", False)
 
+# Schema versioning configuration
+def _compute_config_hash(config: Dict[str, Any]) -> str:
+    """Compute hash of the configuration for change detection"""
+    config_str = json.dumps(config, sort_keys=True)
+    return hashlib.sha256(config_str.encode()).hexdigest()
+
+def _get_config_version() -> str:
+    """Extract version from config or generate one"""
+    return _CONFIG.get("config_version", "1.0.0")
+
+CONFIG_HASH = _compute_config_hash(_CONFIG)
+CONFIG_VERSION = _get_config_version()
+
+
+class SchemaChangeDetector:
+    """Detect and validate schema changes"""
+    
+    @staticmethod
+    def detect_changes(old_config: Dict, new_config: Dict) -> List[Dict[str, Any]]:
+        """Detect changes between two configurations"""
+        changes = []
+        
+        # Check node type changes
+        old_nodes = set(old_config.get("node_types", {}).keys())
+        new_nodes = set(new_config.get("node_types", {}).keys())
+        
+        for added in new_nodes - old_nodes:
+            changes.append({
+                "type": "add_node_type",
+                "node_type": added,
+                "properties": new_config["node_types"][added].get("properties", [])
+            })
+        
+        for removed in old_nodes - new_nodes:
+            changes.append({
+                "type": "remove_node_type",
+                "node_type": removed,
+                "warning": "This will affect existing nodes of this type"
+            })
+        
+        # Check property changes for existing node types
+        for node_type in old_nodes & new_nodes:
+            old_props = set(old_config["node_types"][node_type].get("properties", []))
+            new_props = set(new_config["node_types"][node_type].get("properties", []))
+            
+            for added_prop in new_props - old_props:
+                changes.append({
+                    "type": "add_node_property",
+                    "node_type": node_type,
+                    "property": added_prop
+                })
+            
+            for removed_prop in old_props - new_props:
+                changes.append({
+                    "type": "remove_node_property",
+                    "node_type": node_type,
+                    "property": removed_prop,
+                    "warning": "This will affect existing node data"
+                })
+        
+        # Check edge type changes
+        old_edges = set(old_config.get("edge_types", {}).keys())
+        new_edges = set(new_config.get("edge_types", {}).keys())
+        
+        for added in new_edges - old_edges:
+            changes.append({
+                "type": "add_edge_type",
+                "edge_type": added,
+                "properties": new_config["edge_types"][added].get("properties", [])
+            })
+        
+        for removed in old_edges - new_edges:
+            changes.append({
+                "type": "remove_edge_type",
+                "edge_type": removed,
+                "warning": "This will affect existing edges of this type"
+            })
+        
+        # Check property changes for existing edge types
+        for edge_type in old_edges & new_edges:
+            old_props = set(old_config["edge_types"][edge_type].get("properties", []))
+            new_props = set(new_config["edge_types"][edge_type].get("properties", []))
+            
+            for added_prop in new_props - old_props:
+                changes.append({
+                    "type": "add_edge_property",
+                    "edge_type": edge_type,
+                    "property": added_prop
+                })
+            
+            for removed_prop in old_props - new_props:
+                changes.append({
+                    "type": "remove_edge_property",
+                    "edge_type": edge_type,
+                    "property": removed_prop,
+                    "warning": "This will affect existing edge data"
+                })
+        
+        # Check poll changes
+        old_polls = set(old_config.get("polls", {}).keys())
+        new_polls = set(new_config.get("polls", {}).keys())
+        
+        for added in new_polls - old_polls:
+            changes.append({
+                "type": "add_poll",
+                "poll": added
+            })
+        
+        for removed in old_polls - new_polls:
+            changes.append({
+                "type": "remove_poll",
+                "poll": removed,
+                "warning": "This will affect existing ratings"
+            })
+        
+        return changes
+    
+    @staticmethod
+    def validate_against_existing_data(changes: List[Dict], session) -> List[str]:
+        """Validate changes against existing database data"""
+        warnings = []
+        
+        for change in changes:
+            if change["type"] == "remove_node_type":
+                # Check if nodes of this type exist
+                from sqlmodel import text
+                result = session.exec(text(
+                    "SELECT COUNT(*) FROM graphhistoryevent WHERE entity_type = 'node' AND payload->>'node_type' = :node_type AND state != 'deleted'"
+                ), {"node_type": change["node_type"]}).first()
+                if result and result[0] > 0:
+                    warnings.append(f"Removing node type '{change['node_type']}' will affect {result[0]} existing nodes")
+            
+            elif change["type"] == "remove_edge_type":
+                # Check if edges of this type exist
+                from sqlmodel import text
+                result = session.exec(text(
+                    "SELECT COUNT(*) FROM graphhistoryevent WHERE entity_type = 'edge' AND payload->>'edge_type' = :edge_type AND state != 'deleted'"
+                ), {"edge_type": change["edge_type"]}).first()
+                if result and result[0] > 0:
+                    warnings.append(f"Removing edge type '{change['edge_type']}' will affect {result[0]} existing edges")
+            
+            elif change["type"] == "remove_node_property":
+                warnings.append(f"Removing property '{change['property']}' from '{change['node_type']}' will lose data")
+            
+            elif change["type"] == "remove_edge_property":
+                warnings.append(f"Removing property '{change['property']}' from '{change['edge_type']}' will lose data")
+        
+        return warnings
 
 # 5. Helpers
 def valid_node_types() -> set[str]:

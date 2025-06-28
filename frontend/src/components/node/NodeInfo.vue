@@ -65,7 +65,7 @@
 <script>
 import NodeInfoView from "./NodeInfoView.vue";
 import NodeInfoEdit from "./NodeInfoEdit.vue";
-import NodeHistoryView from "./NodeHistory.vue";
+import HistoryList from "../common/HistoryList.vue";
 import { useAuth } from "../../composables/useAuth";
 import api from "../../api/axios";
 
@@ -92,7 +92,7 @@ export default {
     currentTabComponent() {
       if (this.currentTab === "view") return NodeInfoView;
       if (this.currentTab === "edit") return NodeInfoEdit;
-      if (this.currentTab === "history") return NodeHistoryView;
+      if (this.currentTab === "history") return HistoryList;
     },
     isBrandNewNode() {
       const isBrandNewNode =  this.node.node_id === "new";

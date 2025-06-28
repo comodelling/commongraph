@@ -1,6 +1,5 @@
 <template>
   <div>
-    <h2>Edge History</h2>
     <ul>
       <li v-for="(event, index) in history" :key="event.event_id">
         {{ formatTimestamp(event.timestamp) }}:
@@ -29,13 +28,19 @@ import api from "../../api/axios";
 
 export default {
   props: {
+    // For nodes: pass nodeId
+    nodeId: {
+      type: Number,
+      required: false,
+    },
+    // For edges: pass sourceId and targetId
     sourceId: {
       type: Number,
-      required: true,
+      required: false,
     },
     targetId: {
       type: Number,
-      required: true,
+      required: false,
     },
   },
   data() {
@@ -45,14 +50,27 @@ export default {
       diffData: {},
     };
   },
+  computed: {
+    apiEndpoint() {
+      if (this.nodeId) {
+        return `/nodes/${this.nodeId}/history`;
+      } else if (this.sourceId && this.targetId) {
+        return `/edges/${this.sourceId}/${this.targetId}/history`;
+      }
+      return null;
+    },
+  },
   async created() {
+    if (!this.apiEndpoint) {
+      console.error("HistoryList: Invalid props - provide either nodeId or sourceId+targetId");
+      return;
+    }
+    
     try {
-      const response = await api.get(
-        `/edges/${this.sourceId}/${this.targetId}/history`,
-      );
+      const response = await api.get(this.apiEndpoint);
       this.history = response.data.reverse(); // Reverse the order to show the most recent first
     } catch (error) {
-      console.error("Failed to fetch edge history:", error);
+      console.error("Failed to fetch history:", error);
     }
   },
   methods: {
@@ -109,7 +127,6 @@ export default {
 };
 </script>
 
-
 <style>
 .diff-link {
   color: #42b983;
@@ -119,6 +136,7 @@ export default {
 
 /* Remove default ul padding and margin */
 ul {
+  padding-top: 20px;
   padding-left: 15px;
   /* margin: 0; */
 }

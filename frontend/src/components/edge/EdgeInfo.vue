@@ -48,6 +48,7 @@
             :edge="edge"
             :sourceId="edge.source"
             :targetId="edge.target"
+            :title="currentTab === 'history' ? 'Edge' : undefined"
             @publish-edge="updateEdgeFromEditor"
           />
         </template>
@@ -62,7 +63,7 @@
 <script>
 import EdgeInfoView from "./EdgeInfoView.vue";
 import EdgeInfoEdit from "./EdgeInfoEdit.vue";
-import EdgeHistory from "./EdgeHistory.vue";
+import HistoryList from "../common/HistoryList.vue";
 // import api from "../../api/axios";
 
 export default {
@@ -89,7 +90,7 @@ export default {
     currentTabComponent() {
       if (this.currentTab === "view") return EdgeInfoView;
       if (this.currentTab === "edit") return EdgeInfoEdit;
-      if (this.currentTab === "history") return EdgeHistory;
+      if (this.currentTab === "history") return HistoryList;
     },
     isBrandNewEdge() {
       return this.localIsBrandNewEdge;

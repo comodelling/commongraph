@@ -231,7 +231,7 @@ export default {
       if (cancelCurrentAnimation.value) cancelCurrentAnimation.value();
       
       // Use synchronous Force Atlas 2
-      const sensibleSettings = forceAtlas2.inferSettings(graph.value);
+      const sensibleSettings = {barnesHutOptimize: true, adjustSizes: true};
       
       const runFA2Iteration = () => {
         if (isFA2Running.value) {

@@ -16,7 +16,7 @@ from backend.models.fixed import (
 )
 
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.WARNING)
 
 
 def log_method(func):

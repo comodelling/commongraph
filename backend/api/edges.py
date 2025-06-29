@@ -85,8 +85,8 @@ def get_edges(
     if node_ids:
         edge_list = []
         # Get connections between the specified nodes
-        for edge in edge_list:
-            if edge.source_id in node_ids and edge.target_id in node_ids:
+        for edge in full_edge_list:
+            if edge.source in node_ids and edge.target in node_ids:
                 edge_list += [edge]
         return edge_list
     return full_edge_list

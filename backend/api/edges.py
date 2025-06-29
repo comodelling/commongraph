@@ -81,22 +81,15 @@ def get_edges(
     db_history: GraphHistoryRelationalInterface = Depends(get_graph_history_db),
 ) -> list[DynamicEdge]:
     """Return edges, optionally filtered by node connections."""
+    full_edge_list = db_history.get_edge_list()
     if node_ids:
-        # Get connections between the specified nodes
         edge_list = []
-        for i, node_id in enumerate(node_ids):
-            for target_id in node_ids[i + 1:]:
-                try:
-                    edge = db_history.get_edge(node_id, target_id)
-                    if edge:
-                        edge_list.append(edge)
-                except Exception:
-                    # Edge doesn't exist, continue to next pair
-                    continue
+        # Get connections between the specified nodes
+        for edge in edge_list:
+            if edge.source_id in node_ids and edge.target_id in node_ids:
+                edge_list += [edge]
         return edge_list
-    else:
-        # Return all edges
-        return db_history.get_edge_list()
+    return full_edge_list
 
 
 @router.post("", status_code=201)

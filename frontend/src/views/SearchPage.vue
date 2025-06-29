@@ -245,8 +245,9 @@ export default {
   setup() {
     const router = useRouter();
     const route = useRoute();
-    const { defaultNodeType, getNodePolls } = useConfig();
-    const nodePolls = computed(() => getNodePolls(defaultNodeType.value));
+    const { nodePollTypes } = useConfig();
+    const nodePolls = nodePollTypes.value;
+    // const nodePolls = computed(() => getNodePolls(defaultNodeType.value));
     return { router, route, nodePolls };
   },
 };

@@ -27,4 +27,4 @@ services:
       - ./nginx/certbot:/var/www/certbot
     depends_on:
       - nginx
-    command: certonly --webroot --webroot-path=/var/www/certbot --email mario@comodelling.org --agree-tos --no-eff-email -d commongraph.org -d www.commongraph.org
+    command: certonly --webroot --webroot-path=/var/www/certbot --email mario@comodelling.org --agree-tos --no-eff-email --non-interactive -d commongraph.org -d www.commongraph.org

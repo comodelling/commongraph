@@ -588,11 +588,17 @@ class GraphHistoryPostgreSQLDB(GraphHistoryRelationalInterface):
                 ):
                     nodes_latest[nid] = event
 
-            nodes = [
-                self._to_node(event.payload)
-                for event in nodes_latest.values()
-                if event.state != EntityState.deleted
-            ]
+            nodes = []
+            for event in nodes_latest.values():
+                if event.state == EntityState.deleted:
+                    continue
+                if event.payload['node_type'] not in NodeTypeModels:
+                    # Handle orphaned nodes with types that no longer exist
+                    self.logger.warning(
+                        f"Node {event.node_id} has an unknown type: {event.payload['node_type']}"
+                    )
+                    continue
+                nodes.append(self._to_node(event.payload))
 
             edge_events = session.exec(
                 select(GraphHistoryEvent).where(
@@ -607,11 +613,17 @@ class GraphHistoryPostgreSQLDB(GraphHistoryRelationalInterface):
                     or event.timestamp > edges_latest[key].timestamp
                 ):
                     edges_latest[key] = event
-            edges = [
-                self._to_edge(event.payload)
-                for event in edges_latest.values()
-                if event.state != EntityState.deleted
-            ]
+            edges = []
+            for event in edges_latest.values():
+                if event.state == EntityState.deleted:
+                    continue
+                if event.payload['edge_type'] not in EdgeTypeModels:
+                    # Handle orphaned edges with types that no longer exist
+                    self.logger.warning(
+                        f"Edge {event.source_id} -> {event.target_id} has an unknown type: {event.payload['edge_type']}"
+                    )
+                    continue
+                edges += [self._to_edge(event.payload)]
 
             self.logger.info(
                 f"Returning graph with {len(nodes)} nodes and {len(edges)} edges"

@@ -1,0 +1,30 @@
+services:
+  nginx:
+    image: nginx:alpine
+    container_name: commongraph-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ./nginx/certbot:/var/www/certbot
+    depends_on:
+      - backend
+      - frontend
+
+  backend:
+    ports: []  # Remove direct port exposure
+    
+  frontend:
+    ports: []  # Remove direct port exposure
+
+  certbot:
+    image: certbot/certbot
+    container_name: commongraph-certbot
+    volumes:
+      - ./nginx/ssl:/etc/letsencrypt
+      - ./nginx/certbot:/var/www/certbot
+    depends_on:
+      - nginx
+    command: certonly --webroot --webroot-path=/var/www/certbot --email mario@comodelling.org --agree-tos --no-eff-email -d commongraph.org -d www.commongraph.org

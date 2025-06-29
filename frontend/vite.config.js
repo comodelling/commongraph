@@ -9,6 +9,9 @@ export default defineConfig({
       'vue': 'vue/dist/vue.esm-bundler.js'
     }
   },
+  server: {
+    allowedHosts: ['commongraph.org', 'www.commongraph.org']
+  },
   build: {
     sourcemap: true,
   },

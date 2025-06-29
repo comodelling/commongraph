@@ -55,7 +55,7 @@ def get_node_type_polls() -> dict:
     """Return the polls configuration per node or edge type."""
     out = {k: {} for k in NODE_TYPE_CFG}
     for k, v in POLLS_CFG.items():
-        for tp in v['node_types']:
+        for tp in v.get('node_types', []):
             out[tp][k] = v
     return out
 
@@ -63,7 +63,7 @@ def get_edge_type_polls() -> dict:
     """Return the polls configuration per edge type."""
     out = {k: {} for k in EDGE_TYPE_CFG}
     for k, v in POLLS_CFG.items():
-        for tp in v['edge_types']:
+        for tp in v.get('edge_types', []):
             out[tp][k] = v
     return out
 

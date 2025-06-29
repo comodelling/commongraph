@@ -183,6 +183,19 @@ class SchemaChangeDetector:
                     "property": removed_prop,
                     "warning": "This will affect existing edge data"
                 })
+            
+            # Check for changes in 'between' constraints (critical for graph schema)
+            old_between = old_config["edge_types"][edge_type].get("between", [])
+            new_between = new_config["edge_types"][edge_type].get("between", [])
+            
+            if old_between != new_between:
+                changes.append({
+                    "type": "change_edge_between",
+                    "edge_type": edge_type,
+                    "old_between": old_between,
+                    "new_between": new_between,
+                    "warning": "Changing 'between' constraints will affect edge creation rules and may invalidate existing edges"
+                })
         
         # Check poll changes
         old_polls = set(old_config.get("polls", {}).keys())
@@ -201,6 +214,92 @@ class SchemaChangeDetector:
                 "warning": "This will affect existing ratings"
             })
         
+        # Check for changes in existing polls (options, node_types, edge_types, scale)
+        for poll_name in old_polls & new_polls:
+            old_poll = old_config["polls"][poll_name]
+            new_poll = new_config["polls"][poll_name]
+            
+            # Check scale changes
+            old_scale = old_poll.get("scale")
+            new_scale = new_poll.get("scale")
+            if old_scale != new_scale:
+                changes.append({
+                    "type": "change_poll_scale",
+                    "poll": poll_name,
+                    "old_scale": old_scale,
+                    "new_scale": new_scale,
+                    "warning": "Changing poll scale may invalidate existing ratings"
+                })
+            
+            # Check options changes (for discrete polls)
+            old_options = old_poll.get("options", {})
+            new_options = new_poll.get("options", {})
+            
+            # Normalize both to strings for comparison (YAML might load numbers differently)
+            old_options_str = {str(k): str(v) for k, v in old_options.items()}
+            new_options_str = {str(k): str(v) for k, v in new_options.items()}
+            
+            if old_options_str != new_options_str:
+                changes.append({
+                    "type": "change_poll_options",
+                    "poll": poll_name,
+                    "old_options": old_options,
+                    "new_options": new_options,
+                    "warning": "Changing poll options may invalidate existing ratings"
+                })
+            
+            # Check range changes (for continuous polls)
+            old_range = old_poll.get("range")
+            new_range = new_poll.get("range")
+            if old_range != new_range:
+                changes.append({
+                    "type": "change_poll_range",
+                    "poll": poll_name,
+                    "old_range": old_range,
+                    "new_range": new_range,
+                    "warning": "Changing poll range may invalidate existing ratings"
+                })
+            
+            # Check node_types changes
+            old_node_types = set(old_poll.get("node_types", []))
+            new_node_types = set(new_poll.get("node_types", []))
+            if old_node_types != new_node_types:
+                removed_types = old_node_types - new_node_types
+                added_types = new_node_types - old_node_types
+                changes.append({
+                    "type": "change_poll_node_types",
+                    "poll": poll_name,
+                    "removed_node_types": list(removed_types),
+                    "added_node_types": list(added_types),
+                    "warning": f"Changing applicable node types may affect existing ratings on nodes"
+                })
+            
+            # Check edge_types changes
+            old_edge_types = set(old_poll.get("edge_types", []))
+            new_edge_types = set(new_poll.get("edge_types", []))
+            if old_edge_types != new_edge_types:
+                removed_types = old_edge_types - new_edge_types
+                added_types = new_edge_types - old_edge_types
+                changes.append({
+                    "type": "change_poll_edge_types",
+                    "poll": poll_name,
+                    "removed_edge_types": list(removed_types),
+                    "added_edge_types": list(added_types),
+                    "warning": f"Changing applicable edge types may affect existing ratings on edges"
+                })
+            
+            # Check aggregation method changes
+            old_aggregation = old_poll.get("aggregation")
+            new_aggregation = new_poll.get("aggregation")
+            if old_aggregation != new_aggregation:
+                changes.append({
+                    "type": "change_poll_aggregation",
+                    "poll": poll_name,
+                    "old_aggregation": old_aggregation,
+                    "new_aggregation": new_aggregation,
+                    "warning": "Changing aggregation method will affect computed poll results"
+                })
+        
         return changes
     
     @staticmethod
@@ -216,7 +315,7 @@ class SchemaChangeDetector:
                     stmt = text(
                         "SELECT COUNT(*) FROM graphhistoryevent WHERE entity_type = 'node' AND payload->>'node_type' = :node_type AND state != 'deleted'"
                     )
-                    result = session.exec(stmt, {"node_type": change["node_type"]}).first()
+                    result = session.execute(stmt, {"node_type": change["node_type"]}).scalar()
                     if result and result > 0:
                         warnings.append(f"Removing node type '{change['node_type']}' will affect {result} existing nodes")
                 
@@ -226,9 +325,59 @@ class SchemaChangeDetector:
                     stmt = text(
                         "SELECT COUNT(*) FROM graphhistoryevent WHERE entity_type = 'edge' AND payload->>'edge_type' = :edge_type AND state != 'deleted'"
                     )
-                    result = session.exec(stmt, {"edge_type": change["edge_type"]}).first()
+                    result = session.execute(stmt, {"edge_type": change["edge_type"]}).scalar()
                     if result and result > 0:
                         warnings.append(f"Removing edge type '{change['edge_type']}' will affect {result} existing edges")
+                
+                elif change["type"] == "change_edge_between":
+                    # Check if edges of this type exist that might violate new constraints
+                    from sqlmodel import text
+                    stmt = text(
+                        "SELECT COUNT(*) FROM graphhistoryevent WHERE entity_type = 'edge' AND payload->>'edge_type' = :edge_type AND state != 'deleted'"
+                    )
+                    result = session.execute(stmt, {"edge_type": change["edge_type"]}).scalar()
+                    if result and result > 0:
+                        warnings.append(f"Changing 'between' constraints for '{change['edge_type']}' may invalidate {result} existing edges")
+                
+                elif change["type"] in ["change_poll_scale", "change_poll_options", "change_poll_range"]:
+                    # Check if ratings exist for this poll
+                    from sqlmodel import text
+                    stmt = text(
+                        "SELECT COUNT(*) FROM ratingevent WHERE poll_label = :poll_label"
+                    )
+                    result = session.execute(stmt, {"poll_label": change["poll"]}).scalar()
+                    if result and result > 0:
+                        warnings.append(f"Changing poll '{change['poll']}' configuration will affect {result} existing ratings")
+                
+                elif change["type"] == "change_poll_node_types":
+                    # Check if ratings exist on nodes of removed types
+                    removed_types = change.get("removed_node_types", [])
+                    if removed_types:
+                        from sqlmodel import text
+                        for node_type in removed_types:
+                            stmt = text("""
+                                SELECT COUNT(*) FROM ratingevent r 
+                                JOIN graphhistoryevent n ON r.node_id = n.node_id 
+                                WHERE r.poll_label = :poll_label AND n.payload->>'node_type' = :node_type AND n.state != 'deleted'
+                            """)
+                            result = session.execute(stmt, {"poll_label": change["poll"], "node_type": node_type}).scalar()
+                            if result and result > 0:
+                                warnings.append(f"Removing node type '{node_type}' from poll '{change['poll']}' will affect {result} existing ratings")
+                
+                elif change["type"] == "change_poll_edge_types":
+                    # Check if ratings exist on edges of removed types
+                    removed_types = change.get("removed_edge_types", [])
+                    if removed_types:
+                        from sqlmodel import text
+                        for edge_type in removed_types:
+                            stmt = text("""
+                                SELECT COUNT(*) FROM ratingevent r 
+                                JOIN graphhistoryevent e ON r.source_id = e.payload->>'source' AND r.target_id = e.payload->>'target'
+                                WHERE r.poll_label = :poll_label AND e.payload->>'edge_type' = :edge_type AND e.state != 'deleted'
+                            """)
+                            result = session.execute(stmt, {"poll_label": change["poll"], "edge_type": edge_type}).scalar()
+                            if result and result > 0:
+                                warnings.append(f"Removing edge type '{edge_type}' from poll '{change['poll']}' will affect {result} existing ratings")
                 
                 elif change["type"] == "remove_node_property":
                     warnings.append(f"Removing property '{change['property']}' from '{change['node_type']}' will lose data")

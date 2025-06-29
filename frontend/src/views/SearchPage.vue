@@ -104,7 +104,7 @@ export default {
         edges: graphEdges
       };
       
-      console.log("subgraphData computed:", result);
+      // console.log("subgraphData computed:", result);
       console.log("Raw relationships:", this.relationships);
       
       return result;

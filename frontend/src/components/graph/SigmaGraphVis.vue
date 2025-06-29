@@ -333,14 +333,14 @@ export default {
       if (!renderer.value || !graph.value) return;
       
       try {
-        console.log("updateGraphData called with:", data);
+        // console.log("updateGraphData called with:", data);
         
         // Clear existing data
         graph.value.clear();
         
         // Add nodes
         if (data.nodes) {
-          console.log(`Adding ${data.nodes.length} nodes`);
+        //   console.log(`Adding ${data.nodes.length} nodes`);
           data.nodes.forEach(node => {
             const nodeId = String(node.node_id || node.id);
             graph.value.addNode(nodeId, {
@@ -356,26 +356,26 @@ export default {
         
         // Add edges
         if (data.edges && data.edges.length > 0) {
-          console.log(`Adding ${data.edges.length} edges:`, data.edges);
+        //   console.log(`Adding ${data.edges.length} edges:`, data.edges);
           data.edges.forEach((edge, index) => {
             const sourceId = String(edge.source_id || edge.source);
             const targetId = String(edge.target_id || edge.target);
             
-            console.log(`Processing edge ${index}:`, edge);
-            console.log(`Source: ${sourceId}, Target: ${targetId}`);
-            console.log(`Has source node: ${graph.value.hasNode(sourceId)}`);
-            console.log(`Has target node: ${graph.value.hasNode(targetId)}`);
+            // console.log(`Processing edge ${index}:`, edge);
+            // console.log(`Source: ${sourceId}, Target: ${targetId}`);
+            // console.log(`Has source node: ${graph.value.hasNode(sourceId)}`);
+            // console.log(`Has target node: ${graph.value.hasNode(targetId)}`);
             
             if (graph.value.hasNode(sourceId) && graph.value.hasNode(targetId)) {
               const edgeId = edge.edge_id || edge.id || `edge_${sourceId}_${targetId}_${index}`;
-              console.log(`Adding edge: ${edgeId} from ${sourceId} to ${targetId} (type: ${edge.edge_type || edge.type})`);
+            //   console.log(`Adding edge: ${edgeId} from ${sourceId} to ${targetId} (type: ${edge.edge_type || edge.type})`);
               
               // Ensure we're passing string IDs, not numbers
               const sourceIdStr = String(sourceId);
               const targetIdStr = String(targetId);
               const edgeIdStr = String(edgeId);
               
-              console.log(`Edge IDs - edgeId: "${edgeIdStr}" (${typeof edgeIdStr}), source: "${sourceIdStr}" (${typeof sourceIdStr}), target: "${targetIdStr}" (${typeof targetIdStr})`);
+            //   console.log(`Edge IDs - edgeId: "${edgeIdStr}" (${typeof edgeIdStr}), source: "${sourceIdStr}" (${typeof sourceIdStr}), target: "${targetIdStr}" (${typeof targetIdStr})`);
               
               try {
                 // Define edge attributes
@@ -386,21 +386,21 @@ export default {
                   highlighted: false
                 };
                 
-                console.log(`Attempting to add edge with parameters:`, {
-                  key: edgeIdStr,
-                  source: sourceIdStr,
-                  target: targetIdStr,
-                  attributes: edgeAttributes
-                });
+                // console.log(`Attempting to add edge with parameters:`, {
+                //   key: edgeIdStr,
+                //   source: sourceIdStr,
+                //   target: targetIdStr,
+                //   attributes: edgeAttributes
+                // });
                 
                 // Try the method with key first, then fallback to auto-key
                 if (typeof graph.value.addEdgeWithKey === 'function') {
                   graph.value.addEdgeWithKey(edgeIdStr, sourceIdStr, targetIdStr, edgeAttributes);
-                  console.log(`Successfully added edge with key: ${edgeIdStr}`);
+                //   console.log(`Successfully added edge with key: ${edgeIdStr}`);
                 } else {
                   // Use auto-generated key method
                   const autoEdgeId = graph.value.addEdge(sourceIdStr, targetIdStr, edgeAttributes);
-                  console.log(`Successfully added edge with auto key: ${autoEdgeId}`);
+                //   console.log(`Successfully added edge with auto key: ${autoEdgeId}`);
                 }
               } catch (error) {
                 console.error(`Failed to add edge ${edgeIdStr}:`, error);
@@ -412,10 +412,10 @@ export default {
             }
           });
         } else {
-          console.log("No edges to add:", data.edges);
+        //   console.log("No edges to add:", data.edges);
         }
         
-        console.log(`Graph now has ${graph.value.order} nodes and ${graph.value.size} edges`);
+        // console.log(`Graph now has ${graph.value.order} nodes and ${graph.value.size} edges`);
         
         // Refresh the renderer
         renderer.value.refresh();

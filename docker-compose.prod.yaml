@@ -23,7 +23,8 @@ services:
       - frontend
 
   frontend:
-    ports: []  # Remove direct port exposure
+    expose:
+      - "5173"  # Available to other containers but not to host
     volumes:
       - ./.env.production:/app/.env.production:ro
 

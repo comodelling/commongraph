@@ -30,6 +30,7 @@ services:
     volumes:
       - ./frontend:/app
       - ./.env:/app/.env:ro
+      - ./VERSION:/app/VERSION:ro
     depends_on:
       backend:
         condition: service_started

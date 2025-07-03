@@ -1,6 +1,6 @@
 import { reactive, computed } from "vue";
 // Breaking circular import: use fetch instead of axios
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+const BACKEND_URL = import.meta.env.VITE_API_URL;
 
 const state = reactive({
   accessToken: localStorage.getItem("accessToken") || null,

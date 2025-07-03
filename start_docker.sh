@@ -11,21 +11,15 @@ if [ ! -f config.yaml ]; then
     exit 1
 fi
 
-# Check if backend/.env exists and if not, copy from backend/.envbase
-if [ ! -f backend/.env ]; then
-    if [ -f backend/.envbase ]; then
-        echo "backend/.env not found. Copying from backend/.envbase..."
-        cp backend/.envbase backend/.env
-        echo "backend/.env has been created. You may edit it to customise your settings."
-    else
-        echo "Error: Neither backend/.env nor backend/.envbase exist. Aborting."
-        exit 1
-    fi
+# Ensure root .env exists
+if [ ! -f .env ]; then
+    echo "Error: .env file not found in project root. Aborting."
+    exit 1
 fi
 
-# Load environment variables from .env file
+# Load environment variables from root .env
 set -o allexport
-source backend/.env
+source ./.env
 set -o allexport
 
 DOCKER_COMPOSE_CMD="docker compose -f docker-compose.yaml"

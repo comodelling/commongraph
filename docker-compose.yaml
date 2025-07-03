@@ -8,12 +8,11 @@ services:
     ports:
       - "8000:8000"
     env_file:
-      - ./backend/.env
+      - ./.env
     environment:
       - DOCKER_ENV=true
     volumes:
       - ./backend:/app/backend/
-      - ./backend/.env:/app/backend/.env
       - ./config.yaml:/app/config.yaml:ro
     depends_on:
       postgres:
@@ -29,7 +28,9 @@ services:
     command: sh -c "npm install && npm run dev -- --host"
     volumes:
       - ./frontend:/app
-        # - ./config.yaml:/app/config.yaml:ro
+      # Load root env files for Vite
+      - ./.env:/app/.env:ro
+      - ./.env.development:/app/.env.development:ro
     depends_on:
       backend:
         condition: service_started

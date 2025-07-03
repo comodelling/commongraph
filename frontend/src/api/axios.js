@@ -6,7 +6,7 @@ import { useAuth } from "../composables/useAuth";
 const { getAccessToken, getRefreshToken, setTokens, clearTokens } = useAuth();
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_BACKEND_URL,
+  baseURL: import.meta.env.VITE_API_URL,
   paramsSerializer: params =>    // <— add this block
     qs.stringify(params, { arrayFormat: "repeat" }),
 });
@@ -23,7 +23,7 @@ api.interceptors.request.use(
           // Token expired, try to refresh it
           const refreshToken = getRefreshToken();
           const response = await axios.post(
-            `${import.meta.env.VITE_BACKEND_URL}/auth/refresh`,
+            `${import.meta.env.VITE_API_URL}/auth/refresh`,
             {},
             { headers: { Authorization: `Bearer ${refreshToken}` } },
           );

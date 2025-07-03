@@ -20,6 +20,15 @@ fi
 # Load environment variables from root .env
 set -o allexport
 source ./.env
+
+# Load environment-specific overrides
+if [ "$APP_ENV" = "production" ] && [ -f .env.production ]; then
+    source ./.env.production
+    echo "Loaded production environment overrides"
+elif [ "$APP_ENV" = "development" ] && [ -f .env.development ]; then
+    source ./.env.development  
+    echo "Loaded development environment overrides"
+fi
 set -o allexport
 
 # Determine which environment-specific compose file to use

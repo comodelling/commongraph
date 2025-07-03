@@ -38,5 +38,4 @@ services:
       - ./nginx/certbot:/var/www/certbot
     depends_on:
       - nginx
-    entrypoint: /bin/sh
-    command: -c "certonly --webroot --webroot-path=/var/www/certbot --email $$ADMIN_EMAIL --agree-tos --no-eff-email --non-interactive -d $$DOMAIN -d www.$$DOMAIN"
+    command: certonly --webroot --webroot-path=/var/www/certbot --email $${ADMIN_EMAIL} --agree-tos --no-eff-email --non-interactive -d $${DOMAIN} -d www.$${DOMAIN}

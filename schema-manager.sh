@@ -3,7 +3,11 @@
 
 set -e
 
-BASE_URL="http://localhost:8000"
+# Load environment variables
+if [ -f .env ]; then
+    source .env
+fi
+BASE_URL="${BACKEND_HOST:-http://localhost:8000}"
 TOKEN_FILE="/tmp/commongraph_token"
 
 # Colors

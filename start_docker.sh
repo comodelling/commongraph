@@ -11,24 +11,42 @@ if [ ! -f config.yaml ]; then
     exit 1
 fi
 
-# Check if backend/.env exists and if not, copy from backend/.envbase
-if [ ! -f backend/.env ]; then
-    if [ -f backend/.envbase ]; then
-        echo "backend/.env not found. Copying from backend/.envbase..."
-        cp backend/.envbase backend/.env
-        echo "backend/.env has been created. You may edit it to customise your settings."
-    else
-        echo "Error: Neither backend/.env nor backend/.envbase exist. Aborting."
-        exit 1
-    fi
+# Ensure root .env exists
+if [ ! -f .env ]; then
+    echo "Error: .env file not found in project root. Aborting."
+    exit 1
 fi
 
-# Load environment variables from .env file
+# Load environment variables from root .env
 set -o allexport
-source backend/.env
+source ./.env
+
+# Load environment-specific overrides
+if [ "$APP_ENV" = "production" ] && [ -f .env.production ]; then
+    source ./.env.production
+    echo "Loaded production environment overrides"
+elif [ "$APP_ENV" = "development" ] && [ -f .env.development ]; then
+    source ./.env.development  
+    echo "Loaded development environment overrides"
+fi
 set -o allexport
 
+# Determine which environment-specific compose file to use
+ENV_COMPOSE_FILE=""
+if [ "$APP_ENV" = "production" ]; then
+    ENV_COMPOSE_FILE="-f docker-compose.prod.yaml"
+    echo "Using production environment"
+elif [ "$APP_ENV" = "development" ]; then
+    ENV_COMPOSE_FILE="-f docker-compose.dev.yaml"
+    echo "Using development environment"
+fi
+
 DOCKER_COMPOSE_CMD="docker compose -f docker-compose.yaml"
+
+# Add environment-specific compose file
+if [ -n "$ENV_COMPOSE_FILE" ]; then
+    DOCKER_COMPOSE_CMD="$DOCKER_COMPOSE_CMD $ENV_COMPOSE_FILE"
+fi
 
 if [ "$ENABLE_GRAPH_DB" = true ]; then
     DOCKER_COMPOSE_CMD="$DOCKER_COMPOSE_CMD -f docker-compose.janusgraph.yaml"

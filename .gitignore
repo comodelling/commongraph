@@ -1,5 +1,7 @@
+.env*
+!.env.example
+
 # Backend
-.env
 backend/dev/*
 backend/data/*
 backend/scripts/*
@@ -9,6 +11,10 @@ backups/
 
 ./scripts/
 data/
+
+__pycache__
+
+frontend/VERSION
 
 !.gitkeep
 
@@ -39,9 +45,11 @@ dist-ssr
 *.sw?
 
 
-# Documentation
+# Deployments
 site/
+nginx/ssl/
 
 # Config
 config.yaml
 config/*
+

@@ -12,9 +12,10 @@ services:
     environment:
       - DOMAIN=${DOMAIN}
     command: >
-      sh -c "envsubst '$$DOMAIN' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf && nginx -g 'daemon off;'"
+      sh -c "envsubst '$$DOMAIN' < /etc/nginx/nginx-http-only.conf.template > /etc/nginx/nginx.conf && nginx -g 'daemon off;'"
     volumes:
-      - ./nginx/nginx.conf.template:/etc/nginx/nginx.conf.template:ro
+      - ./nginx/nginx-http-only.conf.template:/etc/nginx/nginx-http-only.conf.template:ro
+      - ./nginx/nginx-ssl.conf.template:/etc/nginx/nginx-ssl.conf.template:ro
       - ./nginx/ssl:/etc/nginx/ssl:ro
       - ./nginx/certbot:/var/www/certbot
     depends_on:
@@ -37,4 +38,5 @@ services:
       - ./nginx/certbot:/var/www/certbot
     depends_on:
       - nginx
-    command: sh -c "certonly --webroot --webroot-path=/var/www/certbot --email $${ADMIN_EMAIL} --agree-tos --no-eff-email --non-interactive -d $${DOMAIN} -d www.$${DOMAIN}"
+    entrypoint: /bin/sh
+    command: -c "certonly --webroot --webroot-path=/var/www/certbot --email $$ADMIN_EMAIL --agree-tos --no-eff-email --non-interactive -d $$DOMAIN -d www.$$DOMAIN"

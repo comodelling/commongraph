@@ -6,11 +6,11 @@ services:
   nginx:
     image: nginx:alpine
     container_name: commongraph-nginx
+    env_file:
+      - ./.env.production
     ports:
       - "80:80"
       - "443:443"
-    environment:
-      - DOMAIN=${DOMAIN}
     command: >
       sh -c "envsubst '$$DOMAIN' < /etc/nginx/nginx-http-only.conf.template > /etc/nginx/nginx.conf && nginx -g 'daemon off;'"
     volumes:
@@ -30,9 +30,8 @@ services:
   certbot:
     image: certbot/certbot
     container_name: commongraph-certbot
-    environment:
-      - DOMAIN=${DOMAIN}
-      - ADMIN_EMAIL=${ADMIN_EMAIL}
+    env_file:
+      - ./.env.production
     volumes:
       - ./nginx/ssl:/etc/letsencrypt
       - ./nginx/certbot:/var/www/certbot

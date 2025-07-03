@@ -40,4 +40,4 @@ services:
     depends_on:
       - nginx
     entrypoint: sh
-    command: -c "certbot certonly --webroot --webroot-path=/var/www/certbot --email $$ADMIN_EMAIL --agree-tos --no-eff-email --non-interactive -d $$DOMAIN -d www.$$DOMAIN"
+    command: -c "certbot certonly --webroot --webroot-path=/var/www/certbot --email $$ADMIN_EMAIL --agree-tos --no-eff-email --non-interactive -d $$DOMAIN -d www.$$DOMAIN -d api.$$DOMAIN"

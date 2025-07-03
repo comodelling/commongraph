@@ -22,7 +22,22 @@ set -o allexport
 source ./.env
 set -o allexport
 
+# Determine which environment-specific compose file to use
+ENV_COMPOSE_FILE=""
+if [ "$APP_ENV" = "production" ]; then
+    ENV_COMPOSE_FILE="-f docker-compose.prod.yaml"
+    echo "Using production environment"
+elif [ "$APP_ENV" = "development" ]; then
+    ENV_COMPOSE_FILE="-f docker-compose.dev.yaml"
+    echo "Using development environment"
+fi
+
 DOCKER_COMPOSE_CMD="docker compose -f docker-compose.yaml"
+
+# Add environment-specific compose file
+if [ -n "$ENV_COMPOSE_FILE" ]; then
+    DOCKER_COMPOSE_CMD="$DOCKER_COMPOSE_CMD $ENV_COMPOSE_FILE"
+fi
 
 if [ "$ENABLE_GRAPH_DB" = true ]; then
     DOCKER_COMPOSE_CMD="$DOCKER_COMPOSE_CMD -f docker-compose.janusgraph.yaml"

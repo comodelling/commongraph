@@ -1,4 +1,8 @@
 services:
+  backend:
+    env_file:
+      - ./.env.production
+
   nginx:
     image: nginx:alpine
     container_name: commongraph-nginx
@@ -13,11 +17,10 @@ services:
       - backend
       - frontend
 
-  backend:
-    ports: []  # Remove direct port exposure
-    
   frontend:
     ports: []  # Remove direct port exposure
+    volumes:
+      - ./.env.production:/app/.env.production:ro
 
   certbot:
     image: certbot/certbot

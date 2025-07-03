@@ -22,7 +22,7 @@ services:
       - frontend
 
   frontend:
-    command: sh -c "npm install && npm run build -- --mode production && npm run preview -- --host --port 5173"
+    command: sh -c "npm install && npx vite build --mode production && npm run preview -- --host --port 5173"
     expose:
       - "5173"  # Available to other containers but not to host
     volumes:

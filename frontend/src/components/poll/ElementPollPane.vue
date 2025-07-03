@@ -12,7 +12,7 @@
       :aggregate="false"
     />
 
-    <div v-if="!currentRatingLoaded" class="loading">Loading your rating…</div>
+    <div v-if="token && !currentRatingLoaded" class="loading">Loading your rating…</div>
 
     <!-- Discrete buttons -->
     <div v-if="pollConfig.scale === 'discrete'" class="buttons-row">
@@ -37,9 +37,9 @@
         :max="rangeMax"
         :step="rangeStep"
         v-model.number="sliderValue"
-        @change="rate(sliderValue)"
+        :style="{ '--pct': sliderPercent }"
       />
-      <div class="slider-value">{{ sliderValue }}</div>
+      <div class="slider-value">{{ displayValue }}</div>
     </div>
   </div>
 </template>
@@ -71,6 +71,16 @@ export default {
     const rangeMax = computed(() => props.pollConfig.range?.[1] ?? 100);
     const rangeStep = computed(() => props.pollConfig.step ?? 1);
     const sliderValue = ref((rangeMin.value + rangeMax.value) / 2);
+
+    // percentage string for CSS
+    const sliderPercent = computed(() => {
+      const min = rangeMin.value;
+      const max = rangeMax.value;
+      const pct = ((sliderValue.value - min) / (max - min)) * 100;
+      const pctString = `${pct}%`;
+      console.log('Slider percentage:', pctString); // Debugging line
+      return pctString;
+    });
 
     const optionKeys = computed(() =>
       Object.keys(props.pollConfig.options).map(x=>Number(x)).sort((a,b)=>a-b)
@@ -144,6 +154,12 @@ export default {
       await histogram.value?.fetchRatings();
     };
 
+    // show '?' if no rating given
+    const displayValue = computed(() => {
+      if (!currentRatingLoaded.value) return '';
+      return currentRating.value == null ? '?' : sliderValue.value;
+    });
+
     onMounted(fetchRating);
     watch(
       [() => props.element, () => props.pollLabel],
@@ -165,6 +181,9 @@ export default {
       sliderValue,
       buttonColors,
       optionKeys,
+      token, // expose token to template
+      displayValue,
+      sliderPercent,
     };
   },
 };
@@ -194,7 +213,11 @@ export default {
   }
 .rating-button.selected {
   background: var(--accent-color);
+  border-color: var(--accent-color);
   color: white;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.2);
+  transform: scale(1.05);
+  transition: transform 0.2s, box-shadow 0.2s;
 }
 .slider-container {
   display: flex;
@@ -204,5 +227,41 @@ export default {
 .slider-value {
   min-width: 2em;
   text-align: center;
+}
+
+/* continuous slider styling via pseudo-elements */
+input[type='range'] {
+  width: 100%;
+  margin: 0;
+  appearance: none;
+  background: transparent;
+}
+input[type='range']::-webkit-slider-runnable-track {
+  height: 8px;
+  border-radius: 4px;
+  border: 2px solid var(--border-color); /* Debugging style */
+}
+input[type='range']::-moz-range-track {
+  height: 8px;
+  border-radius: 4px;
+  background: none;
+  border: 2px solid var(--border-color); /* Debugging style */
+}
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--border-color);
+  cursor: pointer;
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
+}
+input[type='range']::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--border-color);
+  cursor: pointer;
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
 }
 </style>

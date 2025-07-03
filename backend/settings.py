@@ -6,6 +6,8 @@ class Settings(BaseSettings):
     ENABLE_GRAPH_DB: bool = False
     JANUSGRAPH_HOST: str = "localhost"
     TRAVERSAL_SOURCE: str = "g_test"
+    BACKEND_HOST: str                # e.g. https://api.commongraph.org or http://localhost:8000
+    FRONTEND_HOST: str               # e.g. https://commongraph.org or http://localhost:5173
     POSTGRES_DB_URL: str
     QUOTES_FILE: str = ""
     ALLOWED_ORIGINS_RAW: str = ""               # <<< raw comma-sep string

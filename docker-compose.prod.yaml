@@ -12,9 +12,8 @@ services:
       - "80:80"
       - "443:443"
     command: >
-      sh -c "envsubst '$$DOMAIN' < /etc/nginx/nginx-http-only.conf.template > /etc/nginx/nginx.conf && nginx -g 'daemon off;'"
+      sh -c "envsubst '$$DOMAIN' < /etc/nginx/nginx-ssl.conf.template > /etc/nginx/nginx.conf && nginx -g 'daemon off;'"
     volumes:
-      - ./nginx/nginx-http-only.conf.template:/etc/nginx/nginx-http-only.conf.template:ro
       - ./nginx/nginx-ssl.conf.template:/etc/nginx/nginx-ssl.conf.template:ro
       - ./nginx/ssl:/etc/nginx/ssl:ro
       - ./nginx/certbot:/var/www/certbot

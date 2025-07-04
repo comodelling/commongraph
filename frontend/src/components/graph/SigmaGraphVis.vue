@@ -139,33 +139,20 @@ export default {
         // Initialize Sigma renderer with settings
         renderer.value = new Sigma(graph.value, sigmaContainer.value, {
           renderLabels: false, // Hide labels by default
-          renderEdgeLabels: false,
+          renderEdgeLabels: true,
           enableEdgeHoverEvents: true, // Enable edge hover events
           enableEdgeClickEvents: true, // Enable edge click events
-          // Custom node reducer to show labels only when highlighted
-          nodeReducer: (node, data) => {
-            const res = { ...data };
-            if (data.highlighted) {
-              res.label = data.label;
-            } else {
-              res.label = null;
-            }
-            return res;
-          },
-          // Custom edge reducer to show labels and highlight on hover
-          edgeReducer: (edge, data) => {
-            const res = { ...data };
-            if (data.highlighted) {
-              if (data.label) {
-                res.label = data.label;
-              }
-              res.color = "#007bff"; // Highlight color
-              res.size = Math.max(data.size * 1.5, 3); // Make edge thicker when highlighted
-            } else {
-              res.label = null;
-            }
-            return res;
-          }
+          edgeHoverHighlightNodes: 'circle',
+                      // edgeReducer: (edge, data) => {
+          //   if (data.highlighted) {
+          //     return {
+          //       ...data,
+          //       color: "red", // Highlight color
+          //       size: 4        // Thicker on hover
+          //     };
+          //   }
+          //   return data;
+          // }
         });
 
         // Ensure the renderer uses the full container size

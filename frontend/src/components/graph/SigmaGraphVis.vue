@@ -113,7 +113,8 @@ export default {
                   size: 2,
                   color: "#ccc",
                   label: edge.edge_type || edge.type || null,
-                  highlighted: false
+                  highlighted: false,
+                  type: "arrow"
                 };
                 
                 // Try the method with key first, then fallback to auto-key

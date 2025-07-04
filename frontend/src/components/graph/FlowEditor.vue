@@ -781,10 +781,11 @@ function onEdgeRightClick({ event, edge }) {
   ]);
 }
 
-function onSelectionRightClick({ event, selection }) {
+function onSelectionRightClick({ event, nodes }) {
   showContextMenu(event, [
-    { name: "Group Selection", action: () => groupSelection(selection) },
-    { name: "Delete Selection", action: () => deleteSelection(selection) },
+    { name: "Create Group Node", action: () => groupSelection(nodes) },
+    { name: "Tag Selection", action: () => tagSelection(nodes) },
+    { name: "Delete Selection", action: () => deleteSelection(nodes) },
   ]);
 }
 
@@ -828,11 +829,31 @@ async function deleteEdge(edge) {
 }
 
 function groupSelection(selection) {
-  console.log("Group Selection", selection);
+  console.log("Create Group Node", selection);
+  // not yet supported, show a message instead
+  alert("Grouping nodes is not yet supported.");
 }
 
-function deleteSelection(selection) {
-  console.log("Delete Selection", selection);
+function tagSelection(nodes) {
+  console.log("Tag Selection", nodes);
+  alert("Tagging nodes is not yet supported.");
+  return;
+  // potential issues: not all ndoes have a tag field, and edges may have tag field too 
+  const nodeIds = nodes.map((node) => node.id);
+  // collect tag from the user
+  const tag = prompt("Enter a tag to apply to the selected nodes:");
+  if (!tag) {
+    console.warn("No tag provided, not applying any tags");
+    return;
+  }
+  // send put request to the backend for each node which has the tag field and does not have this tag yet
+}
+
+function deleteSelection(nodes) {
+  console.log("Delete Selection", nodes);
+  const nodeIds = nodes.map((node) => node.id);
+  onNodesChange(nodeIds.map((id) => ({ type: "remove", id })));
+  // edge deletion is handled through the `onEdgesChange` method
 }
 
 function optionClicked({ option }) {

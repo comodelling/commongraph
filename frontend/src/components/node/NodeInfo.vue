@@ -197,8 +197,7 @@ export default {
 </script>
 
 <style scoped>
-
-.tabs {
-  right: -16px;
+.pane-header .tabs {
+  margin-right: -20px;
 }
 </style>

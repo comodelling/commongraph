@@ -58,23 +58,9 @@ export default {
 
 
 /* HEADER: title left, tabs flush right */
-.pane-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.5em 1em;
-}
 .pane-header h3 {
-  margin: 0;
-  margin-left: 15px;
+  margin: 0 0 0 15px;
   font-size: 1.1em;
-}
-/* ensure tabs container is flush right */
-.pane-header .tabs {
-  display: flex;
-  gap: 0.5em;
-  margin: 0;
-  padding: 0;
 }
 
 /* keep separator */

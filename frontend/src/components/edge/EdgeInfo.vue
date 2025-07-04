@@ -3,6 +3,7 @@
     <div class="pane-header">
       <div class="title-group">
         <h4>Edge Info</h4>
+      </div>
         <div class="tabs">
           <button
             :class="{ active: currentTab === 'view' }"
@@ -24,7 +25,6 @@
           >
             History
           </button>
-          </div>
         </div>
       </div>
       <!-- <hr class="header-separator" /> -->
@@ -139,12 +139,8 @@ export default {
 
 <style scoped>
 
-.tabs {
-  position: absolute;
-  right: 5px;
-  top: 25px;
-  padding: 0px;
+.pane-header .tabs {
+  margin-right: -20px;
 }
-
 
 </style>

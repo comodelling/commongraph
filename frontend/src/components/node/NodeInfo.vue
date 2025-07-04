@@ -3,13 +3,6 @@
     <div class="pane-header">
       <div class="title-group">
         <h4>Node Info</h4>
-        <template  v-if="!isBrandNewNode">
-          <div class="favourite-toggle">
-            <button class="favourite-btn" @click="toggleFavourite">
-              {{ isFavourite ? "★" : "☆" }}
-            </button>
-          </div>
-        </template>
       </div>
       <div class="tabs">
         <button
@@ -51,6 +44,9 @@
             :is="currentTabComponent"
             :node="node"
             :nodeId="node.node_id"
+            :is-favourite="isFavourite"
+            :is-brand-new-node="isBrandNewNode"
+            :toggle-favourite="toggleFavourite"
             @publish-node="updateNodeFromEditor"
           />
         </template>
@@ -95,8 +91,6 @@ export default {
       if (this.currentTab === "history") return HistoryList;
     },
     isBrandNewNode() {
-      const isBrandNewNode =  this.node.node_id === "new";
-      console.log("isBrandNewNode:", isBrandNewNode, this.node.node_id);
       return this.node && this.node.node_id === "new";
     },
   },
@@ -203,23 +197,6 @@ export default {
 </script>
 
 <style scoped>
-
-/* Favourite toggle style */
-.favourite-toggle {
-  position: absolute;
-  top: 3px;
-  left: 54px; /* Adjust as needed */
-}
-.favourite-btn {
-  background: none;
-  border: none;
-  font-size: 1.2rem; /* Smaller star */
-  cursor: pointer;
-  color: gold;  
-}
-.favourite-btn:hover {
-  opacity: 0.8;
-}
 
 .tabs {
   right: -16px;

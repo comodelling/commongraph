@@ -1,7 +1,18 @@
 <template>
   <div class="node-info-view">
-    <!-- Title -->
-    <h2 v-if="isAllowed('title')">{{ node.title }}</h2>
+    <!-- Title + Favourite Button -->
+    <div class="title-row" v-if="isAllowed('title')">
+      <h2 class="title">{{ node.title }}</h2>
+      <button
+        v-if="!isBrandNewNode"
+        class="favourite-btn"
+        :title="isFavourite ? 'Remove from favourites' : 'Add to favourites'"
+        @click="toggleFavourite"
+        style=" margin: 0; padding: 0.5em;font-size: 1.5rem; color: gold; background: none; border: none; cursor: pointer;"
+      >
+        {{ isFavourite ? '★' : '☆' }}
+      </button>
+    </div>
     <!-- Type -->
     <div>
       <strong :title="nodeTypeTooltip">Type:</strong>
@@ -49,7 +60,7 @@ import { useConfig } from "../../composables/useConfig";
 import tooltips from "../../assets/tooltips.json";
 
 interface Node {
-  node_id: number;
+  node_id: number | string;
   node_type: string;
   title?: string;
   scope?: string;
@@ -59,8 +70,13 @@ interface Node {
   references?: string[];
 }
 
-const props = defineProps<{ node: Node }>();
-const { node } = toRefs(props);
+const props = defineProps<{
+  node: Node;
+  isFavourite?: boolean;
+  isBrandNewNode?: boolean;
+  toggleFavourite?: () => void;
+}>();
+const { node, isFavourite, isBrandNewNode, toggleFavourite } = toRefs(props);
 
 const { nodeTypes, load } = useConfig();
 onMounted(load);
@@ -90,3 +106,15 @@ const nodeTypeTooltip = computed(() => {
   return tooltips.node[node.value.node_type] || tooltips.node.type;
 });
 </script>
+
+<style scoped>
+.title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+}
+
+.favourite-btn:hover {
+  opacity: 0.8;
+}
+</style>

@@ -54,7 +54,7 @@ export default {
           r.target_type,
           {
             label: r.label,
-            size: 1,
+            size: 4,
             // color: "#999",
             type: "arrow",
             // labelColor: computedLabelColor

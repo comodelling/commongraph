@@ -37,6 +37,7 @@
         :max="rangeMax"
         :step="rangeStep"
         v-model.number="sliderValue"
+        @change="rate(sliderValue)"
         :style="{ '--pct': sliderPercent }"
       />
       <div class="slider-value">{{ displayValue }}</div>
@@ -78,7 +79,6 @@ export default {
       const max = rangeMax.value;
       const pct = ((sliderValue.value - min) / (max - min)) * 100;
       const pctString = `${pct}%`;
-      console.log('Slider percentage:', pctString); // Debugging line
       return pctString;
     });
 

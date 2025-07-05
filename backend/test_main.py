@@ -11,8 +11,8 @@ from backend.main import app
 from backend.db.janusgraph import JanusGraphDB
 from backend.db.postgresql import GraphHistoryPostgreSQLDB
 
-
-POSTGRES_TEST_DB_URL = "postgresql://postgres:postgres@localhost/testdb"
+# Use environment-based test database URL
+POSTGRES_TEST_DB_URL = os.getenv("POSTGRES_TEST_DB_URL", "postgresql://postgres:postgres@localhost/testdb")
 os.environ["POSTGRES_DB_URL"] = POSTGRES_TEST_DB_URL
 os.environ["SECRET_KEY"] = "testsecret"
 

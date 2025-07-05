@@ -6,8 +6,8 @@ from backend.main import app
 from backend.db.postgresql import UserPostgreSQLDB
 
 # Configure test database and secret key
-TEST_DB_URL = "postgresql://postgres:postgres@localhost/testdb"
-os.environ["POSTGRES_DB_URL"] = TEST_DB_URL
+POSTGRES_TEST_DB_URL = os.getenv("POSTGRES_TEST_DB_URL", "postgresql://postgres:postgres@localhost/testdb")
+os.environ["POSTGRES_DB_URL"] = POSTGRES_TEST_DB_URL
 os.environ["SECRET_KEY"] = "testsecret"
 
 client = TestClient(app)

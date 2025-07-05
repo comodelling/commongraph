@@ -237,7 +237,7 @@ export default {
         );
       }
       if (this.isAllowed("tags")) {
-        this.editedEdge.tags = this.editedEdge.tags.map((tag) =>
+        this.editedEdge.tags = (this.editedEdge.tags || []).map((tag) =>
           tag.trim(),
         );
       }

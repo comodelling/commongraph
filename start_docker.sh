@@ -31,6 +31,33 @@ elif [ "$APP_ENV" = "development" ] && [ -f .env.development ]; then
 fi
 set -o allexport
 
+# Function to ensure database exists
+ensure_database_exists() {
+    echo "Checking if database '$POSTGRES_DB' exists..."
+    
+    # Wait for PostgreSQL to be ready
+    echo "Waiting for PostgreSQL to be ready..."
+    docker compose -f docker-compose.yaml exec postgres pg_isready -U "$POSTGRES_USER" -d postgres -h localhost
+    
+    # Check if our target database exists
+    if docker compose -f docker-compose.yaml exec postgres psql -U "$POSTGRES_USER" -lqt | cut -d \| -f 1 | grep -qw "$POSTGRES_DB"; then
+        echo "Database '$POSTGRES_DB' already exists"
+    else
+        echo "Creating database '$POSTGRES_DB'"
+        docker compose -f docker-compose.yaml exec postgres createdb -U "$POSTGRES_USER" "$POSTGRES_DB"
+        echo "Database '$POSTGRES_DB' created successfully"
+    fi
+    
+    # Also ensure test database exists
+    if docker compose -f docker-compose.yaml exec postgres psql -U "$POSTGRES_USER" -lqt | cut -d \| -f 1 | grep -qw "testdb"; then
+        echo "Test database already exists"
+    else
+        echo "Creating test database"
+        docker compose -f docker-compose.yaml exec postgres createdb -U "$POSTGRES_USER" testdb
+        echo "Test database created successfully"
+    fi
+}
+
 # Determine which environment-specific compose file to use
 ENV_COMPOSE_FILE=""
 if [ "$APP_ENV" = "production" ]; then
@@ -53,8 +80,25 @@ if [ "$ENABLE_GRAPH_DB" = true ]; then
     echo "Enabling JanusGraph"
 fi
 
-# Append any passed arguments to the docker compose command
-DOCKER_COMPOSE_CMD="$DOCKER_COMPOSE_CMD $@"
-
-echo "Running command: $DOCKER_COMPOSE_CMD"
-$DOCKER_COMPOSE_CMD
+# Handle special commands
+if [ "$1" = "up" ] || [ "$1" = "start" ]; then
+    echo "Starting services..."
+    $DOCKER_COMPOSE_CMD up -d postgres
+    echo "PostgreSQL started, ensuring database exists..."
+    ensure_database_exists
+    echo "Starting remaining services..."
+    $DOCKER_COMPOSE_CMD up "${@:2}"
+# elif [ "$1" = "reset-db" ]; then
+#     echo "Resetting database volume..."
+#     $DOCKER_COMPOSE_CMD down -v
+#     echo "Database volume removed. Starting fresh..."
+#     $DOCKER_COMPOSE_CMD up -d postgres
+#     sleep 5
+#     ensure_database_exists
+#     $DOCKER_COMPOSE_CMD up "${@:2}"
+else
+    # For all other commands, just pass through
+    DOCKER_COMPOSE_CMD="$DOCKER_COMPOSE_CMD $@"
+    echo "Running command: $DOCKER_COMPOSE_CMD"
+    $DOCKER_COMPOSE_CMD
+fi

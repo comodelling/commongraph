@@ -21,7 +21,7 @@ _CONFIG = load_config()
 PLATFORM_NAME = _CONFIG.get("platform_name", "CommonGraph")
 NODE_TYPE_CFG  = _CONFIG["node_types"]
 EDGE_TYPE_CFG  = _CONFIG["edge_types"]
-POLLS_CFG  = _CONFIG["polls"]
+POLLS_CFG  = _CONFIG.get("polls", {})
 
 # 2. Build maps for properties
 NODE_TYPE_PROPS = {

@@ -6,11 +6,6 @@ if [ "$current_dir" != "commongraph" ] || [ ! -d "backend" ]; then
     exit 1
 fi
 
-if [ ! -f config.yaml ]; then
-    echo "Error: config.yaml not found in project root. Aborting."
-    exit 1
-fi
-
 # Ensure root .env exists
 if [ ! -f .env ]; then
     echo "Error: .env file not found in project root. Aborting."
@@ -30,6 +25,17 @@ elif [ "$APP_ENV" = "development" ] && [ -f .env.development ]; then
     echo "Loaded development environment overrides"
 fi
 set -o allexport
+
+# Use CONFIG_FILE from .env
+if [ -z "$CONFIG_FILE" ]; then
+    echo "Error: CONFIG_FILE not set in .env. Aborting."
+    exit 1
+fi
+
+if [ ! -f "$CONFIG_FILE" ]; then
+    echo "Error: Config file '$CONFIG_FILE' not found. Aborting."
+    exit 1
+fi
 
 # Function to ensure database exists
 ensure_database_exists() {

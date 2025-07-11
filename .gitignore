@@ -50,6 +50,6 @@ site/
 nginx/ssl/
 
 # Config
-config.yaml
 config/*
+!config/config-example.yaml
 

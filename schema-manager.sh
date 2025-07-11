@@ -250,7 +250,7 @@ function show_help() {
     echo "  help      - Show this help message"
     echo ""
     echo "Workflow:"
-    echo "  1. Edit config.yaml"
+    echo "  1. Edit config file"
     echo "  2. Run: $0 status"
     echo "  3. If changes detected: $0 login"
     echo "  4. Run: $0 detailed (to see change details)"

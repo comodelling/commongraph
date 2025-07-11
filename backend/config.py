@@ -4,8 +4,13 @@ import json
 from pathlib import Path
 from typing import Dict, Any, List, Tuple
 
-# 1. Locate & load your YAML
-_CONFIG_PATH = Path(__file__).parent.parent / "config.yaml"
+# load env variable CONFIG_FILE
+from dotenv import load_dotenv
+load_dotenv()
+# Load environment variables from .env file
+import os
+_CONFIG_PATH = Path(os.getenv("CONFIG_FILE",  "config/config-example.yaml"))
+
 
 def load_config() -> Dict[str, Any]:
     """Load configuration from YAML file"""

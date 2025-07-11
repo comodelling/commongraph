@@ -137,7 +137,7 @@ class RatingEvent(SQLModel, table=True):
     node_id: NodeId | None = Field(..., description="ID of the node")
     source_id: NodeId | None = Field(None, description="Edge's source node ID")
     target_id: NodeId | None = Field(None, description="Edge's target node ID")
-    poll_label: str = Field(index=True, description="Must match a key in your config.yaml polls")
+    poll_label: str = Field(index=True, description="Must match a key in your configured polls")
     rating: float = Field(description="Discrete or continuous value, interpretation driven by config")
     timestamp: datetime.datetime = Field(
         default_factory=lambda: datetime.datetime.now(datetime.timezone.utc),

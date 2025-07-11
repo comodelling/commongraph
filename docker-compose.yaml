@@ -14,7 +14,7 @@ services:
       - DOCKER_ENV=true
     volumes:
       - ./backend:/app/backend/
-      - ./config.yaml:/app/config.yaml:ro
+      - ./config:/app/backend/config/:ro
     depends_on:
       postgres:
         condition: service_healthy

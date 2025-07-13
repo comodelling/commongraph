@@ -1,10 +1,12 @@
 <template>
   <div class="main-page">
     <div class="content">
-      <h1>{{ platformName }}</h1>
-        <p class="tagline">
-          {{ tagline }}
-        </p>
+      <router-link :to="{ name: 'About' }" class="platform-link">
+        <h1>{{ platformName }}</h1>
+      </router-link>
+      <p class="tagline">
+        {{ tagline }}
+      </p>
       <div class="search-container">
         <SearchBar
           class="wide-search"
@@ -97,6 +99,12 @@ export default {
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
+}
+
+.platform-link {
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
 }
 
 </style>

@@ -1,25 +1,19 @@
 <template>
   <div class="search-page">
-    <div class="search-header">
-      <!-- Center the search bar -->
-      <div class="centered-search">
-        <SearchBar :initialQuery="title" @search="search" />
-      </div>
-    </div>
-  <div class="search-content">
-    <div class="results-column">
-      <h2>Search Results</h2>
-      <div class="results-list">
-        <div v-if="!nodes.length && title">
-          <p>No results found for "{{ title }}"</p>
-        </div>
-        <ul v-else>
-          <div v-for="node in nodes" :key="node.node_id">
-            <NodeListItem :node="node" />
+    <div class="search-content">
+      <div class="results-column">
+        <h2>Search Results</h2>
+        <div class="results-list">
+          <div v-if="!nodes.length && title">
+            <p>No results found for "{{ title }}"</p>
           </div>
-        </ul>
+          <ul v-else>
+            <div v-for="node in nodes" :key="node.node_id">
+              <NodeListItem :node="node" />
+            </div>
+          </ul>
+        </div>
       </div>
-    </div>
       <div class="visualization-column">
         <div class="graph-container">
           <SigmaGraphVis
@@ -39,7 +33,7 @@
           @filter-by-rating="applyRatingFilter"
         />
       </div>
-  </div>
+    </div>
   </div>
 </template>
 
@@ -50,14 +44,13 @@ import qs from "qs";
 import { useRouter, useRoute } from "vue-router";
 import { computed } from "vue";
 import { useConfig } from "../composables/useConfig";
-import SearchBar from "../components/common/SearchBar.vue";
 import RatingHistogram from "../components/poll/RatingHistogram.vue";
 import NodeListItem from "../components/node/NodeListItem.vue";
 import AggRatingMultipane from "../components/poll/AggRatingMultipane.vue";
 import SigmaGraphVis from "../components/graph/SigmaGraphVis.vue";
 
 export default {
-  components: { SearchBar, RatingHistogram, NodeListItem, AggRatingMultipane, SigmaGraphVis },
+  components: { RatingHistogram, NodeListItem, AggRatingMultipane, SigmaGraphVis },
   data() {
     return {
       title: "",
@@ -116,37 +109,23 @@ export default {
       handler(newQuery) {
         console.log("New query:", newQuery);
         if (!newQuery) return;
-        const { title } = newQuery;
-        this.title = title || "";
+        // Handle various query parameter names (q, title, etc.)
+        const queryText = newQuery.q || newQuery.title || "";
+        this.title = queryText;
         this.performSearch();
       },
     },
   },
   methods: {
-    search(parsedQuery) {
-      const params = {};
-      if (parsedQuery.text?.length) {
-        params.title = parsedQuery.text.join(" ");
-      }
-      if (parsedQuery.type?.length) {
-        params.node_type = parsedQuery.type;
-      }
-      if (parsedQuery.status?.length) {
-        params.status = parsedQuery.status;
-      }
-      if (parsedQuery.tag?.length) {
-        params.tags = parsedQuery.tag;
-      }
-      if (parsedQuery.scope) {
-        params.scope = parsedQuery.scope;
-      }
-      if (parsedQuery.rating) {
-        params.rating = parsedQuery.rating;
-      }
-      this.$router.push({ name: "SearchPage", query: params });
-    },
     applyRatingFilter(rating) {
-      this.search({ text: [this.title], rating });
+      // Apply rating filter by updating route query
+      const currentQuery = { ...this.$route.query };
+      if (rating) {
+        currentQuery.rating = rating;
+      } else {
+        delete currentQuery.rating;
+      }
+      this.$router.push({ name: "SearchPage", query: currentQuery });
     },
     handleNodeClick(nodeId) {
       console.log("Node clicked in search:", nodeId);
@@ -162,8 +141,11 @@ export default {
     },
     async performSearch() {
       try {
-        const { title, node_type, status, tags, scope, rating } =
-          this.$route.query;
+        // Handle both 'q' and 'title' query parameters for backwards compatibility
+        const query = this.$route.query;
+        const title = query.q || query.title;
+        const { node_type, edge_type, status, tags, scope, rating } = query;
+        
         const tagsArray = tags
           ? typeof tags === "string"
             ? tags
@@ -180,6 +162,7 @@ export default {
         console.log("Searching for nodes with:", {
           title,
           node_type,
+          edge_type,
           status,
           tags: tagsArray,
           scope,
@@ -258,23 +241,6 @@ export default {
   display: flex;
   flex-direction: column;
   height: 100vh;
-}
-
-.search-header {
-  padding: 5px 0 4px 100px;
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  background: var(--background-color);
-}
-
-.centered-search {
-  display: flex;
-  justify-content: center;
-}
-
-.centered-search > * {
-  width: 600px; /* set desired width */
 }
 
 .search-content {

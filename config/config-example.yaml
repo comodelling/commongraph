@@ -1,20 +1,33 @@
 
 platform_name: CommonGraph-example
 tagline: This is an example tagline
-metamodel:
-  node_types:
-    node_type1:
-      properties:
-        - title
-        - scope
-        - description
-        - status
-        - references
-        - support_rating
+node_types:
+  example_node_type:
+    properties:
+      - title
+      - tags
 
-  edge_types:
-    edg_type1:
-      properties:
-        - description
-        - references
-        - causal_strength_rating
+edge_types:
+  example_edge_type:
+    properties:
+      - description
+      - references
+
+polls:
+  example_poll_type:
+    type: discrete
+    question: Is this a question?
+    options:
+    - 1: "Yes"
+    - 2: "No"
+    node_types: ["example_node_type"]
+    edge_types: []
+
+auth:
+  allow_signup: true                    # master on/off
+  signup_requires_admin_approval: true  # freshly created users start inactive
+  require_login:
+    - create: false
+    - edit: false
+    - delete: false
+    - rate: true

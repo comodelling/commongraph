@@ -11,7 +11,7 @@ from backend.models.fixed import UserCreate, UserRead
 from backend.db.base import UserDatabaseInterface
 from backend.db.postgresql import UserPostgreSQLDB
 from backend.utils.security import verify_password, hash_password
-from backend.config import ALLOW_SIGNUP, REQUIRE_ADMIN_APPROVAL
+from backend.config import ALLOW_SIGNUP, SIGNUP_REQUIRES_ADMIN_APPROVAL
 
 
 logger = logging.getLogger(__name__)
@@ -122,9 +122,9 @@ def signup(user: UserCreate, db: UserDatabaseInterface = Depends(get_user_db)):
     if not ALLOW_SIGNUP:
         raise HTTPException(status_code=403, detail="Signups are currently disabled")
     data = user.dict()
-    data["is_active"] = not REQUIRE_ADMIN_APPROVAL
+    data["is_active"] = not SIGNUP_REQUIRES_ADMIN_APPROVAL
     created = db.create_user(UserCreate(**data))
-    # TODO: notify admin if REQUIRE_ADMIN_APPROVAL
+    # TODO: notify admin if SIGNUP_REQUIRES_ADMIN_APPROVAL
     return created
 
 

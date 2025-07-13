@@ -79,7 +79,7 @@ EDGE_TYPE_POLLS = get_edge_type_polls()
 # 6. Authentication configuration
 AUTH_CFG = _CONFIG.get("auth", {})
 ALLOW_SIGNUP = AUTH_CFG.get("allow_signup", True)
-REQUIRE_ADMIN_APPROVAL = AUTH_CFG.get("require_admin_approval", False)
+SIGNUP_REQUIRES_ADMIN_APPROVAL = AUTH_CFG.get("signup_requires_admin_approval", False)
 
 # Schema versioning configuration
 def _compute_config_hash(config: Dict[str, Any]) -> str:

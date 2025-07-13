@@ -6,7 +6,7 @@ from pydantic import model_validator
 from sqlalchemy import JSON, Column
 from sqlmodel import Field, SQLModel
 
-from backend.config import REQUIRE_ADMIN_APPROVAL
+from backend.config import SIGNUP_REQUIRES_ADMIN_APPROVAL
 
 
 NodeId = Annotated[
@@ -43,7 +43,7 @@ class User(SQLModel, table=True):
         ..., description="Answer to the security question"
     )
     is_active: bool = Field(
-        default=not REQUIRE_ADMIN_APPROVAL,
+        default=not SIGNUP_REQUIRES_ADMIN_APPROVAL,
         description="User must be approved by an admin before activation"
     )
     is_admin: bool = Field(
@@ -70,7 +70,7 @@ class UserCreate(SQLModel):
         ..., description="Answer to the security question"
     )
     is_active: bool = Field(
-        default=not REQUIRE_ADMIN_APPROVAL,
+        default=not SIGNUP_REQUIRES_ADMIN_APPROVAL,
         description="set by admin or signup logic"
     )
     is_admin: bool = Field(

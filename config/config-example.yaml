@@ -1,5 +1,6 @@
 
-platform_name: CommonGraph
+platform_name: CommonGraph-example
+tagline: This is an example tagline
 metamodel:
   node_types:
     node_type1:

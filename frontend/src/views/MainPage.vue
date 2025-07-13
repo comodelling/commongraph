@@ -2,6 +2,9 @@
   <div class="main-page">
     <div class="content">
       <h1>{{ platformName }}</h1>
+        <p class="tagline">
+          {{ tagline }}
+        </p>
       <div class="search-container">
         <SearchBar
           class="wide-search"
@@ -9,7 +12,7 @@
           style="max-width: 600px; width: 450px"
         />
       </div>
-      <div class="graph-container">
+      <!-- <div class="graph-container">
         <SigmaGraphVis
           :height="'500px'"
           :show-controls="true"
@@ -18,7 +21,7 @@
           @edge-click="handleEdgeClick"
           @graph-loaded="handleGraphLoaded"
         />
-      </div>
+      </div> -->
     </div>
   </div>
 </template>
@@ -26,21 +29,21 @@
 <script>
 import { onMounted } from "vue";
 import SearchBar from "../components/common/SearchBar.vue";
-import SigmaGraphVis from "../components/graph/SigmaGraphVis.vue";
+// import SigmaGraphVis from "../components/graph/SigmaGraphVis.vue";
 import { buildSearchParams } from "../utils/searchParser.js";
 import { useConfig } from "../composables/useConfig";
 
 export default {
-  components: { SearchBar, SigmaGraphVis },
+  components: { SearchBar },
   data() {
     return {
       quote: null,
     };
   },
   setup() {
-    const { platformName, load } = useConfig();
+    const { platformName, load, tagline } = useConfig();
     onMounted(load);
-    return { platformName };
+    return { platformName, tagline };
   },
   methods: {
     goToSearch(parsedQuery) {
@@ -76,10 +79,16 @@ export default {
   margin: 0 20px;
 }
 
+.tagline {
+  font-size: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
 .search-container {
   display: flex;
   justify-content: center;
   margin-bottom: 30px;
+  margin-top: 40px;
 }
 
 .graph-container {

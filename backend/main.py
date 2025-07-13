@@ -16,7 +16,8 @@ from backend.api.edges import router as edges_router
 from backend.api.graph import router as graph_router
 from backend.api.schema import router as schema_router
 from backend.config import (PLATFORM_NAME, NODE_TYPE_PROPS, EDGE_TYPE_PROPS, EDGE_TYPE_BETWEEN,
-                            NODE_TYPE_STYLE, EDGE_TYPE_STYLE, NODE_TYPE_POLLS, EDGE_TYPE_POLLS)
+                            NODE_TYPE_STYLE, EDGE_TYPE_STYLE, NODE_TYPE_POLLS, EDGE_TYPE_POLLS, 
+                            TAGLINE)
 from backend.db.postgresql import UserPostgreSQLDB
 from backend.utils.security import hash_password
 from backend.models.fixed import UserCreate
@@ -108,6 +109,7 @@ def get_config():
     }
     return {
         "platform_name": PLATFORM_NAME,
+        "tagline": TAGLINE,
         "node_types": node_types,
         "edge_types": edge_types,
         "schema_version": get_current_config_version(),

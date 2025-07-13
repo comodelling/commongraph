@@ -21,7 +21,7 @@ export default {
     },
     placeholder: {
       type: String,
-      default: "Search for nodes...",
+      default: "Explore this graph...",
     },
     showButton: {
       type: Boolean,

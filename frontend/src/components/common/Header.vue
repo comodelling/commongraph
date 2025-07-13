@@ -21,7 +21,6 @@
       <SearchBar 
         :initialQuery="searchQuery" 
         @search="handleSearch" 
-        :placeholder="'Explore this graph...'"
       />
     </div>
 

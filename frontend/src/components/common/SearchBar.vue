@@ -4,45 +4,48 @@
       v-model="searchQuery"
       @input="updateSearchQuery"
       @keyup.enter="search"
-      :placeholder="placeholder"
+      :placeholder="computedPlaceholder"
     />
     <button v-if="showButton" @click="search" class="search-button">🔍</button>
   </div>
 </template>
 
-<script>
-import { parseSearchQuery } from "../../utils/searchParser.js";
+<script setup>
+import { ref, computed } from 'vue';
+import { parseSearchQuery } from '../../utils/searchParser.js';
+import { useConfig } from '../../composables/useConfig';
 
-export default {
-  props: {
-    initialQuery: {
-      type: String,
-      default: "",
-    },
-    placeholder: {
-      type: String,
-      default: "Explore this graph...",
-    },
-    showButton: {
-      type: Boolean,
-      default: true,
-    },
-  },
-  data() {
-    return {
-      searchQuery: this.initialQuery,
-    };
-  },
-  methods: {
-    updateSearchQuery(event) {
-      this.searchQuery = event.target.value;
-    },
-    search() {
-      const parsedQuery = parseSearchQuery(this.searchQuery);
-      this.$emit("search", parsedQuery);
-    },
-  },
-};
+const props = defineProps({
+  initialQuery: { type: String, default: '' },
+  placeholder: { type: String, default: 'Explore this graph...' },
+  showButton: { type: Boolean, default: true },
+});
+const emit = defineEmits(['search']);
+
+// Load configuration once
+const { platformName, load } = useConfig();
+load();
+
+// Reactive search query
+const searchQuery = ref(props.initialQuery);
+
+// Compute placeholder based on platformName
+const computedPlaceholder = computed(() => {
+  return props.placeholder === 'Explore this graph...'
+    ? `Search in ${platformName.value}`
+    : props.placeholder;
+});
+
+// Update query on input
+function updateSearchQuery(event) {
+  searchQuery.value = event.target.value;
+}
+
+// Emit search event with parsed query
+function search() {
+  const parsedQuery = parseSearchQuery(searchQuery.value);
+  emit('search', parsedQuery);
+}
 </script>
 
 <style scoped>

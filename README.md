@@ -2,7 +2,6 @@
 
 *CommonGraph* is a free software for modelling possible changes as nodes in a causal graph.
 
-See its [documentation](https://comodelling.github.io/commongraph/) for more tips and information.
 
 ## Quick Start
 

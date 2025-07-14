@@ -1002,10 +1002,10 @@ onEdgeMouseLeave(({ edge }) => {
               <line x1="98.8" y1="21.2" x2="21.2" y2="98.8" stroke="#eee" stroke-width="1"/>
             </g>
             
-            <!-- Clickable directional areas -->
+            <!-- Clickable directional shapes (diamond/kite from center) -->
             <!-- North (BT - Bottom to Top) -->
             <path 
-              d="M 45 60 L 60 8 L 75 60 Z" 
+              d="M 60 60 L 45 45 L 60 8 L 75 45 Z" 
               :fill="selectedDirection === 'BT' ? '#007bff' : 'white'"
               :stroke="selectedDirection === 'BT' ? '#007bff' : '#666'"
               stroke-width="2"
@@ -1016,7 +1016,7 @@ onEdgeMouseLeave(({ edge }) => {
             
             <!-- East (LR - Left to Right) -->
             <path 
-              d="M 60 45 L 112 60 L 60 75 Z" 
+              d="M 60 60 L 75 45 L 112 60 L 75 75 Z" 
               :fill="selectedDirection === 'LR' ? '#007bff' : 'white'"
               :stroke="selectedDirection === 'LR' ? '#007bff' : '#666'"
               stroke-width="2"
@@ -1027,7 +1027,7 @@ onEdgeMouseLeave(({ edge }) => {
             
             <!-- South (TB - Top to Bottom) -->
             <path 
-              d="M 45 60 L 60 112 L 75 60 Z" 
+              d="M 60 60 L 75 75 L 60 112 L 45 75 Z" 
               :fill="selectedDirection === 'TB' ? '#007bff' : 'white'"
               :stroke="selectedDirection === 'TB' ? '#007bff' : '#666'"
               stroke-width="2"
@@ -1038,7 +1038,7 @@ onEdgeMouseLeave(({ edge }) => {
             
             <!-- West (RL - Right to Left) -->
             <path 
-              d="M 60 45 L 8 60 L 60 75 Z" 
+              d="M 60 60 L 45 75 L 8 60 L 45 45 Z" 
               :fill="selectedDirection === 'RL' ? '#007bff' : 'white'"
               :stroke="selectedDirection === 'RL' ? '#007bff' : '#666'"
               stroke-width="2"
@@ -1047,26 +1047,13 @@ onEdgeMouseLeave(({ edge }) => {
               title="Leftward causality"
             />
             
-            <!-- Center circle -->
-            <circle 
-              cx="60" 
-              cy="60" 
-              r="12" 
-              fill="white" 
-              stroke="#666" 
-              stroke-width="2"
-            />
+            <!-- Discrete center lines to summits -->
+            <line x1="60" y1="60" x2="60" y2="8" stroke="#999" stroke-width="1" class="compass-indicator"/>
+            <line x1="60" y1="60" x2="112" y2="60" stroke="#999" stroke-width="1" class="compass-indicator"/>
+            <line x1="60" y1="60" x2="60" y2="112" stroke="#999" stroke-width="1" class="compass-indicator"/>
+            <line x1="60" y1="60" x2="8" y2="60" stroke="#999" stroke-width="1" class="compass-indicator"/>
             
-            <!-- Direction labels -->
-            <text x="60" y="18" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#666" font-weight="bold">N</text>
-            <text x="102" y="65" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#666" font-weight="bold">E</text>
-            <text x="60" y="108" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#666" font-weight="bold">S</text>
-            <text x="18" y="65" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#666" font-weight="bold">W</text>
-            
-            <!-- Subdirection labels (non-clickable) -->
-            <!-- <text x="85" y="25" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#999">NE</text> -->
-            <!-- <text x="95" y="95" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#999">SE</text> -->
-          </svg>
+           </svg>
         </div>
       </Panel>
 
@@ -1167,7 +1154,11 @@ onEdgeMouseLeave(({ edge }) => {
 
 .compass-direction:hover {
   stroke-width: 3;
-  filter: brightness(1.1);
+  filter: brightness(1.15);
+}
+
+.compass-indicator {
+  pointer-events: none;
 }
 
 .compass-rose {

@@ -973,40 +973,100 @@ onEdgeMouseLeave(({ edge }) => {
 
       <!-- <MiniMap /> -->
 
-      <Panel class="compass-panel" position="top-right">
+      <Panel class="compass-panel" style="margin-top: 5px; margin-right: 2px; right: 2px">
         <div class="compass-container">
-          <button
-            class="compass-button top"
-            :class="{ selected: selectedDirection === 'BT' }"
-            title="Upward causality"
-            @click="selectDirection('BT', true)"
+          <svg 
+            class="compass-svg" 
+            viewBox="0 0 120 120" 
+            width="60" 
+            height="60"
           >
-            <Icon name="arrow-up" />
-          </button>
-          <button
-            class="compass-button left"
-            :class="{ selected: selectedDirection === 'RL' }"
-            title="Leftward causality"
-            @click="selectDirection('RL', true)"
-          >
-            <Icon name="arrow-left" />
-          </button>
-          <button
-            class="compass-button bottom"
-            :class="{ selected: selectedDirection === 'TB' }"
-            title="Downward causality"
-            @click="selectDirection('TB', true)"
-          >
-            <Icon name="arrow-down" />
-          </button>
-          <button
-            class="compass-button right"
-            :class="{ selected: selectedDirection === 'LR' }"
-            title="Rightward causality"
-            @click="selectDirection('LR', true)"
-          >
-            <Icon name="arrow-right" />
-          </button>
+            <!-- Outer circle -->
+            <circle 
+              cx="60" 
+              cy="60" 
+              r="58" 
+              fill="transparent" 
+              stroke="#ccc" 
+              stroke-width="2"
+            />
+            
+            <!-- Inner compass rose -->
+            <g class="compass-rose">
+              <!-- Main directional lines -->
+              <line x1="60" y1="8" x2="60" y2="112" stroke="#ddd" stroke-width="1"/>
+              <line x1="8" y1="60" x2="112" y2="60" stroke="#ddd" stroke-width="1"/>
+              
+              <!-- Diagonal lines -->
+              <line x1="21.2" y1="21.2" x2="98.8" y2="98.8" stroke="#eee" stroke-width="1"/>
+              <line x1="98.8" y1="21.2" x2="21.2" y2="98.8" stroke="#eee" stroke-width="1"/>
+            </g>
+            
+            <!-- Clickable directional areas -->
+            <!-- North (BT - Bottom to Top) -->
+            <path 
+              d="M 45 60 L 60 8 L 75 60 Z" 
+              :fill="selectedDirection === 'BT' ? '#007bff' : 'white'"
+              :stroke="selectedDirection === 'BT' ? '#007bff' : '#666'"
+              stroke-width="2"
+              class="compass-direction north"
+              @click="selectDirection('BT', true)"
+              title="Upward causality"
+            />
+            
+            <!-- East (LR - Left to Right) -->
+            <path 
+              d="M 60 45 L 112 60 L 60 75 Z" 
+              :fill="selectedDirection === 'LR' ? '#007bff' : 'white'"
+              :stroke="selectedDirection === 'LR' ? '#007bff' : '#666'"
+              stroke-width="2"
+              class="compass-direction east"
+              @click="selectDirection('LR', true)"
+              title="Rightward causality"
+            />
+            
+            <!-- South (TB - Top to Bottom) -->
+            <path 
+              d="M 45 60 L 60 112 L 75 60 Z" 
+              :fill="selectedDirection === 'TB' ? '#007bff' : 'white'"
+              :stroke="selectedDirection === 'TB' ? '#007bff' : '#666'"
+              stroke-width="2"
+              class="compass-direction south"
+              @click="selectDirection('TB', true)"
+              title="Downward causality"
+            />
+            
+            <!-- West (RL - Right to Left) -->
+            <path 
+              d="M 60 45 L 8 60 L 60 75 Z" 
+              :fill="selectedDirection === 'RL' ? '#007bff' : 'white'"
+              :stroke="selectedDirection === 'RL' ? '#007bff' : '#666'"
+              stroke-width="2"
+              class="compass-direction west"
+              @click="selectDirection('RL', true)"
+              title="Leftward causality"
+            />
+            
+            <!-- Center circle -->
+            <circle 
+              cx="60" 
+              cy="60" 
+              r="12" 
+              fill="white" 
+              stroke="#666" 
+              stroke-width="2"
+            />
+            
+            <!-- Direction labels -->
+            <text x="60" y="18" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#666" font-weight="bold">N</text>
+            <text x="102" y="65" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#666" font-weight="bold">E</text>
+            <text x="60" y="108" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#666" font-weight="bold">S</text>
+            <text x="18" y="65" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#666" font-weight="bold">W</text>
+            
+            <!-- Subdirection labels (non-clickable) -->
+            <!-- <text x="85" y="25" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#999">NE</text> -->
+            <!-- <text x="95" y="95" text-anchor="middle" font-family="Arial, sans-serif" font-size="8" fill="#999">SE</text> -->
+          </svg>
         </div>
       </Panel>
 
@@ -1089,64 +1149,28 @@ onEdgeMouseLeave(({ edge }) => {
   gap: 10px;
 }
 
-.compass-panel {
-  /* margin: 20px; */
-  padding: 0px;
-}
-
 .compass-container {
-  display: grid;
-  grid-template-areas:
-    ". top ."
-    "left . right"
-    ". bottom .";
-  gap: 0px; /* Adjusted gap between buttons */
-  justify-items: center;
-  align-items: center;
-}
-
-.compass-button {
-  width: 19px; /* Slightly bigger than the icons */
-  height: 19px;
-  /* display: flex; */
+  display: flex;
   justify-content: center;
   align-items: center;
-  background-color: var(--node-color);
-  border: 1px solid var(--border-color); /* Ensure buttons are visible */
-  padding: 0;
-  line-height: 0px; /* Center the icon vertically */
-  text-align: center; /* Center the icon horizontally */
-  border-radius: 15%; /* Make the button round */
-  opacity: 0.8; /* Slightly transparent */
 }
 
-.compass-button.top {
-  /* margin-top: -5px; */
-  margin-top: -10px;
-  grid-area: top;
+.compass-svg {
+  cursor: pointer;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
 }
 
-.compass-button.left {
-  grid-area: left;
+.compass-direction {
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
 }
 
-.compass-button.bottom {
-  grid-area: bottom;
+.compass-direction:hover {
+  stroke-width: 3;
+  filter: brightness(1.1);
 }
 
-.compass-button.right {
-  grid-area: right;
-
-  margin-right: -10px; /* Wider margin to the right */
-}
-
-.compass-button.selected {
-  background-color: #007bff; /* Change to your preferred color */
-  color: white;
-}
-
-.compass-button svg {
-  width: 10px; /* Icon size */
-  height: 10px;
+.compass-rose {
+  pointer-events: none;
 }
 </style>

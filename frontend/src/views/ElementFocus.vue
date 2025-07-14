@@ -415,21 +415,19 @@ export default {
 .focus {
   display: flex;
   height: 100%;
-  /* flex-grow: 1; */
-  /* border: 1px solid blue; */
+  overflow: hidden;
 }
 
 /* Left panel holds the info and rating cards */
 .left-panel {
   width: 400px; /* Adjust width as needed */
-  padding: 4px 4px 2px 4px;
+  padding: 0 2px 0 0;
   box-sizing: border-box;
-  /* border-right: 1px solid green; */
   overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
-  gap: 5px; /* Space between cards */
-  /* border: 1px solid var(--border-color); */
+  gap: 4px; /* Space between cards */
 }
 
 /* Card styling for left panel cards */
@@ -438,17 +436,17 @@ export default {
   border-radius: 5px;
   padding: 10px;
   margin: 0px;
-  /* background-color: var(--background-color); */
 }
 
 /* Right panel for subgraph renderer; ensures full available space */
 .right-panel {
   flex: 1;
-  padding: 3px 9px 4px 2px;
-  box-sizing: border-box; /* Include padding in height calculations */
-  overflow-y: auto;
-  overflow-x: hidden; /* Prevent horizontal scrolling */
-  /* border: 1px solid red; */
+  padding-left: 2px;
+  padding-right: 10px;
+  padding: 1px 11px 1px 3px;
+  box-sizing: border-box;
+  overflow: hidden;
+  min-width: 0;
 }
 .error-message {
   font-weight: bold;

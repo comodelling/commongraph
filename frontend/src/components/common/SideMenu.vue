@@ -76,19 +76,18 @@ export default {
 
 <style scoped>
 .side-menu {
-  width: 150px;
-  min-width: 150px;
-  height: calc(100vh - 9px);
+  width: 120px;
+  min-width: 100px;
+  height: 100%;
   box-sizing: border-box;
-  /* box-sizing: border-box; */
+  overflow-x: hidden;
   overflow-y: auto;
   border: 1px solid var(--border-color);
   background-color: var(--background-color);
   border-radius: 5px;
   padding: 10px;
   font-size: 12px;
-  margin: 4px 2px 5px 6px;
-  padding-top: 50px;
+  margin: 0 4px 2px 0;
 }
 .side-menu .title {
   font-size: 20px;

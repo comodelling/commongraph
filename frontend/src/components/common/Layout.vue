@@ -77,20 +77,17 @@ export default {
 .layout {
   display: flex;
   flex: 1;
-  width: 100vw;
+  padding: 4px 4px 4px 4px;
   overflow: hidden;
   background-color: var(--background-color);
   transition: all 0.3s ease;
-}
-
-.layout.menu-collapsed {
-  /* Layout adjustments when menu is collapsed - styles can be added here if needed */
 }
 
 .main-content {
   flex: 1;
   background-color: var(--background-color);
   border-radius: 5px;
+  margin: 0 0 2px 2px;
   overflow-y: auto;
 }
 

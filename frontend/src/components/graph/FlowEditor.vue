@@ -1027,8 +1027,12 @@ onEdgeMouseLeave(({ edge }) => {
 .subgraph-renderer {
   flex-grow: 1;
   border: 1px solid var(--border-color);
-  margin: 1px;
   border-radius: 5px;
+  width: 100%;
+  height: 100%;
+  min-height: 300px;
+  min-width: 300px;
+  overflow: hidden;
 }
 
 .search-bar-container {
@@ -1144,14 +1148,5 @@ onEdgeMouseLeave(({ edge }) => {
 .compass-button svg {
   width: 10px; /* Icon size */
   height: 10px;
-}
-.subgraph-renderer {
-  width: 100%; /* Ensure it fits inside the parent */
-  height: 99.5%;
-  min-height: 300px;
-  min-width: 300px;
-  /* border: 1px solid red; */
-  /* overflow-y: hidden; */
-  overflow-x: auto;
 }
 </style>

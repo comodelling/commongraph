@@ -7,14 +7,14 @@
       <p class="tagline">
         {{ tagline }}
       </p>
-      <div class="search-container">
+      <!-- <div class="search-container">
         <SearchBar
           class="wide-search"
           @search="goToSearch"
           style="max-width: 600px; width: 450px"
         />
       </div>
-      <!-- <div class="graph-container">
+      <div class="graph-container">
         <SigmaGraphVis
           :height="'500px'"
           :show-controls="true"
@@ -31,7 +31,7 @@
 <script>
 import { onMounted } from "vue";
 import SearchBar from "../components/common/SearchBar.vue";
-// import SigmaGraphVis from "../components/graph/SigmaGraphVis.vue";
+import SigmaGraphVis from "../components/graph/SigmaGraphVis.vue";
 import { buildSearchParams } from "../utils/searchParser.js";
 import { useConfig } from "../composables/useConfig";
 
@@ -73,12 +73,14 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 100vh;
+  height: 100%;
 }
 
 .content {
   text-align: center;
-  margin: 0 20px;
+  margin: 0 auto;
+  max-width: 600px;
+  padding: 0 20px;
 }
 
 .tagline {
@@ -106,5 +108,4 @@ export default {
   color: inherit;
   cursor: pointer;
 }
-
 </style>

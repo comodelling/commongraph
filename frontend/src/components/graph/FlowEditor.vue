@@ -98,19 +98,11 @@ const showSearchBar = ref(false);
 const searchBarPosition = ref({ x: 0, y: 0 });
 const searchResults = ref(null);
 const selectedDirection = ref(previousDirection.value || null);
-const hoveredDirection = ref(null);
 
 const currentNodeIds = computed(() => {
   return new Set(nodes.value.map((node) => node.id));
 });
 
-function onCompassHover(direction) {
-  hoveredDirection.value = direction;
-}
-
-function onCompassLeave() {
-  hoveredDirection.value = null;
-}
 
 onInit((vueFlowInstance) => {
   // instance is the same as the return of `useVueFlow`
@@ -1011,95 +1003,26 @@ onEdgeMouseLeave(({ edge }) => {
               <line x1="98.8" y1="21.2" x2="21.2" y2="98.8" stroke="#eee" stroke-width="1"/>
             </g>
             
-            <!-- Clickable quadrant areas (invisible but larger for easier clicking) -->
-            <!-- North quadrant (BT - Bottom to Top) -->
-            <path 
-              d="M 60 60 L 15 15 L 60 2 L 105 15 Z" 
-              fill="transparent"
-              class="compass-quadrant north-quadrant"
-              @click="selectDirection('BT', true)"
-              @mouseenter="onCompassHover('BT')"
-              @mouseleave="onCompassLeave"
-              title="Upward causality"
-            />
+            <!-- Combined quadrant groups for click and hover -->
+            <g class="quadrant north" @click="selectDirection('BT', true)" title="Upward causality">
+              <path d="M 60 60 L 15 15 L 60 2 L 105 15 Z" fill="transparent" class="compass-quadrant"/>
+              <path d="M 60 60 L 45 45 L 60 8 L 75 45 Z" :fill="selectedDirection==='BT'?'#007bff':'white'" :stroke="selectedDirection==='BT'?'#007bff':'#666'" :stroke-width="selectedDirection==='BT'?3:2" class="compass-direction" pointer-events="none"/>
+            </g>
             
-            <!-- East quadrant (LR - Left to Right) -->
-            <path 
-              d="M 60 60 L 105 15 L 118 60 L 105 105 Z" 
-              fill="transparent"
-              class="compass-quadrant east-quadrant"
-              @click="selectDirection('LR', true)"
-              @mouseenter="onCompassHover('LR')"
-              @mouseleave="onCompassLeave"
-              title="Rightward causality"
-            />
+            <g class="quadrant east" @click="selectDirection('LR', true)" title="Rightward causality">
+              <path d="M 60 60 L 105 15 L 118 60 L 105 105 Z" fill="transparent" class="compass-quadrant"/>
+              <path d="M 60 60 L 75 45 L 112 60 L 75 75 Z" :fill="selectedDirection==='LR'?'#007bff':'white'" :stroke="selectedDirection==='LR'?'#007bff':'#666'" :stroke-width="selectedDirection==='LR'?3:2" class="compass-direction" pointer-events="none"/>
+            </g>
             
-            <!-- South quadrant (TB - Top to Bottom) -->
-            <path 
-              d="M 60 60 L 105 105 L 60 118 L 15 105 Z" 
-              fill="transparent"
-              class="compass-quadrant south-quadrant"
-              @click="selectDirection('TB', true)"
-              @mouseenter="onCompassHover('TB')"
-              @mouseleave="onCompassLeave"
-              title="Downward causality"
-            />
+            <g class="quadrant south" @click="selectDirection('TB', true)" title="Downward causality">
+              <path d="M 60 60 L 105 105 L 60 118 L 15 105 Z" fill="transparent" class="compass-quadrant"/>
+              <path d="M 60 60 L 75 75 L 60 112 L 45 75 Z" :fill="selectedDirection==='TB'?'#007bff':'white'" :stroke="selectedDirection==='TB'?'#007bff':'#666'" :stroke-width="selectedDirection==='TB'?3:2" class="compass-direction" pointer-events="none"/>
+            </g>
             
-            <!-- West quadrant (RL - Right to Left) -->
-            <path 
-              d="M 60 60 L 15 105 L 2 60 L 15 15 Z" 
-              fill="transparent"
-              class="compass-quadrant west-quadrant"
-              @click="selectDirection('RL', true)"
-              @mouseenter="onCompassHover('RL')"
-              @mouseleave="onCompassLeave"
-              title="Leftward causality"
-            />
-
-            <!-- Visual directional shapes (diamond/kite from center) -->
-            <!-- North (BT - Bottom to Top) -->
-            <path 
-              d="M 60 60 L 45 45 L 60 8 L 75 45 Z" 
-              :fill="selectedDirection === 'BT' ? '#007bff' : 'white'"
-              :stroke="selectedDirection === 'BT' ? '#007bff' : '#666'"
-              :stroke-width="selectedDirection === 'BT' || hoveredDirection === 'BT' ? 3 : 2"
-              class="compass-direction north"
-              :class="{ 'hovered': hoveredDirection === 'BT' }"
-              pointer-events="none"
-            />
-            
-            <!-- East (LR - Left to Right) -->
-            <path 
-              d="M 60 60 L 75 45 L 112 60 L 75 75 Z" 
-              :fill="selectedDirection === 'LR' ? '#007bff' : 'white'"
-              :stroke="selectedDirection === 'LR' ? '#007bff' : '#666'"
-              :stroke-width="selectedDirection === 'LR' || hoveredDirection === 'LR' ? 3 : 2"
-              class="compass-direction east"
-              :class="{ 'hovered': hoveredDirection === 'LR' }"
-              pointer-events="none"
-            />
-            
-            <!-- South (TB - Top to Bottom) -->
-            <path 
-              d="M 60 60 L 75 75 L 60 112 L 45 75 Z" 
-              :fill="selectedDirection === 'TB' ? '#007bff' : 'white'"
-              :stroke="selectedDirection === 'TB' ? '#007bff' : '#666'"
-              :stroke-width="selectedDirection === 'TB' || hoveredDirection === 'TB' ? 3 : 2"
-              class="compass-direction south"
-              :class="{ 'hovered': hoveredDirection === 'TB' }"
-              pointer-events="none"
-            />
-            
-            <!-- West (RL - Right to Left) -->
-            <path 
-              d="M 60 60 L 45 75 L 8 60 L 45 45 Z" 
-              :fill="selectedDirection === 'RL' ? '#007bff' : 'white'"
-              :stroke="selectedDirection === 'RL' ? '#007bff' : '#666'"
-              :stroke-width="selectedDirection === 'RL' || hoveredDirection === 'RL' ? 3 : 2"
-              class="compass-direction west"
-              :class="{ 'hovered': hoveredDirection === 'RL' }"
-              pointer-events="none"
-            />
+            <g class="quadrant west" @click="selectDirection('RL', true)" title="Leftward causality">
+              <path d="M 60 60 L 15 105 L 2 60 L 15 15 Z" fill="transparent" class="compass-quadrant"/>
+              <path d="M 60 60 L 45 75 L 8 60 L 45 45 Z" :fill="selectedDirection==='RL'?'#007bff':'white'" :stroke="selectedDirection==='RL'?'#007bff':'#666'" :stroke-width="selectedDirection==='RL'?3:2" class="compass-direction" pointer-events="none"/>
+            </g>
             
             <!-- Discrete center lines to summits -->
             <line x1="60" y1="60" x2="60" y2="8" stroke="#999" stroke-width="1" class="compass-indicator"/>
@@ -1207,6 +1130,13 @@ onEdgeMouseLeave(({ edge }) => {
 
 .compass-direction {
   transition: all 0.2s ease-in-out;
+}
+
+.quadrant:hover .compass-direction {
+  stroke-width: 5 !important;
+  filter: brightness(1.5);
+  /* background-color: blue !important */
+  /* filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1)); */
 }
 
 .compass-direction.hovered {

@@ -108,4 +108,8 @@ export default {
   color: inherit;
   cursor: pointer;
 }
+
+.platform-link:hover {
+  color: #646cff;
+}
 </style>

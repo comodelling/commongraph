@@ -1,8 +1,8 @@
 # CommonGraph
 
-*CommonGraph* is a software project empowering groups to build graph-based platforms for sharing knowledge and informing decisions.
+*CommonGraph* is a software project empowering groups to build graph-based platforms for knowledge co-production and better-informed decisions.
 
-You will find more information in the dedicated [documentation](https://docs.commongraph.org).
+You will find more information in the [documentation](https://docs.commongraph.org).
 
 
 ## Contributing

@@ -69,6 +69,8 @@ export default {
     // Get environment variables for external links
     const repoUrl = import.meta.env.VITE_REPO_URL;
     const docUrl = import.meta.env.VITE_DOC_URL;
+    console.log('Repo URL:', repoUrl);
+    console.log('Doc URL:', docUrl);
 
     const toggleSideMenu = () => {
       emit('toggle-side-menu');

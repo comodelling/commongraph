@@ -9,15 +9,15 @@
         <div class="theme-selector">
           <label>
             <strong>Preferred Theme:</strong>
-            <input type="radio" value="system" v-model="preferredTheme" />
+            <input type="radio" value="system" v-model="currentTheme" />
             System Default
           </label>
           <label>
-            <input type="radio" value="light" v-model="preferredTheme" />
+            <input type="radio" value="light" v-model="currentTheme" />
             Light
           </label>
           <label>
-            <input type="radio" value="dark" v-model="preferredTheme" />
+            <input type="radio" value="dark" v-model="currentTheme" />
             Dark
           </label>
         </div>
@@ -40,6 +40,7 @@ import { ref, onMounted, watch } from "vue";
 import api from "../api/axios";
 import router from "../router";
 import { useAuth } from "../composables/useAuth";
+import { useTheme } from "../composables/useTheme";
 
 export default {
   setup() {
@@ -47,37 +48,8 @@ export default {
     const loading = ref(true);
     const error = ref(null);
     const { getAccessToken, clearTokens } = useAuth();
-    const preferredTheme = ref("system");
+    const { currentTheme, setTheme, loadUserTheme } = useTheme();
     const token = getAccessToken();
-
-    const applyTheme = (theme) => {
-      if (theme === "system") {
-        const systemPrefersDark = window.matchMedia(
-          "(prefers-color-scheme: dark)",
-        ).matches;
-        document.body.classList.toggle("dark", systemPrefersDark);
-      } else {
-        document.body.classList.toggle("dark", theme === "dark");
-      }
-    };
-
-    watch(preferredTheme, async (newTheme) => {
-      applyTheme(newTheme);
-      localStorage.setItem("theme", newTheme);
-
-      if (token) {
-        try {
-          const response = await api.patch(
-            `/users/preferences`,
-            { theme: newTheme },
-            { headers: { Authorization: `Bearer ${token}` } },
-          );
-          user.value = response.data;
-        } catch (err) {
-          error.value = "Failed to update preferences.";
-        }
-      }
-    });
 
     const fetchUser = async () => {
       loading.value = true;
@@ -88,11 +60,10 @@ export default {
           { headers: { Authorization: `Bearer ${token}` } },
         );
         user.value = response.data;
-        preferredTheme.value =
-          user.value.preferences?.theme ||
-          localStorage.getItem("theme") ||
-          "system";
-        applyTheme(preferredTheme.value);
+        // Load user's theme preference from the backend
+        if (user.value.preferences?.theme) {
+          setTheme(user.value.preferences.theme);
+        }
       } catch (err) {
         error.value = "Failed to fetch user settings.";
       } finally {
@@ -117,8 +88,6 @@ export default {
       if (token) {
         fetchUser();
       } else {
-        preferredTheme.value = localStorage.getItem("theme") || "system";
-        applyTheme(preferredTheme.value);
         error.value = "Not authenticated. Please log in.";
         loading.value = false;
       }
@@ -129,7 +98,7 @@ export default {
       loading,
       error,
       logout,
-      preferredTheme,
+      currentTheme,
       navigateToUpdateSecurityQuestion,
       navigateToUpdatePassword,
     };

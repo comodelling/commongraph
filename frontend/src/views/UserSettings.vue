@@ -25,6 +25,10 @@
           Update Security Question
         </button>
         <br /><br />
+        <button @click="navigateToUpdatePassword">
+          Change Password
+        </button>
+        <br /><br />
         <button @click="logout">Logout</button>
       </div>
     </div>
@@ -105,6 +109,10 @@ export default {
       router.push("/update-security-question");
     };
 
+    const navigateToUpdatePassword = () => {
+      router.push("/update-password");
+    };
+
     onMounted(() => {
       if (token) {
         fetchUser();
@@ -122,7 +130,8 @@ export default {
       error,
       logout,
       preferredTheme,
-      navigateToUpdateSecurityQuestion: navigateToUpdateSecurityQuestion,
+      navigateToUpdateSecurityQuestion,
+      navigateToUpdatePassword,
     };
   },
 };
@@ -139,5 +148,4 @@ export default {
 .form-wrapper {
   width: 450px;
 }
-
 </style>

@@ -1,13 +1,20 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List
+from pydantic import BaseModel, Field
 
 from backend.api.auth import get_current_user, get_user_db, logger, router
 from backend.db.base import UserDatabaseInterface
 from backend.db.connections import get_user_db
 from backend.models.fixed import User, UserRead
+from backend.utils.security import verify_password, hash_password
 
 
 router = APIRouter(prefix="/users", tags=["users"])
+
+
+class UpdatePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str = Field(..., min_length=6)
 
 
 @router.get("/me", response_model=UserRead)
@@ -26,6 +33,33 @@ def update_preferences(
     updated_user = db.update_preferences(current_user.username, prefs)
     logger.info(f"Preferences updated for user: {current_user.username}")
     return updated_user
+
+
+@router.patch("/password", response_model=dict)
+def update_password(
+    password_request: UpdatePasswordRequest,
+    current_user: UserRead = Depends(get_current_user),
+    db: UserDatabaseInterface = Depends(get_user_db),
+):
+    logger.info(f"Updating password for user: {current_user.username}")
+    
+    # Get the full user record (including password hash)
+    user = db.get_user(current_user.username)
+    if not user:
+        logger.warning(f"User not found while updating password: {current_user.username}")
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Verify current password
+    if not verify_password(password_request.current_password, user.password):
+        logger.warning(f"Incorrect current password for user: {current_user.username}")
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+    
+    # Update password with new hashed password
+    user.password = hash_password(password_request.new_password)
+    db.update_user(user)
+    
+    logger.info(f"Password updated successfully for user: {current_user.username}")
+    return {"message": "Password updated successfully"}
 
 
 @router.patch("/security-settings", response_model=UserRead)

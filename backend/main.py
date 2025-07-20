@@ -34,16 +34,21 @@ async def lifespan(app: FastAPI):
     if admin_user and admin_pw:
         db = UserPostgreSQLDB(settings.POSTGRES_DB_URL)
         if not db.get_user(admin_user):
+            logger.info(f"Creating initial super admin user: {admin_user}")
             db.create_user(
                 UserCreate(
                     username=admin_user,
                     password=admin_pw,
                     is_active=True,
                     is_admin=True,
+                    is_super_admin=True,  # First user gets super admin privileges
                     security_question=None,
                     security_answer=None,
                 )
             )
+            logger.info(f"Initial super admin user created successfully: {admin_user}")
+        else:
+            logger.info(f"Initial admin user already exists: {admin_user}")
     
     # Initialize schema in database
     from backend.db.connections import get_graph_history_db

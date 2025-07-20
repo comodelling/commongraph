@@ -108,7 +108,7 @@ def list_users(
     current_user: UserRead = Depends(get_current_user),
     db: UserDatabaseInterface = Depends(get_user_db),
 ) -> List[UserRead]:
-    if not current_user.is_admin:
+    if not (current_user.is_admin or current_user.is_super_admin):
         raise HTTPException(status_code=403, detail="Not authorized")
     return db.list_users()
 
@@ -119,7 +119,7 @@ def approve_user(
     current_user: UserRead = Depends(get_current_user),
     db: UserDatabaseInterface = Depends(get_user_db),
 ) -> UserRead:
-    if not current_user.is_admin:
+    if not (current_user.is_admin or current_user.is_super_admin):
         raise HTTPException(status_code=403, detail="Not authorized")
     user = db.get_user(username)
     if not user:
@@ -134,10 +134,47 @@ def promote_user(
     current_user: UserRead = Depends(get_current_user),
     db: UserDatabaseInterface = Depends(get_user_db),
 ) -> UserRead:
-    if not current_user.is_admin:
+    if not (current_user.is_admin or current_user.is_super_admin):
         raise HTTPException(status_code=403, detail="Not authorized")
     user = db.get_user(username)
     if not user:
         raise HTTPException(404, "User not found")
     user.is_admin = True
+    return db.update_user(user)
+
+
+@router.patch("/{username}/demote", response_model=UserRead)
+def demote_user(
+    username: str,
+    current_user: UserRead = Depends(get_current_user),
+    db: UserDatabaseInterface = Depends(get_user_db),
+) -> UserRead:
+    if not (current_user.is_admin or current_user.is_super_admin):
+        raise HTTPException(status_code=403, detail="Not authorized")
+    user = db.get_user(username)
+    if not user:
+        raise HTTPException(404, "User not found")
+    # Super admins cannot be demoted
+    if user.is_super_admin:
+        raise HTTPException(status_code=403, detail="Cannot demote super admins")
+    user.is_admin = False
+    return db.update_user(user)
+
+
+@router.patch("/{username}/super-admin", response_model=UserRead)
+def toggle_super_admin(
+    username: str,
+    current_user: UserRead = Depends(get_current_user),
+    db: UserDatabaseInterface = Depends(get_user_db),
+) -> UserRead:
+    # Only existing super admins can manage super admin status
+    if not current_user.is_super_admin:
+        raise HTTPException(status_code=403, detail="Only super admins can manage super admin status")
+    user = db.get_user(username)
+    if not user:
+        raise HTTPException(404, "User not found")
+    user.is_super_admin = not user.is_super_admin
+    # If promoting to super admin, also grant admin rights
+    if user.is_super_admin:
+        user.is_admin = True
     return db.update_user(user)

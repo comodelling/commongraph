@@ -6,6 +6,7 @@ const state = reactive({
   accessToken: localStorage.getItem("accessToken") || null,
   refreshToken: localStorage.getItem("refreshToken") || null,
   isAdmin: false,
+  isSuperAdmin: false,
 });
 
 async function loadUser() {
@@ -17,11 +18,14 @@ async function loadUser() {
     if (res.ok) {
       const data = await res.json();
       state.isAdmin = data.is_admin;
+      state.isSuperAdmin = data.is_super_admin;
     } else {
       state.isAdmin = false;
+      state.isSuperAdmin = false;
     }
   } catch {
     state.isAdmin = false;
+    state.isSuperAdmin = false;
   }
 }
 
@@ -46,12 +50,15 @@ export function useAuth() {
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
     state.isAdmin = false;
+    state.isSuperAdmin = false;
   };
 
   const getAccessToken = () => state.accessToken;
   const getRefreshToken = () => state.refreshToken;
 
   const isAdmin = computed(() => state.isAdmin);
+  const isSuperAdmin = computed(() => state.isSuperAdmin);
+  const hasAdminRights = computed(() => state.isAdmin || state.isSuperAdmin);
 
   return {
     isLoggedIn,
@@ -60,5 +67,7 @@ export function useAuth() {
     getAccessToken,
     getRefreshToken,
     isAdmin,
+    isSuperAdmin,
+    hasAdminRights,
   };
 }

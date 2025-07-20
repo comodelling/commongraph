@@ -27,7 +27,7 @@ async function load() {
     platformName.value = data.platform_name;
     tagline.value = data.tagline;
     configLoaded.value = true;
-    console.log("Config loaded:", data);
+    console.log("Config loaded");
   } catch (error) {
     console.error("Failed to load meta config", error);
   }

@@ -30,8 +30,8 @@
           />
         </label>
         <label title="Recommended for password reset">
-          Security Question (recommended):
-          <select v-model="securityQuestion">
+          Security Question:
+          <select v-model="securityQuestion" required>
             <option value="">Please select a security question</option>
             <option value="What is your mother's maiden name?">
               What is your mother's maiden name?

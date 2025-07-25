@@ -69,7 +69,12 @@ export default {
 
     const logout = () => {
       clearTokens();
-      router.push('/login');
+      // if page is favourites or settings, redirect to login
+      if (router.currentRoute.value.path === "/favourites" || router.currentRoute.value.path === "/settings" 
+          || router.currentRoute.value.path === "/admin/users" || router.currentRoute.value.path.startsWith("/node/new")
+          || router.currentRoute.value.path.startsWith("/edge/new")) {
+        router.push("/login");
+      }
     };
 
     return {

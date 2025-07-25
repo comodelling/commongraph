@@ -2,7 +2,7 @@ import datetime
 from typing import Annotated
 import logging
 
-from fastapi import Depends, Query, status, APIRouter
+from fastapi import Depends, Query, status, APIRouter, HTTPException
 
 from backend.api.auth import get_current_user
 from backend.config import EDGE_TYPE_BETWEEN, EDGE_TYPE_PROPS, NODE_TYPE_PROPS
@@ -44,6 +44,13 @@ def update_subgraph(
     user: UserRead = Depends(get_current_user),
 )  -> DynamicSubgraph:
     """Add missing nodes and edges and update existing ones (given IDs)."""
+    
+    if user.is_admin or user.is_super_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Insufficient permissions to edit the graph.",
+        )
+    
     out_subgraph = db_history.update_graph(subgraph, username=user.username)
     if db_graph is not None:
         db_graph.update_graph(subgraph)
@@ -59,6 +66,12 @@ def reset_whole_graph(
     user: UserRead = Depends(get_current_user),
 ) -> None:
     """Delete all nodes and edges. Be careful!"""
+    # ensure user is superadmin
+    if not user.is_super_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only super admins can reset the whole graph.",
+        )
     db_history.reset_whole_graph(username=user.username)
     if db_graph is not None:
         db_graph.reset_whole_graph()

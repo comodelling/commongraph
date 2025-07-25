@@ -91,7 +91,8 @@ async def get_current_user(
         return UserRead(
             username="anonymous", 
             is_active=False, 
-            is_admin=False
+            is_admin=False,
+            is_super_admin=False
         )
     logger.info("Validating current user from token")
     credentials_exception = HTTPException(

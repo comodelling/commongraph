@@ -69,6 +69,7 @@ class UserPostgreSQLDB(UserDatabaseInterface):
                 preferences=db_user.preferences,
                 is_active=db_user.is_active,
                 is_admin=db_user.is_admin,
+                is_super_admin=db_user.is_super_admin,
             )
 
     def get_user(self, username: str) -> User | None:
@@ -87,6 +88,7 @@ class UserPostgreSQLDB(UserDatabaseInterface):
                 preferences=user.preferences,
                 is_active=user.is_active,
                 is_admin=user.is_admin,
+                is_super_admin=user.is_super_admin,
             )
 
     def update_preferences(self, username: str, new_prefs: dict) -> UserRead:
@@ -114,6 +116,7 @@ class UserPostgreSQLDB(UserDatabaseInterface):
                 preferences=user.preferences,
                 is_active=user.is_active,
                 is_admin=user.is_admin,
+                is_super_admin=user.is_super_admin,
             )
 
     def reset_user_table(self):
@@ -132,6 +135,7 @@ class UserPostgreSQLDB(UserDatabaseInterface):
                     preferences=u.preferences,
                     is_active=u.is_active,
                     is_admin=u.is_admin,
+                    is_super_admin=u.is_super_admin,
                 )
                 for u in results
             ]

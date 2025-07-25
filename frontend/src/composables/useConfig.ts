@@ -9,9 +9,10 @@ const tagline       = ref<string>("");
 const configLoaded  = ref(false);
 const nodePollTypes = ref<Record<string, any>>({});
 const edgePollTypes = ref<Record<string, any>>({});
+const permissions   = ref<Record<string, boolean>>({});
 
-async function load() {
-  if (configLoaded.value) return;
+async function load(forceReload = false) {
+  if (configLoaded.value && !forceReload) return;
   try {
     const { data } = await api.get("/config");
     nodeTypes.value    = data.node_types;
@@ -26,11 +27,21 @@ async function load() {
     }, {});
     platformName.value = data.platform_name;
     tagline.value = data.tagline;
+    permissions.value = data.permissions || {};
     configLoaded.value = true;
-    console.log("Config loaded:", data);
+    console.log("Config loaded", forceReload ? "(forced reload)" : "");
   } catch (error) {
     console.error("Failed to load meta config", error);
   }
+}
+
+function clearCache() {
+  configLoaded.value = false;
+}
+
+// Export for use by other composables
+export function reloadConfig() {
+  return load(true);
 }
 
 
@@ -45,11 +56,18 @@ export function useConfig() {
     return edgeTypes.value[type]?.polls || {};
   }
 
+  // Permission helpers
+  const canCreate = computed(() => permissions.value.create || false);
+  const canEdit = computed(() => permissions.value.edit || false);
+  const canDelete = computed(() => permissions.value.delete || false);
+  const canRate = computed(() => permissions.value.rate || false);
+
   return {
-    load, 
+    load, clearCache, reloadConfig: () => load(true),
     nodeTypes, edgeTypes, platformName, tagline, configLoaded,
     defaultNodeType, defaultEdgeType,
     nodePollTypes, edgePollTypes,
     getNodePolls, getEdgePolls,
+    permissions, canCreate, canEdit, canDelete, canRate,
   };
 }

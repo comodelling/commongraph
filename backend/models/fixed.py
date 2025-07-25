@@ -50,6 +50,10 @@ class User(SQLModel, table=True):
         default=False,
         description="Global admin user"
     )
+    is_super_admin: bool = Field(
+        default=False,
+        description="Super admin user with permanent admin rights that cannot be revoked"
+    )
 
 
 class UserRead(SQLModel):
@@ -57,6 +61,7 @@ class UserRead(SQLModel):
     preferences: Dict[str, Any] | None = Field(default_factory=dict)
     is_active: bool
     is_admin: bool
+    is_super_admin: bool
 
 
 class UserCreate(SQLModel):
@@ -76,6 +81,10 @@ class UserCreate(SQLModel):
     is_admin: bool = Field(
         default=False,
         description="grant admin rights"
+    )
+    is_super_admin: bool = Field(
+        default=False,
+        description="grant super admin rights"
     )
 
 class EntityState(str, Enum):

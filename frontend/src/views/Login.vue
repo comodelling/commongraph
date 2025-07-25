@@ -64,7 +64,6 @@ export default {
           accessToken: response.data.access_token,
           refreshToken: response.data.refresh_token,
         });
-        console.log("Access token:", getAccessToken());
         router.push("/settings");
       } catch (err) {
         error.value = "Login failed. Check your credentials.";

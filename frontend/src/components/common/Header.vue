@@ -26,14 +26,17 @@
 
     <!-- Right side links -->
     <div class="header-right">
-      <a v-if="repoUrl" :href="repoUrl" target="_blank" class="header-link" title="View source code">
+      <!-- Theme toggle -->
+      <ThemeToggle />
+      
+      <a v-if="repoUrl" :href="repoUrl" target="_blank" class="header-link" title="Go to source code">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
         </svg>
         <!-- <span>Code</span> -->
       </a>
       
-      <a v-if="docUrl" :href="docUrl" target="_blank" class="header-link" title="View documentation">
+      <a v-if="docUrl" :href="docUrl" target="_blank" class="header-link" title="Go to documentation">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
           <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
@@ -46,13 +49,17 @@
 
 <script>
 import { useRouter, useRoute } from "vue-router";
+import { watch, onMounted } from "vue";
 import { useConfig } from "../../composables/useConfig";
-import { parseSearchQuery } from "../../utils/searchParser.js";
+import { useAuth } from "../../composables/useAuth";
+import { useTheme } from "../../composables/useTheme";
 import SearchBar from "./SearchBar.vue";
+import ThemeToggle from "./ThemeToggle.vue";
 
 export default {
   components: {
-    SearchBar
+    SearchBar,
+    ThemeToggle
   },
   props: {
     isSideMenuOpen: {
@@ -65,12 +72,26 @@ export default {
     const router = useRouter();
     const route = useRoute();
     const { platformName } = useConfig();
+    const { isLoggedIn } = useAuth();
+    const { loadUserTheme } = useTheme();
 
     // Get environment variables for external links
     const repoUrl = import.meta.env.VITE_REPO_URL;
     const docUrl = import.meta.env.VITE_DOC_URL;
-    console.log('Repo URL:', repoUrl);
-    console.log('Doc URL:', docUrl);
+
+    // Watch for login status changes and load user theme
+    watch(isLoggedIn, (newIsLoggedIn) => {
+      if (newIsLoggedIn) {
+        loadUserTheme();
+      }
+    });
+
+    // Load user theme on component mount if already logged in
+    onMounted(() => {
+      if (isLoggedIn.value) {
+        loadUserTheme();
+      }
+    });
 
     const toggleSideMenu = () => {
       emit('toggle-side-menu');

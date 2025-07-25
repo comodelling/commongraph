@@ -11,6 +11,7 @@ import ResetPassword from "../views/ResetPassword.vue";
 import Favourites from "../views/Favourites.vue";
 import VerifySecurityQuestion from "../views/VerifySecurityQuestion.vue";
 import UpdateSecurityQuestion from "../views/UpdateSecurityQuestion.vue";
+import UpdatePassword from "../views/UpdatePassword.vue";
 import Schema from "../views/Schema.vue";
 import AdminUsers from "../views/AdminUsers.vue";
 import { useUnsaved } from "../composables/useUnsaved";
@@ -38,6 +39,11 @@ const routes = [
         path: "/update-security-question",
         name: "UpdateSecurityQuestion",
         component: UpdateSecurityQuestion,
+      },
+      {
+        path: "/update-password",
+        name: "UpdatePassword",
+        component: UpdatePassword,
       },
       {
         path: "/reset-password",

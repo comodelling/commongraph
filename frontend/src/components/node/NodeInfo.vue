@@ -13,8 +13,10 @@
           View
         </button>
         <button
-          :class="{ active: currentTab === 'edit' }"
-          @click="switchTab('edit')"
+          :class="{ active: currentTab === 'edit', disabled: !canEdit }"
+          @click="canEdit ? switchTab('edit') : null"
+          :disabled="!canEdit"
+          :title="canEdit ? 'Edit this node' : 'You need edit permissions to modify nodes'"
         >
           Edit
         </button>
@@ -63,9 +65,14 @@ import NodeInfoView from "./NodeInfoView.vue";
 import NodeInfoEdit from "./NodeInfoEdit.vue";
 import HistoryList from "../common/HistoryList.vue";
 import { useAuth } from "../../composables/useAuth";
+import { useConfig } from "../../composables/useConfig";
 import api from "../../api/axios";
 
 export default {
+  setup() {
+    const { canEdit } = useConfig();
+    return { canEdit };
+  },
   props: {
     node: {
       type: Object,
@@ -200,4 +207,5 @@ export default {
 .pane-header .tabs {
   margin-right: -20px;
 }
+
 </style>

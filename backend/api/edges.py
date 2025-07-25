@@ -4,6 +4,7 @@ import datetime
 from fastapi import Body, Depends, APIRouter, HTTPException, Query, status, Path
 
 from backend.api.auth import get_current_user
+from backend.utils.permissions import can_create, can_edit, can_delete, can_rate
 from backend.db.base import GraphDatabaseInterface, GraphHistoryRelationalInterface, RatingHistoryRelationalInterface
 from backend.db.connections import get_graph_db, get_graph_history_db, get_rating_history_db
 from backend.models.dynamic import DynamicEdge, EdgeTypeModels
@@ -102,6 +103,13 @@ def create_edge(
     user: UserRead = Depends(get_current_user),
 ) -> DynamicEdge: #type: ignore
     """Create an edge."""
+    # Check permissions
+    if not can_create(user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Insufficient permissions to create edges"
+        )
+    
     et = payload.get("edge_type")
     Model = EdgeTypeModels.get(et)
     if not Model:
@@ -123,6 +131,13 @@ def update_edge(
     user: UserRead = Depends(get_current_user),
 ) -> DynamicEdge: #type: ignore
     """Update the properties of an edge."""
+    # Check permissions
+    if not can_edit(user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Insufficient permissions to edit edges"
+        )
+    
     et = payload.get("edge_type")
     Model = EdgeTypeModels.get(et)
     if not Model:
@@ -174,6 +189,13 @@ def delete_edge(
     user: UserRead = Depends(get_current_user),
 ):
     """Delete the edge between two nodes and for an optional edge_type."""
+    # Check permissions
+    if not can_delete(user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Insufficient permissions to delete edges"
+        )
+    
     db_history.delete_edge(source_id, target_id, edge_type, username=user.username)
     if db_graph is not None:
         db_graph.delete_edge(source_id, target_id, edge_type)
@@ -209,6 +231,13 @@ def log_edge_rating(
     user: UserRead = Depends(get_current_user),
     db: RatingHistoryRelationalInterface = Depends(get_rating_history_db),
 ) -> RatingEvent:
+    # Check permissions
+    if not can_rate(user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Insufficient permissions to rate edges"
+        )
+    
     rating.entity_type = EntityType.edge
     rating.username = user.username
     rating.source_id = source_id

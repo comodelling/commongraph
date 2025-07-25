@@ -2,7 +2,14 @@
   <div class="side-menu">
     <div class="title">Menu</div>
     <router-link to="/">Main page</router-link><br />
-    <a href="#" @click="createNewNode">New node</a><br />
+    <a 
+      href="#" 
+      @click="canCreate ? createNewNode() : null" 
+      :class="{ disabled: !canCreate }"
+      :title="canCreate ? 'Create a new node' : 'You need create permissions to add new nodes'"
+    >
+      New node
+    </a><br />
     <a href="#" @click="fetchRandomNode">Random node</a><br />
     <router-link to="/schema">Graph schema</router-link><br />
     <router-link to="/about">About</router-link>
@@ -24,6 +31,7 @@
 <script>
 import { useRouter } from "vue-router";
 import { useAuth } from "../../composables/useAuth";
+import { useConfig } from "../../composables/useConfig";
 import api from "../../api/axios";
 
 
@@ -31,6 +39,7 @@ export default {
   setup() {
     const router = useRouter();
     const { isLoggedIn, isAdmin, clearTokens } = useAuth();
+    const { canCreate } = useConfig();
 
     const fetchRandomNode = async () => {
       try {
@@ -69,6 +78,7 @@ export default {
       logout,
       isLoggedIn,
       isAdmin,
+      canCreate,
     };
   },
 };
@@ -92,5 +102,16 @@ export default {
 .side-menu .title {
   font-size: 20px;
   font-weight: bold;
+}
+
+.side-menu .disabled {
+  color: #999;
+  cursor: not-allowed;
+  text-decoration: none;
+}
+
+.side-menu .disabled:hover {
+  color: #999;
+  text-decoration: none;
 }
 </style>

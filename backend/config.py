@@ -81,6 +81,13 @@ AUTH_CFG = _CONFIG.get("auth", {})
 ALLOW_SIGNUP = AUTH_CFG.get("allow_signup", True)
 SIGNUP_REQUIRES_ADMIN_APPROVAL = AUTH_CFG.get("signup_requires_admin_approval", False)
 
+# 7. Permissions configuration
+PERMISSIONS_CFG = _CONFIG.get("permissions", {})
+PERMISSION_CREATE = PERMISSIONS_CFG.get("create", "all")
+PERMISSION_EDIT = PERMISSIONS_CFG.get("edit", "all")
+PERMISSION_DELETE = PERMISSIONS_CFG.get("delete", "all")
+PERMISSION_RATE = PERMISSIONS_CFG.get("rate", "all")
+
 # Schema versioning configuration
 def _compute_config_hash(config: Dict[str, Any]) -> str:
     """Compute hash of the configuration for change detection"""

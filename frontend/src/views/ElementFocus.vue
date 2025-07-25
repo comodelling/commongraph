@@ -83,10 +83,10 @@ export default {
     SubgraphRenderer,
   },
   setup() {
-    const { nodeTypes, edgeTypes, defaultNodeType} = useConfig()
+    const { nodeTypes, edgeTypes, defaultNodeType, canCreate, canEdit } = useConfig()
  
     // nodeTypes & edgeTypes will be unwrapped when used in `this.*`
-    return { nodeTypes, edgeTypes, defaultNodeType}
+    return { nodeTypes, edgeTypes, defaultNodeType, canCreate, canEdit }
   },
 
   data() {
@@ -169,6 +169,12 @@ export default {
   // when opening a brand-new node, use defaultNodeType and only include allowed props
   async created() {
     if (this.isBrandNewNode) {
+      // Check permissions first
+      if (!this.canCreate) {
+        alert("You don't have permission to create nodes. Please log in with an account that has create permissions.");
+        this.$router.push({ name: "Home" });
+        return;
+      }
 
       console.log("Opening brand new node in focus");
       const type = this.defaultNodeType;

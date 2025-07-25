@@ -9,6 +9,7 @@ const tagline       = ref<string>("");
 const configLoaded  = ref(false);
 const nodePollTypes = ref<Record<string, any>>({});
 const edgePollTypes = ref<Record<string, any>>({});
+const permissions   = ref<Record<string, boolean>>({});
 
 async function load() {
   if (configLoaded.value) return;
@@ -26,6 +27,7 @@ async function load() {
     }, {});
     platformName.value = data.platform_name;
     tagline.value = data.tagline;
+    permissions.value = data.permissions || {};
     configLoaded.value = true;
     console.log("Config loaded");
   } catch (error) {
@@ -45,11 +47,18 @@ export function useConfig() {
     return edgeTypes.value[type]?.polls || {};
   }
 
+  // Permission helpers
+  const canCreate = computed(() => permissions.value.create || false);
+  const canEdit = computed(() => permissions.value.edit || false);
+  const canDelete = computed(() => permissions.value.delete || false);
+  const canRate = computed(() => permissions.value.rate || false);
+
   return {
     load, 
     nodeTypes, edgeTypes, platformName, tagline, configLoaded,
     defaultNodeType, defaultEdgeType,
     nodePollTypes, edgePollTypes,
     getNodePolls, getEdgePolls,
+    permissions, canCreate, canEdit, canDelete, canRate,
   };
 }

@@ -13,8 +13,10 @@
             View
           </button>
           <button
-            :class="{ active: currentTab === 'edit' }"
-            @click="switchTab('edit')"
+            :class="{ active: currentTab === 'edit', disabled: !canEdit }"
+            @click="canEdit ? switchTab('edit') : null"
+            :disabled="!canEdit"
+            :title="canEdit ? 'Edit this edge' : 'You need edit permissions to modify edges'"
           >
             Edit
           </button>
@@ -64,9 +66,14 @@
 import EdgeInfoView from "./EdgeInfoView.vue";
 import EdgeInfoEdit from "./EdgeInfoEdit.vue";
 import HistoryList from "../common/HistoryList.vue";
+import { useConfig } from "../../composables/useConfig";
 // import api from "../../api/axios";
 
 export default {
+  setup() {
+    const { canEdit } = useConfig();
+    return { canEdit };
+  },
   props: {
     edge: {
       type: Object,

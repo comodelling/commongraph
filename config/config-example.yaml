@@ -26,8 +26,9 @@ polls:
 auth:
   allow_signup: true                    # master on/off
   signup_requires_admin_approval: true  # freshly created users start inactive
-  require_login:
-    - create: false
-    - edit: false
-    - delete: false
-    - rate: true
+
+permissions: # all/loggedin/admin
+  create: all
+  edit: all
+  delete: all
+  rate: all

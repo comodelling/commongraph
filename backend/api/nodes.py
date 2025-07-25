@@ -4,6 +4,7 @@ import datetime
 from fastapi import Body, Depends, HTTPException, Query, APIRouter, status, Path
 
 from backend.api.auth import get_current_user
+from backend.utils.permissions import can_create, can_edit, can_delete, can_rate
 from backend.db.base import GraphDatabaseInterface, GraphHistoryRelationalInterface, RatingHistoryRelationalInterface
 from backend.db.connections import get_graph_db, get_graph_history_db, get_rating_history_db
 from backend.db.janusgraph import JanusGraphDB
@@ -110,6 +111,13 @@ def create_node(
     user: UserRead = Depends(get_current_user),
 ) -> DynamicNode: #type: ignore
     """Create a node."""
+    # Check permissions
+    if not can_create(user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Insufficient permissions to create nodes"
+        )
+    
     nt = payload.get("node_type")
     Model = NodeTypeModels.get(nt)
     if not Model:
@@ -137,6 +145,13 @@ def delete_node(
     user: UserRead = Depends(get_current_user),
 ):
     """Delete the node with provided ID."""
+    # Check permissions
+    if not can_delete(user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Insufficient permissions to delete nodes"
+        )
+    
     db_history.delete_node(node_id, username=user.username)
     if db_graph is not None:
         db_graph.delete_node(node_id)
@@ -152,6 +167,13 @@ def update_node(
     user: UserRead = Depends(get_current_user),
 ) -> DynamicNode: #type: ignore
     """Update the properties of an existing node."""
+    # Check permissions
+    if not can_edit(user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Insufficient permissions to edit nodes"
+        )
+    
     nt = payload.get("node_type")
     Model = NodeTypeModels.get(nt)
     if not Model:
@@ -237,6 +259,13 @@ def log_node_rating(
     user: UserRead = Depends(get_current_user),
     db: RatingHistoryRelationalInterface = Depends(get_rating_history_db),
 ) -> RatingEvent:
+    # Check permissions
+    if not can_rate(user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Insufficient permissions to rate nodes"
+        )
+    
     evt = RatingEvent(
       username=user.username,
       entity_type=EntityType.node,

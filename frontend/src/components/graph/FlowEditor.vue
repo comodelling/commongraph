@@ -29,7 +29,11 @@ const {
   edgeTypes,
   defaultNodeType,
   defaultEdgeType,
-  load: loadConfig
+  load: loadConfig,
+  canCreate,
+  canEdit,
+  canDelete,
+  canRate
 } = useConfig()
 
 onMounted(async () => {
@@ -395,7 +399,6 @@ const onNodesChange = async (changes) => {
       );
 
       if (isConfirmed) {
-        nextChanges.push(change);
         const node_id = change.id;
         const token = getAccessToken();
         try {
@@ -403,18 +406,32 @@ const onNodesChange = async (changes) => {
             `/nodes/${node_id}`,
             token ? { headers: { Authorization: `Bearer ${token}` } } : {},
           );
+          
+          // Only proceed with UI update if API call succeeded
+          nextChanges.push(change);
+          
+          // find all edges connected to this node and delete them
+          // note: edges on the backend have already been deleted by the above call
+          const connectedEdges = getEdges.value.filter(
+            (edge) => edge.source === node_id || edge.target === node_id,
+          );
+
+          for (const edge of connectedEdges) {
+            removeEdges([edge.id]);
+          }
         } catch (error) {
           console.error("Failed to delete node:", error);
-        }
-
-        // find all edges connected to this node and delete them
-        // note: edges on the backend have already been deleted by the above call
-        const connectedEdges = getEdges.value.filter(
-          (edge) => edge.source === node_id || edge.target === node_id,
-        );
-
-        for (const edge of connectedEdges) {
-          removeEdges([edge.id]);
+          
+          // Show user-friendly error message
+          if (error.response?.status === 403) {
+            alert("You don't have permission to delete nodes. Please log in with an account that has delete permissions.");
+          } else if (error.response?.status === 401) {
+            alert("You need to be logged in to delete nodes.");
+          } else {
+            alert("Failed to delete node. Please try again or contact support if the problem persists.");
+          }
+          
+          // Don't add to nextChanges so UI doesn't update
         }
       }
     } else {
@@ -437,7 +454,6 @@ const onEdgesChange = async (changes) => {
       );
 
       if (isConfirmed) {
-        nextChanges.push(change);
         const edge = findEdge(change.id);
         const source_id = edge.data.source;
         const target_id = edge.data.target;
@@ -449,8 +465,22 @@ const onEdgesChange = async (changes) => {
             { edge_type: edge_type },
             token ? { headers: { Authorization: `Bearer ${token}` } } : {},
           );
+          
+          // Only proceed with UI update if API call succeeded
+          nextChanges.push(change);
         } catch (error) {
           console.error("Failed to delete edge:", error);
+          
+          // Show user-friendly error message
+          if (error.response?.status === 403) {
+            alert("You don't have permission to delete edges. Please log in with an account that has delete permissions.");
+          } else if (error.response?.status === 401) {
+            alert("You need to be logged in to delete edges.");
+          } else {
+            alert("Failed to delete edge. Please try again or contact support if the problem persists.");
+          }
+          
+          // Don't add to nextChanges so UI doesn't update
         }
       }
     } else {
@@ -473,14 +503,25 @@ function onConnectStart({ nodeId, handleType }) {
  */
 function onConnect(connection) {
   console.log("on connect", connection);
+  
+  // Check permissions first
+  if (!canCreate.value) {
+    alert("You don't have permission to create edges. Please log in with an account that has create permissions.");
+    return; // Don't create the connection
+  }
+  
   // addEdges(connection);
   console.log("connectionInfo", connectionInfo.value);
   const target = connectionInfo.value.handleType === "source" ? connection.target : connection.source;
   const newEdgeData = createEdgeOnConnection(target);
-  nextTick(() => {
-    emit("newEdgeCreated", newEdgeData);
-  });
-  addEdges(newEdgeData);
+  
+  if (newEdgeData) { // Only proceed if edge creation is allowed
+    nextTick(() => {
+      emit("newEdgeCreated", newEdgeData);
+    });
+    addEdges(newEdgeData);
+  }
+  
   connectionInfo.value = null;
 }
 
@@ -576,6 +617,13 @@ function handleSearch(query) {
 
 function createNodeAndEdge(event = null) {
   console.log("Creating a new node");
+  
+  // Check permissions first
+  if (!canCreate.value) {
+    alert("You don't have permission to create nodes. Please log in with an account that has create permissions.");
+    closeSearchBar();
+    return;
+  }
 
   let scope = "";
   let tags = [];
@@ -596,15 +644,19 @@ function createNodeAndEdge(event = null) {
       // edge_type: handleType === "source" ? "imply" : "require",
     }; // to be used to update edge data
     eventPosition = connectionInfo.value.position || {
-      x: event.clientX,
-      y: event.clientY,
+      x: event?.clientX || 400,
+      y: event?.clientY || 200,
     };
     //TODO: improve approximate offset between handle and node corner
     eventPosition.y -= 25;
     eventPosition.x -= handleType === "target" ? 225 : 0;
   } else {
     console.log("No connectionInfo available");
-    eventPosition = { x: event.clientX, y: event.clientY };
+    // Default position for button clicks
+    eventPosition = { 
+      x: event?.clientX || 400, 
+      y: event?.clientY || 200 
+    };
     // console.log("Event position:", eventPosition);
   }
   // Get default type and allowed properties from the config
@@ -678,7 +730,14 @@ async function handleSearchResultClick(id, event) {
     addNodes(formattedNode);
 
     // if connected from existing node, create edge
-    if (connectionInfo.value) linkSourceToSearchResult(id);
+    if (connectionInfo.value) 
+    {
+      if (!canCreate.value) {
+        alert("You don't have permission to create edges. Please log in with an account that has create permissions.");
+        return; // Don't create the connection
+      }
+      linkSourceToSearchResult(id);
+    }
   } catch (error) {
     console.error("Failed to fetch node:", error);
   }
@@ -768,26 +827,61 @@ function showContextMenu(event, options) {
 
 function onNodeRightClick({ event, node }) {
   console.log("Node Right Click", node);
-  showContextMenu(event, [
-    { name: "Edit Node", action: () => editNode(node) },
-    { name: "Delete Node", action: () => deleteNode(node) },
-  ]);
+  const options = [];
+  
+  if (canEdit.value) {
+    options.push({ name: "Edit Node", action: () => editNode(node) });
+  }
+  
+  if (canDelete.value) {
+    options.push({ name: "Delete Node", action: () => deleteNode(node) });
+  }
+  
+  // Always show some option, even if just for information
+  if (options.length === 0) {
+    options.push({ name: "View Node", action: () => editNode(node) });
+  }
+  
+  showContextMenu(event, options);
 }
 
 function onEdgeRightClick({ event, edge }) {
   console.log("Edge Right Click", edge);
-  showContextMenu(event, [
-    { name: "Edit Edge", action: () => editEdge(edge) },
-    { name: "Delete Edge", action: () => deleteEdge(edge) },
-  ]);
+  const options = [];
+  
+  if (canEdit.value) {
+    options.push({ name: "Edit Edge", action: () => editEdge(edge) });
+  }
+  
+  if (canDelete.value) {
+    options.push({ name: "Delete Edge", action: () => deleteEdge(edge) });
+  }
+  
+  // Always show some option, even if just for information
+  if (options.length === 0) {
+    options.push({ name: "View Edge", action: () => editEdge(edge) });
+  }
+  
+  showContextMenu(event, options);
 }
 
 function onSelectionRightClick({ event, nodes }) {
-  showContextMenu(event, [
-    { name: "Create Group Node", action: () => groupSelection(nodes) },
-    { name: "Tag Selection", action: () => tagSelection(nodes) },
-    { name: "Delete Selection", action: () => deleteSelection(nodes) },
-  ]);
+  const options = [];
+  
+  // Group and Tag features are not yet implemented, so we'll comment them out for now
+  // if (canEdit.value) {
+  //   options.push({ name: "Create Group Node", action: () => groupSelection(nodes) });
+  //   options.push({ name: "Tag Selection", action: () => tagSelection(nodes) });
+  // }
+  
+  if (canDelete.value) {
+    options.push({ name: "Delete Selection", action: () => deleteSelection(nodes) });
+  }
+  
+  // If no actions are available, don't show context menu
+  if (options.length > 0) {
+    showContextMenu(event, options);
+  }
 }
 
 function onPaneRightClick(event) {
@@ -801,13 +895,35 @@ function onPaneRightClick(event) {
 }
 
 function onConnectEndEmpty(event) {
-  showContextMenu(event, [
-    { name: "Create New Node", action: () => createNode(event) },
-  ]);
+  const options = [];
+  
+  if (canCreate.value) {
+    options.push({ 
+      name: "Create New Node", 
+      action: () => createNodeAndEdge(event) 
+    });
+  } else {
+    options.push({ 
+      name: "Create New Node (No Permission)", 
+      action: () => {
+        alert("You don't have permission to create nodes. Please log in with an account that has create permissions.");
+      },
+      class: "disabled"
+    });
+  }
+  
+  showContextMenu(event, options);
 }
 
 function editNode(node) {
   console.log("Edit Node", node);
+  
+  // Check permissions first
+  if (!canEdit.value) {
+    alert("You don't have permission to edit nodes. Please log in with an account that has edit permissions.");
+    return;
+  }
+  
   router.push({ name: "NodeEdit", params: { id: node.id } });
 }
 
@@ -818,6 +934,13 @@ function deleteNode(node) {
 
 function editEdge(edge) {
   console.log("Edit Edge", edge);
+  
+  // Check permissions first
+  if (!canEdit.value) {
+    alert("You don't have permission to edit edges. Please log in with an account that has edit permissions.");
+    return;
+  }
+  
   router.push({
     name: "EdgeEdit",
     params: { source_id: edge.data.source, target_id: edge.data.target },
@@ -1149,5 +1272,18 @@ onEdgeMouseLeave(({ edge }) => {
 
 .compass-rose {
   pointer-events: none;
+}
+
+/* Context menu disabled items */
+.vue-simple-context-menu .disabled {
+  color: #999 !important;
+  cursor: not-allowed !important;
+  opacity: 0.6;
+  background-color: #f5f5f5 !important;
+}
+
+.vue-simple-context-menu .disabled:hover {
+  background-color: #f5f5f5 !important;
+  color: #999 !important;
 }
 </style>

@@ -4,12 +4,12 @@ import json
 import random
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.version import __version__
 from backend.settings import settings
-from backend.api.auth import router as auth_router
+from backend.api.auth import router as auth_router, get_current_user
 from backend.api.users import router as users_router
 from backend.api.nodes import router as nodes_router
 from backend.api.edges import router as edges_router
@@ -18,6 +18,8 @@ from backend.api.schema import router as schema_router
 from backend.config import (PLATFORM_NAME, NODE_TYPE_PROPS, EDGE_TYPE_PROPS, EDGE_TYPE_BETWEEN,
                             NODE_TYPE_STYLE, EDGE_TYPE_STYLE, NODE_TYPE_POLLS, EDGE_TYPE_POLLS, 
                             TAGLINE)
+from backend.utils.permissions import get_permission_summary
+from backend.models.fixed import UserRead
 from backend.db.postgresql import UserPostgreSQLDB
 from backend.utils.security import hash_password
 from backend.models.fixed import UserCreate
@@ -95,7 +97,7 @@ async def root():
 
 
 @app.get("/config")
-def get_config():
+def get_config(current_user: UserRead = Depends(get_current_user)):
     # Here we combine both properties and styles for each type.
     from backend.config import get_current_config_version, get_current_config_hash
     
@@ -119,5 +121,6 @@ def get_config():
         "edge_types": edge_types,
         "schema_version": get_current_config_version(),
         "schema_hash": get_current_config_hash(),
+        "permissions": get_permission_summary(current_user),
     }
 

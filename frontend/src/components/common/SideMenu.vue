@@ -75,6 +75,11 @@ export default {
           || router.currentRoute.value.path.startsWith("/edge/new")) {
         router.push("/login");
       }
+      if (router.currentRoute.value.path.endsWith("/edit")  || router.currentRoute.value.path.endsWith("/edit#")) {
+        // remove edit suffix to go back to view
+        const newPath = router.currentRoute.value.path.replace(/\/edit#?$/, "");
+        router.push(newPath);
+      }
     };
 
     return {

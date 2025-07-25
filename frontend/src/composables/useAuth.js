@@ -42,6 +42,10 @@ export function useAuth() {
     localStorage.setItem("accessToken", accessToken);
     localStorage.setItem("refreshToken", refreshToken);
     loadUser();
+    // Reload config to get updated permissions for new user
+    import("./useConfig").then(({ reloadConfig }) => {
+      reloadConfig();
+    });
   };
 
   const clearTokens = () => {
@@ -51,6 +55,10 @@ export function useAuth() {
     localStorage.removeItem("refreshToken");
     state.isAdmin = false;
     state.isSuperAdmin = false;
+    // Reload config to get updated permissions for logged out state
+    import("./useConfig").then(({ reloadConfig }) => {
+      reloadConfig();
+    });
   };
 
   const getAccessToken = () => state.accessToken;

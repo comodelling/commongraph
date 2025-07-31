@@ -43,10 +43,11 @@ http {
     ssl_session_timeout 1d;
     ssl_session_tickets off;
     
-    ssl_stapling on;
-    ssl_stapling_verify on;
-    resolver 8.8.8.8 8.8.4.4 valid=300s;
-    resolver_timeout 5s;
+    # Comment out SSL stapling temporarily since certificate lacks OCSP URL
+    # ssl_stapling on;
+    # ssl_stapling_verify on;
+    # resolver 8.8.8.8 8.8.4.4 valid=300s;
+    # resolver_timeout 5s;
 
     upstream backend {
         server backend:8000;
@@ -58,7 +59,7 @@ http {
         keepalive 16;
     }
 
-    # HTTP server
+    # HTTP server - redirect to HTTPS
     server {
         listen 80;
         server_name ${DOMAIN} www.${DOMAIN} api.${DOMAIN};
@@ -75,7 +76,8 @@ http {
 
     # HTTPS server for frontend
     server {
-        listen 443 ssl http2;
+        listen 443 ssl;
+        http2 on;
         server_name ${DOMAIN} www.${DOMAIN};
         
         ssl_certificate /etc/nginx/ssl/live/${DOMAIN}/fullchain.pem;
@@ -88,24 +90,32 @@ http {
         # Rate limiting
         limit_req zone=web burst=50 nodelay;
         
-        # Let Vite preview handle everything - it knows about the assets
+        # Proxy all requests to frontend container
         location / {
             proxy_pass http://frontend;
             proxy_set_header Host $host;
             proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
             proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_set_header X-Forwarded-Host $host;
+            proxy_set_header X-Forwarded-Server $host;
+            
+            # Enable WebSocket support for development
             proxy_http_version 1.1;
             proxy_set_header Upgrade $http_upgrade;
             proxy_set_header Connection "upgrade";
             
-            # Remove the nested location block - let Vite handle assets
+            # Frontend timeouts
+            proxy_connect_timeout 30s;
+            proxy_send_timeout 30s;
+            proxy_read_timeout 30s;
         }
     }
 
     # HTTPS server for API
     server {
-        listen 443 ssl http2;
+        listen 443 ssl;
+        http2 on;
         server_name api.${DOMAIN};
         
         ssl_certificate /etc/nginx/ssl/live/${DOMAIN}/fullchain.pem;
@@ -123,7 +133,7 @@ http {
             proxy_set_header Host $host;
             proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_Set_header X-Forwarded-Proto $scheme;
             proxy_set_header X-Forwarded-Host $host;
             proxy_set_header X-Forwarded-Server $host;
             

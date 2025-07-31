@@ -2,6 +2,8 @@ services:
   backend:
     env_file:
       - ./.env.development
+    ports:
+      - "8000:8000"
       
   frontend:
     volumes:

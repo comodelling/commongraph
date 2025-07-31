@@ -2,6 +2,9 @@ services:
   backend:
     env_file:
       - ./.env.production
+    networks:
+      - internal
+      - web  # Only if nginx needs to reach backend
 
   nginx:
     image: nginx:alpine
@@ -20,6 +23,9 @@ services:
     depends_on:
       - backend
       - frontend
+    networks:
+      - web      # External network
+      - internal # To reach backend/frontend
 
   frontend:
     command: sh -c "npm install && npx vite build --mode production && npm run preview -- --host --port 5173"
@@ -28,6 +34,8 @@ services:
     volumes:
       - ./.env.production:/app/.env.production:ro
       - ./VERSION:/app/VERSION:ro
+    networks:
+      - internal
 
   certbot:
     image: certbot/certbot
@@ -41,3 +49,15 @@ services:
       - nginx
     entrypoint: sh
     command: -c "certbot certonly --webroot --webroot-path=/var/www/certbot --email $$ADMIN_EMAIL --agree-tos --no-eff-email --non-interactive --expand -d $$DOMAIN -d www.$$DOMAIN -d api.$$DOMAIN"
+    networks:
+      - web  # Needs external access for ACME challenge
+
+  postgres:
+    networks:
+      - internal
+
+networks:
+  web:
+    external: false
+  internal:
+    internal: true  # No external access

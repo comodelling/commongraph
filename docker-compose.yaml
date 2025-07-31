@@ -5,8 +5,6 @@ services:
       dockerfile: backend/Dockerfile
     working_dir: /app/backend
     container_name: commongraph-backend
-    ports:
-      - "8000:8000"
     env_file:
       - ./.env
       # Environment-specific overrides will be added by compose override files

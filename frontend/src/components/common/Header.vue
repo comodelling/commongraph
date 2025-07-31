@@ -20,7 +20,8 @@
     <div class="header-center">
       <SearchBar 
         :initialQuery="searchQuery" 
-        @search="handleSearch" 
+        @search="handleSearch"
+        @focus-change="handleSearchFocus"
       />
     </div>
 
@@ -49,7 +50,7 @@
 
 <script>
 import { useRouter, useRoute } from "vue-router";
-import { watch, onMounted } from "vue";
+import { watch, onMounted, ref } from "vue";
 import { useConfig } from "../../composables/useConfig";
 import { useAuth } from "../../composables/useAuth";
 import { useTheme } from "../../composables/useTheme";
@@ -74,6 +75,9 @@ export default {
     const { platformName } = useConfig();
     const { isLoggedIn } = useAuth();
     const { loadUserTheme } = useTheme();
+    
+    // Search focus state
+    const isSearchFocused = ref(false);
 
     // Get environment variables for external links
     const repoUrl = import.meta.env.VITE_REPO_URL;
@@ -119,6 +123,10 @@ export default {
       });
     };
 
+    const handleSearchFocus = (focused) => {
+      isSearchFocused.value = focused;
+    };
+
     // Get current search query from route if we're on search page
     const searchQuery = route.name === 'SearchPage' ? route.query.q || '' : '';
 
@@ -128,6 +136,8 @@ export default {
       docUrl,
       toggleSideMenu,
       handleSearch,
+      handleSearchFocus,
+      isSearchFocused,
       searchQuery
     };
   }
@@ -190,13 +200,16 @@ export default {
   justify-content: center;
   max-width: 600px;
   margin: 0 2rem;
+  /* Ensure search doesn't overflow */
+  min-width: 0; /* Allow flexbox to shrink */
+  overflow: hidden;
 }
 
 .header-right {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  min-width: 200px;
+  gap: 0.5rem; /* Reduced from 1rem for more compact layout */
+  min-width: 120px; /* Reduced from 200px */
   justify-content: flex-end;
 }
 
@@ -204,7 +217,7 @@ export default {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 8px 12px;
+  padding: 6px 8px; /* Reduced padding for more compact icons */
   color: var(--text-color);
   text-decoration: none;
   border-radius: 4px;
@@ -229,7 +242,8 @@ body.dark .app-header {
 /* Mobile responsiveness */
 @media (max-width: 768px) {
   .header-center {
-    margin: 0 1rem;
+    margin: 0 0.8rem;
+    flex: 1;
   }
   
   .header-link span {
@@ -237,21 +251,71 @@ body.dark .app-header {
   }
   
   .header-right {
-    min-width: auto;
+    min-width: 100px; /* Keep space for all icons */
+    gap: 0.3rem;
   }
   
   .header-left {
-    min-width: auto;
+    min-width: 140px; /* Space for menu + platform name */
+  }
+  
+  .header-link {
+    padding: 4px 6px;
+  }
+}
+
+@media (max-width: 600px) {
+  /* Platform name disappears first to give search more space */
+  .platform-name {
+    display: none;
+  }
+  
+  .header-left {
+    min-width: 50px; /* Just the menu button */
+  }
+  
+  .header-center {
+    margin: 0 0.5rem;
+    flex: 2; /* Give search bar more priority */
+  }
+  
+  /* When search is focused, expand to nearly full width */
+  .header-center .search-bar.search-focused {
+    margin-right: -0.3rem; /* Slightly overlap margins for more space */
   }
 }
 
 @media (max-width: 480px) {
   .app-header {
-    padding: 0 0.5rem;
+    padding: 0 0.3rem;
   }
   
   .header-center {
-    margin: 0 0.5rem;
+    margin: 0 0.3rem;
+  }
+  
+  .header-right {
+    min-width: 90px; /* Maintain space for icons */
+    gap: 0.2rem;
+  }
+  
+  .header-link {
+    padding: 3px 4px;
+  }
+}
+
+@media (max-width: 400px) {
+  .header-center {
+    margin: 0 0.2rem;
+  }
+  
+  .header-right {
+    min-width: 80px;
+  }
+  
+  /* When focused, search bar takes almost all available space */
+  .header-center .search-bar.search-focused {
+    margin-right: -0.1rem;
   }
 }
 </style>

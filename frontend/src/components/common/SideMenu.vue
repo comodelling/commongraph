@@ -106,8 +106,16 @@ export default {
   background-color: var(--background-color);
   border-radius: 5px;
   padding: 10px;
-  font-size: 12px;
+  font-size: 13px;
   margin: 0 4px 2px 0;
+  line-height: 1.6;
+}
+
+.side-menu a,
+.side-menu router-link {
+  display: inline-block;
+  margin-top: 1px;
+  margin-bottom: 1px;
 }
 .side-menu .title {
   font-size: 20px;

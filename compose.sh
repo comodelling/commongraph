@@ -1,5 +1,28 @@
 #!/bin/bash
 
+show_help() {
+    cat << EOF
+Usage: ./compose.sh [COMMAND] [OPTIONS]
+
+A wrapper around docker-compose for the commongraph project.
+
+Commands:
+  up [services...]     Start services (ensures database exists first)
+  down                 Stop and remove containers
+  logs [service]       Show logs
+  shell <service>      Open shell in service container
+  reset-db            Reset database volume and restart
+  help                Show this help
+
+Examples:
+  ./compose.sh up              # Start all services
+  ./compose.sh up backend      # Start only backend
+  ./compose.sh logs postgres   # Show postgres logs
+  ./compose.sh shell backend   # Open shell in backend container
+EOF
+}
+
+
 current_dir=$(basename "$PWD")
 if [ "$current_dir" != "commongraph" ] || [ ! -d "backend" ]; then
     echo "Error: This script must be run from the 'commongraph' directory and require a 'backend' subdirectory."
@@ -87,24 +110,37 @@ if [ "$ENABLE_GRAPH_DB" = true ]; then
 fi
 
 # Handle special commands
-if [ "$1" = "up" ] || [ "$1" = "start" ]; then
-    echo "Starting services..."
-    $DOCKER_COMPOSE_CMD up -d postgres
-    echo "PostgreSQL started, ensuring database exists..."
-    ensure_database_exists
-    echo "Starting remaining services..."
-    $DOCKER_COMPOSE_CMD up "${@:2}"
-# elif [ "$1" = "reset-db" ]; then
-#     echo "Resetting database volume..."
-#     $DOCKER_COMPOSE_CMD down -v
-#     echo "Database volume removed. Starting fresh..."
-#     $DOCKER_COMPOSE_CMD up -d postgres
-#     sleep 5
-#     ensure_database_exists
-#     $DOCKER_COMPOSE_CMD up "${@:2}"
-else
-    # For all other commands, just pass through
-    DOCKER_COMPOSE_CMD="$DOCKER_COMPOSE_CMD $@"
-    echo "Running command: $DOCKER_COMPOSE_CMD"
-    $DOCKER_COMPOSE_CMD
-fi
+case "$1" in
+    "up"|"start")
+        echo "Starting services..."
+        $DOCKER_COMPOSE_CMD up -d postgres
+        echo "PostgreSQL started, ensuring database exists..."
+        ensure_database_exists
+        echo "Starting remaining services..."
+        $DOCKER_COMPOSE_CMD up "${@:2}"
+        ;;
+    "reset-db")
+        echo "⚠️  This will destroy all data in the database. Continue? (y/N)"
+        read -r response
+        if [[ "$response" =~ ^[Yy]$ ]]; then
+            echo "Resetting database volume..."
+            $DOCKER_COMPOSE_CMD down -v
+            echo "Database volume removed. Starting fresh..."
+            $DOCKER_COMPOSE_CMD up -d postgres
+            sleep 5
+            ensure_database_exists
+            $DOCKER_COMPOSE_CMD up "${@:2}"
+        else
+            echo "Operation cancelled."
+        fi
+        ;;
+    "help"|"-h"|"--help")
+        show_help
+        exit 0
+        ;;
+    *)
+        # For all other commands, just pass through
+        echo "Running command: $DOCKER_COMPOSE_CMD $@"
+        $DOCKER_COMPOSE_CMD "$@"
+        ;;
+esac

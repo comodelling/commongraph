@@ -97,8 +97,37 @@ async def root():
 
 
 @app.get("/config")
-def get_config(current_user: UserRead = Depends(get_current_user)):
-    # Here we combine both properties and styles for each type.
+def get_config():
+    # Public configuration endpoint for app initialization
+    from backend.config import get_current_config_version, get_current_config_hash
+    
+    node_types = {
+        nt: {"properties": list(props),
+             "polls": NODE_TYPE_POLLS.get(nt, {}),
+             "style": NODE_TYPE_STYLE.get(nt, {})}
+        for nt, props in NODE_TYPE_PROPS.items()
+    }
+    edge_types = {
+        et: {"properties": list(props),
+             "polls": EDGE_TYPE_POLLS.get(et, {}),
+             "style": EDGE_TYPE_STYLE.get(et, {})}
+        for et, props in EDGE_TYPE_PROPS.items()
+    }
+
+    return {
+        "node_types": node_types,
+        "edge_types": edge_types,
+        "platform_name": PLATFORM_NAME,
+        "tagline": TAGLINE,
+        "permissions": {},  # Public endpoint - no user-specific permissions
+        "config_version": get_current_config_version(),
+        "config_hash": get_current_config_hash(),
+    }
+
+
+@app.get("/user-config")
+def get_user_config(current_user: UserRead = Depends(get_current_user)):
+    # Authenticated configuration endpoint with user-specific data
     from backend.config import get_current_config_version, get_current_config_hash
     
     node_types = {

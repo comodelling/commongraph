@@ -101,7 +101,7 @@ http {
         }
         
         # Security: Block common attack patterns with strict rate limiting
-        location ~ /(wp-|wordpress|phpmyadmin|admin|manager|host-manager|\.env|\.git|config\.php|phpinfo) {
+        location ~ /(wp-|wordpress|phpmyadmin|admin|manager|host-manager|\.env|\.git|phpinfo) {
             limit_req zone=strict burst=1 nodelay;
             deny all;
             return 404;
@@ -112,6 +112,14 @@ http {
         location = /error.html {
             internal;
             return 400 "Bad Request";
+        }
+        
+        # Handle favicon requests
+        location = /favicon.ico {
+            proxy_pass http://frontend;
+            proxy_set_header Host $host;
+            expires 1y;
+            add_header Cache-Control "public, immutable";
         }
         
         # Proxy all requests to frontend container
@@ -159,7 +167,9 @@ http {
         # Security: Block malformed URIs and non-ASCII characters
         location ~ [^\x00-\x7F] {
             return 400;
-        }        # Block access to sensitive files and directories
+        }
+        
+        # Block access to sensitive files and directories
         location ~ /\.(env|git|aws|htaccess|backup|log) {
             deny all;
             return 404;
@@ -170,7 +180,7 @@ http {
             return 404;
         }
         
-        location ~ /(config|admin|phpinfo|info\.php|test\.php|credentials|secrets) {
+        location ~ /(admin|phpinfo|info\.php|test\.php|credentials|secrets) {
             deny all;
             return 404;
         }
@@ -181,8 +191,24 @@ http {
             return 404;
         }
         
-        # Only allow API endpoints
-        location ~ ^/(api/|docs|health|status) {
+        # API root endpoint
+        location = / {
+            proxy_pass http://backend;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_set_header X-Forwarded-Host $host;
+            proxy_set_header X-Forwarded-Server $host;
+            
+            # API timeouts
+            proxy_connect_timeout 30s;
+            proxy_send_timeout 30s;
+            proxy_read_timeout 30s;
+        }
+        
+        # API endpoints
+        location ~ ^/(api/|docs|openapi\.json|redoc|health|status|config|user-config|auth|users|nodes|edges|graph|schema) {
             proxy_pass http://backend;
             proxy_set_header Host $host;
             proxy_set_header X-Real-IP $remote_addr;

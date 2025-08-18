@@ -97,7 +97,53 @@ const router = createRouter({
   routes,
 });
 
+// Global navigation error handler
+router.onError((error) => {
+  console.error('Router error:', error);
+  
+  // Handle URI errors specifically
+  if (error instanceof URIError || error.message?.includes('URI')) {
+    console.warn('URI Error in router, redirecting to home');
+    router.push('/').catch(() => {
+      // If push fails, force redirect
+      window.location.href = '/';
+    });
+    return;
+  }
+  
+  // For other errors, try to navigate to home
+  router.push('/').catch(() => {
+    window.location.href = '/';
+  });
+});
+
 router.beforeEach((to, from, next) => {
+  try {
+    // Validate the route path for malformed characters
+    const path = to.path;
+    
+    // Check for non-ASCII characters or suspicious patterns
+    if (!/^[\x00-\x7F]*$/.test(decodeURIComponent(path))) {
+      console.warn('Malformed path detected:', path);
+      next('/');
+      return;
+    }
+    
+    // Additional validation for specific attack patterns
+    const suspiciousPatterns = [
+      /wp-/i, /admin/i, /phpmyadmin/i, /config/i, /\.env/i, /\.git/i
+    ];
+    
+    if (suspiciousPatterns.some(pattern => pattern.test(path))) {
+      console.warn('Suspicious path detected:', path);
+      next('/');
+      return;
+    }
+  } catch (error) {
+    console.error('Path validation error:', error);
+    next('/');
+    return;
+  }
   // If leaving the edit view (NodeEdit or EdgeEdit) during submission,
   // skip the unsaved changes check.
   if (

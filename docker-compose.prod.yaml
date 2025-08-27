@@ -28,7 +28,7 @@ services:
       - internal # To reach backend/frontend
 
   frontend:
-    command: sh -c "npm install && npx vite build --mode production && npm run preview -- --host --port 5173"
+    command: sh -c "npm cache clean --force && rm -rf node_modules/.cache && npm ci --prefer-offline && npx vite build --mode production && npm run preview -- --host --port 5173"
     expose:
       - "5173"  # Available to other containers but not to host
     volumes:
@@ -38,6 +38,8 @@ services:
       - ./VERSION:/app/VERSION:ro
     environment:
       - NODE_ENV=production
+      - NPM_CONFIG_AUDIT=false  # Skip audit for faster installs
+      - NPM_CONFIG_FUND=false   # Skip funding messages
     networks:
       - internal
 

@@ -208,7 +208,7 @@ http {
         }
         
         # API endpoints
-        location ~ ^/(api/|docs|openapi\.json|redoc|health|status|config|user-config|auth|users|nodes|edges|graph|schema) {
+        location ~ ^/(api/|docs|openapi\.json|redoc|health|status|config|auth|users|nodes|edges|graph|schema) {
             proxy_pass http://backend;
             proxy_set_header Host $host;
             proxy_set_header X-Real-IP $remote_addr;

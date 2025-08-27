@@ -28,20 +28,29 @@ services:
       - internal # To reach backend/frontend
 
   frontend:
-    command: sh -c "npm cache clean --force && rm -rf node_modules/.cache && npm ci --prefer-offline && npx vite build --mode production && npm run preview -- --host --port 5173"
+    image: node:20-alpine  # Use a specific, lighter version
+    command: >
+      sh -c "
+      echo 'Starting frontend container...' &&
+      rm -rf /root/.npm &&
+      echo 'Installing all dependencies (including dev for build)...' &&
+      npm install --verbose --no-audit --no-fund &&
+      echo 'Building application...' &&
+      npm run build &&
+      echo 'Starting preview server...' &&
+      npm run preview -- --host --port 5173
+      "
     expose:
       - "5173"  # Available to other containers but not to host
     volumes:
       - ./frontend:/app
-      - frontend_node_modules:/app/node_modules
       - ./.env.production:/app/.env:ro  # Override the .env file with production version
-      - ./VERSION:/app/VERSION:ro
+      - ./VERSION:/VERSION:ro           # Mount VERSION where the script expects it (from /app/scripts: ../../VERSION)
     environment:
       - NODE_ENV=production
-      - NPM_CONFIG_AUDIT=false  # Skip audit for faster installs
-      - NPM_CONFIG_FUND=false   # Skip funding messages
     networks:
-      - internal
+      - web      # Need external access for npm install
+      - internal # Also need internal access for nginx
 
   certbot:
     image: certbot/certbot
@@ -64,7 +73,7 @@ services:
 
 networks:
   web:
-    external: false
+    # Default bridge network - allows external access
   internal:
     internal: true  # No external access
 

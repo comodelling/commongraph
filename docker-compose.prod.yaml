@@ -67,6 +67,3 @@ networks:
     # Default bridge network - allows external access
   internal:
     internal: true  # No external access
-
-volumes:
-  frontend_node_modules:

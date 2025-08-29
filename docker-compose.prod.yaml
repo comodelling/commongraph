@@ -28,24 +28,15 @@ services:
       - internal # To reach backend/frontend
 
   frontend:
-    image: node:20-alpine  # Use a specific, lighter version
+    image: node:latest
     command: >
-      sh -c "
-      echo 'Starting frontend container...' &&
-      rm -rf /root/.npm &&
-      echo 'Installing all dependencies (including dev for build)...' &&
-      npm install --verbose --no-audit --no-fund &&
-      echo 'Building application...' &&
-      npm run build &&
-      echo 'Starting preview server...' &&
-      npm run preview -- --host --port 5173
-      "
+      sh -c "npm ci --include=dev && (npm run sync-version || true) && npx vite build && npx vite preview --host --port 5173"
     expose:
       - "5173"  # Available to other containers but not to host
     volumes:
       - ./frontend:/app
       - ./.env.production:/app/.env:ro  # Override the .env file with production version
-      - ./VERSION:/VERSION:ro           # Mount VERSION where the script expects it (from /app/scripts: ../../VERSION)
+      - ./VERSION:/VERSION:ro           # Mount VERSION where the script expects it
     environment:
       - NODE_ENV=production
     networks:

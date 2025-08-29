@@ -1,4 +1,4 @@
-fastapi[standard]
+fastapi[standard]>=0.116.0
 pydantic >= 2
 pydantic-settings
 sqlmodel
@@ -17,7 +17,7 @@ psycopg2-binary
 bcrypt>=4.0.0
 PyJWT>=2.0.0
 h11>=0.16.0
-# starlette>=0.47.2  # incompatibilities
+starlette>=0.47.2  # incompatibilities
 
 # migration
 alembic

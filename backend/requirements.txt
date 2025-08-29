@@ -45,7 +45,7 @@ email-validator==2.3.0
     # via
     #   fastapi
     #   pydantic
-fastapi==0.115.2
+fastapi==0.116.1
     # via -r requirements.in
 fastapi-cli==0.0.8
     # via fastapi
@@ -162,8 +162,10 @@ sqlalchemy==2.0.37
     #   sqlmodel
 sqlmodel==0.0.22
     # via -r requirements.in
-starlette==0.40.0
-    # via fastapi
+starlette==0.47.3
+    # via
+    #   -r requirements.in
+    #   fastapi
 tornado==6.5.2
     # via -r requirements.in
 typer==0.16.1

@@ -28,14 +28,20 @@ services:
       - internal # To reach backend/frontend
 
   frontend:
-    command: sh -c "npm install && npx vite build --mode production && npm run preview -- --host --port 5173"
+    image: node:latest
+    command: >
+      sh -c "npm ci --include=dev && (npm run sync-version || true) && npx vite build && npx vite preview --host --port 5173"
     expose:
       - "5173"  # Available to other containers but not to host
     volumes:
-      - ./.env.production:/app/.env.production:ro
-      - ./VERSION:/app/VERSION:ro
+      - ./frontend:/app
+      - ./.env.production:/app/.env:ro  # Override the .env file with production version
+      - ./VERSION:/VERSION:ro           # Mount VERSION where the script expects it
+    environment:
+      - NODE_ENV=production
     networks:
-      - internal
+      - web      # Need external access for npm install
+      - internal # Also need internal access for nginx
 
   certbot:
     image: certbot/certbot
@@ -58,6 +64,6 @@ services:
 
 networks:
   web:
-    external: false
+    # Default bridge network - allows external access
   internal:
     internal: true  # No external access

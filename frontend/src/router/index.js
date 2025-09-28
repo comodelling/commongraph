@@ -133,11 +133,19 @@ router.beforeEach((to, from, next) => {
     const suspiciousPatterns = [
       /wp-/i, /admin/i, /phpmyadmin/i, /config/i, /\.env/i, /\.git/i
     ];
-    
-    if (suspiciousPatterns.some(pattern => pattern.test(path))) {
+
+    // If the destination is a registered admin route (uses meta.requiresAdmin),
+    // allow it to bypass the generic "admin" pattern block. This lets legitimate
+    // admin pages defined in routes (like /admin/users) pass validation while
+    // still blocking unregistered suspicious paths that include "/admin".
+    const isAdminRoute = to.matched.some(record => record.meta && record.meta.requiresAdmin);
+    if (!isAdminRoute && suspiciousPatterns.some(pattern => pattern.test(path))) {
       console.warn('Suspicious path detected:', path);
       next('/');
       return;
+    } else if (isAdminRoute && suspiciousPatterns.some(pattern => pattern.test(path))) {
+      // Log but allow legitimate admin routes (they should still be protected server-side)
+      console.info('Suspicious pattern matched but route requires admin; allowing:', path);
     }
   } catch (error) {
     console.error('Path validation error:', error);

@@ -1127,22 +1127,26 @@ onEdgeMouseLeave(({ edge }) => {
             </g>
             
             <!-- Combined quadrant groups for click and hover -->
-            <g class="quadrant north" @click="selectDirection('BT', true)" title="Upward causality">
+            <g class="quadrant north" @click="selectDirection('BT', true)">
+              <title>Upwards</title>
               <path d="M 60 60 L 15 15 L 60 2 L 105 15 Z" fill="transparent" class="compass-quadrant"/>
               <path d="M 60 60 L 45 45 L 60 8 L 75 45 Z" :fill="selectedDirection==='BT'?'#007bff':'white'" :stroke="selectedDirection==='BT'?'#007bff':'#666'" :stroke-width="selectedDirection==='BT'?3:2" class="compass-direction" pointer-events="none"/>
             </g>
             
-            <g class="quadrant east" @click="selectDirection('LR', true)" title="Rightward causality">
+            <g class="quadrant east" @click="selectDirection('LR', true)">
+              <title>Rightwards</title>
               <path d="M 60 60 L 105 15 L 118 60 L 105 105 Z" fill="transparent" class="compass-quadrant"/>
               <path d="M 60 60 L 75 45 L 112 60 L 75 75 Z" :fill="selectedDirection==='LR'?'#007bff':'white'" :stroke="selectedDirection==='LR'?'#007bff':'#666'" :stroke-width="selectedDirection==='LR'?3:2" class="compass-direction" pointer-events="none"/>
             </g>
             
-            <g class="quadrant south" @click="selectDirection('TB', true)" title="Downward causality">
+            <g class="quadrant south" @click="selectDirection('TB', true)">
+              <title>Downwards</title>
               <path d="M 60 60 L 105 105 L 60 118 L 15 105 Z" fill="transparent" class="compass-quadrant"/>
               <path d="M 60 60 L 75 75 L 60 112 L 45 75 Z" :fill="selectedDirection==='TB'?'#007bff':'white'" :stroke="selectedDirection==='TB'?'#007bff':'#666'" :stroke-width="selectedDirection==='TB'?3:2" class="compass-direction" pointer-events="none"/>
             </g>
             
-            <g class="quadrant west" @click="selectDirection('RL', true)" title="Leftward causality">
+            <g class="quadrant west" @click="selectDirection('RL', true)">
+              <title>Leftwards</title>
               <path d="M 60 60 L 15 105 L 2 60 L 15 15 Z" fill="transparent" class="compass-quadrant"/>
               <path d="M 60 60 L 45 75 L 8 60 L 45 45 Z" :fill="selectedDirection==='RL'?'#007bff':'white'" :stroke="selectedDirection==='RL'?'#007bff':'#666'" :stroke-width="selectedDirection==='RL'?3:2" class="compass-direction" pointer-events="none"/>
             </g>

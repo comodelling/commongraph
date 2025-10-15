@@ -4,9 +4,9 @@
       <div class="results-column">
         <h2>Search Results</h2>
         <div class="results-list">
-          <div v-if="!nodes.length && title">
-            <p>No results found for "{{ title }}"</p>
-          </div>
+            <div v-if="!nodes.length && title" class="no-results">
+              <p>No results found for: <span class="no-results-query">{{ formattedQuery }}</span></p>
+            </div>
           <ul v-else>
             <div v-for="node in nodes" :key="node.node_id">
               <NodeListItem :node="node" />
@@ -101,6 +101,39 @@ export default {
       console.log("Raw relationships:", this.relationships);
       
       return result;
+    }
+    ,
+    // Nicely format the incoming title/query which may be an array, JSON string, or comma-separated
+    formattedQuery() {
+      const q = this.title;
+      if (!q && q !== 0) return "";
+
+      // If it's already an array-like string from the router (e.g. ["a","b"]) try to parse JSON
+      if (Array.isArray(q)) {
+        return q.join(", ");
+      }
+
+      if (typeof q === "string") {
+        const trimmed = q.trim();
+        // Try JSON parse
+        try {
+          const parsed = JSON.parse(trimmed);
+          if (Array.isArray(parsed)) return parsed.join(", ");
+          if (typeof parsed === "object" && parsed !== null) return JSON.stringify(parsed);
+        } catch (e) {
+          // not JSON — continue
+        }
+
+        // Comma-separated string
+        if (trimmed.includes(",")) {
+          return trimmed.split(",").map(s => s.trim()).filter(Boolean).join(", ");
+        }
+
+        return trimmed;
+      }
+
+      // Fallback to string conversion
+      return String(q);
     }
   },
   watch: {
@@ -302,6 +335,21 @@ export default {
   transition: var(--background-color) 0.3s;
   margin-bottom: 5px;
   font-size: 12px;
+}
+
+.no-results {
+  padding: 12px 16px;
+}
+
+.no-results p {
+  margin: 0;
+  color: var(--muted-text-color, #666);
+  font-size: 14px;
+}
+
+.no-results-query {
+  font-weight: 600;
+  color: inherit;
 }
 
 /* .node-item a {

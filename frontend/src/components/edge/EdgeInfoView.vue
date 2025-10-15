@@ -1,18 +1,26 @@
 <template>
-  <div>
-    <h2 :title="edgeTypeTooltip">
-      {{ edge.edge_type }}
-    </h2>
-    <strong v-if="isAllowed('references')" :title="tooltips.edge.references">References:</strong>
-    <br>
-    <ul class="references-list" v-if="localEdge.references && localEdge.references.length">
-      <li v-for="reference in localEdge.references.filter((ref) => ref.trim())" :key="reference">
-        {{ reference.trim() }}
-      </li>
-    </ul>
-    <strong v-if="isAllowed('description')" :title="tooltips.edge.description">Description:</strong>
-    <br>
-    <p>{{ localEdge.description ? localEdge.description : "" }}</p>
+  <div class="edge-info-view">
+    <!-- Type -->
+    <div class="field-row">
+      <strong :title="edgeTypeTooltip">Type:</strong>
+      <span class="field-value">{{ edge.edge_type }}</span>
+    </div>
+    <!-- References -->
+    <div class="field-row" v-if="isAllowed('references') && localEdge.references && localEdge.references.length">
+      <strong :title="tooltips.edge.references">References:</strong>
+      <div class="field-value">
+        <ul class="references-list">
+          <li v-for="reference in localEdge.references.filter((ref: any) => ref.trim())" :key="reference">
+            {{ reference.trim() }}
+          </li>
+        </ul>
+      </div>
+    </div>
+    <!-- Description -->
+    <div class="field-row" v-if="isAllowed('description') && localEdge.description">
+      <strong :title="tooltips.edge.description">Description:</strong>
+      <span class="field-value">{{ localEdge.description }}</span>
+    </div>
   </div>
 </template>
 
@@ -47,7 +55,7 @@ export default defineComponent({
     }
 
     const edgeTypeTooltip = computed(() => {
-      return tooltips.edge[props.edge.edge_type] || tooltips.edge.type;
+      return (tooltips.edge as any)[props.edge.edge_type] || tooltips.edge.type;
     });
 
     return { isAllowed, edgeTypeTooltip };
@@ -77,3 +85,21 @@ export default defineComponent({
   },
 });
 </script>
+
+<style scoped>
+.field-row {
+  display: flex;
+  align-items: flex-start;
+  margin: 8px 0;
+  gap: 10px;
+}
+
+.field-row strong {
+  min-width: 80px;
+  flex-shrink: 0;
+}
+
+.field-value {
+  flex: 1;
+}
+</style>

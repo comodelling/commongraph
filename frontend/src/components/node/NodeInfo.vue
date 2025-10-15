@@ -3,6 +3,14 @@
     <div class="pane-header">
       <div class="title-group">
         <h4>Node Info</h4>
+        <button
+          v-if="!isBrandNewNode && node"
+          class="favourite-btn header-favourite"
+          :title="isFavourite ? 'Remove from favourites' : 'Add to favourites'"
+          @click="toggleFavourite"
+        >
+          {{ isFavourite ? '★' : '☆' }}
+        </button>
       </div>
       <div class="tabs">
         <button

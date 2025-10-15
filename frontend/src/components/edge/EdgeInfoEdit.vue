@@ -17,60 +17,67 @@
       </div>
     </div>
 
-    <div  v-if="isAllowed('references')" class="field" >
-      <strong :title="tooltips.edge.references">References:</strong><br />
-      <ul>
-        <li
-          v-for="(reference, index) in editedEdge.references"
-          :key="index"
-          :class="{ 'invalid-reference': !reference.trim() }"
-          class="field-content"
-        >
-          <span
-            v-if="editingField !== `reference-${index}`"
-            @click="startEditing(`reference-${index}`)"
-            >{{ reference || "Click to edit" }}</span
+    <div v-if="isAllowed('references')" class="field">
+      <strong :title="tooltips.edge.references">References:</strong>
+      <div class="field-content">
+        <div class="references-container">
+          <div
+            v-for="(reference, index) in editedEdge.references"
+            :key="index"
+            class="reference-item"
+            :class="{ 'invalid-reference': !reference.trim() }"
           >
-          <input
-            v-else
-            v-model="editedEdge.references[index]"
-            @blur="stopEditing(`reference-${index}`)"
-            :ref="`reference-${index}Input`"
-          />
-        </li>
-      </ul>
-      <button class="add-reference-button" @click="addReference">
-        + Reference
-      </button>
+            <span
+              v-if="editingField !== `reference-${index}`"
+              @click="startEditing(`reference-${index}`)"
+              class="reference-text"
+            >{{ reference || "Click to add reference" }}</span>
+            <input
+              v-else
+              v-model="editedEdge.references[index]"
+              @blur="stopEditing(`reference-${index}`)"
+              @keyup.enter="stopEditing(`reference-${index}`)"
+              @keyup.escape="cancelReferenceEdit(index)"
+              :ref="`reference-${index}Input`"
+              class="reference-input"
+              placeholder="Enter reference..."
+            />
+            <button 
+              class="delete-reference-button" 
+              @click="deleteReference(index)"
+              title="Delete reference"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+        <button class="add-button add-reference-button" @click="addReference">
+          + Reference
+        </button>
+      </div>
     </div>
-    <br />
-
-    <strong v-if="isAllowed('description')" :title="tooltips.edge.description">Description:</strong>
-    <div
-      class="field"
-      v-if="editedEdge.description || editingField === 'description'"
-    >
+    <div class="field" v-if="isAllowed('description')">
+      <strong :title="tooltips.edge.description">Description:</strong>
       <div class="field-content">
         <span
-          v-if="editingField !== 'description'"
+          v-if="editingField !== 'description' && editedEdge.description"
           @click="startEditing('description')"
-          >{{ editedEdge.description }}</span
-        >
+        >{{ editedEdge.description }}</span>
         <textarea
-          v-else
+          v-else-if="editingField === 'description'"
           v-model="editedEdge.description"
           @blur="stopEditing('description')"
           ref="descriptionInput"
         ></textarea>
+        <button
+          v-else
+          class="add-button add-description-button"
+          @click="addDescription"
+        >
+          + Description
+        </button>
       </div>
     </div>
-    <button
-      v-if="!editedEdge.description"
-      class="add-description-button"
-      @click="addDescription"
-    >
-      + Description
-    </button>
 
     <button class="submit-button" @click="submit">{{ actionLabel }}</button>
   </div>
@@ -221,6 +228,16 @@ export default {
           );
         });
       }
+    },
+    deleteReference(index) {
+      this.editedEdge.references.splice(index, 1);
+    },
+    cancelReferenceEdit(index) {
+      // If it's an empty reference, remove it
+      if (!this.editedEdge.references[index].trim()) {
+        this.deleteReference(index);
+      }
+      this.editingField = null;
     },
     addDescription() {
       this.editedEdge.description = "";

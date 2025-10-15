@@ -4,7 +4,7 @@
       <div class="title-group">
         <h4>Edge Info</h4>
       </div>
-        <div class="tabs">
+      <div class="tabs">
           <button
             :class="{ active: currentTab === 'view' }"
             @click="switchTab('view')"

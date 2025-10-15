@@ -1,55 +1,51 @@
 <template>
   <div class="node-info-view">
-    <!-- Title + Favourite Button -->
-    <div class="title-row" v-if="isAllowed('title')">
-      <h2 class="title">{{ node.title }}</h2>
-      <button
-        v-if="!isBrandNewNode"
-        class="favourite-btn"
-        :title="isFavourite ? 'Remove from favourites' : 'Add to favourites'"
-        @click="toggleFavourite"
-        style=" margin: 0; padding: 0.5em;font-size: 1.5rem; color: gold; background: none; border: none; cursor: pointer;"
-      >
-        {{ isFavourite ? '★' : '☆' }}
-      </button>
+    <!-- Title -->
+    <div class="field-row" v-if="isAllowed('title')">
+      <strong>Title:</strong>
+      <span class="field-value">{{ node.title }}</span>
     </div>
     <!-- Type -->
-    <div>
+    <div class="field-row">
       <strong :title="nodeTypeTooltip">Type:</strong>
-      {{ capitalise(node.node_type) }}<br>
+      <span class="field-value">{{ capitalise(node.node_type) }}</span>
     </div>
     <!-- Scope -->
-    <div v-if="isAllowed('scope')">
+    <div class="field-row" v-if="isAllowed('scope')">
       <strong :title="tooltips.node.scope">Scope:</strong>
-      {{ node.scope }}<br>
+      <span class="field-value">{{ node.scope }}</span>
     </div>
     <!-- Status -->
-    <div v-if="isAllowed('status')">
+    <div class="field-row" v-if="isAllowed('status')">
       <strong :title="tooltips.node.status">Status:</strong>
-      {{ formatStatus(node.status) }}<br>
+      <span class="field-value">{{ formatStatus(node.status) }}</span>
     </div>
 
     <!-- References -->
-    <div v-if="isAllowed('references') && node.references?.length">
-      <strong :title="tooltips.node.references">References:</strong><br>
-      <ul class="references-list">
-        <li
-          v-for="reference in node.references.filter(ref => ref.trim())"
-          :key="reference"
-        >
-          {{ reference.trim() }}
-        </li>
-      </ul>
+    <div class="field-row" v-if="isAllowed('references') && node.references?.length">
+      <strong :title="tooltips.node.references">References:</strong>
+      <div class="field-value">
+        <ul class="references-list">
+          <li
+            v-for="reference in node.references.filter(ref => ref.trim())"
+            :key="reference"
+          >
+            {{ reference.trim() }}
+          </li>
+        </ul>
+      </div>
     </div>
     <!-- Description -->
-    <div v-if="isAllowed('description')">
+    <div class="field-row" v-if="isAllowed('description') && node.description">
       <strong :title="tooltips.node.description">Description:</strong>
-      {{ node.description ? node.description : "" }}
+      <span class="field-value">{{ node.description }}</span>
     </div>
     <!-- Tags -->
-    <div class="tags-container" v-if="isAllowed('tags') && node.tags?.length">
+    <div class="field-row" v-if="isAllowed('tags') && node.tags?.length">
       <strong :title="tooltips.node.tags">Tags:</strong>
-      <span v-for="tag in node.tags" :key="tag" class="tag">{{ tag }}</span>
+      <div class="field-value tags-container">
+        <span v-for="tag in node.tags" :key="tag" class="tag">{{ tag }}</span>
+      </div>
     </div>
   </div>
 </template>
@@ -103,18 +99,30 @@ function capitalise(str: string): string {
 }
 
 const nodeTypeTooltip = computed(() => {
-  return tooltips.node[node.value.node_type] || tooltips.node.type;
+  return (tooltips.node as any)[node.value.node_type] || tooltips.node.type;
 });
 </script>
 
 <style scoped>
-.title-row {
+.field-row {
   display: flex;
-  align-items: center;
-  gap: 0.5em;
+  align-items: flex-start;
+  margin: 8px 0;
+  gap: 10px;
 }
 
-.favourite-btn:hover {
-  opacity: 0.8;
+.field-row strong {
+  min-width: 80px;
+  flex-shrink: 0;
+}
+
+.field-value {
+  flex: 1;
+}
+
+.tags-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
 }
 </style>

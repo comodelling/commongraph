@@ -70,87 +70,111 @@
         </select>
       </div>
     </div>
-    <!-- Tags Field -->
-    <div class="field" v-if="isAllowed('tags')">
-      <strong :title="tooltips.node.tags">Tags:</strong>
-      <div class="tags-container">
-        <span v-for="(tag, index) in editedNode.tags" :key="index" class="tag">
-          <span
-            v-if="editingField !== `tag-${index}`"
-            @click="startEditing(`tag-${index}`)"
-          >
-            {{ tag }}
-          </span>
-          <input
-            v-else
-            v-model="editedNode.tags[index]"
-            @blur="stopEditing(`tag-${index}`)"
-            :ref="`tag-${index}Input`"
-            class="tag-input"
-            :style="{ width: `${tag.length * 8 + 20}px` }"
-          />
-          <button class="delete-tag-button" @click="deleteTag(index)">x</button>
-        </span>
-        <button class="add-tag-button" @click="addTag">+ Tag</button>
-      </div>
-    </div>
     <!-- References Field -->
     <div class="field" v-if="isAllowed('references')">
       <strong :title="tooltips.node.references">References:</strong>
-      <ul>
-        <li
-          v-for="(reference, index) in editedNode.references"
-          :key="index"
-          :class="{ 'invalid-reference': !reference.trim() }"
-          class="field-content"
-        >
-          <span
-            v-if="editingField !== `reference-${index}`"
-            @click="startEditing(`reference-${index}`)"
+      <div class="field-content">
+        <div class="references-container">
+          <div
+            v-for="(reference, index) in editedNode.references"
+            :key="index"
+            class="reference-item"
+            :class="{ 'invalid-reference': !reference.trim() }"
           >
-            {{ reference || "Click to edit" }}
-          </span>
-          <input
-            v-else
-            v-model="editedNode.references[index]"
-            @blur="stopEditing(`reference-${index}`)"
-            :ref="`reference-${index}Input`"
-          />
-        </li>
-      </ul>
-      <button class="add-reference-button" @click="addReference">
-        + Reference
-      </button>
+            <span
+              v-if="editingField !== `reference-${index}`"
+              @click="startEditing(`reference-${index}`)"
+              class="reference-text"
+            >
+              {{ reference || "Click to add reference" }}
+            </span>
+            <input
+              v-else
+              v-model="editedNode.references[index]"
+              @blur="stopEditing(`reference-${index}`)"
+              @keyup.enter="stopEditing(`reference-${index}`)"
+              @keyup.escape="cancelReferenceEdit(index)"
+              :ref="`reference-${index}Input`"
+              class="reference-input"
+              placeholder="Enter reference..."
+            />
+            <button 
+              class="delete-reference-button" 
+              @click="deleteReference(index)"
+              title="Delete reference"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+        <button class="add-button add-reference-button" @click="addReference">
+          + Reference
+        </button>
+      </div>
     </div>
     <!-- Description Field -->
-    <div v-if="isAllowed('description')">
+    <div class="field" v-if="isAllowed('description')">
       <strong :title="tooltips.node.description">Description:</strong>
-      <div
-        class="field"
-        v-if="editedNode.description || editingField === 'description'"
-      >
-        <div class="field-content">
-          <span
-            v-if="editingField !== 'description'"
-            @click="startEditing('description')"
+      <div class="field-content">
+        <span
+          v-if="editingField !== 'description' && editedNode.description"
+          @click="startEditing('description')"
+        >
+          {{ editedNode.description }}
+        </span>
+        <textarea
+          v-else-if="editingField === 'description'"
+          v-model="editedNode.description"
+          @blur="stopEditing('description')"
+          ref="descriptionInput"
+        ></textarea>
+        <button
+          v-else
+          class="add-button add-description-button"
+          @click="addDescription"
+        >
+          + Description
+        </button>
+      </div>
+    </div>
+    <!-- Tags Field -->
+    <div class="field" v-if="isAllowed('tags')">
+      <strong :title="tooltips.node.tags">Tags:</strong>
+      <div class="field-content">
+        <div class="tags-container">
+          <span 
+            v-for="(tag, index) in editedNode.tags" 
+            :key="index" 
+            class="tag"
           >
-            {{ editedNode.description }}
+            <span
+              v-if="editingField !== `tag-${index}`"
+              @click="startEditing(`tag-${index}`)"
+              class="tag-text"
+            >
+              {{ tag }}
+            </span>
+            <input
+              v-else
+              v-model="editedNode.tags[index]"
+              @blur="stopEditing(`tag-${index}`)"
+              @keyup.enter="stopEditing(`tag-${index}`)"
+              @keyup.escape="cancelTagEdit(index)"
+              :ref="`tag-${index}Input`"
+              class="tag-input"
+              :style="{ width: `${Math.max(tag.length * 8 + 20, 50)}px` }"
+            />
+            <button 
+              class="delete-tag-button" 
+              @click="deleteTag(index)"
+              title="Delete tag"
+            >
+              ×
+            </button>
           </span>
-          <textarea
-            v-else
-            v-model="editedNode.description"
-            @blur="stopEditing('description')"
-            ref="descriptionInput"
-          ></textarea>
+          <button class="add-button add-tag-button" @click="addTag">+ Tag</button>
         </div>
       </div>
-      <button
-        v-if="!editedNode.description"
-        class="add-description-button"
-        @click="addDescription"
-      >
-        + Description
-      </button>
     </div>
     <button class="submit-button" @click="submit">{{ actionLabel }}</button>
   </div>
@@ -263,11 +287,28 @@ export default {
     deleteTag(index) {
       this.editedNode.tags.splice(index, 1);
     },
+    cancelTagEdit(index) {
+      // If it's an empty tag, remove it
+      if (!this.editedNode.tags[index].trim()) {
+        this.deleteTag(index);
+      }
+      this.editingField = null;
+    },
     addReference() {
       this.editedNode.references.push("");
       this.$nextTick(() => {
         this.startEditing(`reference-${this.editedNode.references.length - 1}`);
       });
+    },
+    deleteReference(index) {
+      this.editedNode.references.splice(index, 1);
+    },
+    cancelReferenceEdit(index) {
+      // If it's an empty reference, remove it
+      if (!this.editedNode.references[index].trim()) {
+        this.deleteReference(index);
+      }
+      this.editingField = null;
     },
     addDescription() {
       this.editedNode.description = "";
@@ -437,11 +478,56 @@ export default {
 };
 </script>
 
-<style>
+<style scoped>
 .error-input {
   border-color: red;
 }
 .error-text {
   color: red;
+}
+
+/* Additional spacing for field consistency */
+.field {
+  margin: 8px 0;
+}
+
+/* Ensure tags container aligns properly and keeps tags on same line */
+.tags-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  align-items: center;
+  margin: 0;
+  padding: 2px 0;
+  line-height: 1;
+}
+
+.tags-container strong {
+  margin-right: 10px;
+}
+
+/* Keep individual tags compact and inline */
+.tag {
+  flex-shrink: 0;
+  min-height: 20px;
+  max-height: 20px;
+  display: inline-flex !important;
+}
+
+/* Ensure tag input doesn't expand the container */
+.tag-input {
+  min-height: 14px;
+  max-height: 14px;
+}
+
+/* Reference container styling */
+.references-container {
+  margin: 0;
+  padding: 4px 0;
+}
+
+/* Consistent spacing for add buttons */
+.add-button {
+  margin: 4px 0 0 0 !important;
 }
 </style>

@@ -6,6 +6,16 @@
         <div class="results-list">
             <div v-if="!nodes.length && title" class="no-results">
               <p>No results found for: <span class="no-results-query">{{ formattedQuery }}</span></p>
+              <button 
+                v-if="canCreate" 
+                @click="createNodeFromSearch" 
+                class="create-node-btn"
+              >
+                Create "{{ formattedQuery }}"
+              </button>
+              <p v-else class="no-permission-message">
+                Log in with create permissions to add new nodes.
+              </p>
             </div>
           <ul v-else>
             <div v-for="node in nodes" :key="node.node_id">
@@ -150,6 +160,16 @@ export default {
     },
   },
   methods: {
+    createNodeFromSearch() {
+      // Navigate to the node edit page for a new node, passing the search query as title
+      const title = this.formattedQuery;
+      
+      // Store the title in sessionStorage so ElementFocus can retrieve it
+      sessionStorage.setItem('newNodeTitle', title);
+      
+      // Navigate to the new node creation route
+      this.$router.push({ name: "NodeEdit", params: { id: "new" } });
+    },
     applyRatingFilter(rating) {
       // Apply rating filter by updating route query
       const currentQuery = { ...this.$route.query };
@@ -261,10 +281,10 @@ export default {
   setup() {
     const router = useRouter();
     const route = useRoute();
-    const { nodePollTypes } = useConfig();
+    const { nodePollTypes, canCreate, defaultNodeType } = useConfig();
     const nodePolls = nodePollTypes.value;
     // const nodePolls = computed(() => getNodePolls(defaultNodeType.value));
-    return { router, route, nodePolls };
+    return { router, route, nodePolls, canCreate, defaultNodeType };
   },
 };
 </script>
@@ -339,10 +359,12 @@ export default {
 
 .no-results {
   padding: 12px 16px;
+  padding-right: 66px; /* Match the h2's padding-right: 50px + some margin */
+  text-align: center;
 }
 
 .no-results p {
-  margin: 0;
+  margin: 0 0 16px 0;
   color: var(--muted-text-color, #666);
   font-size: 14px;
 }
@@ -350,6 +372,34 @@ export default {
 .no-results-query {
   font-weight: 600;
   color: inherit;
+}
+
+.create-node-btn {
+  padding: 10px 20px;
+  background-color: var(--primary-color, #007bff);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s;
+}
+
+.create-node-btn:hover {
+  background-color: var(--primary-hover-color, #0056b3);
+  transform: translateY(-1px);
+}
+
+.create-node-btn:active {
+  transform: translateY(0);
+}
+
+.no-permission-message {
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--muted-text-color, #999);
+  font-style: italic;
 }
 
 /* .node-item a {

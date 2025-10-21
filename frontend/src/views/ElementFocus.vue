@@ -182,9 +182,16 @@ export default {
       // const allowed = this.allowedNodeFields.value || [];
       const allowed = this.nodeTypes[type].properties || [];
       console.log("Allowed node props:", allowed);
+      
+      // Check if there's a pre-populated title from search
+      const prePopulatedTitle = sessionStorage.getItem('newNodeTitle');
+      if (prePopulatedTitle) {
+        sessionStorage.removeItem('newNodeTitle'); // Clear after reading
+      }
+      
       // build minimal node object
       const node = { node_id: "new", node_type: type, new: true };
-      if (allowed.includes("title"))      node.title = "";
+      if (allowed.includes("title"))      node.title = prePopulatedTitle || "";
       if (allowed.includes("scope"))      node.scope = "";
       if (allowed.includes("status"))     node.status = "live";
       if (allowed.includes("tags"))       node.tags = [];

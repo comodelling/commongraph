@@ -300,3 +300,22 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+/* Additional spacing for field consistency - closer to view mode */
+.field {
+  margin: 5px 0;
+}
+
+/* Reference container styling */
+.references-container {
+  margin: 0;
+  padding: 0;
+}
+
+/* Consistent spacing for add buttons */
+.add-button {
+  margin: 4px 0 0 0 !important;
+  align-self: flex-start;
+}
+</style>

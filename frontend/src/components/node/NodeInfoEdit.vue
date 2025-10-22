@@ -486,9 +486,9 @@ export default {
   color: red;
 }
 
-/* Additional spacing for field consistency */
+/* Additional spacing for field consistency - closer to view mode */
 .field {
-  margin: 8px 0;
+  margin: 5px 0;
 }
 
 /* Ensure tags container aligns properly and keeps tags on same line */
@@ -523,11 +523,12 @@ export default {
 /* Reference container styling */
 .references-container {
   margin: 0;
-  padding: 4px 0;
+  padding: 0;
 }
 
 /* Consistent spacing for add buttons */
 .add-button {
   margin: 4px 0 0 0 !important;
+  align-self: flex-start;
 }
 </style>

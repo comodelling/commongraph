@@ -293,8 +293,7 @@ body.dark .vue-flow__edge.selected .vue-flow__edge-path {
 
 .submit-button {
   /* margin-top: 20px; */
-  margin: auto;
-  margin-bottom: 20px;
+  margin: 15px auto 10px auto;
   display: block;
   width: 30%;
   padding: 10px 15px;
@@ -356,6 +355,7 @@ body.dark .invalid-reference .reference-input {
   border-radius: 2px;
   display: flex; /* Ensure content is displayed inline */
   align-items: flex-start; /* Align items to the start for consistency */
+  flex-direction: column; /* Stack content vertically by default */
 }
 
 .cprob-content {
@@ -378,6 +378,7 @@ body.dark .invalid-reference .reference-input {
   margin: 0;
   width: 100%;
   align-items: center;
+  flex-direction: row; /* Override to keep tags horizontal */
 }
 
 .field-content .references-list {
@@ -392,6 +393,7 @@ body.dark .invalid-reference .reference-input {
   display: flex;
   flex-direction: column;
   width: 100%;
+  align-items: flex-start;
 }
 
 .field-content .add-button {
@@ -529,6 +531,7 @@ body.dark .delete-tag-button:hover {
   margin: 0;
   padding-left: 20px;
   font-size: 0.9em;
+  display: inline-block;
 }
 
 .references-container {

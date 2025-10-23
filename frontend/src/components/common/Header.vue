@@ -11,7 +11,7 @@
       </button>
       
       <!-- Platform name with link to about -->
-      <router-link to="/about" class="platform-name">
+      <router-link to="/" class="platform-name">
         {{ platformName || 'CommonGraph' }}
       </router-link>
     </div>

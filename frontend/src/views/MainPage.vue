@@ -1,31 +1,29 @@
 <template>
   <div class="main-page">
-    <div class="content">
-      <router-link :to="{ name: 'About' }" class="platform-link">
-        <h1>{{ platformName }}</h1>
-      </router-link>
-      <p class="tagline">
-        {{ platformTagline }}
-      </p>
+    <!-- Background graph -->
+    <div class="graph-background">
+      <SigmaGraphVis
+        :height="'100%'"
+        :show-controls="false"
+        :auto-start-force-atlas="true"
+        @node-click="handleNodeClick"
+        @edge-click="handleEdgeClick"
+        @graph-loaded="handleGraphLoaded"
+      />
+    </div>
+    
+    <!-- Foreground content panel -->
+    <div class="content-panel">
+      <div class="content">
+        <router-link :to="{ name: 'About' }" class="platform-link">
+          <h1>{{ platformName }}</h1>
+        </router-link>
+        <p class="tagline">
+          {{ platformTagline }}
+        </p>
 
-      <p class="content"> Use the top search bar to get started. </p>
-      <!-- <div class="search-container">
-        <SearchBar
-          class="wide-search"
-          @search="goToSearch"
-          style="max-width: 600px; width: 450px"
-        />
+        <p class="instruction">Use the top search bar to get started.</p>
       </div>
-      <div class="graph-container">
-        <SigmaGraphVis
-          :height="'500px'"
-          :show-controls="true"
-          :auto-start-force-atlas="true"
-          @node-click="handleNodeClick"
-          @edge-click="handleEdgeClick"
-          @graph-loaded="handleGraphLoaded"
-        />
-      </div> -->
     </div>
   </div>
 </template>
@@ -38,7 +36,7 @@ import { buildSearchParams } from "../utils/searchParser.js";
 import { useConfig } from "../composables/useConfig";
 
 export default {
-  components: { SearchBar },
+  components: { SearchBar, SigmaGraphVis },
   data() {
     return {
       quote: null,
@@ -72,50 +70,85 @@ export default {
 
 <style scoped>
 .main-page {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Background graph layer */
+.graph-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  opacity: 0.8;
+}
+
+/* Foreground content panel */
+.content-panel {
+  position: relative;
+  z-index: 2;
   display: flex;
   align-items: center;
   justify-content: center;
   height: 100%;
+  padding: 20px;
 }
 
 .content {
   text-align: center;
   margin: 0 auto;
   max-width: 600px;
-  padding: 0 20px;
+  padding: 40px;
   font-size: 1.1rem;
+  background-color: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(2px);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+/* Dark mode support */
+:global(body.dark) .content {
+  background-color: rgba(30, 30, 30, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .tagline {
-  margin-top: -25px;
   font-size: 1.2rem;
   color: var(--text-color);
   font-style: italic;
-  opacity: 0.7;
+  opacity: 1;
 }
 
-.search-container {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 30px;
-  margin-top: 40px;
-}
-
-.graph-container {
-  display: flex;
-  justify-content: center;
-  width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
+.instruction {
+  margin-top: 20px;
+  font-size: 1rem;
+  color: var(--text-color);
+  opacity: 1;
 }
 
 .platform-link {
   text-decoration: none;
   color: inherit;
   cursor: pointer;
+  transition: color 0.3s ease;
 }
 
 .platform-link:hover {
   color: #646cff;
+}
+
+.platform-link h1 {
+  margin: 0;
+  transition: transform 0.3s ease;
+  opacity: 1;
+}
+
+.platform-link:hover h1 {
+  transform: scale(1.05);
 }
 </style>

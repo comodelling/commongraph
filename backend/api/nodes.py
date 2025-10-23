@@ -2,15 +2,17 @@ import logging
 import datetime
 
 from fastapi import Body, Depends, HTTPException, Query, APIRouter, status, Path
+from sqlmodel import Session
 
 from backend.api.auth import get_current_user
 from backend.utils.permissions import can_create, can_edit, can_delete, can_rate
 from backend.db.base import GraphDatabaseInterface, GraphHistoryRelationalInterface, RatingHistoryRelationalInterface
-from backend.db.connections import get_graph_db, get_graph_history_db, get_rating_history_db
+from backend.db.connections import get_graph_db, get_graph_history_db, get_rating_history_db, get_relational_session
 from backend.db.janusgraph import JanusGraphDB
 from backend.models.fixed import GraphHistoryEvent, NodeId, RatingEvent, UserRead, EntityType
 from backend.models.dynamic import DynamicNode, NodeTypeModels, NodeSearchResult
 from backend.properties import NodeStatus
+from backend.api.scopes import get_or_create_scope
 
 logger = logging.getLogger(__name__)
 
@@ -108,6 +110,7 @@ def create_node(
     db_history: GraphHistoryRelationalInterface = Depends(
         get_graph_history_db
     ),
+    session: Session = Depends(get_relational_session),
     user: UserRead = Depends(get_current_user),
 ) -> DynamicNode: #type: ignore
     """Create a node."""
@@ -122,6 +125,17 @@ def create_node(
     Model = NodeTypeModels.get(nt)
     if not Model:
         raise HTTPException(400, f"Unknown node_type {nt!r}")
+    
+    # Handle scope: ensure it exists in the scopes table
+    if "scope" in payload and payload["scope"]:
+        try:
+            get_or_create_scope(payload["scope"], session)
+            session.commit()  # Commit the scope creation
+        except Exception as e:
+            logger.error(f"Failed to create scope: {e}")
+            session.rollback()
+            raise HTTPException(500, f"Failed to create scope: {str(e)}")
+    
     #TODO: validate payload further, within graph, against Graph Schema
     node = Model(**payload)
 
@@ -164,6 +178,7 @@ def update_node(
     db_history: GraphHistoryRelationalInterface = Depends(
         get_graph_history_db
     ),
+    session: Session = Depends(get_relational_session),
     user: UserRead = Depends(get_current_user),
 ) -> DynamicNode: #type: ignore
     """Update the properties of an existing node."""
@@ -178,6 +193,17 @@ def update_node(
     Model = NodeTypeModels.get(nt)
     if not Model:
         raise HTTPException(400, f"Unknown node_type {nt!r}")
+    
+    # Handle scope: ensure it exists in the scopes table
+    if "scope" in payload and payload["scope"]:
+        try:
+            get_or_create_scope(payload["scope"], session)
+            session.commit()  # Commit the scope creation
+        except Exception as e:
+            logger.error(f"Failed to create scope: {e}")
+            session.rollback()
+            raise HTTPException(500, f"Failed to create scope: {str(e)}")
+    
     #TODO: validate payload further, within graph, against Graph Schema
     node = Model(**payload)
     node_out = db_history.update_node(node, username=user.username)

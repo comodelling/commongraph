@@ -15,6 +15,7 @@ from backend.api.nodes import router as nodes_router
 from backend.api.edges import router as edges_router
 from backend.api.graph import router as graph_router
 from backend.api.schema import router as schema_router
+from backend.api.scopes import router as scopes_router
 from backend.config import (PLATFORM_NAME, NODE_TYPE_PROPS, EDGE_TYPE_PROPS, EDGE_TYPE_BETWEEN,
                             NODE_TYPE_STYLE, EDGE_TYPE_STYLE, NODE_TYPE_POLLS, EDGE_TYPE_POLLS, 
                             TAGLINE)
@@ -87,6 +88,7 @@ app.include_router(nodes_router)
 app.include_router(edges_router)
 app.include_router(graph_router)
 app.include_router(schema_router)
+app.include_router(scopes_router)
 
 
 

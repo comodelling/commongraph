@@ -48,12 +48,12 @@
         >
           {{ editedNode.scope || "Click to add a scope" }}
         </span>
-        <input
+        <ScopeAutocomplete
           v-else
           v-model="editedNode.scope"
           @blur="stopEditing('scope')"
+          :error="scopeError"
           ref="scopeInput"
-          :class="{ 'error-input': scopeError }"
         />
       </div>
     </div>
@@ -195,8 +195,12 @@ import {
   getAllowedSourceNodeTypes,
   getAllowedEdgeTypes,
 } from "../../composables/useGraphSchema";
+import ScopeAutocomplete from "./ScopeAutocomplete.vue";
 
 export default {
+  components: {
+    ScopeAutocomplete,
+  },
   props: {
     node: Object,
   },
@@ -269,7 +273,12 @@ export default {
         if (Array.isArray(ref)) {
           ref[0].focus();
         } else if (ref) {
-          ref.focus();
+          // Handle component refs (like ScopeAutocomplete) vs native elements
+          if (ref.focus && typeof ref.focus === 'function') {
+            ref.focus();
+          } else if (ref.$el && ref.$el.focus) {
+            ref.$el.focus();
+          }
         }
       });
     },

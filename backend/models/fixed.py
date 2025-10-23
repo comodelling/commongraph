@@ -137,6 +137,35 @@ class MigrateLabelRequest(SQLModel):
     property_name: str
 
 
+class Scope(SQLModel, table=True):
+    """Scope model for storing geographic/jurisdictional scopes."""
+    
+    __table_args__ = {"extend_existing": True}
+    scope_id: int | None = Field(default=None, primary_key=True)
+    name: str = Field(
+        ...,
+        unique=True,
+        index=True,
+        description="Unique name of the scope (e.g., 'global', 'France', 'Paris')"
+    )
+    created_at: datetime.datetime = Field(
+        default_factory=lambda: datetime.datetime.now(datetime.timezone.utc),
+        description="When this scope was created",
+    )
+
+
+class ScopeRead(SQLModel):
+    """Scope read model for API responses."""
+    scope_id: int
+    name: str
+    created_at: datetime.datetime
+
+
+class ScopeCreate(SQLModel):
+    """Scope creation model."""
+    name: str = Field(..., min_length=1, description="Name of the scope")
+
+
 class RatingEvent(SQLModel, table=True):
     """RatingEvent model"""
 

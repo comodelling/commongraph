@@ -1,9 +1,11 @@
 import logging
 
+from sqlmodel import Session
 from backend.settings import settings
 from backend.db.base import GraphHistoryRelationalInterface, RatingHistoryRelationalInterface, UserDatabaseInterface
 from backend.db.postgresql import GraphHistoryPostgreSQLDB, RatingHistoryPostgreSQLDB, UserPostgreSQLDB
 from backend.db.janusgraph import JanusGraphDB
+from backend.db.config import get_engine
 
 logger = logging.getLogger(__name__)
 
@@ -48,3 +50,12 @@ def get_rating_history_db(
     else:
         raise ValueError(f"Unsupported db type: {db_type} for graph_history_db")
 
+
+def get_relational_session():
+    """
+    Dependency that provides a SQLModel Session for relational database operations.
+    Used for direct table access (e.g., scopes, users).
+    """
+    engine = get_engine(settings.POSTGRES_DB_URL)
+    with Session(engine) as session:
+        yield session

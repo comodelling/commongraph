@@ -96,6 +96,7 @@ export default {
   justify-content: center;
   height: 100%;
   padding: 20px;
+  pointer-events: none; /* Allow clicks to pass through to graph */
 }
 
 .content {
@@ -104,11 +105,12 @@ export default {
   max-width: 600px;
   padding: 40px;
   font-size: 1.1rem;
-  background-color: rgba(255, 255, 255, 0.2);
+  background-color: rgba(255, 255, 255, 0.5);
   backdrop-filter: blur(2px);
   border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
   border: 1px solid rgba(255, 255, 255, 0.18);
+  pointer-events: auto; /* Re-enable clicks on the content box itself */
 }
 
 /* Dark mode support */

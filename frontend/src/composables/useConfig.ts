@@ -5,7 +5,8 @@ import api from "../api/axios";
 const nodeTypes     = ref<Record<string, any>>({});
 const edgeTypes     = ref<Record<string, any>>({});
 const platformName  = ref<string>("");
-const tagline       = ref<string>("");
+const platformTagline       = ref<string>("");
+const platformDescription   = ref<string>("");
 const configLoaded  = ref(false);
 const nodePollTypes = ref<Record<string, any>>({});
 const edgePollTypes = ref<Record<string, any>>({});
@@ -26,7 +27,8 @@ async function load(forceReload = false) {
       return { ...acc, ...polls };
     }, {});
     platformName.value = data.platform_name;
-    tagline.value = data.tagline;
+    platformTagline.value = data.platform_tagline;
+    platformDescription.value = data.platform_description;
     permissions.value = data.permissions || {};
     configLoaded.value = true;
     console.log("Config loaded", forceReload ? "(forced reload)" : "");
@@ -64,7 +66,8 @@ export function useConfig() {
 
   return {
     load, clearCache, reloadConfig: () => load(true),
-    nodeTypes, edgeTypes, platformName, tagline, configLoaded,
+    nodeTypes, edgeTypes, platformName, platformTagline: platformTagline, platformDescription: platformDescription,
+    configLoaded,
     defaultNodeType, defaultEdgeType,
     nodePollTypes, edgePollTypes,
     getNodePolls, getEdgePolls,

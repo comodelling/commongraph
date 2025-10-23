@@ -24,7 +24,12 @@ def get_current_config() -> Dict[str, Any]:
 _CONFIG = load_config()
 
 PLATFORM_NAME = _CONFIG.get("platform_name", "CommonGraph")
-TAGLINE = _CONFIG.get("tagline", "Building graph-based collaborative platforms together.")
+# Prefer new keys (platform_tagline, platform_description) but keep legacy fallbacks
+PLATFORM_TAGLINE = _CONFIG.get("platform_tagline",
+                             _CONFIG.get("tagline", "Building graph-based collaborative platforms together."))
+# Accept either `platform_description` or legacy `description_html`. Keep raw string (may contain HTML).
+PLATFORM_DESCRIPTION = _CONFIG.get("platform_description",
+                                  _CONFIG.get("description_html", ""))
 NODE_TYPE_CFG  = _CONFIG["node_types"]
 EDGE_TYPE_CFG  = _CONFIG["edge_types"]
 POLLS_CFG  = _CONFIG.get("polls", {})

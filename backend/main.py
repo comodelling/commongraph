@@ -16,9 +16,9 @@ from backend.api.edges import router as edges_router
 from backend.api.graph import router as graph_router
 from backend.api.schema import router as schema_router
 from backend.api.scopes import router as scopes_router
-from backend.config import (PLATFORM_NAME, NODE_TYPE_PROPS, EDGE_TYPE_PROPS, EDGE_TYPE_BETWEEN,
+from backend.config import (PLATFORM_DESCRIPTION, PLATFORM_NAME, NODE_TYPE_PROPS, EDGE_TYPE_PROPS, EDGE_TYPE_BETWEEN,
                             NODE_TYPE_STYLE, EDGE_TYPE_STYLE, NODE_TYPE_POLLS, EDGE_TYPE_POLLS, 
-                            TAGLINE)
+                            PLATFORM_TAGLINE)
 from backend.utils.permissions import get_permission_summary
 from backend.models.fixed import UserRead
 from backend.db.postgresql import UserPostgreSQLDB
@@ -118,7 +118,8 @@ def get_config(current_user: UserRead = Depends(get_current_user)):
     }
     return {
         "platform_name": PLATFORM_NAME,
-        "tagline": TAGLINE,
+        "platform_tagline": PLATFORM_TAGLINE,
+        "platform_description": PLATFORM_DESCRIPTION,
         "node_types": node_types,
         "edge_types": edge_types,
         "schema_version": get_current_config_version(),

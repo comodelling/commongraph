@@ -5,8 +5,10 @@
         <h1>{{ platformName }}</h1>
       </router-link>
       <p class="tagline">
-        {{ tagline }}
+        {{ platformTagline }}
       </p>
+
+      <p class="content"> Use the top search bar to get started. </p>
       <!-- <div class="search-container">
         <SearchBar
           class="wide-search"
@@ -43,9 +45,9 @@ export default {
     };
   },
   setup() {
-    const { platformName, load, tagline } = useConfig();
+    const { platformName, load, platformTagline } = useConfig();
     onMounted(load);
-    return { platformName, tagline };
+    return { platformName, platformTagline };
   },
   methods: {
     goToSearch(parsedQuery) {
@@ -81,11 +83,15 @@ export default {
   margin: 0 auto;
   max-width: 600px;
   padding: 0 20px;
+  font-size: 1.1rem;
 }
 
 .tagline {
-  font-size: 1.25rem;
-  margin-bottom: 1.5rem;
+  margin-top: -25px;
+  font-size: 1.2rem;
+  color: var(--text-color);
+  font-style: italic;
+  opacity: 0.7;
 }
 
 .search-container {

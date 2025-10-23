@@ -1,6 +1,7 @@
 
 platform_name: CommonGraph-example
-tagline: This is an example tagline
+platform_tagline: This is an example tagline
+platform_description: This is an example description which should support html formatting.
 node_types:
   example_node_type:
     properties:

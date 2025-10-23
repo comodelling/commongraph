@@ -1,69 +1,22 @@
 <template>
   <div class="about">
-    <div v-if="platformName === 'CommonGraph'" class="commongraph-about">
+    <div class="commongraph-about">
       <header class="about-header">
         <h1 class="platform-title">About {{ platformName }}</h1>
-        <div class="subtitle">Graph-based & collaborative platform builder</div>
+        <div class="subtitle"> {{ platformTagline }}</div>
       </header>
       
-      <div class="content-section">
-        <p class="description">
-          <strong>CommonGraph</strong> is a software project enabling groups to
-          <span class="highlight">create collaborative platforms</span>, where users co-produce and
-          curate data as <span class="highlight">property graphs</span>, i.e. nodes and edges with diverse properties.
+      <p class="description" v-html="platformDescription"></p>
+
+      <p class="description">
+        It is powered by <b>CommonGraph</b>, a free and open source tool to build graph-based co-production platforms.
+      </p>
+
+      <div class="description">
+        <p>
+          For any feedback, please reach out at:
+          <a :href="`mailto:${adminEmail}`" class="contact-link">{{ adminEmail }}</a>.
         </p>
-        
-        <p class="description">
-          Beyond peer-production of data, groups are also empowered to 
-          <span class="highlight">relate and evaluate information</span>, allowing for a 
-          wide range of inputs from users.
-        </p>
-        
-        <p class="description">
-          Graph and collaboration settings are configurable, enabling the creation of 
-          platforms tailored to specific needs. It is 
-          <span class="highlight">free and open source</span> and aims for accessibility 
-          and transparency.
-        </p>
-        
-        <div class="contact-section">
-          <p>
-            For any feedback, or if you would like to get involved, please reach out at:
-            <a :href="`mailto:${adminEmail}`" class="contact-link">{{ adminEmail }}</a>.
-          </p>
-        </div>
-      </div>
-    </div>
-    
-    <div v-else class="custom-platform-about">
-      <header class="about-header">
-        <h1 class="platform-title">About {{ platformName }}</h1>
-      </header>
-      
-      <div class="content-section">
-        <div class="placeholder-content">
-          <p class="description">
-            Welcome to <strong>{{ platformName }}</strong>, a collaborative knowledge platform 
-            powered by CommonGraph.
-          </p>
-          
-          <div class="customization-notice">
-            <h3>Customise This Page</h3>
-            <p>
-              This is the default about page. To customise it for your platform:
-            </p>
-            <ul>
-              <li>Edit the content in <code>frontend/src/views/About.vue</code></li>
-            </ul>
-          </div>
-          
-          <div class="contact-section" v-if="adminEmail">
-            <p>
-              For questions about this platform, contact: 
-              <a :href="`mailto:${adminEmail}`" class="contact-link">{{ adminEmail }}</a>
-            </p>
-          </div>
-        </div>
       </div>
     </div>
   </div>
@@ -75,12 +28,12 @@ import { useConfig } from "../composables/useConfig";
 
 export default {
   setup() {
-    const { platformName, load } = useConfig();
+    const { platformName, platformTagline, platformDescription, load } = useConfig();
     const adminEmail = import.meta.env.VITE_ADMIN_EMAIL;
     
     onMounted(load);
-    
-    return { platformName, adminEmail };
+
+    return { platformName, platformTagline, platformDescription, adminEmail };
   },
 };
 </script>

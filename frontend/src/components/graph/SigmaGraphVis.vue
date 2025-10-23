@@ -37,7 +37,7 @@ export default {
     // Show layout control buttons
     showControls: {
       type: Boolean,
-      default: true
+      default: false
     },
     // Auto-start force atlas layout
     autoStartForceAtlas: {

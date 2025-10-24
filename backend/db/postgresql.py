@@ -32,6 +32,7 @@ from backend.properties import NodeStatus
 from backend.models.dynamic import NodeTypeModels, EdgeTypeModels, DynamicSubgraph
 from backend.utils.security import hash_password
 from backend.db.config import get_engine
+from backend.settings import settings
 
 # logger in debug mode
 logging.basicConfig(level=logging.DEBUG)
@@ -863,6 +864,19 @@ class GraphHistoryPostgreSQLDB(GraphHistoryRelationalInterface):
         node_dict = self._to_dict(node)
         if not node_dict.get("node_id"):
             node_dict["node_id"] = random.randint(1, 10**6)
+            # Ensure scope exists in relational scopes table when provided
+            scope_name = node_dict.get("scope")
+            if scope_name:
+                try:
+                    from backend.api.scopes import get_or_create_scope
+                    engine = get_engine(settings.POSTGRES_DB_URL)
+                    from sqlmodel import Session as _Session
+
+                    with _Session(engine) as session:
+                        get_or_create_scope(scope_name, session)
+                        session.commit()
+                except Exception as e:
+                    self.logger.error(f"Failed to ensure scope exists: {e}")
         event = GraphHistoryEvent(
             state=EntityState.created,
             entity_type=EntityType.node,
@@ -906,6 +920,19 @@ class GraphHistoryPostgreSQLDB(GraphHistoryRelationalInterface):
         new_data = self._to_dict(node)
         # Merge (new_data overrides current_data)
         merged = {**current_data, **new_data}
+        # Ensure scope exists in relational scopes table when provided in merged payload
+        scope_name = merged.get("scope")
+        if scope_name:
+            try:
+                from backend.api.scopes import get_or_create_scope
+                engine = get_engine(settings.POSTGRES_DB_URL)
+                from sqlmodel import Session as _Session
+
+                with _Session(engine) as session:
+                    get_or_create_scope(scope_name, session)
+                    session.commit()
+            except Exception as e:
+                self.logger.error(f"Failed to ensure scope exists on update: {e}")
         event = GraphHistoryEvent(
             state=EntityState.updated,
             entity_type=EntityType.node,

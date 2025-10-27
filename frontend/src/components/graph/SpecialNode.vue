@@ -95,8 +95,8 @@ const triangleRotation = computed(() => {
 .triangle-handle {
   background: transparent !important;
   border: none !important;
-  width: 13px !important;
-  height: 13px !important;
+  width: 14px !important;
+  height: 14px !important;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -109,9 +109,9 @@ const triangleRotation = computed(() => {
 .triangle-arrow {
   width: 0;
   height: 0;
-  border-top: 10px solid transparent;
-  border-bottom: 10px solid transparent;
-  border-left: 15px solid var(--border-color);
+  border-top: 12px solid transparent;
+  border-bottom: 12px solid transparent;
+  border-left: 18px solid var(--border-color);
   transform-origin: center;
   transition: all 0.2s ease;
   /* Triangle should not block pointer events - let them pass through to the handle */
@@ -120,9 +120,9 @@ const triangleRotation = computed(() => {
 
 /* Make triangle larger and darker on hover */
 .triangle-handle:hover .triangle-arrow {
-  border-top-width: 11px;
-  border-bottom-width: 11px;
-  border-left-width: 16px;
+  border-top-width: 13px;
+  border-bottom-width: 13px;
+  border-left-width: 19px;
   border-left-color: var(--text-color);
 }
 

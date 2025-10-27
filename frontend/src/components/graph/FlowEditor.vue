@@ -101,7 +101,7 @@ const contextMenuRef = ref(null);
 const showSearchBar = ref(false);
 const searchBarPosition = ref({ x: 0, y: 0 });
 const searchResults = ref(null);
-const selectedDirection = ref(previousDirection.value || null);
+const selectedDirection = ref(previousDirection.value || "LR"); // Default to Left-to-Right
 
 const currentNodeIds = computed(() => {
   return new Set(nodes.value.map((node) => node.id));

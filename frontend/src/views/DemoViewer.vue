@@ -21,6 +21,7 @@
               <NodeInfo
                 v-if="node"
                 :node="node"
+                :read-only="true"
                 @update-node-from-editor="updateNodeFromEditor"
               />
               <div v-else class="info-placeholder">
@@ -31,6 +32,7 @@
               <EdgeInfo
                 v-if="edge"
                 :edge="edge"
+                :read-only="true"
                 @update-edge-from-editor="updateEdgeFromEditor"
               />
               <div v-else class="info-placeholder">
@@ -83,6 +85,7 @@
           <SubgraphRenderer
             style="width: 100%; height: 100%;"
             :data="subgraphData"
+            :read-only="true"
             @nodeClick="updateNodeFromBackend"
             @edgeClick="updateEdgeFromBackend"
             @newNodeCreated="openNewlyCreatedNode"

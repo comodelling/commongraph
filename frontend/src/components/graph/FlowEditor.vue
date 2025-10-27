@@ -78,6 +78,10 @@ const props = defineProps({
   },
   updatedNode: Object,
   updatedEdge: Object,
+  readOnly: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const router = useRouter();
@@ -504,6 +508,11 @@ function onConnectStart({ nodeId, handleType }) {
 function onConnect(connection) {
   console.log("on connect", connection);
   
+  // Block connections in read-only mode
+  if (props.readOnly) {
+    return;
+  }
+  
   // Check permissions first
   if (!canCreate.value) {
     alert("You don't have permission to create edges. Please log in with an account that has create permissions.");
@@ -527,6 +536,11 @@ function onConnect(connection) {
 
 function onConnectEnd(event) {
   console.log("on connect end", event);
+
+  // Block in read-only mode
+  if (props.readOnly) {
+    return;
+  }
 
   if (connectionInfo.value) {
     console.log("Connected to an empty space");
@@ -617,6 +631,12 @@ function handleSearch(query) {
 
 function createNodeAndEdge(event = null) {
   console.log("Creating a new node");
+  
+  // Block in read-only mode
+  if (props.readOnly) {
+    closeSearchBar();
+    return;
+  }
   
   // Check permissions first
   if (!canCreate.value) {
@@ -827,6 +847,12 @@ function showContextMenu(event, options) {
 
 function onNodeRightClick({ event, node }) {
   console.log("Node Right Click", node);
+  
+  // Block context menu in read-only mode
+  if (props.readOnly) {
+    return;
+  }
+  
   const options = [];
   
   if (canEdit.value) {
@@ -847,6 +873,12 @@ function onNodeRightClick({ event, node }) {
 
 function onEdgeRightClick({ event, edge }) {
   console.log("Edge Right Click", edge);
+  
+  // Block context menu in read-only mode
+  if (props.readOnly) {
+    return;
+  }
+  
   const options = [];
   
   if (canEdit.value) {
@@ -887,6 +919,11 @@ function onSelectionRightClick({ event, nodes }) {
 function onPaneRightClick(event) {
   event.preventDefault();
   console.log("Pane Right Click", event);
+
+  // Block in read-only mode
+  if (props.readOnly) {
+    return;
+  }
 
   searchBarPosition.value = determinePositionWithinWindow(event);
   setTimeout(() => {

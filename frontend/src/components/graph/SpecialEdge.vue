@@ -3,8 +3,6 @@
     <title>{{ hoverText }}</title>
     <BaseEdge
       :path="path[0]"
-      :marker-end="markerEnd"
-      :marker-start="markerStart"
       :style="style"
     />
   </g>

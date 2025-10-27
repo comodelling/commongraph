@@ -58,7 +58,16 @@ const tooltipContent = computed(() => {
   return tooltip;
 });
 
-// console.log('sourcePosition', sourcePosition)
+// All triangles point in the same causal direction based on source position
+const triangleRotation = computed(() => {
+  switch (props.sourcePosition) {
+    case 'right': return '0deg';
+    case 'bottom': return '90deg';
+    case 'left': return '180deg';
+    case 'top': return '270deg';
+    default: return '0deg';
+  }
+});
 </script>
 
 <template>
@@ -66,7 +75,9 @@ const tooltipContent = computed(() => {
     type="source"
     :position="sourcePosition"
     title="Create implications"
-  />
+    class="triangle-handle source-handle">
+    <div class="triangle-arrow" :style="{ transform: `rotate(${triangleRotation})` }"></div>
+  </Handle>
 
   <span :title="tooltipContent">{{ label }}</span>
 
@@ -74,5 +85,46 @@ const tooltipContent = computed(() => {
     type="target"
     :position="targetPosition"
     title="Create conditions"
-  />
+    class="triangle-handle target-handle">
+    <div class="triangle-arrow" :style="{ transform: `rotate(${triangleRotation})` }"></div>
+  </Handle>
 </template>
+
+<style scoped>
+/* Override the default circle handle but keep it interactive */
+.triangle-handle {
+  background: transparent !important;
+  border: none !important;
+  width: 16px !important;
+  height: 16px !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: crosshair !important;
+  /* Ensure the handle itself is clickable/draggable */
+  pointer-events: auto !important;
+}
+
+/* Create a CSS triangle that points right by default */
+.triangle-arrow {
+  width: 0;
+  height: 0;
+  border-top: 6px solid transparent;
+  border-bottom: 6px solid transparent;
+  border-left: 10px solid var(--border-color);
+  transform-origin: center;
+  transition: all 0.2s ease;
+  /* Triangle should not block pointer events - let them pass through to the handle */
+  pointer-events: none;
+}
+
+/* Make triangle larger and darker on hover */
+.triangle-handle:hover .triangle-arrow {
+  border-top-width: 8px;
+  border-bottom-width: 8px;
+  border-left-width: 12px;
+  border-left-color: var(--text-color);
+}
+
+/* Dark mode support - already uses CSS variables */
+</style>

@@ -57,13 +57,14 @@
             required
           />
         </label>
-        <label>
-          Email (optional):
-          <input v-model="email" type="email" placeholder="Enter your email" />
-        </label>
-        <label>
-          Display Name (optional):
-          <input v-model="displayName" placeholder="Enter your display name" />
+        <label class="checkbox-label">
+          <input
+            type="checkbox"
+            v-model="acceptPrivacyPolicy"
+            required
+          />
+          I have read and agree to the
+          <router-link to="/privacy" target="_blank">Privacy Policy</router-link>
         </label>
         <button type="submit">Sign Up</button>
       </form>
@@ -81,12 +82,11 @@ import router from "../router";
 export default {
   setup() {
     const username = ref("");
-    const email = ref("");
-    const displayName = ref("");
     const password = ref("");
     const confirmPassword = ref("");
     const securityQuestion = ref("");
     const securityAnswer = ref("");
+    const acceptPrivacyPolicy = ref(false);
     const error = ref(null);
     const success = ref(null);
     const minPasswordLength = 8;
@@ -95,6 +95,11 @@ export default {
     const signup = async () => {
       error.value = null;
       success.value = null;
+
+      if (!acceptPrivacyPolicy.value) {
+        error.value = "You must accept the Privacy Policy to sign up.";
+        return;
+      }
 
       if (password.value.length < minPasswordLength) {
         error.value = `Password must be at least ${minPasswordLength} characters long.`;
@@ -132,8 +137,6 @@ export default {
           ...(securityAnswer.value && {
             security_answer: securityAnswer.value,
           }),
-          ...(email.value && { email: email.value }),
-          ...(displayName.value && { display_name: displayName.value }),
         };
         const response = await api.post(
           `/auth/signup`,
@@ -157,12 +160,11 @@ export default {
 
     return {
       username,
-      email,
-      displayName,
       password,
       confirmPassword,
       securityQuestion,
       securityAnswer,
+      acceptPrivacyPolicy,
       signup,
       error,
       success,
@@ -183,5 +185,25 @@ form {
 
 label {
   text-align: left;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: auto;
+  margin: 0;
+}
+
+.checkbox-label a {
+  color: var(--color-link, #4a9eff);
+  text-decoration: underline;
+}
+
+.checkbox-label a:hover {
+  color: var(--color-link-hover, #2a7edf);
 }
 </style>

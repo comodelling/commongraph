@@ -14,6 +14,7 @@ import UpdateSecurityQuestion from "../views/UpdateSecurityQuestion.vue";
 import UpdatePassword from "../views/UpdatePassword.vue";
 import Schema from "../views/Schema.vue";
 import AdminUsers from "../views/AdminUsers.vue";
+import PrivacyPolicy from "../views/PrivacyPolicy.vue";
 import { useUnsaved } from "../composables/useUnsaved";
 
 const routes = [
@@ -24,6 +25,7 @@ const routes = [
     children: [
       { path: "", name: "Main Page", component: MainPage },
       { path: "about", name: "About", component: About },
+      { path: "privacy", name: "PrivacyPolicy", component: PrivacyPolicy },
       { path: "search", name: "SearchPage", component: SearchPage },
       { path: "schema", name: "Schema", component: Schema },
       { path: "/login", name: "Login", component: Login },

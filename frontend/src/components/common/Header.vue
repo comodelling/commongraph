@@ -56,6 +56,7 @@ import { useAuth } from "../../composables/useAuth";
 import { useTheme } from "../../composables/useTheme";
 import SearchBar from "./SearchBar.vue";
 import ThemeToggle from "./ThemeToggle.vue";
+import { buildSearchParams } from "../../utils/searchParser.js";
 
 export default {
   components: {
@@ -102,20 +103,15 @@ export default {
     };
 
     const handleSearch = (parsedQuery) => {
-      // Navigate to search page with query parameters
-      const queryParams = {
-        q: parsedQuery.text || '',
-        node_type: parsedQuery.nodeType || '',
-        edge_type: parsedQuery.edgeType || '',
-        tags: parsedQuery.tags ? parsedQuery.tags.join(',') : ''
-      };
+      // Use the standard buildSearchParams utility to convert parsed query to route params
+      const queryParams = buildSearchParams(parsedQuery);
       
-      // Remove empty parameters
-      Object.keys(queryParams).forEach(key => {
-        if (!queryParams[key]) {
-          delete queryParams[key];
-        }
-      });
+      // buildSearchParams returns { title, node_type, status, tags, scope, rating }
+      // Convert 'title' to 'q' for the route (SearchPage expects 'q')
+      if (queryParams.title) {
+        queryParams.q = queryParams.title;
+        delete queryParams.title;
+      }
 
       router.push({
         name: 'SearchPage',

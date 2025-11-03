@@ -14,9 +14,11 @@ import UpdateSecurityQuestion from "../views/UpdateSecurityQuestion.vue";
 import UpdatePassword from "../views/UpdatePassword.vue";
 import Schema from "../views/Schema.vue";
 import AdminUsers from "../views/AdminUsers.vue";
+import DemoViewer from "../views/DemoViewer.vue";
 import { useUnsaved } from "../composables/useUnsaved";
 
 const routes = [
+  // Main app routes - with Layout
   {
     path: "/",
     name: "MainPage",
@@ -26,6 +28,25 @@ const routes = [
       { path: "about", name: "About", component: About },
       { path: "search", name: "SearchPage", component: SearchPage },
       { path: "schema", name: "Schema", component: Schema },
+      // Demo routes - now inside Layout for header/sidebar
+      {
+        path: "/demo/:demoId",
+        name: "Demo",
+        component: DemoViewer,
+        props: true,
+      },
+      {
+        path: "/demo/:demoId/node/:id",
+        name: "DemoNode",
+        component: DemoViewer,
+        props: true,
+      },
+      {
+        path: "/demo/:demoId/edge/:source_id/:target_id",
+        name: "DemoEdge",
+        component: DemoViewer,
+        props: true,
+      },
       { path: "/login", name: "Login", component: Login },
       { path: "/signup", name: "Signup", component: Signup },
       { path: "/settings", name: "UserSettings", component: UserSettings },

@@ -13,17 +13,18 @@
             View
           </button>
           <button
-            :class="{ active: currentTab === 'edit', disabled: !canEdit }"
-            @click="canEdit ? switchTab('edit') : null"
-            :disabled="!canEdit"
-            :title="canEdit ? 'Edit this edge' : 'You need edit permissions to modify edges'"
+            :class="{ active: currentTab === 'edit', disabled: !canEdit || readOnly }"
+            @click="canEdit && !readOnly ? switchTab('edit') : null"
+            :disabled="!canEdit || readOnly"
+            :title="readOnly ? 'Editing disabled in demo mode' : (canEdit ? 'Edit this edge' : 'You need edit permissions to modify edges')"
           >
             Edit
           </button>
           <button
             :class="{ active: currentTab === 'history' }"
-            @click="switchTab('history')"
-            :disabled="isBrandNewEdge"
+            @click="readOnly ? null : switchTab('history')"
+            :disabled="isBrandNewEdge || readOnly"
+            :title="readOnly ? 'History not available in demo mode' : 'View edge history'"
           >
             History
           </button>
@@ -79,6 +80,10 @@ export default {
       type: Object,
       required: false,
       default: undefined,
+    },
+    readOnly: {
+      type: Boolean,
+      default: false,
     },
   },
   emits: ["update-edge-from-editor"],

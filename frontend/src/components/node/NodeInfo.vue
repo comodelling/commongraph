@@ -4,7 +4,7 @@
       <div class="title-group">
         <h4>Node Info</h4>
         <button
-          v-if="!isBrandNewNode && node"
+          v-if="!isBrandNewNode && node && !readOnly"
           class="favourite-btn header-favourite"
           :title="isFavourite ? 'Remove from favourites' : 'Add to favourites'"
           @click="toggleFavourite"
@@ -21,17 +21,18 @@
           View
         </button>
         <button
-          :class="{ active: currentTab === 'edit', disabled: !canEdit }"
-          @click="canEdit ? switchTab('edit') : null"
-          :disabled="!canEdit"
-          :title="canEdit ? 'Edit this node' : 'You need edit permissions to modify nodes'"
+          :class="{ active: currentTab === 'edit', disabled: !canEdit || readOnly }"
+          @click="canEdit && !readOnly ? switchTab('edit') : null"
+          :disabled="!canEdit || readOnly"
+          :title="readOnly ? 'Editing disabled in demo mode' : (canEdit ? 'Edit this node' : 'You need edit permissions to modify nodes')"
         >
           Edit
         </button>
         <button
-          :class="{ active: currentTab === 'history', disabled: isBrandNewNode }"
-          @click="switchTab('history')"
-          :disabled="isBrandNewNode"
+          :class="{ active: currentTab === 'history', disabled: isBrandNewNode || readOnly }"
+          @click="readOnly ? null : switchTab('history')"
+          :disabled="isBrandNewNode || readOnly"
+          :title="readOnly ? 'History not available in demo mode' : 'View node history'"
         >
           History
         </button>
@@ -86,6 +87,10 @@ export default {
       type: Object,
       required: false,
       default: undefined,
+    },
+    readOnly: {
+      type: Boolean,
+      default: false,
     },
   },
   data() {

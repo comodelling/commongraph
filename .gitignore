@@ -52,3 +52,4 @@ nginx/ssl/
 # Config
 config/*
 !config/config-example.yaml
+!config/config-test.yaml

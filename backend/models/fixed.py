@@ -166,6 +166,50 @@ class ScopeCreate(SQLModel):
     name: str = Field(..., min_length=1, description="Name of the scope")
 
 
+class SignupToken(SQLModel, table=True):
+    """SignupToken model for invite-only signups"""
+
+    __table_args__ = {"extend_existing": True}
+    token: str = Field(
+        ...,
+        primary_key=True,
+        index=True,
+        description="Unique token for signup access"
+    )
+    created_by: str = Field(..., description="Admin username who created this token")
+    created_at: datetime.datetime = Field(
+        default_factory=lambda: datetime.datetime.now(datetime.timezone.utc),
+        description="When this token was created"
+    )
+    used_by: str | None = Field(
+        default=None,
+        description="Username who used this token, if any"
+    )
+    used_at: datetime.datetime | None = Field(
+        default=None,
+        description="When this token was used, if at all"
+    )
+    notes: str | None = Field(
+        default=None,
+        description="Optional notes about who this token is for"
+    )
+
+
+class SignupTokenRead(SQLModel):
+    """SignupToken read model for API responses"""
+    token: str
+    created_by: str
+    created_at: datetime.datetime
+    used_by: str | None
+    used_at: datetime.datetime | None
+    notes: str | None
+
+
+class SignupTokenCreate(SQLModel):
+    """SignupToken creation model"""
+    notes: str | None = Field(default=None, description="Optional notes about who this token is for")
+
+
 class RatingEvent(SQLModel, table=True):
     """RatingEvent model"""
 

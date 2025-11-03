@@ -57,6 +57,16 @@
             required
           />
         </label>
+        <label v-if="signupRequiresToken">
+          Access Token (required):
+          <input 
+            v-model="signupToken" 
+            type="text" 
+            placeholder="Enter your access token"
+            required
+          />
+          <small style="color: #666;">Token provided by an administrator</small>
+        </label>
         <label>
           Email (optional):
           <input v-model="email" type="email" placeholder="Enter your email" />
@@ -74,12 +84,14 @@
 </template>
 
 <script>
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
 import api from "../api/axios";
 import router from "../router";
+import { useConfig } from "../composables/useConfig";
 
 export default {
   setup() {
+    const { load } = useConfig();
     const username = ref("");
     const email = ref("");
     const displayName = ref("");
@@ -87,10 +99,21 @@ export default {
     const confirmPassword = ref("");
     const securityQuestion = ref("");
     const securityAnswer = ref("");
+    const signupToken = ref("");
+    const signupRequiresToken = ref(false);
     const error = ref(null);
     const success = ref(null);
     const minPasswordLength = 8;
     const minAnswerLength = 3;
+
+    onMounted(async () => {
+      try {
+        const { data } = await api.get('/config');
+        signupRequiresToken.value = data.signup_requires_token || false;
+      } catch (err) {
+        console.error('Error loading config:', err);
+      }
+    });
 
     const signup = async () => {
       error.value = null;
@@ -135,9 +158,15 @@ export default {
           ...(email.value && { email: email.value }),
           ...(displayName.value && { display_name: displayName.value }),
         };
+        
+        const payload = {
+          user: user_data,
+          ...(signupToken.value && { signup_token: signupToken.value })
+        };
+        
         const response = await api.post(
           `/auth/signup`,
-          user_data,
+          payload,
         );
         if (response.data.is_active) {
           success.value = `Signup successful for ${response.data.username}. Please log in.`;
@@ -163,6 +192,8 @@ export default {
       confirmPassword,
       securityQuestion,
       securityAnswer,
+      signupToken,
+      signupRequiresToken,
       signup,
       error,
       success,

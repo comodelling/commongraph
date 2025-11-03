@@ -13,7 +13,7 @@ os.chdir(project_root)
 
 # Set test configuration if not already set
 if "CONFIG_FILE" not in os.environ:
-    os.environ["CONFIG_FILE"] = "config/config-example.yaml"
+    os.environ["CONFIG_FILE"] = "config/config-test.yaml"
 
 # Set test database URL if not already set
 if "POSTGRES_TEST_DB_URL" not in os.environ:

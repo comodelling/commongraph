@@ -6,15 +6,19 @@ from sqlmodel import Field, SQLModel
 
 
 class NodeStatus(str, Enum):
-    unspecified = "unspecified"  # default
     draft = "draft"
-    live = "live"
-    completed = "completed"
-    legacy = "legacy"
+    live = "live"  # default
+    realised = "realised"
+    unrealised = "unrealised"
 
     @classmethod
     def _missing_(cls, value):
         value = value.lower()
+        # Fallback mappings for backward compatibility
+        if value == "unspecified":
+            return cls.live
+        if value in ("completed", "legacy"):
+            return cls.realised
         for member in cls:
             if member.value == value:
                 return member
@@ -24,7 +28,7 @@ class NodeStatus(str, Enum):
 class PredefinedProperties(SQLModel):
     title: str | None = None
     scope: str | None = None
-    status: NodeStatus | None = NodeStatus.unspecified
+    status: NodeStatus | None = NodeStatus.live
     description: str | None = None
     tags: list[str] | None = Field(default_factory=list)
     references: list[str] | None = Field(default_factory=list)

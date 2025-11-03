@@ -62,11 +62,10 @@
       <strong :title="tooltips.node.status">Status:</strong>
       <div class="field-content">
         <select v-model="editedNode.status" ref="statusInput">
-          <option value="unspecified" :title="tooltips.node.unspecified"></option>
           <option value="draft" :title="tooltips.node.draft">Draft</option>
           <option value="live" :title="tooltips.node.live">Live</option>
-          <option value="completed" :title="tooltips.node.completed">Completed</option>
-          <option value="legacy" :title="tooltips.node.legacy">Legacy</option>
+          <option value="realised" :title="tooltips.node.realised">Realised</option>
+          <option value="unrealised" :title="tooltips.node.unrealised">Unrealised</option>
         </select>
       </div>
     </div>

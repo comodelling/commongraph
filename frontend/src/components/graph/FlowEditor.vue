@@ -684,7 +684,7 @@ function createNodeAndEdge(event = null) {
   let newNodeData = formatFlowNodeProps({
     node_id: "new",
     title: "",
-    status: "live",
+    status: "draft",
     position: screenToFlowCoordinate(eventPosition),
     scope: scope,
     node_type: defaultNodeType.value,

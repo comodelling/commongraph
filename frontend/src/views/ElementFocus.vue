@@ -193,7 +193,7 @@ export default {
       const node = { node_id: "new", node_type: type, new: true };
       if (allowed.includes("title"))      node.title = prePopulatedTitle || "";
       if (allowed.includes("scope"))      node.scope = "";
-      if (allowed.includes("status"))     node.status = "live";
+      if (allowed.includes("status"))     node.status = "draft";
       if (allowed.includes("tags"))       node.tags = [];
       if (allowed.includes("references")) node.references = [];
       if (allowed.includes("description")) node.description = "";

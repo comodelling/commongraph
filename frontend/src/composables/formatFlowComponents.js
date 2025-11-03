@@ -40,7 +40,7 @@ export function formatFlowNodeProps(data) {
   const borderWidth = conf.borderWidth || defaultNodeBorderWidth;
   const borderRadius= conf.borderRadius|| defaultNodeBorderRadius;
   const borderStyle = conf.borderStyle || (status === "draft" ? "dotted" : "solid");
-  const opacity     = conf.opacity     ?? (status === "completed" ? 0.5 : 0.95);
+  const opacity     = conf.opacity     ?? (["realised", "unrealised"].includes(status) ? 0.5 : 0.95);
 
   return {
     id: node_id.toString(),

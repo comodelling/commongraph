@@ -56,7 +56,7 @@ def test_node_optional_fields():
     assert node.description is None
     assert node.tags == []
     assert node.references == []
-    assert node.status == "unspecified"
+    assert node.status == "live"
     assert node.node_type == "potentiality"
     assert node.support is None
 

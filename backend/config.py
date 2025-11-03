@@ -85,9 +85,11 @@ EDGE_TYPE_POLLS = get_edge_type_polls()
 AUTH_CFG = _CONFIG.get("auth", {})
 ALLOW_SIGNUP = AUTH_CFG.get("allow_signup", True)
 SIGNUP_REQUIRES_ADMIN_APPROVAL = AUTH_CFG.get("signup_requires_admin_approval", False)
+SIGNUP_REQUIRES_TOKEN = AUTH_CFG.get("signup_requires_token", False)
 
 # 7. Permissions configuration
 PERMISSIONS_CFG = _CONFIG.get("permissions", {})
+PERMISSION_READ = PERMISSIONS_CFG.get("read", "all")
 PERMISSION_CREATE = PERMISSIONS_CFG.get("create", "all")
 PERMISSION_EDIT = PERMISSIONS_CFG.get("edit", "all")
 PERMISSION_DELETE = PERMISSIONS_CFG.get("delete", "all")

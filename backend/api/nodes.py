@@ -5,7 +5,7 @@ from fastapi import Body, Depends, HTTPException, Query, APIRouter, status, Path
 from sqlmodel import Session
 
 from backend.api.auth import get_current_user
-from backend.utils.permissions import can_create, can_edit, can_delete, can_rate
+from backend.utils.permissions import can_read, can_create, can_edit, can_delete, can_rate
 from backend.db.base import GraphDatabaseInterface, GraphHistoryRelationalInterface, RatingHistoryRelationalInterface
 from backend.db.connections import get_graph_db, get_graph_history_db, get_rating_history_db, get_relational_session
 from backend.db.janusgraph import JanusGraphDB
@@ -29,6 +29,7 @@ def search_nodes(
     tags: list[str] | None = Query(None),
     rating: float | None = None,
     description: str | None = None,
+    user: UserRead = Depends(get_current_user),
     db_graph: GraphDatabaseInterface | None = Depends(get_graph_db),
     db_history: GraphHistoryRelationalInterface = Depends(
         get_graph_history_db
@@ -38,6 +39,13 @@ def search_nodes(
     ),
 ):
     """Search in nodes on a field by field level."""
+    # Check read permissions
+    if not can_read(user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You must be logged in to view content"
+        )
+    
     if db_graph is not None:
         nodes = db_graph.search_nodes(
             node_type=node_type,
@@ -81,12 +89,20 @@ def search_nodes(
 @router.get("/random")
 def get_random_node(
     node_type: str | None = None,
+    user: UserRead = Depends(get_current_user),
     db: GraphDatabaseInterface | None = Depends(get_graph_db),
     db_history: GraphHistoryRelationalInterface = Depends(
         get_graph_history_db
     ),
 ) -> DynamicNode: #type: ignore
     """Return a random node with optional node_type."""
+    # Check read permissions
+    if not can_read(user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You must be logged in to view content"
+        )
+    
     if isinstance(db, JanusGraphDB):
         return db.get_random_node(node_type)
     return db_history.get_random_node(node_type)
@@ -95,11 +111,19 @@ def get_random_node(
 @router.get("/{node_id}")
 def get_node(
     node_id: NodeId,
+    user: UserRead = Depends(get_current_user),
     db_history: GraphHistoryRelationalInterface = Depends(
         get_graph_history_db
     ),
 ) -> DynamicNode: #type: ignore
     """Return the node associated with the provided ID."""
+    # Check read permissions
+    if not can_read(user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You must be logged in to view content"
+        )
+    
     return db_history.get_node(node_id)
 
 
@@ -215,11 +239,19 @@ def update_node(
 @router.get("/{node_id}/history")
 def get_node_history(
     node_id: NodeId,
+    user: UserRead = Depends(get_current_user),
     db_history: GraphHistoryRelationalInterface = Depends(
         get_graph_history_db
     ),
 ) -> list[GraphHistoryEvent]:
     """Return the history of the node associated with the provided ID."""
+    # Check read permissions
+    if not can_read(user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You must be logged in to view content"
+        )
+    
     return db_history.get_node_history(node_id)
 
 
@@ -232,8 +264,16 @@ def get_nodes_median_ratings(
   poll_label: str | None = Query(
     None, description="Optional poll_label; if omitted, return all"
   ),
+  user: UserRead = Depends(get_current_user),
   db: RatingHistoryRelationalInterface = Depends(get_rating_history_db),
 ):
+    # Check read permissions
+    if not can_read(user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You must be logged in to view content"
+        )
+    
     # default = all polls in your config
     from backend.config import POLLS_CFG
     labels = [poll_label] if poll_label else list(POLLS_CFG.keys())
@@ -262,8 +302,16 @@ def get_nodes_ratings(
     poll_label: str = Query(
         ..., description="Optional poll label to filter ratings"
     ),
+    user: UserRead = Depends(get_current_user),
     db: RatingHistoryRelationalInterface = Depends(get_rating_history_db),
 ) -> dict[int, list[RatingEvent]]:
+    # Check read permissions
+    if not can_read(user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You must be logged in to view content"
+        )
+    
     return db.get_nodes_ratings(node_ids, poll_label)
 
 
@@ -323,11 +371,19 @@ def get_my_node_rating(
 def get_node_median_rating(
     node_id: int,
     poll_label: str = Query(..., description="Label of the poll to filter ratings"),
+    user: UserRead = Depends(get_current_user),
     db: RatingHistoryRelationalInterface = Depends(get_rating_history_db),
 ) -> dict | None:
     """
     Retrieve the median rating for a given node.
     """
+    # Check read permissions
+    if not can_read(user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You must be logged in to view content"
+        )
+    
     median = db.get_node_median_rating(node_id, poll_label)
     return {"median_rating": median}
 
@@ -337,11 +393,19 @@ def get_node_median_rating(
 def get_node_ratings(
     node_id: int,
     poll_label: str = Query(..., description="Label of the poll to filter ratings"),
+    user: UserRead = Depends(get_current_user),
     db: RatingHistoryRelationalInterface = Depends(get_rating_history_db),
 ) -> dict:
     """
     Retrieve all ratings for a given node.
     """
+    # Check read permissions
+    if not can_read(user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You must be logged in to view content"
+        )
+    
     ratings = db.get_node_ratings(node_id, poll_label)
     # Convert each RatingEvent to dict.
     return {"ratings": ratings}

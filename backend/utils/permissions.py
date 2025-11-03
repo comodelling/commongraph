@@ -6,7 +6,7 @@ various operations based on the configuration settings and user roles.
 """
 
 from typing import Optional
-from backend.config import PERMISSION_CREATE, PERMISSION_EDIT, PERMISSION_DELETE, PERMISSION_RATE
+from backend.config import PERMISSION_READ, PERMISSION_CREATE, PERMISSION_EDIT, PERMISSION_DELETE, PERMISSION_RATE
 from backend.models.fixed import UserRead
 
 
@@ -32,6 +32,11 @@ def check_permission_level(required_level: str, user: Optional[UserRead] = None)
     
     # Default to deny access for unknown permission levels
     return False
+
+
+def can_read(user: Optional[UserRead] = None) -> bool:
+    """Check if user can view/search nodes/edges."""
+    return check_permission_level(PERMISSION_READ, user)
 
 
 def can_create(user: Optional[UserRead] = None) -> bool:
@@ -60,6 +65,7 @@ def get_permission_summary(user: Optional[UserRead] = None) -> dict:
     Useful for frontend to know what UI elements to show.
     """
     return {
+        "read": can_read(user),
         "create": can_create(user),
         "edit": can_edit(user),
         "delete": can_delete(user),

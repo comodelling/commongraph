@@ -116,6 +116,7 @@ def get_config(current_user: UserRead = Depends(get_current_user)):
              "style": EDGE_TYPE_STYLE.get(et, {})}
         for et, props in EDGE_TYPE_PROPS.items()
     }
+    from backend.config import ALLOW_SIGNUP
     return {
         "platform_name": PLATFORM_NAME,
         "platform_tagline": PLATFORM_TAGLINE,
@@ -125,5 +126,6 @@ def get_config(current_user: UserRead = Depends(get_current_user)):
         "schema_version": get_current_config_version(),
         "schema_hash": get_current_config_hash(),
         "permissions": get_permission_summary(current_user),
+        "allow_signup": ALLOW_SIGNUP,
     }
 

@@ -11,6 +11,7 @@ const configLoaded  = ref(false);
 const nodePollTypes = ref<Record<string, any>>({});
 const edgePollTypes = ref<Record<string, any>>({});
 const permissions   = ref<Record<string, boolean>>({});
+const allowSignup   = ref<boolean>(true);
 
 async function load(forceReload = false) {
   if (configLoaded.value && !forceReload) return;
@@ -30,6 +31,7 @@ async function load(forceReload = false) {
     platformTagline.value = data.platform_tagline;
     platformDescription.value = data.platform_description;
     permissions.value = data.permissions || {};
+    allowSignup.value = data.allow_signup !== false;
     configLoaded.value = true;
     console.log("Config loaded", forceReload ? "(forced reload)" : "");
   } catch (error) {
@@ -73,5 +75,6 @@ export function useConfig() {
     nodePollTypes, edgePollTypes,
     getNodePolls, getEdgePolls,
     permissions, canRead, canCreate, canEdit, canDelete, canRate,
+    allowSignup,
   };
 }

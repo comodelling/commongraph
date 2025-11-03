@@ -52,7 +52,7 @@ const routes = [
         props: true,
       },
       { path: "/login", name: "Login", component: Login },
-      { path: "/signup", name: "Signup", component: Signup },
+      { path: "/signup", name: "Signup", component: Signup, meta: { requiresSignupEnabled: true } },
       { path: "/settings", name: "UserSettings", component: UserSettings },
       { path: "/favourites", name: "Favourites", component: Favourites },
       {
@@ -178,6 +178,25 @@ router.beforeEach(async (to, from, next) => {
     console.error('Path validation error:', error);
     next('/');
     return;
+  }
+  
+  // Check if signup is enabled for routes that require it
+  const requiresSignupEnabled = to.matched.some(record => record.meta?.requiresSignupEnabled);
+  if (requiresSignupEnabled) {
+    const { allowSignup, configLoaded } = useConfig();
+    
+    // If config isn't loaded yet, load it
+    if (!configLoaded.value) {
+      const { load } = useConfig();
+      await load();
+    }
+    
+    // Check if signup is enabled
+    if (!allowSignup.value) {
+      console.log('Signup is disabled, redirecting to login');
+      next({ name: 'Login' });
+      return;
+    }
   }
   
   // Check read permissions for routes that require it

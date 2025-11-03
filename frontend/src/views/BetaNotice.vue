@@ -34,28 +34,21 @@
 
 <script>
 import { ref, onMounted } from 'vue';
-import api from '../api/axios';
+import { useConfig } from '../composables/useConfig';
 
 export default {
   name: 'BetaNotice',
   setup() {
     const contactEmail = ref('contact@example.com');
-    const signupEnabled = ref(true);
+    const { allowSignup, load } = useConfig();
 
-    // You could fetch this from config if needed
     onMounted(async () => {
-      try {
-        // Optionally check if signup is enabled
-        // const { data } = await api.get('/config');
-        // signupEnabled.value = data.allow_signup;
-      } catch (error) {
-        console.error('Error loading config:', error);
-      }
+      await load();
     });
 
     return {
       contactEmail,
-      signupEnabled
+      signupEnabled: allowSignup
     };
   }
 };

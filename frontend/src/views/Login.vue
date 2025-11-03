@@ -16,8 +16,8 @@
       </form>
       <p v-if="error" style="color: red">{{ error }}</p>
       <div class="links">
-        <router-link to="/signup">Sign Up</router-link>
-        |
+        <router-link to="/signup" v-if="allowSignup">Sign Up</router-link>
+        <span v-if="allowSignup"> | </span>
         <router-link to="/verify-security-question">Reset Password</router-link>
       </div>
     </div>
@@ -29,17 +29,20 @@ import { ref, onMounted } from "vue";
 import api from "../api/axios";
 import router from "../router";
 import { useAuth } from "../composables/useAuth";
+import { useConfig } from "../composables/useConfig";
 
 export default {
   setup() {
     const { setTokens } = useAuth();
+    const { allowSignup, load } = useConfig();
     const username = ref("");
     const password = ref("");
     const error = ref(null);
     const infoMessage = ref(null);
     const { getAccessToken } = useAuth();
 
-    onMounted(() => {
+    onMounted(async () => {
+      await load();
       if (router.currentRoute.value.query.message) {
         infoMessage.value = router.currentRoute.value.query.message;
       }
@@ -70,7 +73,7 @@ export default {
       }
     };
 
-    return { username, password, login, error, infoMessage };
+    return { username, password, login, error, infoMessage, allowSignup };
   },
 };
 </script>

@@ -17,7 +17,7 @@
     <div class="title">User</div>
     <div v-if="!isLoggedIn">
       <router-link to="/login">Log in</router-link><br />
-      <router-link to="/signup">Sign up</router-link><br />
+      <router-link to="/signup" v-if="allowSignup">Sign up</router-link><br v-if="allowSignup" />
     </div>
     <div v-else>
       <router-link to="/favourites">Favourites</router-link><br />
@@ -39,7 +39,7 @@ export default {
   setup() {
     const router = useRouter();
     const { isLoggedIn, isAdmin, clearTokens } = useAuth();
-    const { canRead, canCreate } = useConfig();
+    const { canRead, canCreate, allowSignup } = useConfig();
 
     const fetchRandomNode = async () => {
       try {
@@ -90,6 +90,7 @@ export default {
       isAdmin,
       canRead,
       canCreate,
+      allowSignup,
     };
   },
 };

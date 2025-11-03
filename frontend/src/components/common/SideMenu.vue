@@ -3,14 +3,14 @@
     <div class="title">Menu</div>
     <router-link to="/">Main page</router-link><br />
     <a 
+      v-if="canRead && canCreate"
       href="#" 
-      @click="canCreate ? createNewNode() : null" 
-      :class="{ disabled: !canCreate }"
-      :title="canCreate ? 'Create a new node' : 'You need create permissions to add new nodes'"
+      @click="createNewNode" 
+      title="Create a new node"
     >
       New node
-    </a><br />
-    <a href="#" @click="fetchRandomNode">Random node</a><br />
+    </a><br v-if="canRead && canCreate" />
+    <a href="#" @click="fetchRandomNode" v-if="canRead">Random node</a><br v-if="canRead" />
     <!-- <router-link to="/schema">Graph schema</router-link><br /> -->
     <router-link to="/about">About</router-link>
     <br /><br />
@@ -39,7 +39,7 @@ export default {
   setup() {
     const router = useRouter();
     const { isLoggedIn, isAdmin, clearTokens } = useAuth();
-    const { canCreate } = useConfig();
+    const { canRead, canCreate } = useConfig();
 
     const fetchRandomNode = async () => {
       try {
@@ -88,6 +88,7 @@ export default {
       logout,
       isLoggedIn,
       isAdmin,
+      canRead,
       canCreate,
     };
   },

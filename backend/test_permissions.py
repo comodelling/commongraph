@@ -2,7 +2,7 @@
 Test the permissions system to ensure it works correctly.
 """
 
-from backend.utils.permissions import check_permission_level, can_create, can_edit, can_delete, can_rate
+from backend.utils.permissions import check_permission_level, can_read, can_create, can_edit, can_delete, can_rate
 from backend.models.fixed import UserRead
 
 def test_permissions():
@@ -31,6 +31,10 @@ def test_permissions():
     )
     
     print("Testing permission levels:")
+    print(f"Anonymous user can_read: {can_read(anonymous_user)}")
+    print(f"Regular user can_read: {can_read(regular_user)}")
+    print(f"Admin user can_read: {can_read(admin_user)}")
+    
     print(f"Anonymous user can_create: {can_create(anonymous_user)}")
     print(f"Regular user can_create: {can_create(regular_user)}")
     print(f"Admin user can_create: {can_create(admin_user)}")

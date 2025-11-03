@@ -88,6 +88,7 @@ SIGNUP_REQUIRES_ADMIN_APPROVAL = AUTH_CFG.get("signup_requires_admin_approval", 
 
 # 7. Permissions configuration
 PERMISSIONS_CFG = _CONFIG.get("permissions", {})
+PERMISSION_READ = PERMISSIONS_CFG.get("read", "all")
 PERMISSION_CREATE = PERMISSIONS_CFG.get("create", "all")
 PERMISSION_EDIT = PERMISSIONS_CFG.get("edit", "all")
 PERMISSION_DELETE = PERMISSIONS_CFG.get("delete", "all")

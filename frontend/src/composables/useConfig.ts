@@ -59,6 +59,7 @@ export function useConfig() {
   }
 
   // Permission helpers
+  const canRead = computed(() => permissions.value.read !== false); // Default to true for backward compatibility
   const canCreate = computed(() => permissions.value.create || false);
   const canEdit = computed(() => permissions.value.edit || false);
   const canDelete = computed(() => permissions.value.delete || false);
@@ -71,6 +72,6 @@ export function useConfig() {
     defaultNodeType, defaultEdgeType,
     nodePollTypes, edgePollTypes,
     getNodePolls, getEdgePolls,
-    permissions, canCreate, canEdit, canDelete, canRate,
+    permissions, canRead, canCreate, canEdit, canDelete, canRate,
   };
 }

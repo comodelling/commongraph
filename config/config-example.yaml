@@ -29,6 +29,7 @@ auth:
   signup_requires_admin_approval: true  # freshly created users start inactive
 
 permissions: # all/loggedin/admin
+  read: loggedin
   create: loggedin
   edit: all
   delete: all

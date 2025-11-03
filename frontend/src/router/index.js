@@ -15,7 +15,10 @@ import UpdatePassword from "../views/UpdatePassword.vue";
 import Schema from "../views/Schema.vue";
 import AdminUsers from "../views/AdminUsers.vue";
 import DemoViewer from "../views/DemoViewer.vue";
+import BetaNotice from "../views/BetaNotice.vue";
 import { useUnsaved } from "../composables/useUnsaved";
+import { useAuth } from "../composables/useAuth";
+import { useConfig } from "../composables/useConfig";
 
 const routes = [
   // Main app routes - with Layout
@@ -24,10 +27,11 @@ const routes = [
     name: "MainPage",
     component: Layout,
     children: [
-      { path: "", name: "Main Page", component: MainPage },
+      { path: "", name: "Main Page", component: MainPage, meta: { requiresRead: true } },
       { path: "about", name: "About", component: About },
-      { path: "search", name: "SearchPage", component: SearchPage },
-      { path: "schema", name: "Schema", component: Schema },
+      { path: "beta", name: "BetaNotice", component: BetaNotice },
+      { path: "search", name: "SearchPage", component: SearchPage, meta: { requiresRead: true } },
+      { path: "schema", name: "Schema", component: Schema, meta: { requiresRead: true } },
       // Demo routes - now inside Layout for header/sidebar
       {
         path: "/demo/:demoId",
@@ -77,12 +81,14 @@ const routes = [
         name: "NodeView",
         component: Focus,
         props: true,
+        meta: { requiresRead: true }
       },
       {
         path: "/edge/:source_id/:target_id",
         name: "EdgeView",
         component: Focus,
         props: true,
+        meta: { requiresRead: true }
       },
       {
         path: "/node/:id/edit",
@@ -138,7 +144,7 @@ router.onError((error) => {
   });
 });
 
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   try {
     // Validate the route path for malformed characters
     const path = to.path;
@@ -173,6 +179,28 @@ router.beforeEach((to, from, next) => {
     next('/');
     return;
   }
+  
+  // Check read permissions for routes that require it
+  const requiresRead = to.matched.some(record => record.meta?.requiresRead);
+  if (requiresRead) {
+    const { isLoggedIn } = useAuth();
+    const { permissions } = useConfig();
+    
+    // If permissions aren't loaded yet, load them
+    if (!permissions.value) {
+      const { load } = useConfig();
+      await load();
+    }
+    
+    // Check if user has read permission
+    if (permissions.value && !permissions.value.read) {
+      // User doesn't have read permission, redirect to beta notice
+      console.log('User lacks read permission, redirecting to beta notice');
+      next({ name: 'BetaNotice' });
+      return;
+    }
+  }
+  
   // If leaving the edit view (NodeEdit or EdgeEdit) during submission,
   // skip the unsaved changes check.
   if (

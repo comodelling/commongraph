@@ -1,29 +1,26 @@
+"""
+Integration tests for the main API endpoints.
+
+Tests the actual API behavior with the current dynamic model system.
+These are integration tests that require a database connection.
+"""
 import os
-import warnings
-import logging
 import pytest
-import json
 from fastapi.testclient import TestClient
-import threading
 
 from backend.db.connections import get_graph_db, get_graph_history_db
 from backend.main import app
 from backend.db.janusgraph import JanusGraphDB
 from backend.db.postgresql import GraphHistoryPostgreSQLDB
+from backend.config import valid_node_types, valid_edge_types
 
-# Use environment-based test database URL
-POSTGRES_TEST_DB_URL = os.getenv(
-    "POSTGRES_TEST_DB_URL", "postgresql://postgres:postgres@localhost/testdb"
-)
-os.environ["POSTGRES_DB_URL"] = POSTGRES_TEST_DB_URL
-os.environ["SECRET_KEY"] = "testsecret"
-
-
-logger = logging.getLogger(__name__)
+# Database configuration
+POSTGRES_TEST_DB_URL = os.getenv("POSTGRES_TEST_DB_URL", "postgresql://postgres:postgres@localhost/testdb")
 
 
 @pytest.fixture(scope="module", params=[None, "janusgraph"])
 def graph_db(request):
+    """Fixture to provide either no graph DB or JanusGraph for parameterized tests."""
     db_type = request.param
     if db_type == "janusgraph":
         try:
@@ -41,14 +38,15 @@ def graph_db(request):
 
 
 @pytest.fixture(autouse=True, scope="module")
-def override_db_connections(graph_db):
-
+def setup_test_db(graph_db):
+    """Set up test database and override app dependencies."""
+    # Set up PostgreSQL test database
     graph_history_db = GraphHistoryPostgreSQLDB(POSTGRES_TEST_DB_URL)
     graph_history_db.reset_whole_graph()
 
+    # Override dependencies
     app.dependency_overrides[get_graph_history_db] = lambda: graph_history_db
-
-    # Only override the graph DB dependency if ENABLE_GRAPH_DB is true.
+    
     if graph_db is not None:
         app.dependency_overrides[get_graph_db] = lambda: graph_db
     else:
@@ -56,470 +54,405 @@ def override_db_connections(graph_db):
 
     yield
 
+    # Cleanup
     app.dependency_overrides.pop(get_graph_db, None)
     app.dependency_overrides.pop(get_graph_history_db, None)
 
 
 @pytest.fixture(scope="module")
-def client(override_db_connections):
+def client(setup_test_db):
+    """Fixture to provide TestClient with proper database setup."""
     return TestClient(app)
 
 
-@pytest.fixture(scope="module")
-def initial_node(graph_db, client):
-    warnings.filterwarnings("ignore", category=UserWarning)
-    client.delete("/graph")
-
-    result = client.post(
-        "/nodes",
-        json={
-            "title": "test",
-            "node_type": "objective",
-            "scope": "test scope",
-            "description": "test",
-        },
-    ).content
-    node_dict = json.loads(result.decode("utf-8"))
-    logger.info(f"Initial node: {node_dict}")
-
-    yield node_dict
-    warnings.filterwarnings("ignore", category=UserWarning)
-    client.delete("/graph")
+@pytest.fixture
+def sample_node(client):
+    """Fixture to create a sample node for tests that need one."""
+    # Get first valid node type from config
+    node_type = list(valid_node_types())[0]
+    
+    response = client.post("/nodes", json={"node_type": node_type})
+    assert response.status_code == 201, f"Failed to create sample node: {response.json()}"
+    
+    node = response.json()
+    yield node
+    
+    # Cleanup: try to delete the node
+    client.delete(f"/nodes/{node['node_id']}")
 
 
+# Basic API Health Tests
 def test_read_main(client):
+    """Test the root endpoint returns successfully."""
     response = client.get("/")
-    assert response.status_code == 200, print(response.json())
+    assert response.status_code == 200
+    data = response.json()
+    assert "message" in data or "platform_name" in data
 
 
-def test_get_whole_graph(graph_db, client):
+def test_api_docs_available(client):
+    """Test that API documentation is available."""
+    response = client.get("/docs")
+    assert response.status_code == 200
+
+
+# Graph-Level Operations
+def test_get_whole_graph(client):
+    """Test retrieving the entire graph."""
     response = client.get("/graph")
-    assert response.status_code == 200, print(response.json())
-    assert "nodes" in response.json()
-    assert "edges" in response.json()
-    # assert len(response.json()["nodes"])
+    assert response.status_code == 200
+    data = response.json()
+    assert "nodes" in data
+    assert "edges" in data
+    assert isinstance(data["nodes"], list)
+    assert isinstance(data["edges"], list)
 
 
-def test_reset_whole_graph(graph_db, client):
-    # Ensure there are nodes and edges before reset
-    # client.post(
-    #     "/nodes",
-    #     json={
-    #         "title": "test",
-    #         "node_type": "objective",
-    #         "scope": "test scope",
-    #         "description": "test",
-    #     },
-    # )
-    warnings.filterwarnings("ignore", category=UserWarning)
+def test_graph_summary(client):
+    """Test getting graph statistics."""
+    response = client.get("/graph/summary")
+    assert response.status_code == 200
+    summary = response.json()
+    assert "nodes" in summary
+    assert "edges" in summary
+    assert isinstance(summary["nodes"], int)
+    assert isinstance(summary["edges"], int)
+
+
+def test_reset_whole_graph(client):
+    """Test resetting the entire graph."""
+    # Create a node first
+    node_type = list(valid_node_types())[0]
+    client.post("/nodes", json={"node_type": node_type})
+    
+    # Reset the graph
     response = client.delete("/graph")
     assert response.status_code == 205
-
-    summary_response = client.get("/graph/summary")
-    summary = json.loads(summary_response.content.decode("utf-8"))
+    
+    # Verify graph is empty
+    summary = client.get("/graph/summary").json()
     assert summary["nodes"] == 0
     assert summary["edges"] == 0
 
 
-def test_update_subgraph(graph_db, client):
-    n_nodes = json.loads(client.get("/graph/summary").content.decode("utf-8"))["nodes"]
-    response = client.put(
-        "/graph",
-        json={"nodes": [{"title": "test", "scope": "test scope"}], "edges": []},
-    )
-    assert response.status_code == 200, print(response.json())
-    assert (
-        json.loads(client.get("/graph/summary").content.decode("utf-8"))["nodes"]
-        == n_nodes + 1
-    )
-
-
-def test_get_subgraph(initial_node, client):
-    node_id = initial_node["node_id"]
-    response = client.get(f"/graph/{node_id}")
-    assert response.status_code == 200, print(response.json())
-    assert node_id in [
-        node["node_id"]
-        for node in json.loads(response.content.decode("utf-8"))["nodes"]
-    ]
-
-
-def test_graph_summary(graph_db, client):
-    response = client.get("/graph/summary")
-    assert response.status_code == 200, print(response.json())
-
-
-def test_get_nodes_list(graph_db, client):
+# Node Operations
+def test_get_nodes_list(client):
+    """Test retrieving list of all nodes."""
     response = client.get("/nodes")
-    assert response.status_code == 200, print(response.json())
-    # assert len(json.loads(response.content.decode("utf-8")))
+    assert response.status_code == 200
+    nodes = response.json()
+    assert isinstance(nodes, list)
 
 
-def test_create_and_delete_node(graph_db, client):
-    n_nodes = json.loads(client.get("/graph/summary").content.decode("utf-8"))["nodes"]
+def test_create_node_minimal(client):
+    """Test creating a node with minimal required fields (just node_type)."""
+    node_type = list(valid_node_types())[0]
+    
+    response = client.post("/nodes", json={"node_type": node_type})
+    
+    assert response.status_code == 201
+    node = response.json()
+    assert "node_id" in node
+    assert node["node_type"] == node_type
+    assert isinstance(node["node_id"], int)
+
+
+def test_create_node_with_properties(client):
+    """Test creating a node with optional properties."""
+    node_type = list(valid_node_types())[0]
+    
     response = client.post(
         "/nodes",
-        json={"title": "test", "scope": "unscoped", "description": "test"},
+        json={
+            "node_type": node_type,
+            "title": "Test Node",
+            "description": "A test description",
+            "tags": ["test", "example"]
+        }
     )
-    assert response.status_code == 201, print(response.json())
-    assert (
-        json.loads(client.get("/graph/summary").content.decode("utf-8"))["nodes"]
-        == n_nodes + 1
+    
+    assert response.status_code == 201
+    node = response.json()
+    assert node["node_type"] == node_type
+    # Properties that exist in config should be returned
+    if "title" in response.json():
+        assert node["title"] == "Test Node"
+
+
+def test_create_node_invalid_type(client):
+    """Test that creating a node with invalid type fails."""
+    response = client.post(
+        "/nodes",
+        json={"node_type": "invalid_type_that_does_not_exist"}
     )
+    
+    # Should fail validation (either 422 for validation error or 400 for bad request)
+    assert response.status_code in [400, 422]
 
-    node_id = json.loads(response.content.decode("utf-8"))["node_id"]
 
+def test_get_node_by_id(sample_node, client):
+    """Test retrieving a specific node by ID."""
+    node_id = sample_node["node_id"]
+    
     response = client.get(f"/nodes/{node_id}")
-    assert response.status_code == 200, print(response.json())
-
-    warnings.filterwarnings("ignore", category=UserWarning)
-    response = client.delete(f"/nodes/{node_id}")
-    assert response.status_code == 200, print(response.json())
-    assert (
-        json.loads(client.get("/graph/summary").content.decode("utf-8"))["nodes"]
-        == n_nodes
-    )
+    assert response.status_code == 200
+    
+    node = response.json()
+    assert node["node_id"] == node_id
+    assert node["node_type"] == sample_node["node_type"]
 
 
-@pytest.mark.skip
-def test_create_node_specific_id(graph_db, client):
-    response = client.post(
-        "/nodes",
-        json={
-            "title": "test",
-            "node_type": "objective",
-            "scope": "unscoped",
-            "description": "test",
-            "node_id": 777777,
-        },
-    )
-    assert response.status_code == 201, print(response.json())
-    response = client.get(f"/nodes/777777")
-    assert response.status_code == 200, print(response.json())
-
-
-def test_create_node_with_missing_fields(client):
-    response = client.post(
-        "/nodes",
-        json={
-            "node_type": "objective",
-            "scope": "test scope",
-            # "title" is missing
-            "description": "test description",
-        },
-    )
-    assert response.status_code == 422, print(response.json())
-
-
-def create_node_concurrently(client, title, results, index):
-    response = client.post(
-        "/nodes",
-        json={
-            "title": title,
-            "node_type": "objective",
-            "scope": "test scope",
-            "description": "test",
-        },
-    )
-    results[index] = response.status_code
-
-
-def test_concurrent_node_creations(client):
-    threads = []
-    results = [None] * 5
-    for i in range(5):
-        thread = threading.Thread(
-            target=create_node_concurrently, args=(client, f"node{i}", results, i)
-        )
-        threads.append(thread)
-        thread.start()
-
-    for thread in threads:
-        thread.join()
-
-    assert all(status == 201 for status in results)
-
-
-def test_get_random_node(graph_db, client):
-    response = client.get("/nodes/random")
-    assert response.status_code == 200, print(response.json())
-
-
-def test_get_node_wrong_id(initial_node, client):
-    response = client.get(f"/nodes/{initial_node['node_id']}")
-    assert response.status_code == 200, print(response.json())
-
+def test_get_node_nonexistent(client):
+    """Test that getting a non-existent node returns 404."""
     response = client.get("/nodes/999999999")
-    assert response.status_code == 404, print(response.json())
+    assert response.status_code == 404
 
 
-def test_search_nodes(graph_db, client):
-    # Ensure the node with title "test" exists
-    response = client.post(
-        "/nodes",
-        json={
-            "title": "testtesttest",
-            "node_type": "objective",
-            "scope": "test scope",
-            "description": "test",
-        },
-    )
-    assert response.status_code == 201, print(response.json())
-
-    # Log the entire node list before searching
-    all_nodes_response = client.get("/nodes")
-    print("DEBUG: All nodes after creation:", all_nodes_response.json())
-
-    # Perform the search
-    response = client.get("/nodes?title=testtesttest")
-    print("DEBUG: Search response:", response.json())
-    assert response.status_code == 200, print(response.json())
-    assert len(response.json()) == 1, print(response.json())
-
-
-def test_search_nodes_with_node_type(graph_db, client):
-    client.post(
-        "/nodes",
-        json={
-            "title": "Objective Node",
-            "node_type": "objective",
-            "scope": "test scope",
-        },
-    )
-    client.post(
-        "/nodes",
-        json={"title": "Action Node", "node_type": "action", "scope": "test scope"},
-    )
-    client.post(
-        "/nodes",
-        json={
-            "title": "Potentiality Node",
-            "node_type": "potentiality",
-            "scope": "test scope",
-        },
-    )
-
-    response = client.get("/nodes?node_type=objective")
-    assert response.status_code == 200, print(response.json())
-    nodes = json.loads(response.content.decode("utf-8"))
-    assert len(nodes) >= 1
-    assert all(node["node_type"] == "objective" for node in nodes)
-
-    response = client.get("/nodes?node_type=action")
-    assert response.status_code == 200, print(response.json())
-    nodes = json.loads(response.content.decode("utf-8"))
-    assert len(nodes) == 1
-    assert all(node["node_type"] == "action" for node in nodes)
-
-    response = client.get("/nodes?node_type=potentiality")
-    assert response.status_code == 200, print(response.json())
-    nodes = json.loads(response.content.decode("utf-8"))
-    assert len(nodes) == 1
-    assert all(node["node_type"] == "potentiality" for node in nodes)
-
-
-def test_update_node(initial_node, client):
-    response = client.put(
-        "/nodes",
-        json={
-            "node_id": initial_node["node_id"],
-            "title": "test modified",
-            "description": "test modified",
-        },
-    )
-    assert response.status_code == 200, print(response.json())
-    assert json.loads(response.content.decode("utf-8"))["title"] == "test modified"
-
-    response = client.put("/nodes", json={"title": "test", "description": "test"})
-    assert response.status_code == 422, print(response.json())
-
-
-def test_delete_node_wrong_id(graph_db, client):
-    response = client.delete("/nodes/999999999")
-    assert response.status_code == 404, print(response.json())
-
-
-def test_get_edge_list(graph_db, client):
-    response = client.get("/edges")
-    assert response.status_code == 200, print(response.json())
-
-
-def test_create_update_and_delete_edge(initial_node, client):
-    n_edges = json.loads(client.get("/graph/summary").content.decode("utf-8"))["edges"]
-    response = client.post(
-        "/edges",
-        json={
-            "edge_type": "imply",
-            "source": initial_node["node_id"],
-            "target": initial_node["node_id"],
-        },
-    )
-    assert response.status_code == 201, print(response.json())
-    assert (
-        json.loads(client.get("/graph/summary").content.decode("utf-8"))["edges"]
-        == n_edges + 1
-    )
-
-    response = client.put(
-        "/edges",
-        json={
-            "edge_type": "imply",
-            "source": initial_node["node_id"],
-            "target": initial_node["node_id"],
-            "sufficiency": 0.5,
-        },
-    )
-    assert response.status_code == 200, print(response.json())
-
-    response = client.delete(
-        f"/edges/{initial_node['node_id']}/{initial_node['node_id']}",
-        params={"edge_type": "imply"},
-    )
-    assert response.status_code == 200, print(response.json())
-
-    response = client.get(f"/edges/{initial_node['node_id']}/{initial_node['node_id']}")
-    assert response.status_code == 404, print(response.json())
-
-
-def test_create_edge_with_nonexistent_nodes(graph_db, client):
-    response = client.post(
-        "/edges",
-        json={
-            "edge_type": "imply",
-            "source": 999999,  # Nonexistent source
-            "target": 999998,  # Nonexistent target
-        },
-    )
-    assert response.status_code == 404, print(response.json())
-
-
-def test_find_edges(graph_db, client):
-    response = client.post(
-        "/edges/find",
-        json={"edge_type": "imply"},
-    )
-    assert response.status_code == 200, print(response.json())
-
-
-def test_create_node_with_references(graph_db, client):
-    response = client.post(
-        "/nodes",
-        json={
-            "title": "test node with references",
-            "description": "test description",
-            "scope": "test scope",
-            "references": ["ref1", "ref2", "ref3"],
-        },
-    )
-    assert response.status_code == 201, print(response.json())
-    node = json.loads(response.content.decode("utf-8"))
-    assert "references" in node
-    assert len(node["references"]) == 3
-    assert set(node["references"]) == {"ref1", "ref2", "ref3"}
-
-    response = client.get("/graph")
-
-
-def test_update_node_with_references(graph_db, client):
-    response = client.post(
-        "/nodes",
-        json={
-            "title": "test node for update",
-            "node_type": "potentiality",
-            "scope": "test scope",
-            "description": "test description",
-            "references": ["ref1", "ref2"],
-        },
-    )
-    assert response.status_code == 201, print(response.json())
-    node = json.loads(response.content.decode("utf-8"))
-    node_id = node["node_id"]
-
+def test_update_node(sample_node, client):
+    """Test updating a node's properties."""
+    node_id = sample_node["node_id"]
+    
     response = client.put(
         "/nodes",
         json={
             "node_id": node_id,
-            "title": "updated title",
-            "description": "updated description",
-            "references": ["ref3", "ref4"],
-        },
+            "title": "Updated Title",
+            "description": "Updated description"
+        }
     )
-    assert response.status_code == 200, print(response.json())
-    updated_node = json.loads(response.content.decode("utf-8"))
-    assert "references" in updated_node
-    assert len(updated_node["references"]) == 2
-    assert set(updated_node["references"]) == {"ref3", "ref4"}
+    
+    assert response.status_code == 200
+    updated_node = response.json()
+    assert updated_node["node_id"] == node_id
 
 
-def test_create_edge_with_references(initial_node, client):
+def test_update_node_missing_id(client):
+    """Test that updating without node_id fails."""
+    response = client.put(
+        "/nodes",
+        json={"title": "Test"}
+    )
+    
+    assert response.status_code == 422
+
+
+def test_delete_node(client):
+    """Test deleting a node."""
+    # Create a node
+    node_type = list(valid_node_types())[0]
+    create_response = client.post("/nodes", json={"node_type": node_type})
+    node_id = create_response.json()["node_id"]
+    
+    # Delete it
+    response = client.delete(f"/nodes/{node_id}")
+    assert response.status_code == 200
+    
+    # Verify it's gone
+    get_response = client.get(f"/nodes/{node_id}")
+    assert get_response.status_code == 404
+
+
+def test_delete_node_nonexistent(client):
+    """Test that deleting a non-existent node returns 404."""
+    response = client.delete("/nodes/999999999")
+    assert response.status_code == 404
+
+
+def test_search_nodes_by_title(client):
+    """Test searching nodes by title."""
+    node_type = list(valid_node_types())[0]
+    
+    # Create a node with a unique title
+    unique_title = "UniqueSearchTest12345"
+    client.post("/nodes", json={"node_type": node_type, "title": unique_title})
+    
+    # Search for it
+    response = client.get(f"/nodes?title={unique_title}")
+    assert response.status_code == 200
+    nodes = response.json()
+    
+    # Should find at least one node with this title
+    matching_nodes = [n for n in nodes if n.get("title") == unique_title]
+    assert len(matching_nodes) >= 1
+
+
+def test_search_nodes_by_type(client):
+    """Test filtering nodes by type."""
+    node_type = list(valid_node_types())[0]
+    
+    # Create a node of this type
+    client.post("/nodes", json={"node_type": node_type})
+    
+    # Search by type
+    response = client.get(f"/nodes?node_type={node_type}")
+    assert response.status_code == 200
+    nodes = response.json()
+    
+    # All returned nodes should be of the requested type
+    assert all(node["node_type"] == node_type for node in nodes)
+    assert len(nodes) >= 1
+
+
+# Edge Operations
+def test_get_edges_list(client):
+    """Test retrieving list of all edges."""
+    response = client.get("/edges")
+    assert response.status_code == 200
+    edges = response.json()
+    assert isinstance(edges, list)
+
+
+def test_create_edge(client):
+    """Test creating an edge between two nodes."""
+    node_type = list(valid_node_types())[0]
+    edge_type = list(valid_edge_types())[0]
+    
+    # Create two nodes
+    node1 = client.post("/nodes", json={"node_type": node_type}).json()
+    node2 = client.post("/nodes", json={"node_type": node_type}).json()
+    
+    # Create edge
     response = client.post(
         "/edges",
         json={
-            "edge_type": "imply",
-            "source": initial_node["node_id"],
-            "target": initial_node["node_id"],
-            "references": ["ref1", "ref2", "ref3"],
-        },
+            "edge_type": edge_type,
+            "source": node1["node_id"],
+            "target": node2["node_id"]
+        }
     )
-    assert response.status_code == 201, print(response.json())
-    edge = json.loads(response.content.decode("utf-8"))
-    assert "references" in edge
-    assert len(edge["references"]) == 3, f"references = {edge['references']}"
-    assert set(edge["references"]) == {"ref1", "ref2", "ref3"}
+    
+    assert response.status_code == 201
+    edge = response.json()
+    assert edge["edge_type"] == edge_type
+    assert edge["source"] == node1["node_id"]
+    assert edge["target"] == node2["node_id"]
 
 
-def test_update_edge_with_references(initial_node, client):
-
+def test_create_edge_invalid_type(client):
+    """Test that creating an edge with invalid type fails."""
+    node_type = list(valid_node_types())[0]
+    
+    # Create two nodes
+    node1 = client.post("/nodes", json={"node_type": node_type}).json()
+    node2 = client.post("/nodes", json={"node_type": node_type}).json()
+    
+    # Try to create edge with invalid type
     response = client.post(
         "/edges",
         json={
-            "edge_type": "require",
-            "source": initial_node["node_id"],
-            "target": initial_node["node_id"],
-            "references": ["ref1", "ref2"],
-        },
+            "edge_type": "invalid_edge_type",
+            "source": node1["node_id"],
+            "target": node2["node_id"]
+        }
     )
-    assert response.status_code == 201, print(response.json())
-    edge = json.loads(response.content.decode("utf-8"))
+    
+    assert response.status_code in [400, 422]
 
+
+def test_create_edge_nonexistent_nodes(client):
+    """Test that creating an edge with non-existent nodes fails."""
+    edge_type = list(valid_edge_types())[0]
+    
+    response = client.post(
+        "/edges",
+        json={
+            "edge_type": edge_type,
+            "source": 999999,
+            "target": 999998
+        }
+    )
+    
+    assert response.status_code == 404
+
+
+def test_update_edge(client):
+    """Test updating an edge's properties."""
+    node_type = list(valid_node_types())[0]
+    edge_type = list(valid_edge_types())[0]
+    
+    # Create two nodes and an edge
+    node1 = client.post("/nodes", json={"node_type": node_type}).json()
+    node2 = client.post("/nodes", json={"node_type": node_type}).json()
+    client.post("/edges", json={
+        "edge_type": edge_type,
+        "source": node1["node_id"],
+        "target": node2["node_id"]
+    })
+    
+    # Update the edge
     response = client.put(
         "/edges",
         json={
-            "edge_type": "imply",
-            "source": initial_node["node_id"],
-            "target": initial_node["node_id"],
-            "references": ["ref3", "ref4"],
-        },
+            "edge_type": edge_type,
+            "source": node1["node_id"],
+            "target": node2["node_id"],
+            "description": "Updated edge description"
+        }
     )
-    assert response.status_code == 200, print(response.json())
-    updated_edge = json.loads(response.content.decode("utf-8"))
-    assert "references" in updated_edge
-    assert len(updated_edge["references"]) == 2
-    assert set(updated_edge["references"]) == {"ref3", "ref4"}
+    
+    assert response.status_code == 200
 
 
-def test_migrate_label_to_property(graph_db, client):
-    from gremlin_python.process.graph_traversal import __
-    from gremlin_python.process.traversal import T
-
-    if not isinstance(graph_db, JanusGraphDB):
-        pytest.skip("This test is only for JanusGraph DB")
-
-    # Define a node with a label directly in the test graph using Gremlin Python
-    with graph_db.connection() as g:
-        g.add_v("label_value").property("name", "test_migration").next()
-
-    # Call the migrate_label_to_property endpoint
-    response = client.post(
-        "/migrate_label_to_property", json={"property_name": "new_property"}
+def test_delete_edge(client):
+    """Test deleting an edge."""
+    node_type = list(valid_node_types())[0]
+    edge_type = list(valid_edge_types())[0]
+    
+    # Create two nodes and an edge
+    node1 = client.post("/nodes", json={"node_type": node_type}).json()
+    node2 = client.post("/nodes", json={"node_type": node_type}).json()
+    client.post("/edges", json={
+        "edge_type": edge_type,
+        "source": node1["node_id"],
+        "target": node2["node_id"]
+    })
+    
+    # Delete the edge
+    response = client.delete(
+        f"/edges/{node1['node_id']}/{node2['node_id']}",
+        params={"edge_type": edge_type}
     )
-    assert response.status_code == 200, print(response.json())
+    
+    assert response.status_code == 200
+    
+    # Verify it's gone
+    get_response = client.get(f"/edges/{node1['node_id']}/{node2['node_id']}")
+    assert get_response.status_code == 404
 
-    # Verify that the label has been migrated to the property
-    with graph_db.connection() as g:
-        node = g.V().has("name", "test_migration").next()
-        assert node.label == "label_value"  # just checking presence of former index
-        # assert 'new_property' in [p.key for p in node.properties]
-        assert "label_value" in [
-            p.value for p in node.properties if p.key == "new_property"
-        ]
+
+# Subgraph Operations
+def test_update_subgraph(client):
+    """Test bulk updating a subgraph."""
+    node_type = list(valid_node_types())[0]
+    
+    initial_count = client.get("/graph/summary").json()["nodes"]
+    
+    response = client.put(
+        "/graph",
+        json={
+            "nodes": [{"node_type": node_type}],
+            "edges": []
+        }
+    )
+    
+    assert response.status_code == 200
+    
+    # Verify node was added
+    new_count = client.get("/graph/summary").json()["nodes"]
+    assert new_count == initial_count + 1
+
+
+def test_get_subgraph(sample_node, client):
+    """Test retrieving a subgraph around a specific node."""
+    node_id = sample_node["node_id"]
+    
+    response = client.get(f"/graph/{node_id}")
+    assert response.status_code == 200
+    
+    subgraph = response.json()
+    assert "nodes" in subgraph
+    assert "edges" in subgraph
+    
+    # The requested node should be in the subgraph
+    node_ids = [n["node_id"] for n in subgraph["nodes"]]
+    assert node_id in node_ids

@@ -14,10 +14,16 @@ http {
     # HTTP only server for initial setup and ACME challenges
     server {
         listen 80;
-        server_name ${DOMAIN} www.${DOMAIN};
+        server_name ${DOMAIN} www.${DOMAIN} api.${DOMAIN};
         
         location /.well-known/acme-challenge/ {
             root /var/www/certbot;
+        }
+
+        # Security: explicitly deny access to sensitive files and paths
+        location ~* /(\.env|\.git|composer\.json|package-lock\.json|npm-debug\.log|Dockerfile|docker-compose\.yml|docker-compose\.yaml) {
+            deny all;
+            return 404;
         }
         
         # Route API calls to backend

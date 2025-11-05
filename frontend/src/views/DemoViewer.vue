@@ -43,8 +43,10 @@
               <div class="info-placeholder">
                 <h3>{{ demoMetadata?.title }}</h3>
                 <p>{{ demoMetadata?.description }}</p>
-                <p style="margin-top: 20px;"><strong>Explore the graph:</strong></p>
-                <ul style="text-align: left; margin-left: 20px;">
+                <p style="margin-top: 20px">
+                  <strong>Explore the graph:</strong>
+                </p>
+                <ul style="text-align: left; margin-left: 20px">
                   <li>Click nodes (boxes/circles) to view details</li>
                   <li>Click edges (arrows) to see relationships</li>
                   <li>Drag nodes to rearrange</li>
@@ -57,9 +59,11 @@
 
           <!-- Polls (if configured and element selected) -->
           <template v-if="isNode && nodePollsCount && node && !node.new">
-            <div class="card" 
-                 v-for="(pollConfig, pollLabel) in nodePolls" 
-                 :key="`node-${pollLabel}-${node.node_id}`">
+            <div
+              class="card"
+              v-for="(pollConfig, pollLabel) in nodePolls"
+              :key="`node-${pollLabel}-${node.node_id}`"
+            >
               <ElementPollPane
                 :element="{ node_id: node.node_id }"
                 :poll-label="pollLabel"
@@ -69,11 +73,15 @@
           </template>
 
           <template v-else-if="isEdge && edgePollsCount && edge && !edge.new">
-            <div class="card"
-                 v-for="(pollConfig, pollLabel) in edgePolls"
-                 :key="`edge-${pollLabel}-${edge.source}-${edge.target}`">
+            <div
+              class="card"
+              v-for="(pollConfig, pollLabel) in edgePolls"
+              :key="`edge-${pollLabel}-${edge.source}-${edge.target}`"
+            >
               <ElementPollPane
-                :element="{ edge: { source: edge.source, target: edge.target } }"
+                :element="{
+                  edge: { source: edge.source, target: edge.target },
+                }"
                 :poll-label="pollLabel"
                 :poll-config="pollConfig"
               />
@@ -83,7 +91,7 @@
 
         <div class="right-panel">
           <SubgraphRenderer
-            style="width: 100%; height: 100%;"
+            style="width: 100%; height: 100%"
             :data="subgraphData"
             :read-only="true"
             @nodeClick="updateNodeFromBackend"
@@ -164,16 +172,16 @@ export default {
       if (!this.polls) return {};
       return Object.fromEntries(
         Object.entries(this.polls).filter(([_, config]) =>
-          config.node_types?.includes(this.node?.node_type)
-        )
+          config.node_types?.includes(this.node?.node_type),
+        ),
       );
     },
     edgePolls() {
       if (!this.polls) return {};
       return Object.fromEntries(
         Object.entries(this.polls).filter(([_, config]) =>
-          config.edge_types?.includes(this.edge?.edge_type)
-        )
+          config.edge_types?.includes(this.edge?.edge_type),
+        ),
       );
     },
     nodePollsCount() {
@@ -191,7 +199,7 @@ export default {
     await this.loadInitialElement();
   },
   watch: {
-    '$route.params': {
+    "$route.params": {
       handler() {
         this.loadInitialElement();
       },
@@ -206,27 +214,38 @@ export default {
         const response = await fetch(`/data/demos/${this.demoId}.json`);
         console.log("Fetch response:", response);
         if (!response.ok) {
-          throw new Error(`Demo not found: ${this.demoId} (status: ${response.status})`);
+          throw new Error(
+            `Demo not found: ${this.demoId} (status: ${response.status})`,
+          );
         }
-        
+
         this.demoData = await response.json();
         console.log("Demo data loaded:", this.demoData);
         this.demoMetadata = this.demoData.metadata;
-        
+
         // Format nodes and edges for FlowEditor
-        const formattedNodes = this.demoData.nodes.map(node => formatFlowNodeProps(node));
-        const formattedEdges = this.demoData.edges.map(edge => formatFlowEdgeProps(edge));
-        
-        console.log("Formatted nodes:", formattedNodes.length, "edges:", formattedEdges.length);
-        
+        const formattedNodes = this.demoData.nodes.map((node) =>
+          formatFlowNodeProps(node),
+        );
+        const formattedEdges = this.demoData.edges.map((edge) =>
+          formatFlowEdgeProps(edge),
+        );
+
+        console.log(
+          "Formatted nodes:",
+          formattedNodes.length,
+          "edges:",
+          formattedEdges.length,
+        );
+
         this.subgraphData = {
           nodes: formattedNodes,
           edges: formattedEdges,
         };
-        
+
         this.demoLoaded = true;
         console.log("Demo loaded successfully");
-        
+
         // Force a re-render by updating the subgraphData reference
         this.$nextTick(() => {
           this.subgraphData = { ...this.subgraphData };
@@ -236,16 +255,16 @@ export default {
         this.loadError = error.message;
       }
     },
-    
+
     async loadInitialElement() {
       if (!this.demoLoaded) return;
-      
+
       if (this.$route.params.id) {
         this.updateNodeFromBackend(this.$route.params.id);
       } else if (this.$route.params.source_id && this.$route.params.target_id) {
         this.updateEdgeFromBackend(
           this.$route.params.source_id,
-          this.$route.params.target_id
+          this.$route.params.target_id,
         );
       } else {
         // No element selected - show intro
@@ -253,10 +272,10 @@ export default {
         this.edge = null;
       }
     },
-    
+
     updateNodeFromBackend(nodeId) {
       const nodeData = this.demoData.nodes.find(
-        n => n.node_id.toString() === nodeId.toString()
+        (n) => n.node_id.toString() === nodeId.toString(),
       );
       if (nodeData) {
         this.node = nodeData;
@@ -267,11 +286,12 @@ export default {
         });
       }
     },
-    
+
     updateEdgeFromBackend(sourceId, targetId) {
       const edgeData = this.demoData.edges.find(
-        e => e.source.toString() === sourceId.toString() && 
-             e.target.toString() === targetId.toString()
+        (e) =>
+          e.source.toString() === sourceId.toString() &&
+          e.target.toString() === targetId.toString(),
       );
       if (edgeData) {
         this.edge = edgeData;
@@ -286,7 +306,7 @@ export default {
         });
       }
     },
-    
+
     updateNodeFromEditor(updatedNode) {
       console.log("Node updated in demo (not saved):", updatedNode);
       this.node = updatedNode;
@@ -294,24 +314,28 @@ export default {
       // In demo mode, we don't actually save to backend
       // Just update local state for UI responsiveness
     },
-    
+
     updateEdgeFromEditor(updatedEdge) {
       console.log("Edge updated in demo (not saved):", updatedEdge);
       this.edge = updatedEdge;
       this.updatedEdge = updatedEdge;
       // In demo mode, we don't actually save to backend
     },
-    
+
     openNewlyCreatedNode(nodeData) {
       console.log("New node created in demo (not saved):", nodeData);
       // In demo mode, we acknowledge but don't persist
-      alert("⚠️ Demo Mode: New nodes won't be saved. This is just for exploration!");
+      alert(
+        "⚠️ Demo Mode: New nodes won't be saved. This is just for exploration!",
+      );
     },
-    
+
     openNewlyCreatedEdge(edgeData) {
       console.log("New edge created in demo (not saved):", edgeData);
       // In demo mode, we acknowledge but don't persist
-      alert("⚠️ Demo Mode: New edges won't be saved. This is just for exploration!");
+      alert(
+        "⚠️ Demo Mode: New edges won't be saved. This is just for exploration!",
+      );
     },
   },
 };
@@ -482,18 +506,18 @@ export default {
   .focus {
     flex-direction: column;
   }
-  
+
   .left-panel {
     width: 100%;
     max-width: none;
     min-height: 300px;
   }
-  
+
   .demo-banner-content {
     flex-direction: column;
     align-items: flex-start;
   }
-  
+
   .demo-actions {
     align-items: flex-start;
     width: 100%;

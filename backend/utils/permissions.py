@@ -6,30 +6,43 @@ various operations based on the configuration settings and user roles.
 """
 
 from typing import Optional
-from backend.config import PERMISSION_READ, PERMISSION_CREATE, PERMISSION_EDIT, PERMISSION_DELETE, PERMISSION_RATE
+from backend.config import (
+    PERMISSION_READ,
+    PERMISSION_CREATE,
+    PERMISSION_EDIT,
+    PERMISSION_DELETE,
+    PERMISSION_RATE,
+)
 from backend.models.fixed import UserRead
 
 
-def check_permission_level(required_level: str, user: Optional[UserRead] = None) -> bool:
+def check_permission_level(
+    required_level: str, user: Optional[UserRead] = None
+) -> bool:
     """
     Check if a user meets the required permission level.
-    
+
     Args:
         required_level: One of 'all', 'loggedin', 'admin'
         user: The user to check permissions for (None for anonymous)
-    
+
     Returns:
         bool: True if user has required permission level
     """
     if required_level == "all":
         return True
-    
+
     if required_level == "loggedin":
         return user is not None and user.is_active and user.username != "anonymous"
-    
+
     if required_level == "admin":
-        return user is not None and user.is_active and user.username != "anonymous" and (user.is_admin or user.is_super_admin)
-    
+        return (
+            user is not None
+            and user.is_active
+            and user.username != "anonymous"
+            and (user.is_admin or user.is_super_admin)
+        )
+
     # Default to deny access for unknown permission levels
     return False
 

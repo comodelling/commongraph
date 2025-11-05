@@ -70,7 +70,9 @@ export default {
       success.value = null;
 
       // Validate passwords match
-      if (passwordForm.value.newPassword !== passwordForm.value.confirmPassword) {
+      if (
+        passwordForm.value.newPassword !== passwordForm.value.confirmPassword
+      ) {
         error.value = "New passwords do not match.";
         return;
       }
@@ -96,7 +98,7 @@ export default {
             current_password: passwordForm.value.currentPassword,
             new_password: passwordForm.value.newPassword,
           },
-          { headers: { Authorization: `Bearer ${token}` } }
+          { headers: { Authorization: `Bearer ${token}` } },
         );
 
         success.value = "Password updated successfully!";

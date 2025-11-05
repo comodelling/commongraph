@@ -4,11 +4,31 @@ import datetime
 from fastapi import Body, Depends, APIRouter, HTTPException, Query, status, Path
 
 from backend.api.auth import get_current_user
-from backend.utils.permissions import can_read, can_create, can_edit, can_delete, can_rate
-from backend.db.base import GraphDatabaseInterface, GraphHistoryRelationalInterface, RatingHistoryRelationalInterface
-from backend.db.connections import get_graph_db, get_graph_history_db, get_rating_history_db
+from backend.utils.permissions import (
+    can_read,
+    can_create,
+    can_edit,
+    can_delete,
+    can_rate,
+)
+from backend.db.base import (
+    GraphDatabaseInterface,
+    GraphHistoryRelationalInterface,
+    RatingHistoryRelationalInterface,
+)
+from backend.db.connections import (
+    get_graph_db,
+    get_graph_history_db,
+    get_rating_history_db,
+)
 from backend.models.dynamic import DynamicEdge, EdgeTypeModels
-from backend.models.fixed import GraphHistoryEvent, NodeId, RatingEvent, UserRead, EntityType
+from backend.models.fixed import (
+    GraphHistoryEvent,
+    NodeId,
+    RatingEvent,
+    UserRead,
+    EntityType,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -16,8 +36,8 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/edges", tags=["edges"])
 
 
-
 # **** ratings for batch of edges ****
+
 
 @router.get(
     "/ratings",
@@ -34,21 +54,21 @@ def get_edges_ratings(
     if not can_read(user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You must be logged in to view content"
+            detail="You must be logged in to view content",
         )
-    
+
     pairs = [(int(s), int(t)) for s, t in (e.split("-") for e in edge_ids)]
     raw = db.get_edges_ratings(pairs, poll_label)
-    return { f"{s}-{t}": evs for (s, t), evs in raw.items() }
+    return {f"{s}-{t}": evs for (s, t), evs in raw.items()}
 
 
 @router.get("/ratings/median")
 def get_edges_median_ratings(
     edge_ids: list[str] = Query(
-        ...,   # no alias
-        description="List of edges in form 'source-target'"
+        ..., description="List of edges in form 'source-target'"  # no alias
     ),
-    poll_label: str | None = Query(None, description="Label of the poll to filter ratings"),
+    poll_label: str
+    | None = Query(None, description="Label of the poll to filter ratings"),
     user: UserRead = Depends(get_current_user),
     db: RatingHistoryRelationalInterface = Depends(get_rating_history_db),
 ) -> dict[str, dict | None]:
@@ -61,9 +81,9 @@ def get_edges_median_ratings(
     if not can_read(user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You must be logged in to view content"
+            detail="You must be logged in to view content",
         )
-    
+
     start_time = datetime.datetime.now()
     # Convert string keys to a list of (source_id, target_id) for the DB method
     edges = []
@@ -92,9 +112,12 @@ def get_edges_median_ratings(
 
 # **** Edge CRUD operations ****
 
+
 @router.get("")
 def get_edges(
-    node_ids: list[NodeId] = Query(None, description="Optional list of node IDs to filter connections"),
+    node_ids: list[NodeId] = Query(
+        None, description="Optional list of node IDs to filter connections"
+    ),
     user: UserRead = Depends(get_current_user),
     db_history: GraphHistoryRelationalInterface = Depends(get_graph_history_db),
 ) -> list[DynamicEdge]:
@@ -103,9 +126,9 @@ def get_edges(
     if not can_read(user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You must be logged in to view content"
+            detail="You must be logged in to view content",
         )
-    
+
     full_edge_list = db_history.get_edge_list()
     if node_ids:
         edge_list = []
@@ -121,52 +144,49 @@ def get_edges(
 def create_edge(
     payload: dict = Body(...),
     db_graph: GraphDatabaseInterface | None = Depends(get_graph_db),
-    db_history: GraphHistoryRelationalInterface = Depends(
-        get_graph_history_db
-    ),
+    db_history: GraphHistoryRelationalInterface = Depends(get_graph_history_db),
     user: UserRead = Depends(get_current_user),
-) -> DynamicEdge: #type: ignore
+) -> DynamicEdge:  # type: ignore
     """Create an edge."""
     # Check permissions
     if not can_create(user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Insufficient permissions to create edges"
+            detail="Insufficient permissions to create edges",
         )
-    
+
     et = payload.get("edge_type")
     Model = EdgeTypeModels.get(et)
     if not Model:
         raise HTTPException(400, f"Unknown edge_type {et!r}")
-    #TODO: validate payload further, within graph, against Graph Schema
+    # TODO: validate payload further, within graph, against Graph Schema
     edge = Model(**payload)
     out_edge = db_history.create_edge(edge, username=user.username)
     if db_graph is not None:
         db_graph.create_edge(edge)
     return out_edge
 
+
 @router.put("")
 def update_edge(
     payload: dict = Body(...),
     db_graph: GraphDatabaseInterface | None = Depends(get_graph_db),
-    db_history: GraphHistoryRelationalInterface = Depends(
-        get_graph_history_db
-    ),
+    db_history: GraphHistoryRelationalInterface = Depends(get_graph_history_db),
     user: UserRead = Depends(get_current_user),
-) -> DynamicEdge: #type: ignore
+) -> DynamicEdge:  # type: ignore
     """Update the properties of an edge."""
     # Check permissions
     if not can_edit(user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Insufficient permissions to edit edges"
+            detail="Insufficient permissions to edit edges",
         )
-    
+
     et = payload.get("edge_type")
     Model = EdgeTypeModels.get(et)
     if not Model:
         raise HTTPException(400, f"Unknown edge_type {et!r}")
-    #TODO: validate payload further, within graph, against Graph Schema
+    # TODO: validate payload further, within graph, against Graph Schema
     edge = Model(**payload)
     out_edge = db_history.update_edge(edge, username=user.username)
     if db_graph is not None:
@@ -180,18 +200,16 @@ def find_edges(
     target_id: NodeId = None,
     edge_type: str = None,
     user: UserRead = Depends(get_current_user),
-    db_history: GraphHistoryRelationalInterface = Depends(
-        get_graph_history_db
-    ),
-) -> list[DynamicEdge]: #type: ignore
+    db_history: GraphHistoryRelationalInterface = Depends(get_graph_history_db),
+) -> list[DynamicEdge]:  # type: ignore
     """Return the edge associated with the provided ID."""
     # Check read permissions
     if not can_read(user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You must be logged in to view content"
+            detail="You must be logged in to view content",
         )
-    
+
     return db_history.find_edges(
         source_id=source_id, target_id=target_id, edge_type=edge_type
     )
@@ -202,18 +220,16 @@ def get_edge(
     source_id: NodeId,
     target_id: NodeId,
     user: UserRead = Depends(get_current_user),
-    db_history: GraphHistoryRelationalInterface = Depends(
-        get_graph_history_db
-    ),
-) -> DynamicEdge: #type: ignore
+    db_history: GraphHistoryRelationalInterface = Depends(get_graph_history_db),
+) -> DynamicEdge:  # type: ignore
     """Return the edge associated with the provided ID."""
     # Check read permissions
     if not can_read(user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You must be logged in to view content"
+            detail="You must be logged in to view content",
         )
-    
+
     return db_history.get_edge(source_id, target_id)
 
 
@@ -223,9 +239,7 @@ def delete_edge(
     target_id: NodeId,
     edge_type: str | None = None,
     db_graph: GraphDatabaseInterface | None = Depends(get_graph_db),
-    db_history: GraphHistoryRelationalInterface = Depends(
-        get_graph_history_db
-    ),
+    db_history: GraphHistoryRelationalInterface = Depends(get_graph_history_db),
     user: UserRead = Depends(get_current_user),
 ):
     """Delete the edge between two nodes and for an optional edge_type."""
@@ -233,38 +247,37 @@ def delete_edge(
     if not can_delete(user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Insufficient permissions to delete edges"
+            detail="Insufficient permissions to delete edges",
         )
-    
+
     db_history.delete_edge(source_id, target_id, edge_type, username=user.username)
     if db_graph is not None:
         db_graph.delete_edge(source_id, target_id, edge_type)
+
 
 @router.get("/{source_id}/{target_id}/history")
 def get_edge_history(
     source_id: NodeId,
     target_id: NodeId,
     user: UserRead = Depends(get_current_user),
-    db_history: GraphHistoryRelationalInterface = Depends(
-        get_graph_history_db
-    ),
+    db_history: GraphHistoryRelationalInterface = Depends(get_graph_history_db),
 ) -> list[GraphHistoryEvent]:
     """Return the history of the edge associated with the provided source and target IDs."""
     # Check read permissions
     if not can_read(user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You must be logged in to view content"
+            detail="You must be logged in to view content",
         )
-    
+
     return db_history.get_edge_history(source_id, target_id)
 
 
 # ****  per-edge ratings ****
 
 ratings_router = APIRouter(
-    prefix="/{source_id}/{target_id}/ratings", 
-    tags=["ratings"], 
+    prefix="/{source_id}/{target_id}/ratings",
+    tags=["ratings"],
     responses={404: {"description": "Not found"}},
 )
 
@@ -283,9 +296,9 @@ def log_edge_rating(
     if not can_rate(user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Insufficient permissions to rate edges"
+            detail="Insufficient permissions to rate edges",
         )
-    
+
     rating.entity_type = EntityType.edge
     rating.username = user.username
     rating.source_id = source_id
@@ -322,9 +335,9 @@ def get_edge_median_rating(
     if not can_read(user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You must be logged in to view content"
+            detail="You must be logged in to view content",
         )
-    
+
     logger.warning("Function may not be working as expected")
     median = db.get_edge_median_rating(source_id, target_id, poll_label)
     return {"median_rating": median}
@@ -334,9 +347,8 @@ def get_edge_median_rating(
 def get_edge_ratings(
     source_id: int,
     target_id: int,
-    poll_label: str | None = Query(
-        None, description="Optional poll label to filter ratings"
-    ),
+    poll_label: str
+    | None = Query(None, description="Optional poll label to filter ratings"),
     user: UserRead = Depends(get_current_user),
     db: RatingHistoryRelationalInterface = Depends(get_rating_history_db),
 ) -> dict:
@@ -347,13 +359,12 @@ def get_edge_ratings(
     if not can_read(user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You must be logged in to view content"
+            detail="You must be logged in to view content",
         )
-    
+
     ratings = db.get_edge_ratings(source_id, target_id, poll_label)
     # Convert each RatingEvent to dict.
     return {"ratings": ratings}
 
 
 router.include_router(ratings_router)
-

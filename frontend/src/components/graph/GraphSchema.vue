@@ -49,24 +49,19 @@ export default {
           color: "#66ccff",
           // labelColor: "red"
           labelColor: computedLabelColor,
-          nodeType: t
+          nodeType: t,
         });
       });
 
       // 3) add directed edges with type "arrow"
       relations.forEach((r, i) => {
-        graph.addEdgeWithKey(
-          `${r.label}-${i}`,
-          r.source_type,
-          r.target_type,
-          {
-            label: r.label,
-            size: 4,
-            // color: "#999",
-            type: "arrow",
-            // labelColor: computedLabelColor
-          }
-        );
+        graph.addEdgeWithKey(`${r.label}-${i}`, r.source_type, r.target_type, {
+          label: r.label,
+          size: 4,
+          // color: "#999",
+          type: "arrow",
+          // labelColor: computedLabelColor
+        });
       });
 
       // 4) mount Sigma using its built-in settings.
@@ -79,9 +74,12 @@ export default {
           defaultEdgeType: "arrow",
           renderEdgeLabels: true,
           labelColor: { attribute: "labelColor", color: computedLabelColor },
-          edgeLabelColor: { attribute: "labelColor", color: computedLabelColor },
+          edgeLabelColor: {
+            attribute: "labelColor",
+            color: computedLabelColor,
+          },
           // defaultLabelColor: computedLabelColor,
-        }
+        },
       );
       // Attach hover tooltip for nodes showing properties and polls
       const tooltip = document.getElementById("tooltip") as HTMLDivElement;
@@ -89,7 +87,7 @@ export default {
         const type = graph.getNodeAttribute(node, "nodeType");
         const props = nodeTypes.value[type].properties || {};
         const polls = Object.keys(getNodePolls(type));
-        const html = `<strong>${type}</strong><br/>Properties: ${props.length? props.join(", "): "None"}<br/>Polls: ${polls.length? polls.join(", "): "None"}`;
+        const html = `<strong>${type}</strong><br/>Properties: ${props.length ? props.join(", ") : "None"}<br/>Polls: ${polls.length ? polls.join(", ") : "None"}`;
         tooltip.innerHTML = html;
         tooltip.style.display = "block";
         // compute position ensuring tooltip stays within viewport

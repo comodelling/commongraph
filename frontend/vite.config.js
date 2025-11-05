@@ -13,7 +13,7 @@ export default defineConfig({
   envPrefix: 'VITE_',             // expose only VITE_* to client
   server: {
     allowedHosts: [
-      'commongraph.org', 
+      'commongraph.org',
       'www.commongraph.org',
       'localhost',
       '127.0.0.1'

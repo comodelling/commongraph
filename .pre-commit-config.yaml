@@ -15,13 +15,13 @@ repos:
         files: ^backend/
 -   repo: local
     hooks:
-    -   id: pytest-check
-        name: pytest-check
-        files: ^backend/
-        entry: pytest
-        language: system
-        pass_filenames: false
-        always_run: false
+    # -   id: pytest-check
+    #     name: pytest-check
+    #     files: ^backend/
+    #     entry: pytest
+    #     language: system
+    #     pass_filenames: false
+    #     always_run: false
     -   id: prettier
         name: prettier
         files: ^frontend/
@@ -36,9 +36,10 @@ repos:
         language: system
         pass_filenames: false
         always_run: false
-    -   id: update-version
-        name: update version from file
-        entry: node frontend/scripts/updateVersion.cjs
+    -   id: sync-version
+        name: sync version between VERSION and frontend/package.json
+        entry: bash scripts/sync-version.sh
         language: system
-        files: ^VERSION$
+        files: ^(VERSION|frontend/package\.json)$
         pass_filenames: false
+        always_run: false

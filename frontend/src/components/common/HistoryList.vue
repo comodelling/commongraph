@@ -9,12 +9,13 @@
           class="diff-link"
           @click="toggleDiff(event, index)"
         >
-          ({{ diffVisible[event.event_id] ? 'Hide' : 'Diff' }})
+          ({{ diffVisible[event.event_id] ? "Hide" : "Diff" }})
         </span>
         <div v-if="diffVisible[event.event_id]" class="diff">
           <ul>
             <li v-for="diff in diffData[event.event_id]" :key="diff.field">
-              <strong>{{ diff.field }}</strong>: {{ diff.from }} -> {{ diff.to }}
+              <strong>{{ diff.field }}</strong
+              >: {{ diff.from }} -> {{ diff.to }}
             </li>
           </ul>
         </div>
@@ -62,10 +63,12 @@ export default {
   },
   async created() {
     if (!this.apiEndpoint) {
-      console.error("HistoryList: Invalid props - provide either nodeId or sourceId+targetId");
+      console.error(
+        "HistoryList: Invalid props - provide either nodeId or sourceId+targetId",
+      );
       return;
     }
-    
+
     try {
       const response = await api.get(this.apiEndpoint);
       this.history = response.data.reverse(); // Reverse the order to show the most recent first

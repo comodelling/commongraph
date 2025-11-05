@@ -8,7 +8,7 @@
             v-for="(props, type) in edgeTypes"
             :key="type"
             :value="type"
-            :disabled="!computedEdgeTypeOptions.includes(type)" 
+            :disabled="!computedEdgeTypeOptions.includes(type)"
             :title="tooltips.edge[type] || tooltips.edge.type"
           >
             {{ capitalise(type) }}
@@ -31,7 +31,8 @@
               v-if="editingField !== `reference-${index}`"
               @click="startEditing(`reference-${index}`)"
               class="reference-text"
-            >{{ reference || "Click to add reference" }}</span>
+              >{{ reference || "Click to add reference" }}</span
+            >
             <input
               v-else
               v-model="editedEdge.references[index]"
@@ -42,8 +43,8 @@
               class="reference-input"
               placeholder="Enter reference..."
             />
-            <button 
-              class="delete-reference-button" 
+            <button
+              class="delete-reference-button"
               @click="deleteReference(index)"
               title="Delete reference"
             >
@@ -62,7 +63,8 @@
         <span
           v-if="editingField !== 'description' && editedEdge.description"
           @click="startEditing('description')"
-        >{{ editedEdge.description }}</span>
+          >{{ editedEdge.description }}</span
+        >
         <textarea
           v-else-if="editingField === 'description'"
           v-model="editedEdge.description"
@@ -91,11 +93,14 @@ import { onMounted } from "vue";
 import { useAuth } from "../../composables/useAuth";
 import { useUnsaved } from "../../composables/useUnsaved";
 import { useConfig } from "../../composables/useConfig";
-import { loadGraphSchema, getAllowedEdgeTypes } from "../../composables/useGraphSchema";
+import {
+  loadGraphSchema,
+  getAllowedEdgeTypes,
+} from "../../composables/useGraphSchema";
 
 export default {
   props: {
-    edge:       { type: Object, required: true },
+    edge: { type: Object, required: true },
     sourceType: { type: String, required: false, default: null },
     targetType: { type: String, required: false, default: null },
   },
@@ -123,7 +128,12 @@ export default {
     },
     computedEdgeTypeOptions() {
       // If both ends are known, only return allowed; else return all
-      console.log("Source type:", this.sourceType, "Target type:", this.targetType);
+      console.log(
+        "Source type:",
+        this.sourceType,
+        "Target type:",
+        this.targetType,
+      );
       if (this.sourceType && this.targetType) {
         return getAllowedEdgeTypes(this.sourceType, this.targetType);
       }
@@ -179,7 +189,9 @@ export default {
     isTypeAllowed(type) {
       // only disable when both ends are known
       if (this.sourceType && this.targetType) {
-        return getAllowedEdgeTypes(this.sourceType, this.targetType).includes(type);
+        return getAllowedEdgeTypes(this.sourceType, this.targetType).includes(
+          type,
+        );
       }
       return true;
     },

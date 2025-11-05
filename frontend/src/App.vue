@@ -21,7 +21,7 @@ export default {
           document.title = newName;
         }
       },
-      { immediate: true }
+      { immediate: true },
     );
 
     return { platformName };

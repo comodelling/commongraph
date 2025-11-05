@@ -23,10 +23,12 @@
 
       <!-- Second card: show rating for node or edge -->
 
-       <template v-if="isNode && nodePollsCount && !node.new"">
-        <div class="card" 
-             v-for="(pollConfig, pollLabel) in nodePolls" 
-             :key="`node-${pollLabel}-${node.node_id}`">
+      <template v-if="isNode && nodePollsCount && !node.new">
+        <div
+          class="card"
+          v-for="(pollConfig, pollLabel) in nodePolls"
+          :key="`node-${pollLabel}-${node.node_id}`"
+        >
           <ElementPollPane
             :element="{ node_id: node.node_id }"
             :poll-label="pollLabel"
@@ -36,9 +38,11 @@
       </template>
 
       <template v-else-if="isEdge && edgePollsCount && !edge.new">
-        <div class="card"
-             v-for="(pollConfig, pollLabel) in edgePolls"
-             :key="`edge-${pollLabel}-${edge.source}-${edge.target}`">
+        <div
+          class="card"
+          v-for="(pollConfig, pollLabel) in edgePolls"
+          :key="`edge-${pollLabel}-${edge.source}-${edge.target}`"
+        >
           <ElementPollPane
             :element="{ edge: { source: edge.source, target: edge.target } }"
             :poll-label="pollLabel"
@@ -83,10 +87,11 @@ export default {
     SubgraphRenderer,
   },
   setup() {
-    const { nodeTypes, edgeTypes, defaultNodeType, canCreate, canEdit } = useConfig()
- 
+    const { nodeTypes, edgeTypes, defaultNodeType, canCreate, canEdit } =
+      useConfig();
+
     // nodeTypes & edgeTypes will be unwrapped when used in `this.*`
-    return { nodeTypes, edgeTypes, defaultNodeType, canCreate, canEdit }
+    return { nodeTypes, edgeTypes, defaultNodeType, canCreate, canEdit };
   },
 
   data() {
@@ -101,18 +106,18 @@ export default {
     };
   },
   watch: {
-    '$route.params.id'() {
+    "$route.params.id"() {
       if (this.id) {
         this.hydrateNodeFromCache();
       }
     },
-    '$route.params.source_id'() {
+    "$route.params.source_id"() {
       console.log("Source ID changed to:", this.sourceId);
       if (this.sourceId) {
         this.hydrateEdgeFromCache();
       }
     },
-    '$route.params.target_id'() {
+    "$route.params.target_id"() {
       if (this.targetId) {
         this.hydrateEdgeFromCache();
       }
@@ -143,15 +148,15 @@ export default {
       return Boolean(this.sourceId && this.targetId);
     },
     allowedNodeFields() {
-       if (!this.node?.node_type) return []
-       console.log("node Types allowed", this.nodeTypes);
-       return this.nodeTypes[this.node.node_type].properties || []
+      if (!this.node?.node_type) return [];
+      console.log("node Types allowed", this.nodeTypes);
+      return this.nodeTypes[this.node.node_type].properties || [];
     },
     allowedEdgeFields() {
-      if (!this.edge?.edge_type) return []
-      return this.edgeTypes[this.edge.edge_type].properties || []
+      if (!this.edge?.edge_type) return [];
+      return this.edgeTypes[this.edge.edge_type].properties || [];
     },
-      nodePolls() {
+    nodePolls() {
       if (!this.node?.node_type) return {};
       return this.nodeTypes[this.node.node_type].polls || {};
     },
@@ -171,7 +176,9 @@ export default {
     if (this.isBrandNewNode) {
       // Check permissions first
       if (!this.canCreate) {
-        alert("You don't have permission to create nodes. Please log in with an account that has create permissions.");
+        alert(
+          "You don't have permission to create nodes. Please log in with an account that has create permissions.",
+        );
         this.$router.push({ name: "Home" });
         return;
       }
@@ -182,19 +189,19 @@ export default {
       // const allowed = this.allowedNodeFields.value || [];
       const allowed = this.nodeTypes[type].properties || [];
       console.log("Allowed node props:", allowed);
-      
+
       // Check if there's a pre-populated title from search
-      const prePopulatedTitle = sessionStorage.getItem('newNodeTitle');
+      const prePopulatedTitle = sessionStorage.getItem("newNodeTitle");
       if (prePopulatedTitle) {
-        sessionStorage.removeItem('newNodeTitle'); // Clear after reading
+        sessionStorage.removeItem("newNodeTitle"); // Clear after reading
       }
-      
+
       // build minimal node object
       const node = { node_id: "new", node_type: type, new: true };
-      if (allowed.includes("title"))      node.title = prePopulatedTitle || "";
-      if (allowed.includes("scope"))      node.scope = "";
-      if (allowed.includes("status"))     node.status = "draft";
-      if (allowed.includes("tags"))       node.tags = [];
+      if (allowed.includes("title")) node.title = prePopulatedTitle || "";
+      if (allowed.includes("scope")) node.scope = "";
+      if (allowed.includes("status")) node.status = "draft";
+      if (allowed.includes("tags")) node.tags = [];
       if (allowed.includes("references")) node.references = [];
       if (allowed.includes("description")) node.description = "";
       this.node = node;
@@ -214,10 +221,9 @@ export default {
       console.log("fetchElementAndSubgraphData");
       try {
         const seed = this.nodeId || this.sourceId || this.targetId;
-        const response = await api.get(
-          `/graph/${seed}`,
-          { params: { levels: 10 } },
-        );
+        const response = await api.get(`/graph/${seed}`, {
+          params: { levels: 10 },
+        });
         let fetched_nodes = response.data.nodes || [];
         const fetched_edges = response.data.edges || [];
 
@@ -238,12 +244,16 @@ export default {
                 edge.source === parseInt(this.sourceId) &&
                 edge.target === parseInt(this.targetId),
             ) || null;
-          const sourceNode = fetched_nodes.find(n => n.node_id === parseInt(this.sourceId));
-          const targetNode = fetched_nodes.find(n => n.node_id === parseInt(this.targetId));
+          const sourceNode = fetched_nodes.find(
+            (n) => n.node_id === parseInt(this.sourceId),
+          );
+          const targetNode = fetched_nodes.find(
+            (n) => n.node_id === parseInt(this.targetId),
+          );
           this.edge = {
-           ...this.edge,
-           sourceNodeType: sourceNode?.node_type,
-           targetNodeType: targetNode?.node_type
+            ...this.edge,
+            sourceNodeType: sourceNode?.node_type,
+            targetNodeType: targetNode?.node_type,
           };
           console.log("Edge found !!!!!!!!!! :", this.edge);
         } else {
@@ -265,50 +275,49 @@ export default {
       if (this.edge?.new) {
         return;
       }
-      const s = Number(this.sourceId)
-      const t = Number(this.targetId)
-      const nodes = this.subgraphData.nodes
-      const edges = this.subgraphData.edges
+      const s = Number(this.sourceId);
+      const t = Number(this.targetId);
+      const nodes = this.subgraphData.nodes;
+      const edges = this.subgraphData.edges;
 
-      const sourceNode = nodes.find((n) => n.node_id === s)
-      const targetNode = nodes.find((n) => n.node_id === t)
-      const edgeRaw    = edges.find((e) => e.source === s && e.target === t)
+      const sourceNode = nodes.find((n) => n.node_id === s);
+      const targetNode = nodes.find((n) => n.node_id === t);
+      const edgeRaw = edges.find((e) => e.source === s && e.target === t);
 
       if (sourceNode && targetNode && edgeRaw) {
         // no network needed
         this.edge = {
           ...edgeRaw,
           sourceNodeType: sourceNode.node_type,
-          targetNodeType: targetNode.node_type
-        }
-      }
-      else {
+          targetNodeType: targetNode.node_type,
+        };
+      } else {
         // fallback to two cheap calls
         Promise.all([
           api.get(`/edges/${s}/${t}`),
           api.get(`/nodes/${s}`),
-          api.get(`/nodes/${t}`)
-        ]).then(([eRes, sRes, tRes])=>{
+          api.get(`/nodes/${t}`),
+        ]).then(([eRes, sRes, tRes]) => {
           this.edge = {
             ...eRes.data,
             sourceNodeType: sRes.data.node_type,
-            targetNodeType: tRes.data.node_type
-          }
-        })
+            targetNodeType: tRes.data.node_type,
+          };
+        });
       }
     },
     hydrateNodeFromCache() {
-      const nodeId = this.nodeId
-      const nodes = this.subgraphData.nodes
-      const nodeRaw = nodes.find((n) => n.node_id === Number(nodeId))
+      const nodeId = this.nodeId;
+      const nodes = this.subgraphData.nodes;
+      const nodeRaw = nodes.find((n) => n.node_id === Number(nodeId));
 
       if (nodeRaw) {
-        this.node = nodeRaw
+        this.node = nodeRaw;
       } else {
         // fallback to a single call
         api.get(`/nodes/${nodeId}`).then((res) => {
-          this.node = res.data
-        })
+          this.node = res.data;
+        });
       }
     },
     async fetchNodeRatings(nodeIds) {
@@ -328,10 +337,9 @@ export default {
       if (!edges.length) return edges;
       try {
         const edgeKeys = edges.map((e) => `${e.source}-${e.target}`);
-        const { data: edgeRatings } = await api.get(
-          "/edges/ratings/median",
-          { params: { edge_ids: edgeKeys } }
-        );
+        const { data: edgeRatings } = await api.get("/edges/ratings/median", {
+          params: { edge_ids: edgeKeys },
+        });
         return edges.map((edge) => {
           const key = `${edge.source}-${edge.target}`;
           edge.causal_strength = edgeRatings[key]?.median_rating ?? null;
@@ -355,9 +363,7 @@ export default {
     },
     async updateNodeFromBackend(node_id) {
       try {
-        const response = await api.get(
-          `/nodes/${node_id}`,
-        );
+        const response = await api.get(`/nodes/${node_id}`);
         this.node = response.data || undefined;
       } catch (error) {
         console.error("Error fetching node:", error);
@@ -366,9 +372,7 @@ export default {
     },
     async updateEdgeFromBackend(source_id, target_id) {
       try {
-        const response = await api.get(
-          `/edges/${source_id}/${target_id}`,
-        );
+        const response = await api.get(`/edges/${source_id}/${target_id}`);
         this.edge = response.data || undefined;
       } catch (error) {
         console.error("Error fetching edge:", error);
@@ -394,7 +398,8 @@ export default {
       }
     },
     openNewlyCreatedNode(newNode) {
-      this.node = {...newNode.data,
+      this.node = {
+        ...newNode.data,
         new: true,
         fromConnection: newNode.data.fromConnection,
       };
@@ -409,8 +414,8 @@ export default {
         edge_type: newEdge.data.edge_type,
         new: true,
       };
-      if (allowed.includes("description"))    this.edge.description = "";
-      if (allowed.includes("references"))     this.edge.references = [];
+      if (allowed.includes("description")) this.edge.description = "";
+      if (allowed.includes("references")) this.edge.references = [];
       this.$router.push({
         name: "EdgeEdit",
         params: {
@@ -420,7 +425,6 @@ export default {
       });
     },
   },
-  
 };
 </script>
 

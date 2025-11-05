@@ -7,7 +7,9 @@ const isDark = ref(false);
 // Function to apply theme to the document
 const applyTheme = (theme) => {
   if (theme === "system") {
-    const systemPrefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const systemPrefersDark = window.matchMedia(
+      "(prefers-color-scheme: dark)",
+    ).matches;
     document.body.classList.toggle("dark", systemPrefersDark);
     isDark.value = systemPrefersDark;
   } else {
@@ -41,7 +43,7 @@ export function useTheme() {
         await api.patch(
           "/users/preferences",
           { theme: newTheme },
-          { headers: { Authorization: `Bearer ${token}` } }
+          { headers: { Authorization: `Bearer ${token}` } },
         );
       } catch (err) {
         console.warn("Failed to update theme preference:", err);
@@ -72,7 +74,7 @@ export function useTheme() {
     if (token) {
       try {
         const response = await api.get("/users/me", {
-          headers: { Authorization: `Bearer ${token}` }
+          headers: { Authorization: `Bearer ${token}` },
         });
         const userTheme = response.data.preferences?.theme;
         if (userTheme && ["light", "dark", "system"].includes(userTheme)) {
@@ -90,6 +92,6 @@ export function useTheme() {
     toggleTheme,
     setTheme,
     applyTheme,
-    loadUserTheme
+    loadUserTheme,
   };
 }

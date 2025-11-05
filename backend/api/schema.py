@@ -22,27 +22,29 @@ def get_session():
 @router.get("/status")
 async def get_schema_status(
     session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """Get current schema status and check for changes"""
     # Allow anonymous users to check status, but limit information
     manager = SchemaManager(session)
     has_changes, changes, warnings = manager.check_for_schema_changes()
     active_schema = manager.get_active_schema()
-    
+
     # For anonymous users, provide basic information but hide sensitive details
     if current_user.username == "anonymous":
         return {
             "has_changes": has_changes,  # Show if there are changes
-            "changes": len(changes),     # Show count but not details
-            "warnings": len(warnings),   # Show count but not details
+            "changes": len(changes),  # Show count but not details
+            "warnings": len(warnings),  # Show count but not details
             "active_schema": {
                 "version": active_schema.version if active_schema else None,
-                "created_at": active_schema.created_at if active_schema else None
-            } if active_schema else None,
-            "note": "Login as admin to see change details and apply migrations"
+                "created_at": active_schema.created_at if active_schema else None,
+            }
+            if active_schema
+            else None,
+            "note": "Login as admin to see change details and apply migrations",
         }
-    
+
     # For authenticated users, provide full information
     return {
         "has_changes": has_changes,
@@ -51,8 +53,10 @@ async def get_schema_status(
         "active_schema": {
             "version": active_schema.version if active_schema else None,
             "config_hash": active_schema.config_hash if active_schema else None,
-            "created_at": active_schema.created_at if active_schema else None
-        } if active_schema else None
+            "created_at": active_schema.created_at if active_schema else None,
+        }
+        if active_schema
+        else None,
     }
 
 
@@ -60,19 +64,19 @@ async def get_schema_status(
 async def apply_schema_changes(
     force: bool = Query(False, description="Apply changes even if there are warnings"),
     session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """Apply schema changes from YAML config"""
     if not current_user.is_admin:
         raise HTTPException(403, "Admin access required")
-    
+
     manager = SchemaManager(session)
     try:
         new_schema = manager.apply_schema_update(current_user.username, force)
         return {
-            "success": True, 
+            "success": True,
             "new_version": new_schema.version,
-            "message": f"Schema updated to version {new_schema.version}"
+            "message": f"Schema updated to version {new_schema.version}",
         }
     except ValueError as e:
         raise HTTPException(400, str(e))
@@ -81,12 +85,12 @@ async def apply_schema_changes(
 @router.get("/history", response_model=List[GraphSchema])
 async def get_schema_history(
     session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """Get all schema versions"""
     if not current_user.is_admin:
         raise HTTPException(403, "Admin access required")
-    
+
     manager = SchemaManager(session)
     return manager.get_schema_history()
 
@@ -94,12 +98,12 @@ async def get_schema_history(
 @router.get("/migrations", response_model=List[SchemaMigration])
 async def get_migrations(
     session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """Get all schema migrations"""
     if not current_user.is_admin:
         raise HTTPException(403, "Admin access required")
-    
+
     manager = SchemaManager(session)
     return manager.get_migrations()
 
@@ -107,16 +111,16 @@ async def get_migrations(
 @router.post("/initialize")
 async def initialize_schema(
     session: Session = Depends(get_session),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """Initialize schema in database from current YAML config"""
     if not current_user.is_admin:
         raise HTTPException(403, "Admin access required")
-    
+
     manager = SchemaManager(session)
     schema = manager.ensure_schema_in_db(current_user.username)
     return {
         "success": True,
         "version": schema.version,
-        "message": f"Schema initialized with version {schema.version}"
+        "message": f"Schema initialized with version {schema.version}",
     }

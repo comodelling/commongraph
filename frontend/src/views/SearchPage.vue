@@ -4,19 +4,22 @@
       <div class="results-column">
         <h2>Search Results</h2>
         <div class="results-list">
-            <div v-if="!nodes.length && title" class="no-results">
-              <p>No results found for: <span class="no-results-query">{{ formattedQuery }}</span></p>
-              <button 
-                v-if="canCreate" 
-                @click="createNodeFromSearch" 
-                class="create-node-btn"
-              >
-                Create "{{ formattedQuery }}"
-              </button>
-              <p v-else class="no-permission-message">
-                Log in with create permissions to add new nodes.
-              </p>
-            </div>
+          <div v-if="!nodes.length && title" class="no-results">
+            <p>
+              No results found for:
+              <span class="no-results-query">{{ formattedQuery }}</span>
+            </p>
+            <button
+              v-if="canCreate"
+              @click="createNodeFromSearch"
+              class="create-node-btn"
+            >
+              Create "{{ formattedQuery }}"
+            </button>
+            <p v-else class="no-permission-message">
+              Log in with create permissions to add new nodes.
+            </p>
+          </div>
           <ul v-else>
             <div v-for="node in nodes" :key="node.node_id">
               <NodeListItem :node="node" />
@@ -47,7 +50,6 @@
   </div>
 </template>
 
-
 <script>
 import api from "../api/axios";
 import qs from "qs";
@@ -60,7 +62,12 @@ import AggRatingMultipane from "../components/poll/AggRatingMultipane.vue";
 import SigmaGraphVis from "../components/graph/SigmaGraphVis.vue";
 
 export default {
-  components: { RatingHistogram, NodeListItem, AggRatingMultipane, SigmaGraphVis },
+  components: {
+    RatingHistogram,
+    NodeListItem,
+    AggRatingMultipane,
+    SigmaGraphVis,
+  },
   data() {
     return {
       title: "",
@@ -85,34 +92,33 @@ export default {
       }
 
       // Transform search result nodes into graph format
-      const graphNodes = this.nodes.map(node => ({
+      const graphNodes = this.nodes.map((node) => ({
         node_id: node.node_id,
         id: node.node_id,
         title: node.title,
         label: node.title,
         node_type: node.node_type,
-        scope: node.scope
+        scope: node.scope,
       }));
 
       // Use actual relationships/edges from the API
-      const graphEdges = this.relationships.map(rel => ({
+      const graphEdges = this.relationships.map((rel) => ({
         source_id: rel.source,
         target_id: rel.target,
         edge_type: rel.edge_type || rel.relationship_type || rel.type,
-        type: rel.edge_type || rel.relationship_type || rel.type
+        type: rel.edge_type || rel.relationship_type || rel.type,
       }));
 
       const result = {
         nodes: graphNodes,
-        edges: graphEdges
+        edges: graphEdges,
       };
-      
+
       // console.log("subgraphData computed:", result);
       console.log("Raw relationships:", this.relationships);
-      
+
       return result;
-    }
-    ,
+    },
     // Nicely format the incoming title/query which may be an array, JSON string, or comma-separated
     formattedQuery() {
       const q = this.title;
@@ -129,14 +135,19 @@ export default {
         try {
           const parsed = JSON.parse(trimmed);
           if (Array.isArray(parsed)) return parsed.join(", ");
-          if (typeof parsed === "object" && parsed !== null) return JSON.stringify(parsed);
+          if (typeof parsed === "object" && parsed !== null)
+            return JSON.stringify(parsed);
         } catch (e) {
           // not JSON — continue
         }
 
         // Comma-separated string
         if (trimmed.includes(",")) {
-          return trimmed.split(",").map(s => s.trim()).filter(Boolean).join(", ");
+          return trimmed
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean)
+            .join(", ");
         }
 
         return trimmed;
@@ -144,7 +155,7 @@ export default {
 
       // Fallback to string conversion
       return String(q);
-    }
+    },
   },
   watch: {
     "$route.query": {
@@ -163,10 +174,10 @@ export default {
     createNodeFromSearch() {
       // Navigate to the node edit page for a new node, passing the search query as title
       const title = this.formattedQuery;
-      
+
       // Store the title in sessionStorage so ElementFocus can retrieve it
-      sessionStorage.setItem('newNodeTitle', title);
-      
+      sessionStorage.setItem("newNodeTitle", title);
+
       // Navigate to the new node creation route
       this.$router.push({ name: "NodeEdit", params: { id: "new" } });
     },
@@ -190,7 +201,13 @@ export default {
       // You could show edge details or filter results
     },
     handleGraphLoaded(data) {
-      console.log("Search graph loaded with", data.nodes?.length, "nodes and", data.edges?.length, "edges");
+      console.log(
+        "Search graph loaded with",
+        data.nodes?.length,
+        "nodes and",
+        data.edges?.length,
+        "edges",
+      );
     },
     async performSearch() {
       try {
@@ -198,7 +215,7 @@ export default {
         const query = this.$route.query;
         const title = query.q || query.title;
         const { node_type, edge_type, status, tags, scope, rating } = query;
-        
+
         const tagsArray = tags
           ? typeof tags === "string"
             ? tags
@@ -209,7 +226,11 @@ export default {
           : [];
 
         if (rating && rating.length) {
-          console.warn("rating passed is: ", rating, " but search currently ignores rating filter")
+          console.warn(
+            "rating passed is: ",
+            rating,
+            " but search currently ignores rating filter",
+          );
         }
 
         console.log("Searching for nodes with:", {
@@ -221,7 +242,7 @@ export default {
           scope,
         });
         const startTime = performance.now();
-        
+
         // Fetch nodes first (fast response)
         const response = await api.get(`/nodes`, {
           params: {
@@ -234,44 +255,46 @@ export default {
           paramsSerializer: (params) =>
             qs.stringify(params, { arrayFormat: "repeat" }),
         });
-        
+
         this.nodes = response.data;
         this.relationships = []; // Clear previous relationships immediately
-        
+
         const endTime = performance.now();
         console.log(`Search completed in ${endTime - startTime} milliseconds`);
         console.log(`Found ${this.nodes.length} nodes`);
-        
+
         // Fetch relationships in the background (non-blocking)
         this.fetchRelationshipsInBackground();
-        
       } catch (error) {
         console.error("Error fetching nodes:", error);
         this.nodes = [];
         this.relationships = [];
       }
     },
-    
+
     async fetchRelationshipsInBackground() {
       if (this.nodes.length === 0) {
         return;
       }
-      
-      const nodeIds = this.nodes.map(node => node.node_id);
-      console.log(`Fetching relationships for ${nodeIds.length} nodes in background...`);
-      
+
+      const nodeIds = this.nodes.map((node) => node.node_id);
+      console.log(
+        `Fetching relationships for ${nodeIds.length} nodes in background...`,
+      );
+
       try {
         const relationshipsResponse = await api.get(`/edges`, {
           params: {
-            node_ids: nodeIds
+            node_ids: nodeIds,
           },
           paramsSerializer: (params) =>
             qs.stringify(params, { arrayFormat: "repeat" }),
         });
-        
+
         this.relationships = relationshipsResponse.data || [];
-        console.log(`Loaded ${this.relationships.length} relationships - graph will update automatically`);
-        
+        console.log(
+          `Loaded ${this.relationships.length} relationships - graph will update automatically`,
+        );
       } catch (relError) {
         console.warn("Could not fetch relationships:", relError);
         this.relationships = [];
@@ -383,7 +406,9 @@ export default {
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.2s, transform 0.1s;
+  transition:
+    background-color 0.2s,
+    transform 0.1s;
 }
 
 .create-node-btn:hover {

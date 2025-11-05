@@ -27,11 +27,26 @@ const routes = [
     name: "MainPage",
     component: Layout,
     children: [
-      { path: "", name: "Main Page", component: MainPage, meta: { requiresRead: true } },
+      {
+        path: "",
+        name: "Main Page",
+        component: MainPage,
+        meta: { requiresRead: true },
+      },
       { path: "about", name: "About", component: About },
       { path: "beta", name: "BetaNotice", component: BetaNotice },
-      { path: "search", name: "SearchPage", component: SearchPage, meta: { requiresRead: true } },
-      { path: "schema", name: "Schema", component: Schema, meta: { requiresRead: true } },
+      {
+        path: "search",
+        name: "SearchPage",
+        component: SearchPage,
+        meta: { requiresRead: true },
+      },
+      {
+        path: "schema",
+        name: "Schema",
+        component: Schema,
+        meta: { requiresRead: true },
+      },
       // Demo routes - now inside Layout for header/sidebar
       {
         path: "/demo/:demoId",
@@ -52,7 +67,12 @@ const routes = [
         props: true,
       },
       { path: "/login", name: "Login", component: Login },
-      { path: "/signup", name: "Signup", component: Signup, meta: { requiresSignupEnabled: true } },
+      {
+        path: "/signup",
+        name: "Signup",
+        component: Signup,
+        meta: { requiresSignupEnabled: true },
+      },
       { path: "/settings", name: "UserSettings", component: UserSettings },
       { path: "/favourites", name: "Favourites", component: Favourites },
       {
@@ -81,14 +101,14 @@ const routes = [
         name: "NodeView",
         component: Focus,
         props: true,
-        meta: { requiresRead: true }
+        meta: { requiresRead: true },
       },
       {
         path: "/edge/:source_id/:target_id",
         name: "EdgeView",
         component: Focus,
         props: true,
-        meta: { requiresRead: true }
+        meta: { requiresRead: true },
       },
       {
         path: "/node/:id/edit",
@@ -114,7 +134,12 @@ const routes = [
         component: Focus,
         props: true,
       },
-      { path: "/admin/users", name: "AdminUsers", component: AdminUsers, meta: { requiresAdmin: true } },
+      {
+        path: "/admin/users",
+        name: "AdminUsers",
+        component: AdminUsers,
+        meta: { requiresAdmin: true },
+      },
     ],
   },
 ];
@@ -126,21 +151,21 @@ const router = createRouter({
 
 // Global navigation error handler
 router.onError((error) => {
-  console.error('Router error:', error);
-  
+  console.error("Router error:", error);
+
   // Handle URI errors specifically
-  if (error instanceof URIError || error.message?.includes('URI')) {
-    console.warn('URI Error in router, redirecting to home');
-    router.push('/').catch(() => {
+  if (error instanceof URIError || error.message?.includes("URI")) {
+    console.warn("URI Error in router, redirecting to home");
+    router.push("/").catch(() => {
       // If push fails, force redirect
-      window.location.href = '/';
+      window.location.href = "/";
     });
     return;
   }
-  
+
   // For other errors, try to navigate to home
-  router.push('/').catch(() => {
-    window.location.href = '/';
+  router.push("/").catch(() => {
+    window.location.href = "/";
   });
 });
 
@@ -148,78 +173,96 @@ router.beforeEach(async (to, from, next) => {
   try {
     // Validate the route path for malformed characters
     const path = to.path;
-    
+
     // Check for non-ASCII characters or suspicious patterns
     if (!/^[\x00-\x7F]*$/.test(decodeURIComponent(path))) {
-      console.warn('Malformed path detected:', path);
-      next('/');
+      console.warn("Malformed path detected:", path);
+      next("/");
       return;
     }
-    
+
     // Additional validation for specific attack patterns
     const suspiciousPatterns = [
-      /wp-/i, /admin/i, /phpmyadmin/i, /config/i, /\.env/i, /\.git/i
+      /wp-/i,
+      /admin/i,
+      /phpmyadmin/i,
+      /config/i,
+      /\.env/i,
+      /\.git/i,
     ];
 
     // If the destination is a registered admin route (uses meta.requiresAdmin),
     // allow it to bypass the generic "admin" pattern block. This lets legitimate
     // admin pages defined in routes (like /admin/users) pass validation while
     // still blocking unregistered suspicious paths that include "/admin".
-    const isAdminRoute = to.matched.some(record => record.meta && record.meta.requiresAdmin);
-    if (!isAdminRoute && suspiciousPatterns.some(pattern => pattern.test(path))) {
-      console.warn('Suspicious path detected:', path);
-      next('/');
+    const isAdminRoute = to.matched.some(
+      (record) => record.meta && record.meta.requiresAdmin,
+    );
+    if (
+      !isAdminRoute &&
+      suspiciousPatterns.some((pattern) => pattern.test(path))
+    ) {
+      console.warn("Suspicious path detected:", path);
+      next("/");
       return;
-    } else if (isAdminRoute && suspiciousPatterns.some(pattern => pattern.test(path))) {
+    } else if (
+      isAdminRoute &&
+      suspiciousPatterns.some((pattern) => pattern.test(path))
+    ) {
       // Log but allow legitimate admin routes (they should still be protected server-side)
-      console.info('Suspicious pattern matched but route requires admin; allowing:', path);
+      console.info(
+        "Suspicious pattern matched but route requires admin; allowing:",
+        path,
+      );
     }
   } catch (error) {
-    console.error('Path validation error:', error);
-    next('/');
+    console.error("Path validation error:", error);
+    next("/");
     return;
   }
-  
+
   // Check if signup is enabled for routes that require it
-  const requiresSignupEnabled = to.matched.some(record => record.meta?.requiresSignupEnabled);
+  const requiresSignupEnabled = to.matched.some(
+    (record) => record.meta?.requiresSignupEnabled,
+  );
   if (requiresSignupEnabled) {
     const { allowSignup, configLoaded } = useConfig();
-    
+
     // If config isn't loaded yet, load it
     if (!configLoaded.value) {
       const { load } = useConfig();
       await load();
     }
-    
+
     // Check if signup is enabled
     if (!allowSignup.value) {
-      console.log('Signup is disabled, redirecting to login');
-      next({ name: 'Login' });
+      console.log("Signup is disabled, redirecting to login");
+      next({ name: "Login" });
       return;
     }
   }
-  
+
   // Check read permissions for routes that require it
-  const requiresRead = to.matched.some(record => record.meta?.requiresRead);
+  const requiresRead = to.matched.some((record) => record.meta?.requiresRead);
   if (requiresRead) {
     const { isLoggedIn } = useAuth();
     const { permissions } = useConfig();
-    
+
     // If permissions aren't loaded yet, load them
     if (!permissions.value) {
       const { load } = useConfig();
       await load();
     }
-    
+
     // Check if user has read permission
     if (permissions.value && !permissions.value.read) {
       // User doesn't have read permission, redirect to beta notice
-      console.log('User lacks read permission, redirecting to beta notice');
-      next({ name: 'BetaNotice' });
+      console.log("User lacks read permission, redirecting to beta notice");
+      next({ name: "BetaNotice" });
       return;
     }
   }
-  
+
   // If leaving the edit view (NodeEdit or EdgeEdit) during submission,
   // skip the unsaved changes check.
   if (

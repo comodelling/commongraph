@@ -11,7 +11,7 @@
         @graph-loaded="handleGraphLoaded"
       />
     </div>
-    
+
     <!-- Foreground content panel -->
     <div class="content-panel">
       <div class="content">
@@ -62,8 +62,14 @@ export default {
       // Handle edge click - you might need to parse edge ID to get source/target
     },
     handleGraphLoaded(data) {
-      console.log("Graph loaded with", data.nodes?.length, "nodes and", data.edges?.length, "edges");
-    }
+      console.log(
+        "Graph loaded with",
+        data.nodes?.length,
+        "nodes and",
+        data.edges?.length,
+        "edges",
+      );
+    },
   },
 };
 </script>

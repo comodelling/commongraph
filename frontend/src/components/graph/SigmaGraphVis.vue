@@ -6,8 +6,12 @@
         <span v-if="!isFA2Running">Start Force Atlas 2</span>
         <span v-else>Stop Force Atlas 2</span>
       </button>
-      <button @click="circularLayout" class="control-button">Circular Layout</button>
-      <button @click="randomLayout" class="control-button">Random Layout</button>
+      <button @click="circularLayout" class="control-button">
+        Circular Layout
+      </button>
+      <button @click="randomLayout" class="control-button">
+        Random Layout
+      </button>
     </div>
   </div>
 </template>
@@ -27,30 +31,30 @@ export default {
     // If graphData is provided, use it directly. Otherwise fetch from API
     graphData: {
       type: Object,
-      default: null
+      default: null,
     },
     // API endpoint to fetch graph data from
     apiEndpoint: {
       type: String,
-      default: "/graph"
+      default: "/graph",
     },
     // Show layout control buttons
     showControls: {
       type: Boolean,
-      default: false
+      default: false,
     },
     // Auto-start force atlas layout
     autoStartForceAtlas: {
       type: Boolean,
-      default: true
+      default: true,
     },
     // Graph container height
     height: {
       type: String,
-      default: "400px"
-    }
+      default: "400px",
+    },
   },
-  emits: ['nodeClick', 'edgeClick', 'graphLoaded'],
+  emits: ["nodeClick", "edgeClick", "graphLoaded"],
   setup(props, { emit }) {
     const sigmaContainer = ref(null);
     const graph = ref(null);
@@ -79,7 +83,7 @@ export default {
 
         // Convert your data format to graphology format
         if (data.nodes) {
-          data.nodes.forEach(node => {
+          data.nodes.forEach((node) => {
             const nodeId = String(node.node_id || node.id);
             graph.value.addNode(nodeId, {
               x: Math.random() * 100,
@@ -87,7 +91,7 @@ export default {
               size: 10,
               label: node.title || node.label || `Node ${nodeId}`,
               color: "#666",
-              highlighted: false
+              highlighted: false,
             });
           });
         }
@@ -96,17 +100,23 @@ export default {
           data.edges.forEach((edge, index) => {
             const sourceId = String(edge.source_id || edge.source);
             const targetId = String(edge.target_id || edge.target);
-            
-            if (graph.value.hasNode(sourceId) && graph.value.hasNode(targetId)) {
+
+            if (
+              graph.value.hasNode(sourceId) &&
+              graph.value.hasNode(targetId)
+            ) {
               // Create a unique edge ID if not provided
-              const edgeId = edge.edge_id || edge.id || `edge_${sourceId}_${targetId}_${index}`;
-            //   console.log(`Adding edge: ${edgeId} from ${sourceId} to ${targetId} (type: ${edge.edge_type || edge.type})`);
-              
+              const edgeId =
+                edge.edge_id ||
+                edge.id ||
+                `edge_${sourceId}_${targetId}_${index}`;
+              //   console.log(`Adding edge: ${edgeId} from ${sourceId} to ${targetId} (type: ${edge.edge_type || edge.type})`);
+
               // Ensure we're passing string IDs, not numbers
               const sourceIdStr = String(sourceId);
               const targetIdStr = String(targetId);
               const edgeIdStr = String(edgeId);
-              
+
               try {
                 // Define edge attributes
                 const edgeAttributes = {
@@ -114,24 +124,41 @@ export default {
                   color: "#ccc",
                   label: edge.edge_type || edge.type || null,
                   highlighted: false,
-                  type: "arrow"
+                  type: "arrow",
                 };
-                
+
                 // Try the method with key first, then fallback to auto-key
-                if (typeof graph.value.addEdgeWithKey === 'function') {
-                  graph.value.addEdgeWithKey(edgeIdStr, sourceIdStr, targetIdStr, edgeAttributes);
-                //   console.log(`Successfully added edge during init with key: ${edgeIdStr}`);
+                if (typeof graph.value.addEdgeWithKey === "function") {
+                  graph.value.addEdgeWithKey(
+                    edgeIdStr,
+                    sourceIdStr,
+                    targetIdStr,
+                    edgeAttributes,
+                  );
+                  //   console.log(`Successfully added edge during init with key: ${edgeIdStr}`);
                 } else {
                   // Use auto-generated key method
-                  const autoEdgeId = graph.value.addEdge(sourceIdStr, targetIdStr, edgeAttributes);
-                //   console.log(`Successfully added edge during init with auto key: ${autoEdgeId}`);
+                  const autoEdgeId = graph.value.addEdge(
+                    sourceIdStr,
+                    targetIdStr,
+                    edgeAttributes,
+                  );
+                  //   console.log(`Successfully added edge during init with auto key: ${autoEdgeId}`);
                 }
               } catch (error) {
-                console.error(`Failed to add edge during init ${edgeIdStr}:`, error);
-                console.error(`Graph methods available:`, Object.getOwnPropertyNames(graph.value).filter(name => name.includes('Edge')));
+                console.error(
+                  `Failed to add edge during init ${edgeIdStr}:`,
+                  error,
+                );
+                console.error(
+                  `Graph methods available:`,
+                  Object.getOwnPropertyNames(graph.value).filter((name) =>
+                    name.includes("Edge"),
+                  ),
+                );
               }
             } else {
-            //   console.warn(`Skipping edge - missing nodes: ${sourceId} -> ${targetId}`);
+              //   console.warn(`Skipping edge - missing nodes: ${sourceId} -> ${targetId}`);
             }
           });
         }
@@ -142,8 +169,8 @@ export default {
           renderEdgeLabels: true,
           enableEdgeHoverEvents: true, // Enable edge hover events
           enableEdgeClickEvents: true, // Enable edge click events
-          edgeHoverHighlightNodes: 'circle',
-                      // edgeReducer: (edge, data) => {
+          edgeHoverHighlightNodes: "circle",
+          // edgeReducer: (edge, data) => {
           //   if (data.highlighted) {
           //     return {
           //       ...data,
@@ -164,41 +191,49 @@ export default {
             renderer.value.refresh();
           }
         });
-        
+
         resizeObserver.value.observe(sigmaContainer.value);
 
         // Set up event listeners
         renderer.value.on("clickNode", (event) => {
           console.log("Node clicked:", event.node);
-          emit('nodeClick', event.node);
+          emit("nodeClick", event.node);
         });
 
         renderer.value.on("clickEdge", (event) => {
           console.log("Edge clicked:", event.edge);
-          emit('edgeClick', event.edge);
+          emit("edgeClick", event.edge);
         });
 
         // Show node label on hover
         renderer.value.on("enterNode", (event) => {
-          renderer.value.getGraph().setNodeAttribute(event.node, "highlighted", true);
+          renderer.value
+            .getGraph()
+            .setNodeAttribute(event.node, "highlighted", true);
           renderer.value.refresh();
         });
 
         renderer.value.on("leaveNode", (event) => {
-          renderer.value.getGraph().setNodeAttribute(event.node, "highlighted", false);
+          renderer.value
+            .getGraph()
+            .setNodeAttribute(event.node, "highlighted", false);
           renderer.value.refresh();
         });
 
         // Show edge label and highlight on hover
         renderer.value.on("enterEdge", (event) => {
           console.log("Edge enter event triggered:", event.edge);
-          renderer.value.getGraph().setEdgeAttribute(event.edge, "highlighted", true);
+          renderer.value
+            .getGraph()
+            .setEdgeAttribute(event.edge, "highlighted", true);
           renderer.value.refresh();
         });
 
         renderer.value.on("leaveEdge", (event) => {
           console.log("Edge leave event triggered:", event.edge);
-          renderer.value.getGraph().setEdgeAttribute(event.edge, "highlighted", false);
+          renderer.value
+            .getGraph()
+            .setEdgeAttribute(event.edge, "highlighted", false);
           renderer.value.refresh();
         });
 
@@ -207,8 +242,7 @@ export default {
           startFA2();
         }
 
-        emit('graphLoaded', { nodes: data.nodes, edges: data.edges });
-
+        emit("graphLoaded", { nodes: data.nodes, edges: data.edges });
       } catch (error) {
         console.error("Error initializing graph:", error);
       }
@@ -217,18 +251,21 @@ export default {
     const startFA2 = () => {
       if (!graph.value || isFA2Running.value) return;
       if (cancelCurrentAnimation.value) cancelCurrentAnimation.value();
-      
+
       // Use synchronous Force Atlas 2
-      const sensibleSettings = {barnesHutOptimize: true, adjustSizes: true};
-      
+      const sensibleSettings = { barnesHutOptimize: true, adjustSizes: true };
+
       const runFA2Iteration = () => {
         if (isFA2Running.value) {
-          forceAtlas2.assign(graph.value, { iterations: 1, settings: sensibleSettings });
+          forceAtlas2.assign(graph.value, {
+            iterations: 1,
+            settings: sensibleSettings,
+          });
           renderer.value.refresh();
           requestAnimationFrame(runFA2Iteration);
         }
       };
-      
+
       isFA2Running.value = true;
       runFA2Iteration();
     };
@@ -247,22 +284,26 @@ export default {
 
     const circularLayout = () => {
       if (!graph.value) return;
-      
+
       // Stop FA2 if running
       stopFA2();
       if (cancelCurrentAnimation.value) cancelCurrentAnimation.value();
 
       // Apply circular layout with animation
       const circularPositions = circular(graph.value, { scale: 100 });
-      cancelCurrentAnimation.value = animateNodes(graph.value, circularPositions, { 
-        duration: 2000, 
-        easing: "linear" 
-      });
+      cancelCurrentAnimation.value = animateNodes(
+        graph.value,
+        circularPositions,
+        {
+          duration: 2000,
+          easing: "linear",
+        },
+      );
     };
 
     const randomLayout = () => {
       if (!graph.value) return;
-      
+
       // Stop FA2 if running
       stopFA2();
       if (cancelCurrentAnimation.value) cancelCurrentAnimation.value();
@@ -270,7 +311,7 @@ export default {
       // Calculate current position extents
       const xExtents = { min: 0, max: 0 };
       const yExtents = { min: 0, max: 0 };
-      
+
       graph.value.forEachNode((_node, attributes) => {
         xExtents.min = Math.min(attributes.x, xExtents.min);
         xExtents.max = Math.max(attributes.x, xExtents.max);
@@ -288,7 +329,11 @@ export default {
       });
 
       // Apply with animation
-      cancelCurrentAnimation.value = animateNodes(graph.value, randomPositions, { duration: 2000 });
+      cancelCurrentAnimation.value = animateNodes(
+        graph.value,
+        randomPositions,
+        { duration: 2000 },
+      );
     };
 
     const cleanup = () => {
@@ -305,31 +350,35 @@ export default {
     };
 
     // Watch for prop changes
-    watch(() => props.graphData, (newData, oldData) => {
-      // Only reinitialize if we actually have new data structure
-      if (!renderer.value || !newData) {
-        cleanup();
-        initializeGraph();
-        return;
-      }
-      
-      // If we already have a renderer, just update the data
-      updateGraphData(newData);
-    }, { deep: true });
+    watch(
+      () => props.graphData,
+      (newData, oldData) => {
+        // Only reinitialize if we actually have new data structure
+        if (!renderer.value || !newData) {
+          cleanup();
+          initializeGraph();
+          return;
+        }
+
+        // If we already have a renderer, just update the data
+        updateGraphData(newData);
+      },
+      { deep: true },
+    );
 
     const updateGraphData = (data) => {
       if (!renderer.value || !graph.value) return;
-      
+
       try {
         // console.log("updateGraphData called with:", data);
-        
+
         // Clear existing data
         graph.value.clear();
-        
+
         // Add nodes
         if (data.nodes) {
-        //   console.log(`Adding ${data.nodes.length} nodes`);
-          data.nodes.forEach(node => {
+          //   console.log(`Adding ${data.nodes.length} nodes`);
+          data.nodes.forEach((node) => {
             const nodeId = String(node.node_id || node.id);
             graph.value.addNode(nodeId, {
               x: Math.random() * 100,
@@ -337,84 +386,105 @@ export default {
               size: 10,
               label: node.title || node.label || `Node ${nodeId}`,
               color: "#666",
-              highlighted: false
+              highlighted: false,
             });
           });
         }
-        
+
         // Add edges
         if (data.edges && data.edges.length > 0) {
-        //   console.log(`Adding ${data.edges.length} edges:`, data.edges);
+          //   console.log(`Adding ${data.edges.length} edges:`, data.edges);
           data.edges.forEach((edge, index) => {
             const sourceId = String(edge.source_id || edge.source);
             const targetId = String(edge.target_id || edge.target);
-            
+
             // console.log(`Processing edge ${index}:`, edge);
             // console.log(`Source: ${sourceId}, Target: ${targetId}`);
             // console.log(`Has source node: ${graph.value.hasNode(sourceId)}`);
             // console.log(`Has target node: ${graph.value.hasNode(targetId)}`);
-            
-            if (graph.value.hasNode(sourceId) && graph.value.hasNode(targetId)) {
-              const edgeId = edge.edge_id || edge.id || `edge_${sourceId}_${targetId}_${index}`;
-            //   console.log(`Adding edge: ${edgeId} from ${sourceId} to ${targetId} (type: ${edge.edge_type || edge.type})`);
-              
+
+            if (
+              graph.value.hasNode(sourceId) &&
+              graph.value.hasNode(targetId)
+            ) {
+              const edgeId =
+                edge.edge_id ||
+                edge.id ||
+                `edge_${sourceId}_${targetId}_${index}`;
+              //   console.log(`Adding edge: ${edgeId} from ${sourceId} to ${targetId} (type: ${edge.edge_type || edge.type})`);
+
               // Ensure we're passing string IDs, not numbers
               const sourceIdStr = String(sourceId);
               const targetIdStr = String(targetId);
               const edgeIdStr = String(edgeId);
-              
-            //   console.log(`Edge IDs - edgeId: "${edgeIdStr}" (${typeof edgeIdStr}), source: "${sourceIdStr}" (${typeof sourceIdStr}), target: "${targetIdStr}" (${typeof targetIdStr})`);
-              
+
+              //   console.log(`Edge IDs - edgeId: "${edgeIdStr}" (${typeof edgeIdStr}), source: "${sourceIdStr}" (${typeof sourceIdStr}), target: "${targetIdStr}" (${typeof targetIdStr})`);
+
               try {
                 // Define edge attributes
                 const edgeAttributes = {
                   size: 2,
                   color: "#ccc",
                   label: edge.edge_type || edge.type || null,
-                  highlighted: false
+                  highlighted: false,
                 };
-                
+
                 // console.log(`Attempting to add edge with parameters:`, {
                 //   key: edgeIdStr,
                 //   source: sourceIdStr,
                 //   target: targetIdStr,
                 //   attributes: edgeAttributes
                 // });
-                
+
                 // Try the method with key first, then fallback to auto-key
-                if (typeof graph.value.addEdgeWithKey === 'function') {
-                  graph.value.addEdgeWithKey(edgeIdStr, sourceIdStr, targetIdStr, edgeAttributes);
-                //   console.log(`Successfully added edge with key: ${edgeIdStr}`);
+                if (typeof graph.value.addEdgeWithKey === "function") {
+                  graph.value.addEdgeWithKey(
+                    edgeIdStr,
+                    sourceIdStr,
+                    targetIdStr,
+                    edgeAttributes,
+                  );
+                  //   console.log(`Successfully added edge with key: ${edgeIdStr}`);
                 } else {
                   // Use auto-generated key method
-                  const autoEdgeId = graph.value.addEdge(sourceIdStr, targetIdStr, edgeAttributes);
-                //   console.log(`Successfully added edge with auto key: ${autoEdgeId}`);
+                  const autoEdgeId = graph.value.addEdge(
+                    sourceIdStr,
+                    targetIdStr,
+                    edgeAttributes,
+                  );
+                  //   console.log(`Successfully added edge with auto key: ${autoEdgeId}`);
                 }
               } catch (error) {
                 console.error(`Failed to add edge ${edgeIdStr}:`, error);
                 console.error(`Edge data:`, edge);
-                console.error(`Graph methods available:`, Object.getOwnPropertyNames(graph.value).filter(name => name.includes('Edge')));
+                console.error(
+                  `Graph methods available:`,
+                  Object.getOwnPropertyNames(graph.value).filter((name) =>
+                    name.includes("Edge"),
+                  ),
+                );
               }
             } else {
-              console.warn(`Skipping edge - missing nodes: ${sourceId} -> ${targetId}`);
+              console.warn(
+                `Skipping edge - missing nodes: ${sourceId} -> ${targetId}`,
+              );
             }
           });
         } else {
-        //   console.log("No edges to add:", data.edges);
+          //   console.log("No edges to add:", data.edges);
         }
-        
+
         // console.log(`Graph now has ${graph.value.order} nodes and ${graph.value.size} edges`);
-        
+
         // Refresh the renderer
         renderer.value.refresh();
-        
+
         // Restart Force Atlas if it was running
         if (props.autoStartForceAtlas && graph.value.order > 0) {
           startFA2();
         }
-        
-        emit('graphLoaded', { nodes: data.nodes, edges: data.edges });
-        
+
+        emit("graphLoaded", { nodes: data.nodes, edges: data.edges });
       } catch (error) {
         console.error("Error updating graph data:", error);
       }
@@ -436,9 +506,9 @@ export default {
       randomLayout,
       renderer,
       graph,
-      updateGraphData
+      updateGraphData,
     };
-  }
+  },
 };
 </script>
 

@@ -2,23 +2,23 @@ import { ref, computed } from "vue";
 import api from "../api/axios";
 
 /* module‐scope singletons */
-const nodeTypes     = ref<Record<string, any>>({});
-const edgeTypes     = ref<Record<string, any>>({});
-const platformName  = ref<string>("");
-const platformTagline       = ref<string>("");
-const platformDescription   = ref<string>("");
-const configLoaded  = ref(false);
+const nodeTypes = ref<Record<string, any>>({});
+const edgeTypes = ref<Record<string, any>>({});
+const platformName = ref<string>("");
+const platformTagline = ref<string>("");
+const platformDescription = ref<string>("");
+const configLoaded = ref(false);
 const nodePollTypes = ref<Record<string, any>>({});
 const edgePollTypes = ref<Record<string, any>>({});
-const permissions   = ref<Record<string, boolean>>({});
-const allowSignup   = ref<boolean>(true);
+const permissions = ref<Record<string, boolean>>({});
+const allowSignup = ref<boolean>(true);
 
 async function load(forceReload = false) {
   if (configLoaded.value && !forceReload) return;
   try {
     const { data } = await api.get("/config");
-    nodeTypes.value    = data.node_types;
-    edgeTypes.value    = data.edge_types;
+    nodeTypes.value = data.node_types;
+    edgeTypes.value = data.edge_types;
     nodePollTypes.value = Object.keys(data.node_types).reduce((acc, key) => {
       const polls = data.node_types[key].polls || {};
       return { ...acc, ...polls };
@@ -48,10 +48,9 @@ export function reloadConfig() {
   return load(true);
 }
 
-
 export function useConfig() {
-  const defaultNodeType = computed(() => Object.keys(nodeTypes.value)[0]||"");
-  const defaultEdgeType = computed(() => Object.keys(edgeTypes.value)[0]||"");
+  const defaultNodeType = computed(() => Object.keys(nodeTypes.value)[0] || "");
+  const defaultEdgeType = computed(() => Object.keys(edgeTypes.value)[0] || "");
 
   function getNodePolls(type: string) {
     return nodeTypes.value[type]?.polls || {};
@@ -68,13 +67,27 @@ export function useConfig() {
   const canRate = computed(() => permissions.value.rate || false);
 
   return {
-    load, clearCache, reloadConfig: () => load(true),
-    nodeTypes, edgeTypes, platformName, platformTagline: platformTagline, platformDescription: platformDescription,
+    load,
+    clearCache,
+    reloadConfig: () => load(true),
+    nodeTypes,
+    edgeTypes,
+    platformName,
+    platformTagline: platformTagline,
+    platformDescription: platformDescription,
     configLoaded,
-    defaultNodeType, defaultEdgeType,
-    nodePollTypes, edgePollTypes,
-    getNodePolls, getEdgePolls,
-    permissions, canRead, canCreate, canEdit, canDelete, canRate,
+    defaultNodeType,
+    defaultEdgeType,
+    nodePollTypes,
+    edgePollTypes,
+    getNodePolls,
+    getEdgePolls,
+    permissions,
+    canRead,
+    canCreate,
+    canEdit,
+    canDelete,
+    canRate,
     allowSignup,
   };
 }

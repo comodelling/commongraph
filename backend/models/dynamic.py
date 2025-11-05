@@ -66,21 +66,24 @@ DynamicEdge = Union[tuple(EdgeTypeModels.values())]
 
 class DynamicSubgraph(SubgraphBase):
     """Subgraph model with dynamic node and edge types."""
-    nodes: list[DynamicNode]   # type: ignore
-    edges: list[DynamicEdge]   # type: ignore
+
+    nodes: list[DynamicNode]  # type: ignore
+    edges: list[DynamicEdge]  # type: ignore
 
 
 class DynamicGraphExport(GraphExportBase):
     """Graph Export model with dynamic node and edge types."""
+
     schema_version: str = Field(..., description="Schema version used for this export")
     schema_hash: str = Field(..., description="Hash of the schema configuration")
-    nodes: list[DynamicNode]   # type: ignore
-    edges: list[DynamicEdge]   # type: ignore
+    nodes: list[DynamicNode]  # type: ignore
+    edges: list[DynamicEdge]  # type: ignore
 
 
 class NodeSearchResult(NodeBase, SQLModel):  # not allowed to inherit from DynamicNode
     last_modified: datetime.datetime = Field(
         ..., description="When this node was last updated"
     )
+
     class Config:
-        extra = "allow"   # accept all DynamicNode fields
+        extra = "allow"  # accept all DynamicNode fields

@@ -8,6 +8,7 @@ from backend.models.fixed import NodeId
 
 class NodeBase(SQLModel):
     """Base Node model"""
+
     node_id: NodeId | None = None  # node id is not created by client
     node_type: str
 
@@ -33,6 +34,7 @@ class PartialNodeBase(NodeBase):
 
 class EdgeBase(SQLModel):
     """Base Edge model"""
+
     edge_type: str
     source: NodeId
     target: NodeId

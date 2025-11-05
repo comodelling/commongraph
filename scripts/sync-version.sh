@@ -39,7 +39,7 @@ else
   echo ""
   echo "Running: npm run sync-version --prefix frontend"
   npm run sync-version --prefix frontend
-  
+
   echo ""
   echo "✓ Version sync complete!"
   echo ""

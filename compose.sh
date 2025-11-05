@@ -44,7 +44,7 @@ if [ "$APP_ENV" = "production" ] && [ -f .env.production ]; then
     source ./.env.production
     echo "Loaded production environment overrides"
 elif [ "$APP_ENV" = "development" ] && [ -f .env.development ]; then
-    source ./.env.development  
+    source ./.env.development
     echo "Loaded development environment overrides"
 fi
 set -o allexport
@@ -63,11 +63,11 @@ fi
 # Function to ensure database exists
 ensure_database_exists() {
     echo "Checking if database '$POSTGRES_DB' exists..."
-    
+
     # Wait for PostgreSQL to be ready
     echo "Waiting for PostgreSQL to be ready..."
     docker compose -f docker-compose.yaml exec postgres pg_isready -U "$POSTGRES_USER" -d postgres -h localhost
-    
+
     # Check if our target database exists
     if docker compose -f docker-compose.yaml exec postgres psql -U "$POSTGRES_USER" -lqt | cut -d \| -f 1 | grep -qw "$POSTGRES_DB"; then
         echo "Database '$POSTGRES_DB' already exists"
@@ -76,7 +76,7 @@ ensure_database_exists() {
         docker compose -f docker-compose.yaml exec postgres createdb -U "$POSTGRES_USER" "$POSTGRES_DB"
         echo "Database '$POSTGRES_DB' created successfully"
     fi
-    
+
     # Also ensure test database exists
     if docker compose -f docker-compose.yaml exec postgres psql -U "$POSTGRES_USER" -lqt | cut -d \| -f 1 | grep -qw "testdb"; then
         echo "Test database already exists"

@@ -12,7 +12,9 @@
       :aggregate="false"
     />
 
-    <div v-if="token && !currentRatingLoaded" class="loading">Loading your rating…</div>
+    <div v-if="token && !currentRatingLoaded" class="loading">
+      Loading your rating…
+    </div>
 
     <!-- Discrete buttons -->
     <div v-if="pollConfig.scale === 'discrete'" class="buttons-row">
@@ -83,13 +85,14 @@ export default {
     });
 
     const optionKeys = computed(() =>
-      Object.keys(props.pollConfig.options).map(x=>Number(x)).sort((a,b)=>a-b)
+      Object.keys(props.pollConfig.options)
+        .map((x) => Number(x))
+        .sort((a, b) => a - b),
     );
-    const buttonColors = computed(()=>{
+    const buttonColors = computed(() => {
       const n = optionKeys.value.length;
       return triColorGradient("#cc8400", "#cccccc", "#008000", n);
     });
-
 
     // load my existing rating
     const fetchRating = async () => {
@@ -100,14 +103,14 @@ export default {
         if (props.element.node_id) {
           response = await api.get(
             `/nodes/${props.element.node_id}/ratings/me`,
-            { params, headers: { Authorization: `Bearer ${token}` } }
+            { params, headers: { Authorization: `Bearer ${token}` } },
           );
         } else {
           const { source, target } = props.element.edge;
-          response = await api.get(
-            `/edges/${source}/${target}/ratings/me`,
-            { params, headers: { Authorization: `Bearer ${token}` } }
-          );
+          response = await api.get(`/edges/${source}/${target}/ratings/me`, {
+            params,
+            headers: { Authorization: `Bearer ${token}` },
+          });
         }
         if (response.data) {
           currentRating.value = Number(response.data.rating);
@@ -144,11 +147,9 @@ export default {
         const { source, target } = props.element.edge;
         payload.source_id = source;
         payload.target_id = target;
-        await api.post(
-          `/edges/${source}/${target}/ratings`,
-          payload,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+        await api.post(`/edges/${source}/${target}/ratings`, payload, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
       }
       // refresh histogram
       await histogram.value?.fetchRatings();
@@ -156,8 +157,8 @@ export default {
 
     // show '?' if no rating given
     const displayValue = computed(() => {
-      if (!currentRatingLoaded.value) return '';
-      return currentRating.value == null ? '?' : sliderValue.value;
+      if (!currentRatingLoaded.value) return "";
+      return currentRating.value == null ? "?" : sliderValue.value;
     });
 
     onMounted(fetchRating);
@@ -166,7 +167,7 @@ export default {
       () => {
         histogram.value?.fetchRatings();
       },
-      { immediate: true, deep: true }
+      { immediate: true, deep: true },
     );
     return {
       currentRating,
@@ -200,24 +201,26 @@ export default {
   display: flex;
   gap: 0.5em;
 }
-  .rating-button {
-    flex: 1;             /* all buttons share available space */
-    min-width: 0;        /* allow flexing below content width */
-    padding: 0.5em 0;
-    text-align: center;
-    border: 2px solid #888;
-    border-radius: 4px;
-    background: green;
-    color: white;
-    cursor: pointer;
-  }
+.rating-button {
+  flex: 1; /* all buttons share available space */
+  min-width: 0; /* allow flexing below content width */
+  padding: 0.5em 0;
+  text-align: center;
+  border: 2px solid #888;
+  border-radius: 4px;
+  background: green;
+  color: white;
+  cursor: pointer;
+}
 .rating-button.selected {
   background: var(--accent-color);
   border-color: var(--accent-color);
   color: white;
   box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.2);
   transform: scale(1.05);
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
 }
 .slider-container {
   display: flex;
@@ -230,24 +233,24 @@ export default {
 }
 
 /* continuous slider styling via pseudo-elements */
-input[type='range'] {
+input[type="range"] {
   width: 100%;
   margin: 0;
   appearance: none;
   background: transparent;
 }
-input[type='range']::-webkit-slider-runnable-track {
+input[type="range"]::-webkit-slider-runnable-track {
   height: 8px;
   border-radius: 4px;
   border: 2px solid var(--border-color); /* Debugging style */
 }
-input[type='range']::-moz-range-track {
+input[type="range"]::-moz-range-track {
   height: 8px;
   border-radius: 4px;
   background: none;
   border: 2px solid var(--border-color); /* Debugging style */
 }
-input[type='range']::-webkit-slider-thumb {
+input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
   width: 16px;
   height: 16px;
@@ -256,7 +259,7 @@ input[type='range']::-webkit-slider-thumb {
   cursor: pointer;
   box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
 }
-input[type='range']::-moz-range-thumb {
+input[type="range"]::-moz-range-thumb {
   width: 16px;
   height: 16px;
   border-radius: 50%;

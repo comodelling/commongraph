@@ -2,7 +2,11 @@ import { useConfig } from "./useConfig";
 const { nodeTypes, edgeTypes } = useConfig();
 
 const defaultStrengthColors = {
-  A: "#006d2c", B: "#74c476", C: "#e3c100", D: "#fb6a4a", E: "#a50f15",
+  A: "#006d2c",
+  B: "#74c476",
+  C: "#e3c100",
+  D: "#fb6a4a",
+  E: "#a50f15",
 };
 
 const defaultNodeBorderWidth = "2px";
@@ -13,9 +17,15 @@ export function formatFlowEdgeProps(data) {
   const conf = edgeTypes.value[edge_type]?.style || {};
   console.log("config", conf);
 
-  const strokeColor   = conf.stroke      || defaultStrengthColors[causal_strength] || "#ccc";
-  const strokeWidth   = conf.strokeWidth ?? 1.5;
-  const markerEndConf = conf.markerEnd   || { type: "arrow", height: 15, width: 15, color: strokeColor };
+  const strokeColor =
+    conf.stroke || defaultStrengthColors[causal_strength] || "#ccc";
+  const strokeWidth = conf.strokeWidth ?? 1.5;
+  const markerEndConf = conf.markerEnd || {
+    type: "arrow",
+    height: 15,
+    width: 15,
+    color: strokeColor,
+  };
 
   return {
     id: `${source}-${target}`,
@@ -31,16 +41,20 @@ export function formatFlowEdgeProps(data) {
 }
 
 export function formatFlowNodeProps(data) {
-  const { node_id, title, node_type, status, position, selected, support } = data;
+  const { node_id, title, node_type, status, position, selected, support } =
+    data;
   const conf = nodeTypes.value[node_type]?.style || {};
   console.log("config", conf);
   console.log("nodeTypes", nodeTypes.value);
 
-  const borderColor = conf.borderColor || defaultStrengthColors[support] || "#ccc";
+  const borderColor =
+    conf.borderColor || defaultStrengthColors[support] || "#ccc";
   const borderWidth = conf.borderWidth || defaultNodeBorderWidth;
-  const borderRadius= conf.borderRadius|| defaultNodeBorderRadius;
-  const borderStyle = conf.borderStyle || (status === "draft" ? "dotted" : "solid");
-  const opacity     = conf.opacity     ?? (["realised", "unrealised"].includes(status) ? 0.5 : 0.95);
+  const borderRadius = conf.borderRadius || defaultNodeBorderRadius;
+  const borderStyle =
+    conf.borderStyle || (status === "draft" ? "dotted" : "solid");
+  const opacity =
+    conf.opacity ?? (["realised", "unrealised"].includes(status) ? 0.5 : 0.95);
 
   return {
     id: node_id.toString(),

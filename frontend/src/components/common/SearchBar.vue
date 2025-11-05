@@ -14,16 +14,16 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
-import { parseSearchQuery } from '../../utils/searchParser.js';
-import { useConfig } from '../../composables/useConfig';
+import { ref, computed } from "vue";
+import { parseSearchQuery } from "../../utils/searchParser.js";
+import { useConfig } from "../../composables/useConfig";
 
 const props = defineProps({
-  initialQuery: { type: String, default: '' },
-  placeholder: { type: String, default: 'Explore this graph...' },
+  initialQuery: { type: String, default: "" },
+  placeholder: { type: String, default: "Explore this graph..." },
   showButton: { type: Boolean, default: true },
 });
-const emit = defineEmits(['search', 'focus-change']);
+const emit = defineEmits(["search", "focus-change"]);
 
 // Load configuration once
 const { platformName, load } = useConfig();
@@ -36,7 +36,7 @@ const searchInput = ref(null);
 
 // Compute placeholder based on platformName
 const computedPlaceholder = computed(() => {
-  return props.placeholder === 'Explore this graph...'
+  return props.placeholder === "Explore this graph..."
     ? `Search in ${platformName.value}`
     : props.placeholder;
 });
@@ -49,18 +49,18 @@ function updateSearchQuery(event) {
 // Emit search event with parsed query
 function search() {
   const parsedQuery = parseSearchQuery(searchQuery.value);
-  emit('search', parsedQuery);
+  emit("search", parsedQuery);
 }
 
 // Handle focus events
 function handleFocus() {
   isFocused.value = true;
-  emit('focus-change', true);
+  emit("focus-change", true);
 }
 
 function handleBlur() {
   isFocused.value = false;
-  emit('focus-change', false);
+  emit("focus-change", false);
 }
 </script>
 
@@ -119,7 +119,7 @@ function handleBlur() {
     padding: 8px 6px; /* Reduced padding for small screens */
     font-size: 14px; /* Maintain readable size */
   }
-  
+
   .search-button {
     padding: 6px 8px; /* Smaller button */
     font-size: 14px;

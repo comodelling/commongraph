@@ -9,7 +9,7 @@
           :title="isFavourite ? 'Remove from favourites' : 'Add to favourites'"
           @click="toggleFavourite"
         >
-          {{ isFavourite ? '★' : '☆' }}
+          {{ isFavourite ? "★" : "☆" }}
         </button>
       </div>
       <div class="tabs">
@@ -21,18 +21,34 @@
           View
         </button>
         <button
-          :class="{ active: currentTab === 'edit', disabled: !canEdit || readOnly }"
+          :class="{
+            active: currentTab === 'edit',
+            disabled: !canEdit || readOnly,
+          }"
           @click="canEdit && !readOnly ? switchTab('edit') : null"
           :disabled="!canEdit || readOnly"
-          :title="readOnly ? 'Editing disabled in demo mode' : (canEdit ? 'Edit this node' : 'You need edit permissions to modify nodes')"
+          :title="
+            readOnly
+              ? 'Editing disabled in demo mode'
+              : canEdit
+                ? 'Edit this node'
+                : 'You need edit permissions to modify nodes'
+          "
         >
           Edit
         </button>
         <button
-          :class="{ active: currentTab === 'history', disabled: isBrandNewNode || readOnly }"
+          :class="{
+            active: currentTab === 'history',
+            disabled: isBrandNewNode || readOnly,
+          }"
           @click="readOnly ? null : switchTab('history')"
           :disabled="isBrandNewNode || readOnly"
-          :title="readOnly ? 'History not available in demo mode' : 'View node history'"
+          :title="
+            readOnly
+              ? 'History not available in demo mode'
+              : 'View node history'
+          "
         >
           History
         </button>
@@ -220,5 +236,4 @@ export default {
 .pane-header .tabs {
   margin-right: -20px;
 }
-
 </style>

@@ -12,7 +12,9 @@ from backend.db.janusgraph import JanusGraphDB
 from backend.db.postgresql import GraphHistoryPostgreSQLDB
 
 # Use environment-based test database URL
-POSTGRES_TEST_DB_URL = os.getenv("POSTGRES_TEST_DB_URL", "postgresql://postgres:postgres@localhost/testdb")
+POSTGRES_TEST_DB_URL = os.getenv(
+    "POSTGRES_TEST_DB_URL", "postgresql://postgres:postgres@localhost/testdb"
+)
 os.environ["POSTGRES_DB_URL"] = POSTGRES_TEST_DB_URL
 os.environ["SECRET_KEY"] = "testsecret"
 
@@ -120,9 +122,7 @@ def test_reset_whole_graph(graph_db, client):
 
 
 def test_update_subgraph(graph_db, client):
-    n_nodes = json.loads(client.get("/graph/summary").content.decode("utf-8"))[
-        "nodes"
-    ]
+    n_nodes = json.loads(client.get("/graph/summary").content.decode("utf-8"))["nodes"]
     response = client.put(
         "/graph",
         json={"nodes": [{"title": "test", "scope": "test scope"}], "edges": []},
@@ -156,9 +156,7 @@ def test_get_nodes_list(graph_db, client):
 
 
 def test_create_and_delete_node(graph_db, client):
-    n_nodes = json.loads(client.get("/graph/summary").content.decode("utf-8"))[
-        "nodes"
-    ]
+    n_nodes = json.loads(client.get("/graph/summary").content.decode("utf-8"))["nodes"]
     response = client.post(
         "/nodes",
         json={"title": "test", "scope": "unscoped", "description": "test"},
@@ -347,9 +345,7 @@ def test_get_edge_list(graph_db, client):
 
 
 def test_create_update_and_delete_edge(initial_node, client):
-    n_edges = json.loads(client.get("/graph/summary").content.decode("utf-8"))[
-        "edges"
-    ]
+    n_edges = json.loads(client.get("/graph/summary").content.decode("utf-8"))["edges"]
     response = client.post(
         "/edges",
         json={

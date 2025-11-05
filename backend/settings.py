@@ -3,12 +3,13 @@ from pydantic_settings import BaseSettings
 from typing import List
 from pathlib import Path
 
+
 class Settings(BaseSettings):
     ENABLE_GRAPH_DB: bool = False
     JANUSGRAPH_HOST: str = "localhost"
     TRAVERSAL_SOURCE: str = "g_test"
-    BACKEND_HOST: str                # e.g. https://api.commongraph.org or http://localhost:8000
-    FRONTEND_HOST: str               # e.g. https://commongraph.org or http://localhost:5173
+    BACKEND_HOST: str  # e.g. https://api.commongraph.org or http://localhost:8000
+    FRONTEND_HOST: str  # e.g. https://commongraph.org or http://localhost:5173
     POSTGRES_DB_URL: str
     ALLOWED_ORIGINS_RAW: str = ""
     INITIAL_ADMIN_USER: str
@@ -30,10 +31,8 @@ class Settings(BaseSettings):
         # pick an environment name, default to “development”
         app_env = os.getenv("APP_ENV", "development")
         # load .env first, then .env.<environment> to override
-        env_file = [
-            base_dir / ".env",
-            base_dir / f".env.{app_env}"
-        ]
+        env_file = [base_dir / ".env", base_dir / f".env.{app_env}"]
         env_file_encoding = "utf-8"
+
 
 settings = Settings()

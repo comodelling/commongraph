@@ -6,18 +6,33 @@
       <span class="field-value">{{ edge.edge_type }}</span>
     </div>
     <!-- References -->
-    <div class="field-row" v-if="isAllowed('references') && localEdge.references && localEdge.references.length">
+    <div
+      class="field-row"
+      v-if="
+        isAllowed('references') &&
+        localEdge.references &&
+        localEdge.references.length
+      "
+    >
       <strong :title="tooltips.edge.references">References:</strong>
       <div class="field-value">
         <ul class="references-list">
-          <li v-for="reference in localEdge.references.filter((ref: any) => ref.trim())" :key="reference">
+          <li
+            v-for="reference in localEdge.references.filter((ref: any) =>
+              ref.trim(),
+            )"
+            :key="reference"
+          >
             {{ reference.trim() }}
           </li>
         </ul>
       </div>
     </div>
     <!-- Description -->
-    <div class="field-row" v-if="isAllowed('description') && localEdge.description">
+    <div
+      class="field-row"
+      v-if="isAllowed('description') && localEdge.description"
+    >
       <strong :title="tooltips.edge.description">Description:</strong>
       <span class="field-value">{{ localEdge.description }}</span>
     </div>
@@ -46,8 +61,12 @@ export default defineComponent({
 
     const allowed = computed(() => {
       // Ensure edgeTypes are loaded and the edge has a type.
-      if (!edgeTypes.value || !props.edge.edge_type) return Object.keys(props.edge);
-      return edgeTypes.value[props.edge.edge_type].properties || Object.keys(props.edge);
+      if (!edgeTypes.value || !props.edge.edge_type)
+        return Object.keys(props.edge);
+      return (
+        edgeTypes.value[props.edge.edge_type].properties ||
+        Object.keys(props.edge)
+      );
     });
 
     function isAllowed(prop: string): boolean {

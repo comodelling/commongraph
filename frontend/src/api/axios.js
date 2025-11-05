@@ -1,5 +1,5 @@
 import axios from "axios";
-import qs    from "qs";           // <— new import
+import qs from "qs"; // <— new import
 import { jwtDecode } from "jwt-decode";
 import { useAuth } from "../composables/useAuth";
 
@@ -7,8 +7,9 @@ const { getAccessToken, getRefreshToken, setTokens, clearTokens } = useAuth();
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
-  paramsSerializer: params =>    // <— add this block
-    qs.stringify(params, { arrayFormat: "repeat" }),
+  paramsSerializer: (
+    params, // <— add this block
+  ) => qs.stringify(params, { arrayFormat: "repeat" }),
 });
 
 // Request interceptor to add token and refresh if needed

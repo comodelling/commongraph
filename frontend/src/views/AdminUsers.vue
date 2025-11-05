@@ -1,69 +1,67 @@
 <template>
-    <div class="container">
-        <div class="form-wrapper">
-            <div v-if="hasAdminRights">
-                <div class="header-section">
-                    <h2>Manage Users</h2>
-                    <span class="info-icon" :title="legendText">ℹ️</span>
-                </div>
-                <div v-if="users.length === 0" class="no-users">
-                    No users found.
-                </div>
-                <div v-else class="users-table">
-                    <div class="table-header">
-                        <div class="col-username">Username</div>
-                        <div class="col-status">Account Status</div>
-                        <div class="col-admin">Admin</div>
-                        <div class="col-super-admin">Super Admin</div>
-                    </div>
-                    <div v-for="user in users" :key="user.username" class="user-row">
-                        <div class="col-username">
-                            <span class="username">{{ user.username }}</span>
-                        </div>
-                        <div class="col-status">
-                            <button 
-                                v-if="!user.is_active" 
-                                @click="approve(user.username)"
-                                :disabled="isProcessing(user.username)"
-                                class="btn-approve"
-                            >
-                                Approve
-                            </button>
-                            <span v-else class="status-badge active">Active</span>
-                            <span v-if="isProcessing(user.username)" class="processing">
-                                Processing...
-                            </span>
-                        </div>
-                        <div class="col-admin">
-                            <label class="checkbox-container">
-                                <input 
-                                    type="checkbox" 
-                                    :checked="user.is_admin" 
-                                    :disabled="user.is_super_admin || isProcessing(user.username)"
-                                    @change="toggleAdmin(user)"
-                                />
-                                <span class="checkmark"></span>
-                            </label>
-                        </div>
-                        <div class="col-super-admin">
-                            <label class="checkbox-container">
-                                <input 
-                                    type="checkbox" 
-                                    :checked="user.is_super_admin" 
-                                    :disabled="!isSuperAdmin || isProcessing(user.username)"
-                                    @change="toggleSuperAdmin(user)"
-                                />
-                                <span class="checkmark"></span>
-                            </label>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div v-else>
-                <p>Not authorized to view this page.</p>
-            </div>
+  <div class="container">
+    <div class="form-wrapper">
+      <div v-if="hasAdminRights">
+        <div class="header-section">
+          <h2>Manage Users</h2>
+          <span class="info-icon" :title="legendText">ℹ️</span>
         </div>
+        <div v-if="users.length === 0" class="no-users">No users found.</div>
+        <div v-else class="users-table">
+          <div class="table-header">
+            <div class="col-username">Username</div>
+            <div class="col-status">Account Status</div>
+            <div class="col-admin">Admin</div>
+            <div class="col-super-admin">Super Admin</div>
+          </div>
+          <div v-for="user in users" :key="user.username" class="user-row">
+            <div class="col-username">
+              <span class="username">{{ user.username }}</span>
+            </div>
+            <div class="col-status">
+              <button
+                v-if="!user.is_active"
+                @click="approve(user.username)"
+                :disabled="isProcessing(user.username)"
+                class="btn-approve"
+              >
+                Approve
+              </button>
+              <span v-else class="status-badge active">Active</span>
+              <span v-if="isProcessing(user.username)" class="processing">
+                Processing...
+              </span>
+            </div>
+            <div class="col-admin">
+              <label class="checkbox-container">
+                <input
+                  type="checkbox"
+                  :checked="user.is_admin"
+                  :disabled="user.is_super_admin || isProcessing(user.username)"
+                  @change="toggleAdmin(user)"
+                />
+                <span class="checkmark"></span>
+              </label>
+            </div>
+            <div class="col-super-admin">
+              <label class="checkbox-container">
+                <input
+                  type="checkbox"
+                  :checked="user.is_super_admin"
+                  :disabled="!isSuperAdmin || isProcessing(user.username)"
+                  @change="toggleSuperAdmin(user)"
+                />
+                <span class="checkmark"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div v-else>
+        <p>Not authorized to view this page.</p>
+      </div>
     </div>
+  </div>
 </template>
 
 <script setup>
@@ -72,9 +70,9 @@ import { useAuth } from "../composables/useAuth";
 import api from "../api/axios";
 
 const { getAccessToken, hasAdminRights, isSuperAdmin } = useAuth();
-const state = reactive({ 
-  users: [], 
-  processingUsers: new Set() // Track which users are being processed
+const state = reactive({
+  users: [],
+  processingUsers: new Set(), // Track which users are being processed
 });
 const { users } = toRefs(state);
 
@@ -97,8 +95,8 @@ function setProcessing(username, processing) {
 async function fetchUsers() {
   const token = getAccessToken();
   try {
-    const res = await api.get("/users/", { 
-      headers: { Authorization: `Bearer ${token}` } 
+    const res = await api.get("/users/", {
+      headers: { Authorization: `Bearer ${token}` },
     });
     state.users = res.data;
   } catch (error) {
@@ -110,11 +108,11 @@ async function approve(username) {
   setProcessing(username, true);
   try {
     const token = getAccessToken();
-    const res = await api.patch(`/users/${username}/approve`, null, { 
-      headers: { Authorization: `Bearer ${token}` } 
+    const res = await api.patch(`/users/${username}/approve`, null, {
+      headers: { Authorization: `Bearer ${token}` },
     });
     // Update the user in our local array
-    const userIndex = state.users.findIndex(u => u.username === username);
+    const userIndex = state.users.findIndex((u) => u.username === username);
     if (userIndex !== -1) {
       state.users[userIndex] = res.data;
     }
@@ -132,17 +130,19 @@ async function toggleAdmin(user) {
     let res;
     if (user.is_admin) {
       // Demote from admin
-      res = await api.patch(`/users/${user.username}/demote`, null, { 
-        headers: { Authorization: `Bearer ${token}` } 
+      res = await api.patch(`/users/${user.username}/demote`, null, {
+        headers: { Authorization: `Bearer ${token}` },
       });
     } else {
       // Promote to admin
-      res = await api.patch(`/users/${user.username}/promote`, null, { 
-        headers: { Authorization: `Bearer ${token}` } 
+      res = await api.patch(`/users/${user.username}/promote`, null, {
+        headers: { Authorization: `Bearer ${token}` },
       });
     }
     // Update the user in our local array
-    const userIndex = state.users.findIndex(u => u.username === user.username);
+    const userIndex = state.users.findIndex(
+      (u) => u.username === user.username,
+    );
     if (userIndex !== -1) {
       state.users[userIndex] = res.data;
     }
@@ -150,7 +150,9 @@ async function toggleAdmin(user) {
     console.error("Failed to toggle admin status:", error);
     // Show user-friendly error
     if (error.response?.status === 403) {
-      alert("Permission denied: You don't have sufficient privileges to perform this action.");
+      alert(
+        "Permission denied: You don't have sufficient privileges to perform this action.",
+      );
     } else {
       alert("Failed to update user permissions. Please try again.");
     }
@@ -165,11 +167,13 @@ async function toggleSuperAdmin(user) {
   setProcessing(user.username, true);
   try {
     const token = getAccessToken();
-    const res = await api.patch(`/users/${user.username}/super-admin`, null, { 
-      headers: { Authorization: `Bearer ${token}` } 
+    const res = await api.patch(`/users/${user.username}/super-admin`, null, {
+      headers: { Authorization: `Bearer ${token}` },
     });
     // Update the user in our local array
-    const userIndex = state.users.findIndex(u => u.username === user.username);
+    const userIndex = state.users.findIndex(
+      (u) => u.username === user.username,
+    );
     if (userIndex !== -1) {
       state.users[userIndex] = res.data;
     }
@@ -177,7 +181,9 @@ async function toggleSuperAdmin(user) {
     console.error("Failed to toggle super admin status:", error);
     // Show user-friendly error
     if (error.response?.status === 403) {
-      alert("Permission denied: Only super admins can manage super admin status.");
+      alert(
+        "Permission denied: Only super admins can manage super admin status.",
+      );
     } else {
       alert("Failed to update super admin status. Please try again.");
     }
@@ -421,31 +427,43 @@ body.dark .status-badge.active {
   .container {
     padding: 1rem;
   }
-  
+
   .form-wrapper {
     padding: 1rem;
   }
-  
+
   .table-header,
   .user-row {
     grid-template-columns: 1fr;
     gap: 0.5rem;
   }
-  
+
   .table-header {
     display: none; /* Hide header on mobile, show labels inline */
   }
-  
+
   .user-row {
     padding: 1.5rem 1rem;
     border: 1px solid var(--border-color);
     border-radius: 6px;
     margin-bottom: 1rem;
   }
-  
-  .col-username::before { content: "Username: "; font-weight: 600; }
-  .col-status::before { content: "Status: "; font-weight: 600; }
-  .col-admin::before { content: "Admin: "; font-weight: 600; }
-  .col-super-admin::before { content: "Super Admin: "; font-weight: 600; }
+
+  .col-username::before {
+    content: "Username: ";
+    font-weight: 600;
+  }
+  .col-status::before {
+    content: "Status: ";
+    font-weight: 600;
+  }
+  .col-admin::before {
+    content: "Admin: ";
+    font-weight: 600;
+  }
+  .col-super-admin::before {
+    content: "Super Admin: ";
+    font-weight: 600;
+  }
 }
 </style>

@@ -1,10 +1,7 @@
 <template>
   <g>
     <title>{{ hoverText }}</title>
-    <BaseEdge
-      :path="path[0]"
-      :style="style"
-    />
+    <BaseEdge :path="path[0]" :style="style" />
   </g>
 
   <EdgeLabelRenderer>
@@ -65,8 +62,8 @@ const props = defineProps({
 
 const path = computed(() => getBezierPath(props));
 
-const hoverText = computed(() =>
-  props.data.edge_type
+const hoverText = computed(
+  () => props.data.edge_type,
   // props.data.edge_type === "require" ? "Condition" : "Implication",
 );
 </script>

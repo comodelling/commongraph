@@ -59,13 +59,13 @@
         </label>
         <label v-if="signupRequiresToken">
           Access Token (required):
-          <input 
-            v-model="signupToken" 
-            type="text" 
+          <input
+            v-model="signupToken"
+            type="text"
             placeholder="Enter your access token"
             required
           />
-          <small style="color: #666;">Token provided by an administrator</small>
+          <small style="color: #666">Token provided by an administrator</small>
         </label>
         <label>
           Email (optional):
@@ -108,10 +108,10 @@ export default {
 
     onMounted(async () => {
       try {
-        const { data } = await api.get('/config');
+        const { data } = await api.get("/config");
         signupRequiresToken.value = data.signup_requires_token || false;
       } catch (err) {
-        console.error('Error loading config:', err);
+        console.error("Error loading config:", err);
       }
     });
 
@@ -158,16 +158,13 @@ export default {
           ...(email.value && { email: email.value }),
           ...(displayName.value && { display_name: displayName.value }),
         };
-        
+
         const payload = {
           user: user_data,
-          ...(signupToken.value && { signup_token: signupToken.value })
+          ...(signupToken.value && { signup_token: signupToken.value }),
         };
-        
-        const response = await api.post(
-          `/auth/signup`,
-          payload,
-        );
+
+        const response = await api.post(`/auth/signup`, payload);
         if (response.data.is_active) {
           success.value = `Signup successful for ${response.data.username}. Please log in.`;
           router.push({
@@ -203,8 +200,6 @@ export default {
 </script>
 
 <style scoped>
-
-
 form {
   display: flex;
   flex-direction: column;

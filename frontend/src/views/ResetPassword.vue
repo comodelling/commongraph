@@ -33,10 +33,10 @@ export default {
     const resetPassword = async () => {
       error.value = null;
       try {
-        const response = await api.post(
-          `/auth/reset-password`,
-          { token, new_password: newPassword.value },
-        );
+        const response = await api.post(`/auth/reset-password`, {
+          token,
+          new_password: newPassword.value,
+        });
         success.value = response.data.msg;
         router.push("/login");
       } catch (err) {

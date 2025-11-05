@@ -42,22 +42,24 @@ def update_password(
     db: UserDatabaseInterface = Depends(get_user_db),
 ):
     logger.info(f"Updating password for user: {current_user.username}")
-    
+
     # Get the full user record (including password hash)
     user = db.get_user(current_user.username)
     if not user:
-        logger.warning(f"User not found while updating password: {current_user.username}")
+        logger.warning(
+            f"User not found while updating password: {current_user.username}"
+        )
         raise HTTPException(status_code=404, detail="User not found")
-    
+
     # Verify current password
     if not verify_password(password_request.current_password, user.password):
         logger.warning(f"Incorrect current password for user: {current_user.username}")
         raise HTTPException(status_code=400, detail="Current password is incorrect")
-    
+
     # Update password with new hashed password
     user.password = hash_password(password_request.new_password)
     db.update_user(user)
-    
+
     logger.info(f"Password updated successfully for user: {current_user.username}")
     return {"message": "Password updated successfully"}
 
@@ -68,8 +70,7 @@ def update_security_settings(
     current_user: UserRead = Depends(get_current_user),
     db: UserDatabaseInterface = Depends(get_user_db),
 ):
-    logger.info(
-        f"Updating security settings for user: {current_user.username}")
+    logger.info(f"Updating security settings for user: {current_user.username}")
     user = db.get_user(current_user.username)
     if not user:
         logger.warning(
@@ -79,8 +80,7 @@ def update_security_settings(
     user.security_question = security_settings.get("security_question")
     user.security_answer = security_settings.get("security_answer")
     updated_user = db.update_user(user)
-    logger.info(
-        f"Security settings updated for user: {current_user.username}")
+    logger.info(f"Security settings updated for user: {current_user.username}")
     return updated_user
 
 
@@ -169,7 +169,9 @@ def toggle_super_admin(
 ) -> UserRead:
     # Only existing super admins can manage super admin status
     if not current_user.is_super_admin:
-        raise HTTPException(status_code=403, detail="Only super admins can manage super admin status")
+        raise HTTPException(
+            status_code=403, detail="Only super admins can manage super admin status"
+        )
     user = db.get_user(username)
     if not user:
         raise HTTPException(404, "User not found")

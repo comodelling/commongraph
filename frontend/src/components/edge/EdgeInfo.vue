@@ -5,61 +5,73 @@
         <h4>Edge Info</h4>
       </div>
       <div class="tabs">
-          <button
-            :class="{ active: currentTab === 'view' }"
-            @click="switchTab('view')"
-            :disabled="isBrandNewEdge"
-          >
-            View
-          </button>
-          <button
-            :class="{ active: currentTab === 'edit', disabled: !canEdit || readOnly }"
-            @click="canEdit && !readOnly ? switchTab('edit') : null"
-            :disabled="!canEdit || readOnly"
-            :title="readOnly ? 'Editing disabled in demo mode' : (canEdit ? 'Edit this edge' : 'You need edit permissions to modify edges')"
-          >
-            Edit
-          </button>
-          <button
-            :class="{ active: currentTab === 'history' }"
-            @click="readOnly ? null : switchTab('history')"
-            :disabled="isBrandNewEdge || readOnly"
-            :title="readOnly ? 'History not available in demo mode' : 'View edge history'"
-          >
-            History
-          </button>
-        </div>
+        <button
+          :class="{ active: currentTab === 'view' }"
+          @click="switchTab('view')"
+          :disabled="isBrandNewEdge"
+        >
+          View
+        </button>
+        <button
+          :class="{
+            active: currentTab === 'edit',
+            disabled: !canEdit || readOnly,
+          }"
+          @click="canEdit && !readOnly ? switchTab('edit') : null"
+          :disabled="!canEdit || readOnly"
+          :title="
+            readOnly
+              ? 'Editing disabled in demo mode'
+              : canEdit
+                ? 'Edit this edge'
+                : 'You need edit permissions to modify edges'
+          "
+        >
+          Edit
+        </button>
+        <button
+          :class="{ active: currentTab === 'history' }"
+          @click="readOnly ? null : switchTab('history')"
+          :disabled="isBrandNewEdge || readOnly"
+          :title="
+            readOnly
+              ? 'History not available in demo mode'
+              : 'View edge history'
+          "
+        >
+          History
+        </button>
       </div>
-      <!-- <hr class="header-separator" /> -->
-      <div v-if="edge">
-        <template v-if="currentTab === 'edit'">
-          <!-- Add a ref so we can inspect unsaved changes in the edit component -->
-          <component
-            ref="edgeEdit"
-            :is="currentTabComponent"
-            :edge="edge"
-            :sourceId="edge.source"
-            :targetId="edge.target"
-            :sourceType="edge.sourceNodeType"
-            :targetType="edge.targetNodeType"
-            @publish-edge="updateEdgeFromEditor"
-          />
-        </template>
-        <template v-else>
-          <component
-            :is="currentTabComponent"
-            :edge="edge"
-            :sourceId="edge.source"
-            :targetId="edge.target"
-            :title="currentTab === 'history' ? 'Edge' : undefined"
-            @publish-edge="updateEdgeFromEditor"
-          />
-        </template>
-      </div>
-      <div v-else>
-        <p>Edge not found</p>
-      </div>
-    
+    </div>
+    <!-- <hr class="header-separator" /> -->
+    <div v-if="edge">
+      <template v-if="currentTab === 'edit'">
+        <!-- Add a ref so we can inspect unsaved changes in the edit component -->
+        <component
+          ref="edgeEdit"
+          :is="currentTabComponent"
+          :edge="edge"
+          :sourceId="edge.source"
+          :targetId="edge.target"
+          :sourceType="edge.sourceNodeType"
+          :targetType="edge.targetNodeType"
+          @publish-edge="updateEdgeFromEditor"
+        />
+      </template>
+      <template v-else>
+        <component
+          :is="currentTabComponent"
+          :edge="edge"
+          :sourceId="edge.source"
+          :targetId="edge.target"
+          :title="currentTab === 'history' ? 'Edge' : undefined"
+          @publish-edge="updateEdgeFromEditor"
+        />
+      </template>
+    </div>
+    <div v-else>
+      <p>Edge not found</p>
+    </div>
   </div>
 </template>
 
@@ -90,7 +102,7 @@ export default {
   data() {
     return {
       currentTab: this.getCurrentTab(),
-      localIsBrandNewEdge: this.edge?.new === true,  // track new state locally
+      localIsBrandNewEdge: this.edge?.new === true, // track new state locally
     };
   },
   watch: {
@@ -141,7 +153,7 @@ export default {
       }
     },
     updateEdgeFromEditor(updatedEdge) {
-      this.localIsBrandNewEdge = false;  // clear local flag
+      this.localIsBrandNewEdge = false; // clear local flag
       this.$emit("update-edge-from-editor", updatedEdge);
       this.switchTab("view");
     },
@@ -150,9 +162,7 @@ export default {
 </script>
 
 <style scoped>
-
 .pane-header .tabs {
   margin-right: -20px;
 }
-
 </style>

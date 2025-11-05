@@ -25,9 +25,7 @@
           Update Security Question
         </button>
         <br /><br />
-        <button @click="navigateToUpdatePassword">
-          Change Password
-        </button>
+        <button @click="navigateToUpdatePassword">Change Password</button>
         <br /><br />
         <button @click="logout">Logout</button>
       </div>
@@ -55,10 +53,9 @@ export default {
       loading.value = true;
       error.value = null;
       try {
-        const response = await api.get(
-          `/users/me`,
-          { headers: { Authorization: `Bearer ${token}` } },
-        );
+        const response = await api.get(`/users/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         user.value = response.data;
         // Load user's theme preference from the backend
         if (user.value.preferences?.theme) {

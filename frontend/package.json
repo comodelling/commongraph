@@ -43,5 +43,5 @@
     "prettier": "^3.4.2",
     "vite": "^6.4.1"
   },
-  "version": "v0.4.5"
+  "version": "v0.1.0"
 }

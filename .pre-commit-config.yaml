@@ -15,13 +15,13 @@ repos:
         files: ^backend/
 -   repo: local
     hooks:
-    # -   id: pytest-check
-    #     name: pytest-check
-    #     files: ^backend/
-    #     entry: pytest
-    #     language: system
-    #     pass_filenames: false
-    #     always_run: false
+    -   id: pytest-check
+        name: pytest-check
+        files: ^backend/
+        entry: pytest
+        language: system
+        pass_filenames: false
+        always_run: false
     -   id: prettier
         name: prettier
         files: ^frontend/

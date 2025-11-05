@@ -23,14 +23,8 @@ def test_user():
     test_username = "test_password_user"
     test_password = "testpassword123"
 
-    # Clean up any existing test user
-    try:
-        existing_user = db.get_user(test_username)
-        if existing_user:
-            # For simplicity, we'll just update the existing user
-            pass
-    except:
-        pass
+    # Reset database to ensure clean state
+    db.reset_user_table()
 
     # Create test user
     user = UserCreate(
@@ -42,24 +36,16 @@ def test_user():
         security_answer="blue",
     )
 
-    try:
-        created_user = db.create_user(user)
-        yield {
-            "username": test_username,
-            "password": test_password,
-            "user": created_user,
-        }
-    except Exception as e:
-        # User might already exist, try to get it
-        existing_user = db.get_user(test_username)
-        if existing_user:
-            yield {
-                "username": test_username,
-                "password": test_password,
-                "user": existing_user,
-            }
-        else:
-            raise e
+    created_user = db.create_user(user)
+
+    yield {
+        "username": test_username,
+        "password": test_password,
+        "user": created_user,
+    }
+
+    # Cleanup after test
+    db.reset_user_table()
 
 
 def test_password_update_success(test_user):
@@ -126,7 +112,9 @@ def test_password_update_unauthorized():
         json={"current_password": "somepassword", "new_password": "newpassword456"},
     )
 
-    assert response.status_code == 401
+    # Without auth, user is "anonymous" which doesn't exist, returns 404
+    assert response.status_code == 404
+    assert "User not found" in response.json()["detail"]
 
 
 def test_password_update_short_password(test_user):

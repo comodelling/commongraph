@@ -63,7 +63,7 @@ def test_log_and_get_node_rating():
     assert logged["username"] == "testuser"
 
     # Retrieve the logged rating
-    response = client.get("/node/ratings/1")
+    response = client.get("/nodes/1/ratings/me", params={"poll_label": "support"})
     assert response.status_code == 200
     fetched = response.json()
     assert fetched["node_id"] == 1
@@ -99,7 +99,7 @@ def test_node_median_rating():
     for r in ratings:
         client.post("/nodes/2/ratings", json=r)
 
-    response = client.get("/nodes/2/ratings/median")
+    response = client.get("/nodes/2/ratings/median", params={"poll_label": "support"})
     assert response.status_code == 200
     data = response.json()
     # Ratings [3.0, 4.0, 5.0] median is 4.0
@@ -128,7 +128,7 @@ def test_log_and_get_edge_rating():
 
     # Retrieve the logged edge rating (explicitly pass poll_label)
     response = client.get(
-        "/edges/10/20/ratings",
+        "/edges/10/20/ratings/me",
         params={"poll_label": "necessity"},
     )
     assert response.status_code == 200

@@ -6,18 +6,20 @@ from backend.models.fixed import UserCreate
 from backend.utils.security import hash_password, verify_password
 import os
 
-client = TestClient(app)
-
-# Test configuration
-TEST_DB_URL = os.getenv(
-    "TEST_POSTGRES_DB_URL", "postgresql://test:test@localhost:5432/test_commongraph"
+# Configure test database (same as other tests)
+POSTGRES_TEST_DB_URL = os.getenv(
+    "POSTGRES_TEST_DB_URL", "postgresql://postgres:postgres@localhost/testdb"
 )
+os.environ["POSTGRES_DB_URL"] = POSTGRES_TEST_DB_URL
+os.environ["SECRET_KEY"] = "testsecret"
+
+client = TestClient(app)
 
 
 @pytest.fixture
 def test_user():
     """Create a test user for password update tests"""
-    db = UserPostgreSQLDB(TEST_DB_URL)
+    db = UserPostgreSQLDB(POSTGRES_TEST_DB_URL)
     test_username = "test_password_user"
     test_password = "testpassword123"
 

@@ -1,7 +1,8 @@
 services:
   backend:
     env_file:
-      - ./.env.production
+      - ./.env
+      - ./.env.production  # Production overrides
     networks:
       - internal
       - web  # Only if nginx needs to reach backend
@@ -10,7 +11,8 @@ services:
     image: nginx:alpine
     container_name: commongraph-nginx
     env_file:
-      - ./.env.production
+      - ./.env
+      - ./.env.production  # Production overrides
     ports:
       - "80:80"
       - "443:443"
@@ -33,9 +35,11 @@ services:
       sh -c "npm ci --include=dev && (npm run sync-version || true) && npx vite build && npx vite preview --host --port 5173"
     expose:
       - "5173"  # Available to other containers but not to host
+    env_file:
+      - ./.env
+      - ./.env.production  # Production overrides
     volumes:
       - ./frontend:/app
-      - ./.env.production:/app/.env:ro  # Override the .env file with production version
       - ./VERSION:/VERSION:ro           # Mount VERSION where the script expects it
     environment:
       - NODE_ENV=production
@@ -47,7 +51,8 @@ services:
     image: certbot/certbot
     container_name: commongraph-certbot
     env_file:
-      - ./.env.production
+      - ./.env
+      - ./.env.production  # Production overrides
     volumes:
       - ./nginx/ssl:/etc/letsencrypt
       - ./nginx/certbot:/var/www/certbot

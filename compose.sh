@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Cleanup on script exit
+trap cleanup_ssl_bootstrap EXIT
+
 show_help() {
     cat << EOF
 Usage: ./compose.sh [COMMAND] [OPTIONS]
@@ -12,6 +15,7 @@ Commands:
   logs [service]       Show logs
   shell <service>      Open shell in service container
   reset-db            Reset database volume and restart
+  setup-ssl           Bootstrap SSL certificates for production (first-time setup)
   help                Show this help
 
 Examples:
@@ -19,6 +23,7 @@ Examples:
   ./compose.sh up backend      # Start only backend
   ./compose.sh logs postgres   # Show postgres logs
   ./compose.sh shell backend   # Open shell in backend container
+  ./compose.sh setup-ssl       # First-time SSL certificate setup for production
 EOF
 }
 
@@ -109,6 +114,108 @@ if [ "$ENABLE_GRAPH_DB" = true ]; then
     echo "Enabling JanusGraph"
 fi
 
+# Function to setup SSL certificates for production (first-time bootstrap)
+setup_ssl_certificates() {
+    if [ "$APP_ENV" != "production" ]; then
+        echo "❌ SSL setup is only needed for production environment"
+        echo "   Set APP_ENV=production in .env and try again"
+        exit 1
+    fi
+
+    echo "🚀 Starting SSL certificate bootstrap for production..."
+    echo "   Domain: $DOMAIN"
+    echo "   This will temporarily use HTTP-only nginx to obtain certificates"
+    echo
+
+    # Step 1: Check if certificates already exist
+    if [ -d "./nginx/ssl/live/$DOMAIN" ] && [ -f "./nginx/ssl/live/$DOMAIN/fullchain.pem" ]; then
+        echo "✅ SSL certificates already exist for $DOMAIN"
+        echo "   If you need to renew or recreate them, delete ./nginx/ssl/live/$DOMAIN first"
+        return 0
+    fi
+
+    # Step 2: Create temporary HTTP-only docker-compose override
+    echo "📝 Creating temporary HTTP-only configuration..."
+    cat > docker-compose.ssl-bootstrap.yaml << EOF
+services:
+  nginx:
+    command: >
+      sh -c "envsubst '\$\$DOMAIN' < /etc/nginx/nginx-http-only.conf.template > /etc/nginx/nginx.conf && nginx -g 'daemon off;'"
+    volumes:
+      - ./nginx/nginx-http-only.conf.template:/etc/nginx/nginx-http-only.conf.template:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ./nginx/certbot:/var/www/certbot
+EOF
+
+    # Step 3: Start services with HTTP-only nginx
+    echo "🌐 Starting services with HTTP-only nginx..."
+    docker compose -f docker-compose.yaml -f docker-compose.prod.yaml -f docker-compose.ssl-bootstrap.yaml down
+    docker compose -f docker-compose.yaml -f docker-compose.prod.yaml -f docker-compose.ssl-bootstrap.yaml up -d postgres
+    ensure_database_exists
+    docker compose -f docker-compose.yaml -f docker-compose.prod.yaml -f docker-compose.ssl-bootstrap.yaml up -d backend frontend nginx
+
+    # Step 4: Wait for nginx to be ready
+    echo "⏳ Waiting for nginx to be ready..."
+    sleep 10
+
+    # Step 5: Test HTTP connectivity
+    echo "🔍 Testing HTTP connectivity..."
+    if ! curl -f http://localhost/.well-known/acme-challenge/test 2>/dev/null; then
+        echo "⚠️  HTTP test endpoint not responding, but continuing with certbot..."
+    else
+        echo "✅ HTTP endpoint responding correctly"
+    fi
+
+    # Step 6: Run certbot to obtain certificates
+    echo "🔐 Obtaining SSL certificates from Let's Encrypt..."
+    docker compose -f docker-compose.yaml -f docker-compose.prod.yaml -f docker-compose.ssl-bootstrap.yaml run --rm certbot
+
+    # Step 7: Check if certificates were created
+    if [ -f "./nginx/ssl/live/$DOMAIN/fullchain.pem" ]; then
+        echo "✅ SSL certificates successfully obtained!"
+    else
+        echo "❌ Failed to obtain SSL certificates"
+        echo "   Check the logs above for errors"
+        echo "   Common issues:"
+        echo "   - DNS not pointing to this server yet"
+        echo "   - Firewall blocking port 80"
+        echo "   - Domain validation failed"
+        cleanup_ssl_bootstrap
+        exit 1
+    fi
+
+    # Step 8: Switch to SSL configuration and restart
+    echo "🔄 Switching to SSL configuration..."
+    docker compose -f docker-compose.yaml -f docker-compose.prod.yaml -f docker-compose.ssl-bootstrap.yaml down
+
+    echo "🚀 Starting services with SSL enabled..."
+    docker compose -f docker-compose.yaml -f docker-compose.prod.yaml up -d
+
+    # Step 9: Test HTTPS
+    echo "🔍 Testing HTTPS connectivity..."
+    sleep 10
+    if curl -f -k https://localhost/ 2>/dev/null >/dev/null; then
+        echo "✅ HTTPS is working!"
+    else
+        echo "⚠️  HTTPS test failed, but SSL certificates are installed"
+        echo "   This might be normal if the site is not yet fully configured"
+    fi
+
+    # Step 10: Cleanup
+    cleanup_ssl_bootstrap
+
+    echo
+    echo "🎉 SSL setup complete!"
+    echo "   Your site should now be available at: https://$DOMAIN"
+    echo "   Certificates will auto-renew via the certbot container"
+}
+
+# Function to cleanup temporary SSL bootstrap files
+cleanup_ssl_bootstrap() {
+    echo "🧹 Cleaning up temporary files..."
+    rm -f docker-compose.ssl-bootstrap.yaml
+}
+
 # Handle special commands
 case "$1" in
     "up"|"start")
@@ -133,6 +240,9 @@ case "$1" in
         else
             echo "Operation cancelled."
         fi
+        ;;
+    "setup-ssl")
+        setup_ssl_certificates
         ;;
     "help"|"-h"|"--help")
         show_help

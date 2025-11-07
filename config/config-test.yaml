@@ -1,0 +1,97 @@
+platform_name: CommonGraph-Test
+platform_tagline: Test Configuration
+platform_description: Minimal configuration for running unit tests.
+
+node_types:
+  change:
+    properties:
+      - title
+      - description
+      - tags
+    style:
+      color: "#FF6B6B"
+  
+  wish:
+    properties:
+      - title
+      - description
+      - tags
+    style:
+      color: "#4ECDC4"
+  
+  proposal:
+    properties:
+      - title
+      - description
+      - tags
+    style:
+      color: "#45B7D1"
+  
+  action:
+    properties:
+      - title
+      - description
+      - tags
+    style:
+      color: "#96CEB4"
+  
+  objective:
+    properties:
+      - title
+      - description
+      - tags
+    style:
+      color: "#FFEAA7"
+  
+  potentiality:
+    properties:
+      - title
+      - description
+      - tags
+    style:
+      color: "#DFE6E9"
+  
+  project:
+    properties:
+      - title
+      - description
+      - tags
+    style:
+      color: "#A29BFE"
+
+edge_types:
+  require:
+    properties:
+      - description
+      - references
+    style:
+      color: "#2C3E50"
+  
+  imply:
+    properties:
+      - description
+      - references
+    style:
+      color: "#34495E"
+
+polls:
+  support:
+    type: discrete
+    question: Do you support this?
+    options:
+      - 1: "Support"
+      - 2: "Neutral"
+      - 3: "Oppose"
+    node_types: ["proposal", "action"]
+    edge_types: []
+
+auth:
+  allow_signup: true
+  signup_requires_admin_approval: false
+
+permissions:
+  # Allow all operations without authentication for easier testing
+  create: all
+  edit: all
+  delete: all
+  rate: all

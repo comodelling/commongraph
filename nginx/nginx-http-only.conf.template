@@ -6,7 +6,7 @@ http {
     upstream backend {
         server backend:8000;
     }
-    
+
     upstream frontend {
         server frontend:5173;
     }
@@ -25,7 +25,7 @@ http {
             deny all;
             return 404;
         }
-        
+
         # Route API calls to backend
         location ~ ^/(docs|openapi.json|auth|users|graphs|admin|nodes|edges|graph|schema|config) {
             proxy_pass http://backend;
@@ -34,7 +34,7 @@ http {
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
             proxy_set_header X-Forwarded-Proto $scheme;
         }
-        
+
         # Route everything else to frontend
         location / {
             proxy_pass http://frontend;

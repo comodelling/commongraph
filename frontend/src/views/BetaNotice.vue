@@ -7,24 +7,28 @@
         This platform is currently in closed beta testing.
       </p>
       <p class="details">
-        You need to <router-link to="/login" class="login-link">log in</router-link> 
+        You need to
+        <router-link to="/login" class="login-link">log in</router-link>
         to access the content and participate in the beta program.
       </p>
       <div class="cta-section">
-        <p class="interested">
-          Interested in participating? 
-        </p>
+        <p class="interested">Interested in participating?</p>
         <p class="contact">
-          Please <a href="mailto:{{ contactEmail }}" class="contact-link">contact us</a> 
+          Please
+          <a href="mailto:{{ contactEmail }}" class="contact-link"
+            >contact us</a
+          >
           or check back later for public access!
         </p>
       </div>
-      
+
       <div class="actions">
-        <router-link to="/login" class="btn btn-primary">
-          Log In
-        </router-link>
-        <router-link to="/signup" class="btn btn-secondary" v-if="signupEnabled">
+        <router-link to="/login" class="btn btn-primary"> Log In </router-link>
+        <router-link
+          to="/signup"
+          class="btn btn-secondary"
+          v-if="signupEnabled"
+        >
           Request Access
         </router-link>
       </div>
@@ -35,9 +39,9 @@
 <script>
 import { onMounted } from 'vue';
 import { useConfig } from '../composables/useConfig';
-
+  
 export default {
-  name: 'BetaNotice',
+  name: "BetaNotice",
   setup() {
     const contactEmail = import.meta.env.VITE_ADMIN_EMAIL || 'contact@example.com';
     const { allowSignup, load } = useConfig();
@@ -48,9 +52,9 @@ export default {
 
     return {
       contactEmail,
-      signupEnabled: allowSignup
+      signupEnabled: allowSignup,
     };
-  }
+  },
 };
 </script>
 

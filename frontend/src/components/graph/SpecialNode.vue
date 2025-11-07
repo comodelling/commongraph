@@ -28,44 +28,50 @@ defineEmits(["updateNodeInternals"]);
 
 // Create tooltip content from node data
 const tooltipContent = computed(() => {
-  if (!props.data) return '';
-  
+  if (!props.data) return "";
+
   const parts = [];
-  
+
   // Format as: status type (scope)
   if (props.data.status) {
     parts.push(props.data.status);
   }
-  
+
   if (props.data.node_type) {
     parts.push(props.data.node_type);
   }
-  
+
   if (props.data.scope) {
     parts.push(`(${props.data.scope})`);
   }
-  
-  let tooltip = parts.join(' ');
-  
+
+  let tooltip = parts.join(" ");
+
   // Add description on a new line if it exists
   if (props.data.description) {
-    const desc = props.data.description.length > 100 
-      ? props.data.description.substring(0, 100) + '...' 
-      : props.data.description;
+    const desc =
+      props.data.description.length > 100
+        ? props.data.description.substring(0, 100) + "..."
+        : props.data.description;
     tooltip += tooltip ? `\n${desc}` : desc;
   }
-  
+
   return tooltip;
 });
 
 // All triangles point in the same causal direction based on source position
 const triangleRotation = computed(() => {
   switch (props.sourcePosition) {
-    case 'right': return '0deg';
-    case 'bottom': return '90deg';
-    case 'left': return '180deg';
-    case 'top': return '270deg';
-    default: return '0deg';
+    case "right":
+      return "0deg";
+    case "bottom":
+      return "90deg";
+    case "left":
+      return "180deg";
+    case "top":
+      return "270deg";
+    default:
+      return "0deg";
   }
 });
 </script>
@@ -75,8 +81,12 @@ const triangleRotation = computed(() => {
     type="source"
     :position="sourcePosition"
     title="Create implications"
-    class="triangle-handle source-handle">
-    <div class="triangle-arrow" :style="{ transform: `rotate(${triangleRotation})` }"></div>
+    class="triangle-handle source-handle"
+  >
+    <div
+      class="triangle-arrow"
+      :style="{ transform: `rotate(${triangleRotation})` }"
+    ></div>
   </Handle>
 
   <span :title="tooltipContent">{{ label }}</span>
@@ -85,8 +95,12 @@ const triangleRotation = computed(() => {
     type="target"
     :position="targetPosition"
     title="Create conditions"
-    class="triangle-handle target-handle">
-    <div class="triangle-arrow" :style="{ transform: `rotate(${triangleRotation})` }"></div>
+    class="triangle-handle target-handle"
+  >
+    <div
+      class="triangle-arrow"
+      :style="{ transform: `rotate(${triangleRotation})` }"
+    ></div>
   </Handle>
 </template>
 

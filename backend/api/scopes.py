@@ -25,16 +25,14 @@ def search_scopes(
     If no query provided, returns all scopes (up to limit).
     """
     statement = select(Scope)
-    
+
     if q:
         # Case-insensitive partial match
-        statement = statement.where(
-            func.lower(Scope.name).contains(func.lower(q))
-        )
-    
+        statement = statement.where(func.lower(Scope.name).contains(func.lower(q)))
+
     statement = statement.order_by(Scope.name).limit(limit)
     scopes = session.exec(statement).all()
-    
+
     return scopes
 
 
@@ -52,21 +50,21 @@ def create_scope(
     existing = session.exec(
         select(Scope).where(func.lower(Scope.name) == func.lower(scope_data.name))
     ).first()
-    
+
     if existing:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=f"Scope with name '{scope_data.name}' already exists"
+            detail=f"Scope with name '{scope_data.name}' already exists",
         )
-    
+
     # Create new scope
     scope = Scope(name=scope_data.name.strip())
     session.add(scope)
     session.commit()
     session.refresh(scope)
-    
+
     logger.info(f"User {user.username} created scope: {scope.name}")
-    
+
     return scope
 
 
@@ -79,13 +77,12 @@ def get_scope_by_name(
     scope = session.exec(
         select(Scope).where(func.lower(Scope.name) == func.lower(name))
     ).first()
-    
+
     if not scope:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Scope '{name}' not found"
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Scope '{name}' not found"
         )
-    
+
     return scope
 
 
@@ -96,22 +93,22 @@ def get_or_create_scope(name: str, session: Session) -> Scope:
     """
     if not name or not name.strip():
         raise ValueError("Scope name cannot be empty")
-    
+
     name = name.strip()
-    
+
     # Try to find existing scope (case-insensitive)
     scope = session.exec(
         select(Scope).where(func.lower(Scope.name) == func.lower(name))
     ).first()
-    
+
     if scope:
         return scope
-    
+
     # Create new scope
     scope = Scope(name=name)
     session.add(scope)
     session.flush()  # Get the ID without committing the transaction
-    
+
     logger.info(f"Auto-created scope: {scope.name}")
-    
+
     return scope

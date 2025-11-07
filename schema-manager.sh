@@ -49,9 +49,9 @@ function login() {
     response=$(curl -s -X POST "$BASE_URL/auth/login" \
         -H "Content-Type: application/x-www-form-urlencoded" \
         -d "username=$username&password=$password")
-    
+
     token=$(echo "$response" | jq -r '.access_token // empty')
-    
+
     if [ -n "$token" ] && [ "$token" != "null" ]; then
         echo "$token" > "$TOKEN_FILE"
         print_status "Login successful"
@@ -74,16 +74,16 @@ function get_token() {
 function check_status() {
     echo -e "\n${BLUE}📊 Schema Status${NC}"
     echo "----------------"
-    
+
     response=$(curl -s "$BASE_URL/schema/status")
-    
+
     # Check if response is valid JSON
     if echo "$response" | jq . >/dev/null 2>&1; then
         echo "$response" | jq '.'
-        
+
         has_changes=$(echo "$response" | jq -r '.has_changes')
         changes_count=$(echo "$response" | jq -r '.changes')
-        
+
         if [ "$has_changes" = "true" ]; then
             if [ "$changes_count" = "0" ] || [ -z "$changes_count" ]; then
                 print_info "Changes detected, but you need admin access to see details"
@@ -107,21 +107,21 @@ function check_detailed_status() {
         print_error "Please login first with: $0 login"
         return 1
     fi
-    
+
     echo -e "\n${BLUE}📊 Detailed Schema Status${NC}"
     echo "-------------------------"
-    
+
     response=$(curl -s "$BASE_URL/schema/status" \
         -H "Authorization: Bearer $token")
-    
+
     # Check if response is valid JSON
     if echo "$response" | jq . >/dev/null 2>&1; then
         echo "$response" | jq '.'
-        
+
         has_changes=$(echo "$response" | jq -r '.has_changes')
         changes=$(echo "$response" | jq -r '.changes | length')
         warnings=$(echo "$response" | jq -r '.warnings | length')
-        
+
         if [ "$has_changes" = "true" ]; then
             print_warning "$changes changes detected"
             if [ "$warnings" -gt 0 ]; then
@@ -145,23 +145,23 @@ function apply_changes() {
         print_error "Please login first with: $0 login"
         return 1
     fi
-    
+
     echo -e "\n${BLUE}🚀 Applying Schema Changes${NC}"
     echo "----------------------------"
-    
+
     # First check what changes will be applied
     response=$(curl -s "$BASE_URL/schema/status" \
         -H "Authorization: Bearer $token")
-    
+
     has_changes=$(echo "$response" | jq -r '.has_changes')
     if [ "$has_changes" != "true" ]; then
         print_info "No changes to apply"
         return 0
     fi
-    
+
     changes_count=$(echo "$response" | jq -r '.changes | length')
     warnings_count=$(echo "$response" | jq -r '.warnings | length')
-    
+
     echo "About to apply $changes_count changes"
     if [ "$warnings_count" -gt 0 ]; then
         print_warning "$warnings_count warnings detected"
@@ -190,11 +190,11 @@ function apply_changes() {
         fi
         force=""
     fi
-    
+
     # Apply the changes
     apply_response=$(curl -s -X POST "$BASE_URL/schema/apply$force" \
         -H "Authorization: Bearer $token")
-    
+
     success=$(echo "$apply_response" | jq -r '.success // false')
     if [ "$success" = "true" ]; then
         new_version=$(echo "$apply_response" | jq -r '.new_version')
@@ -211,10 +211,10 @@ function show_history() {
         print_error "Please login first with: $0 login"
         return 1
     fi
-    
+
     echo -e "\n${BLUE}📚 Schema History${NC}"
     echo "------------------"
-    
+
     curl -s "$BASE_URL/schema/history" \
         -H "Authorization: Bearer $token" | \
         jq -r '.[] | "\(.version) - \(.created_at) - Active: \(.is_active)"'
@@ -226,10 +226,10 @@ function show_migrations() {
         print_error "Please login first with: $0 login"
         return 1
     fi
-    
+
     echo -e "\n${BLUE}🔄 Migration History${NC}"
     echo "---------------------"
-    
+
     curl -s "$BASE_URL/schema/migrations" \
         -H "Authorization: Bearer $token" | \
         jq -r '.[] | "\(.from_version) → \(.to_version) (\(.migration_type)) by \(.applied_by)"'

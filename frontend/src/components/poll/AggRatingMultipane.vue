@@ -1,19 +1,19 @@
 <template>
   <div class="agg-rating-multipane tab-card">
     <div class="pane-header">
-        <div class="title-group">
-            <h3>User evaluations</h3>
-        </div>
-        <div class="tabs">
-            <button
-            v-for="label in pollLabels"
-            :key="label"
-            :class="{ active: currentTab === label }"
-            @click="currentTab = label"
-            >
-            {{ label }}
-            </button>
-        </div>
+      <div class="title-group">
+        <h3>User evaluations</h3>
+      </div>
+      <div class="tabs">
+        <button
+          v-for="label in pollLabels"
+          :key="label"
+          :class="{ active: currentTab === label }"
+          @click="currentTab = label"
+        >
+          {{ label }}
+        </button>
+      </div>
     </div>
     <!-- <hr class="header-separator" /> -->
     <div class="tab-content">
@@ -27,8 +27,9 @@
       />
       <span
         class="info-icon-bottom"
-        :title='"Median aggregates of user evaluations for search results."'
-      >ℹ️</span>
+        :title="'Median aggregates of user evaluations for search results.'"
+        >ℹ️</span
+      >
     </div>
   </div>
 </template>
@@ -43,7 +44,7 @@ export default {
   props: {
     nodes: { type: Array, required: true },
     pollConfigs: { type: Object, required: true },
-    infoText: { type: String, default: "" }
+    infoText: { type: String, default: "" },
   },
   emits: ["filter-by-rating"],
   setup(props) {
@@ -55,8 +56,6 @@ export default {
 </script>
 
 <style scoped>
-
-
 /* HEADER: title left, tabs flush right */
 .pane-header h3 {
   margin: 0 0 0 15px;

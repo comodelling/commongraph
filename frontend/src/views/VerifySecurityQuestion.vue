@@ -45,10 +45,9 @@ export default {
     const fetchSecurityQuestion = async () => {
       error.value = null;
       try {
-        const response = await api.get(
-          `/auth/security-question`,
-          { params: { username: username.value } },
-        );
+        const response = await api.get(`/auth/security-question`, {
+          params: { username: username.value },
+        });
         if (response.data.security_question) {
           securityQuestion.value = response.data.security_question;
         } else {
@@ -62,10 +61,10 @@ export default {
     const verifySecurityQuestion = async () => {
       error.value = null;
       try {
-        const response = await api.post(
-          `/auth/verify-security-question`,
-          { username: username.value, answer: answer.value },
-        );
+        const response = await api.post(`/auth/verify-security-question`, {
+          username: username.value,
+          answer: answer.value,
+        });
         console.log(response.data);
         router.push({
           path: "/reset-password",

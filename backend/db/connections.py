@@ -2,8 +2,16 @@ import logging
 
 from sqlmodel import Session
 from backend.settings import settings
-from backend.db.base import GraphHistoryRelationalInterface, RatingHistoryRelationalInterface, UserDatabaseInterface
-from backend.db.postgresql import GraphHistoryPostgreSQLDB, RatingHistoryPostgreSQLDB, UserPostgreSQLDB
+from backend.db.base import (
+    GraphHistoryRelationalInterface,
+    RatingHistoryRelationalInterface,
+    UserDatabaseInterface,
+)
+from backend.db.postgresql import (
+    GraphHistoryPostgreSQLDB,
+    RatingHistoryPostgreSQLDB,
+    UserPostgreSQLDB,
+)
 from backend.db.janusgraph import JanusGraphDB
 from backend.db.config import get_engine
 

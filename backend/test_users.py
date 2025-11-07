@@ -17,21 +17,23 @@ client = TestClient(app)
 
 @pytest.fixture(scope="module", autouse=True)
 def reset_db():
-    db = UserPostgreSQLDB(TEST_DB_URL)
+    db = UserPostgreSQLDB(POSTGRES_TEST_DB_URL)
     db.reset_user_table()
     yield
     db.reset_user_table()
 
 
 def test_signup():
-    user_data = {
-        "username": "testuser",
-        "password": "securepassword",
-        "preferences": {"theme": "dark"},
-        "security_question": "What is your favorite color?",
-        "security_answer": "Blue",
+    signup_data = {
+        "user": {
+            "username": "testuser",
+            "password": "securepassword",
+            "preferences": {"theme": "dark"},
+            "security_question": "What is your favorite color?",
+            "security_answer": "Blue",
+        }
     }
-    response = client.post("/auth/signup", json=user_data)
+    response = client.post("/auth/signup", json=signup_data)
     assert response.status_code == 200
     json_resp = response.json()
     assert json_resp["username"] == "testuser"
@@ -40,14 +42,16 @@ def test_signup():
 
 def test_login():
     # Ensure the user is created
-    user_data = {
-        "username": "testuser",
-        "password": "securepassword",
-        "preferences": {"theme": "dark"},
-        "security_question": "What is your favorite color?",
-        "security_answer": "Blue",
+    signup_data = {
+        "user": {
+            "username": "testuser",
+            "password": "securepassword",
+            "preferences": {"theme": "dark"},
+            "security_question": "What is your favorite color?",
+            "security_answer": "Blue",
+        }
     }
-    client.post("/auth/signup", json=user_data)
+    client.post("/auth/signup", json=signup_data)
 
     # Use form data since OAuth2PasswordRequestForm expects application/x-www-form-urlencoded
     login_data = {"username": "testuser", "password": "securepassword"}
@@ -59,14 +63,16 @@ def test_login():
 
 def test_get_current_user():
     # Ensure the user is created
-    user_data = {
-        "username": "testuser",
-        "password": "securepassword",
-        "preferences": {"theme": "dark"},
-        "security_question": "What is your favorite color?",
-        "security_answer": "Blue",
+    signup_data = {
+        "user": {
+            "username": "testuser",
+            "password": "securepassword",
+            "preferences": {"theme": "dark"},
+            "security_question": "What is your favorite color?",
+            "security_answer": "Blue",
+        }
     }
-    client.post("/auth/signup", json=user_data)
+    client.post("/auth/signup", json=signup_data)
 
     # Log in to get the access token
     login_data = {"username": "testuser", "password": "securepassword"}

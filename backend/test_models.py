@@ -1,149 +1,180 @@
+"""
+Unit tests for base models and dynamic model creation.
+
+Tests the current architecture:
+- Base models (NodeBase, EdgeBase) with minimal required fields
+- Dynamic model generation based on configuration
+- Type validation from config
+"""
 import pytest
-import warnings
-from pydantic import ValidationError
+from pydantic_core import ValidationError
 
-from backend.models.base import NodeBase, EdgeBase
-
-
-correct_node_types = [
-    "change",
-    "wish",
-    "proposal",
-    "action",
-    "objective",
-    "potentiality",
-    "project",
-]
-correct_edge_types = ["require", "imply"]
+from backend.models.base import NodeBase, EdgeBase, SubgraphBase
+from backend.models.dynamic import NodeTypeModels, EdgeTypeModels
+from backend.config import valid_node_types, valid_edge_types
 
 
-def test_node_required_fields():
+# Test Base Models - Minimal Required Fields
+# ============================================
+
+def test_node_base_requires_node_type():
+    """NodeBase requires node_type field"""
+    with pytest.raises(ValidationError) as exc_info:
+        NodeBase()
+    
+    errors = exc_info.value.errors()
+    assert any(e['loc'] == ('node_type',) and e['type'] == 'missing' for e in errors)
+
+
+def test_node_base_validates_node_type():
+    """NodeBase validates node_type against config"""
+    # Valid node type should work
+    valid_types = valid_node_types()
+    if valid_types:
+        node = NodeBase(node_type=list(valid_types)[0])
+        assert node.node_type in valid_types
+    
+    # Invalid node type should raise ValueError
+    with pytest.raises(ValueError, match="not in configured node_types"):
+        NodeBase(node_type="invalid_type_xyz")
+
+
+def test_node_base_accepts_optional_node_id():
+    """NodeBase accepts optional node_id"""
+    node = NodeBase(node_type="objective")
+    assert node.node_id is None
+    
+    node_with_id = NodeBase(node_type="objective", node_id=42)
+    assert node_with_id.node_id == 42
+
+
+def test_edge_base_requires_all_fields():
+    """EdgeBase requires edge_type, source, and target"""
+    # Missing edge_type
+    with pytest.raises(ValidationError) as exc_info:
+        EdgeBase(source=1, target=2)
+    errors = exc_info.value.errors()
+    assert any(e['loc'] == ('edge_type',) and e['type'] == 'missing' for e in errors)
+    
+    # Missing source
+    with pytest.raises(ValidationError) as exc_info:
+        EdgeBase(edge_type="imply", target=2)
+    errors = exc_info.value.errors()
+    assert any(e['loc'] == ('source',) and e['type'] == 'missing' for e in errors)
+    
+    # Missing target
+    with pytest.raises(ValidationError) as exc_info:
+        EdgeBase(edge_type="imply", source=1)
+    errors = exc_info.value.errors()
+    assert any(e['loc'] == ('target',) and e['type'] == 'missing' for e in errors)
+
+
+def test_edge_base_validates_edge_type():
+    """EdgeBase validates edge_type against config"""
+    # Valid edge type should work
+    valid_types = valid_edge_types()
+    if valid_types:
+        edge = EdgeBase(edge_type=list(valid_types)[0], source=1, target=2)
+        assert edge.edge_type in valid_types
+    
+    # Invalid edge type should raise ValueError
+    with pytest.raises(ValueError, match="not in configured edge_types"):
+        EdgeBase(edge_type="invalid_type_xyz", source=1, target=2)
+
+
+def test_edge_base_validates_field_types():
+    """EdgeBase validates source and target are integers"""
+    # source must be int
     with pytest.raises(ValidationError):
-        NodeBase(node_type="objective", scope="test scope")  # Missing 'title'
-
-
-def test_node_field_types():
+        EdgeBase(edge_type="imply", source="not_an_int", target=2)
+    
+    # target must be int
     with pytest.raises(ValidationError):
-        NodeBase(
-            node_type="objective", title=123, scope="test scope"
-        )  # 'title' should be str
-
-    with pytest.raises(ValidationError):
-        NodeBase(
-            node_type="objective", title="test", scope=456
-        )  # 'scope' should be str
+        EdgeBase(edge_type="imply", source=1, target="not_an_int")
 
 
-def test_edge_required_fields():
-    with pytest.raises(ValidationError):
-        EdgeBase(edge_type="imply", target=1)  # Missing 'source'
-
-    with pytest.raises(ValidationError):
-        EdgeBase(source=1, target=2)  # Missing 'edge_type'
-
-
-def test_edge_field_types():
-    with pytest.raises(ValidationError):
-        EdgeBase(edge_type="imply", source="one", target=2)  # 'source' should be int
-
-    with pytest.raises(ValidationError):
-        # 'target' should be int
-        EdgeBase(edge_type="imply", source=1, target="two")
-
-
-def test_node_optional_fields():
-    node = NodeBase(title="test", scope="test scope")
-    assert node.description is None
-    assert node.tags == []
-    assert node.references == []
-    assert node.status == "live"
-    assert node.node_type == "potentiality"
-    assert node.support is None
-
-    node = NodeBase(
-        node_type="objective",
-        title="test",
-        scope="test scope",
-        status="live",
-        description="A test node",
-        tags=["tag1", "tag2"],
-        references=["ref1", "ref2"],
-        support="A",
-    )
-    assert node.description == "A test node"
-    assert node.tags == ["tag1", "tag2"]
-    assert node.references == ["ref1", "ref2"]
-    assert node.status == "live"
-    assert node.node_type == "objective"
-    assert node.support == "A"
-
-
-def test_edge_optional_fields():
-    # Edge without deprecated cprob
+def test_edge_base_creates_valid_edge():
+    """EdgeBase creates valid edge with all required fields"""
     edge = EdgeBase(edge_type="imply", source=1, target=2)
-    assert edge.sufficiency is None
-    assert edge.necessity is None
-    assert edge.references == []
-    assert edge.description is None
-
-    edge_with_cprob_imply = EdgeBase(
-        edge_type="imply",
-        source=1,
-        target=2,
-        sufficiency=0.75,
-        references=["ref1"],
-        description="A test edge",
-    )
-    assert edge_with_cprob_imply.sufficiency == 0.75
-    assert edge_with_cprob_imply.necessity is None
-    assert edge_with_cprob_imply.references == ["ref1"]
-    assert edge_with_cprob_imply.description == "A test edge"
-
-    edge_with_cprob_require = EdgeBase(
-        edge_type="imply", source=1, target=2, necessity=0.5
-    )
-    assert edge_with_cprob_require.necessity == 0.5
-    assert edge_with_cprob_require.sufficiency is None
-    assert edge_with_cprob_require.edge_type == "imply"
-    assert edge_with_cprob_require.source == 1  # Swapped
-    assert edge_with_cprob_require.target == 2  # Swapped
+    assert edge.edge_type == "imply"
+    assert edge.source == 1
+    assert edge.target == 2
 
 
-def test_node_deprecated_fields():
-    warnings.filterwarnings("ignore", category=DeprecationWarning)
+# Test Dynamic Models
+# ===================
 
-    node = NodeBase(
-        node_type="objective",
-        title="test",
-        scope="test scope",
-        grade="A",
-        gradable=True,
-        proponents=["proponent1", "proponent2"],
-    )
-    assert node.grade == "A"
-    assert node.gradable
-    assert node.proponents == ["proponent1", "proponent2"]
-
-    serialised_node = node.model_dump()
-    assert "grade" not in serialised_node
-    assert "gradable" not in serialised_node
-    assert "proponents" not in serialised_node
+def test_dynamic_node_models_created():
+    """Dynamic node models are created for each configured node type"""
+    configured_types = valid_node_types()
+    
+    assert len(NodeTypeModels) == len(configured_types)
+    for node_type in configured_types:
+        assert node_type in NodeTypeModels
+        assert NodeTypeModels[node_type].__name__ == f"{node_type.title()}NodeBase"
 
 
-def test_edge_deprecated_fields():
-    warnings.filterwarnings("ignore", category=DeprecationWarning)
+def test_dynamic_edge_models_created():
+    """Dynamic edge models are created for each configured edge type"""
+    configured_types = valid_edge_types()
+    
+    assert len(EdgeTypeModels) == len(configured_types)
+    for edge_type in configured_types:
+        assert edge_type in EdgeTypeModels
+        assert EdgeTypeModels[edge_type].__name__ == f"{edge_type.title()}EdgeBase"
 
-    edge = EdgeBase(edge_type="imply", source=1, target=2, cprob=0.5)
-    assert edge.cprob == 0.5
-    assert edge.sufficiency == 0.5
 
-    edge = EdgeBase(edge_type="require", source=1, target=2, cprob=0.5)
-    assert edge.cprob == 0.5
-    assert edge.necessity == 0.5
-    assert edge.target == 1
-    assert edge.source == 2
+def test_dynamic_node_model_has_properties():
+    """Dynamic node models include properties from config"""
+    # Pick first available node type
+    node_type = list(valid_node_types())[0]
+    DynamicNode = NodeTypeModels[node_type]
+    
+    # Should have base fields
+    assert 'node_type' in DynamicNode.model_fields
+    assert 'node_id' in DynamicNode.model_fields
+    
+    # node_type should be fixed to the type
+    node = DynamicNode()
+    assert node.node_type == node_type
 
-    serialised_edge = edge.model_dump()
-    assert "cprob" not in serialised_edge
-    assert "source_from_ui" not in serialised_edge
-    assert "target_from_ui" not in serialised_edge
+
+def test_dynamic_edge_model_has_properties():
+    """Dynamic edge models include properties from config"""
+    # Pick first available edge type
+    edge_type = list(valid_edge_types())[0]
+    DynamicEdge = EdgeTypeModels[edge_type]
+    
+    # Should have base fields
+    assert 'edge_type' in DynamicEdge.model_fields
+    assert 'source' in DynamicEdge.model_fields
+    assert 'target' in DynamicEdge.model_fields
+    
+    # edge_type should be fixed to the type
+    edge = DynamicEdge(source=1, target=2)
+    assert edge.edge_type == edge_type
+
+
+# Test Subgraph Model
+# ===================
+
+def test_subgraph_requires_nodes_and_edges():
+    """SubgraphBase requires nodes and edges lists"""
+    with pytest.raises(ValidationError):
+        SubgraphBase()
+    
+    subgraph = SubgraphBase(nodes=[], edges=[])
+    assert subgraph.nodes == []
+    assert subgraph.edges == []
+
+
+def test_subgraph_accepts_node_and_edge_objects():
+    """SubgraphBase accepts lists of nodes and edges"""
+    node = NodeBase(node_type="objective", node_id=1)
+    edge = EdgeBase(edge_type="imply", source=1, target=2)
+    
+    subgraph = SubgraphBase(nodes=[node], edges=[edge])
+    assert len(subgraph.nodes) == 1
+    assert len(subgraph.edges) == 1
+    assert subgraph.nodes[0].node_type == "objective"
+    assert subgraph.edges[0].edge_type == "imply"

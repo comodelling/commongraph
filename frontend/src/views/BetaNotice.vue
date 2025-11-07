@@ -15,7 +15,7 @@
         <p class="interested">Interested in participating?</p>
         <p class="contact">
           Please
-          <a href="mailto:{{ contactEmail }}" class="contact-link"
+          <a :href="`mailto:${contactEmail}`" class="contact-link"
             >contact us</a
           >
           or check back later for public access!

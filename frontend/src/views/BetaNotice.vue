@@ -33,13 +33,13 @@
 </template>
 
 <script>
-import { ref, onMounted } from 'vue';
+import { onMounted } from 'vue';
 import { useConfig } from '../composables/useConfig';
 
 export default {
   name: 'BetaNotice',
   setup() {
-    const contactEmail = ref('contact@example.com');
+    const contactEmail = import.meta.env.VITE_ADMIN_EMAIL || 'contact@example.com';
     const { allowSignup, load } = useConfig();
 
     onMounted(async () => {

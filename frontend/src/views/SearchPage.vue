@@ -32,7 +32,7 @@
           <CosmosGraphVis
             :graph-data="subgraphData"
             :height="'300px'"
-            :show-controls="false"
+            :show-controls="true"
             :auto-start-force-atlas="true"
             @node-click="handleNodeClick"
             @edge-click="handleEdgeClick"

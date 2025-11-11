@@ -110,6 +110,7 @@ export default {
     const hoveredNode = ref(null);
     const hoveredEdge = ref(null);
     const latestPointPositions = ref(new Float32Array(0));
+    const lastMousePosition = ref({ x: 0, y: 0 });
     const normalizeLayout = (layout) =>
       ["force", "random"].includes(layout) ? layout : "force";
     const getStoredDirection = () => {
@@ -762,40 +763,10 @@ export default {
       if (!edgeMeta) return;
       highlightLinkNodes(edgeMeta);
 
-      const sourceSpace = getSpacePositionForIndex(edgeMeta.sourceIndex);
-      const targetSpace = getSpacePositionForIndex(edgeMeta.targetIndex);
-
-      let midpointScreen = null;
-      if (sourceSpace && targetSpace) {
-        const midpointSpace = [
-          (sourceSpace[0] + targetSpace[0]) / 2,
-          (sourceSpace[1] + targetSpace[1]) / 2,
-        ];
-        midpointScreen = mapScreenToContainer(
-          convertSpaceToScreen(midpointSpace),
-        );
-      }
-
-      let sourceScreen = null;
-      if (!midpointScreen) {
-        sourceScreen = computeScreenCoordsForIndex(edgeMeta.sourceIndex);
-      }
-      let targetScreen = null;
-      if (!midpointScreen) {
-        targetScreen = computeScreenCoordsForIndex(edgeMeta.targetIndex);
-      }
-
-      let position = midpointScreen;
-      if (!position && sourceScreen && targetScreen) {
-        position = {
-          x: (sourceScreen.x + targetScreen.x) / 2,
-          y: (sourceScreen.y + targetScreen.y) / 2,
-        };
-      }
-
-      if (!position) {
-        position = sourceScreen || targetScreen || null;
-      }
+      // Use the last known mouse position
+      let position = lastMousePosition.value
+        ? { x: lastMousePosition.value.x, y: lastMousePosition.value.y }
+        : null;
 
       if (!position && cosmosContainer.value) {
         position = {
@@ -1071,6 +1042,21 @@ export default {
 
     onMounted(() => {
       initializeGraph();
+
+      // Track mouse position for edge tooltips
+      const handleMouseMove = (event) => {
+        if (cosmosContainer.value) {
+          const rect = cosmosContainer.value.getBoundingClientRect();
+          lastMousePosition.value = {
+            x: event.clientX - rect.left,
+            y: event.clientY - rect.top,
+          };
+        }
+      };
+
+      if (cosmosContainer.value) {
+        cosmosContainer.value.addEventListener("mousemove", handleMouseMove);
+      }
     });
 
     onBeforeUnmount(() => {

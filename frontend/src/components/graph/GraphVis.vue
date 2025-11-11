@@ -61,6 +61,23 @@ export default {
       default: "force",
       validator: (value) => ["force", "random"].includes(value),
     },
+    edgeRestLengthFactor: {
+      type: Number,
+      default: 1.2,
+    },
+    edgeSpringStrength: {
+      type: Number,
+      default: 0.6,
+    },
+    nodeSeparation: {
+      type: Number,
+      default: 32,
+    },
+    initialDirectionMode: {
+      type: String,
+      default: "LR",
+      validator: (value) => ["LR", "RL", "TB", "BT", "NONE"].includes(value),
+    },
   },
   emits: ["nodeClick", "edgeClick", "graphLoaded"],
   setup(props, { emit }) {
@@ -72,8 +89,27 @@ export default {
     const graphState = ref(null);
     const normalizeLayout = (layout) =>
       ["force", "random"].includes(layout) ? layout : "force";
+    const getStoredDirection = () => {
+      if (typeof window === "undefined") return null;
+      return localStorage.getItem("previousDirection");
+    };
+
+    const normalizeDirection = (direction) =>
+      ["LR", "RL", "TB", "BT", "NONE"].includes(direction) ? direction : "LR";
     const layoutMode = ref(normalizeLayout(props.initialLayout));
+    const directionMode = ref(
+      normalizeDirection(
+        getStoredDirection() ?? props.initialDirectionMode ?? "LR",
+      ),
+    );
     let lastFetchId = 0;
+
+    const refreshDirectionMode = () => {
+      const stored = getStoredDirection();
+      if (stored) {
+        directionMode.value = normalizeDirection(stored);
+      }
+    };
 
     const destroyGraph = () => {
       cosmosGraph.value?.destroy();
@@ -199,8 +235,33 @@ export default {
       return components;
     };
 
-    // Lay out nodes inside a connected component left-to-right, similar to the dagre setup in FlowEditor.
-    const computeComponentDirectionalLayout = (component, state) => {
+    // Lay out nodes inside a connected component with configurable direction (mirrors FlowEditor dagre defaults).
+    const computeComponentLayout = (component, state, direction) => {
+      if (direction === "NONE") {
+        const count = component.length;
+        const radius = Math.max(140, Math.sqrt(count) * 65);
+        const positions = new Map();
+        component.forEach((nodeIndex, index) => {
+          if (count === 1) {
+            positions.set(nodeIndex, { x: 0, y: 0 });
+            return;
+          }
+          const angle = (2 * Math.PI * index) / count;
+          positions.set(nodeIndex, {
+            x: Math.cos(angle) * radius,
+            y: Math.sin(angle) * radius,
+          });
+        });
+
+        return {
+          positions,
+          centerX: 0,
+          centerY: 0,
+          width: radius * 2,
+          height: radius * 2,
+        };
+      }
+
       const nodesInComponent = new Set(component);
       const inDegree = new Map();
 
@@ -266,7 +327,7 @@ export default {
 
       const sortedLevels = Array.from(bucketMap.keys()).sort((a, b) => a - b);
       const levelSpacing = Math.max(220, Math.sqrt(component.length) * 110);
-      const positions = new Map();
+      const basePositions = new Map();
 
       sortedLevels.forEach((levelValue, order) => {
         const nodesAtLevel = bucketMap.get(levelValue) ?? [];
@@ -279,8 +340,30 @@ export default {
         nodesAtLevel.forEach((nodeIndex, index) => {
           const x = order * levelSpacing;
           const y = (index - offset) * verticalSpacing;
-          positions.set(nodeIndex, { x, y });
+          basePositions.set(nodeIndex, { x, y });
         });
+      });
+
+      const isHorizontal = direction === "LR" || direction === "RL";
+      const invertPrimary = direction === "RL" || direction === "BT";
+
+      const orientedPositions = new Map();
+
+      basePositions.forEach((pos, nodeIndex) => {
+        let x = pos.x;
+        let y = pos.y;
+
+        if (!isHorizontal) {
+          const temp = x;
+          x = y;
+          y = temp;
+        }
+
+        if (invertPrimary) {
+          x *= -1;
+        }
+
+        orientedPositions.set(nodeIndex, { x, y });
       });
 
       let minX = Infinity;
@@ -288,7 +371,7 @@ export default {
       let minY = Infinity;
       let maxY = -Infinity;
 
-      positions.forEach((pos) => {
+      orientedPositions.forEach((pos) => {
         if (pos.x < minX) minX = pos.x;
         if (pos.x > maxX) maxX = pos.x;
         if (pos.y < minY) minY = pos.y;
@@ -300,7 +383,13 @@ export default {
       const width = Math.max(maxX - minX, 1);
       const height = Math.max(maxY - minY, 1);
 
-      return { positions, centerX, centerY, width, height };
+      return {
+        positions: orientedPositions,
+        centerX,
+        centerY,
+        width,
+        height,
+      };
     };
 
     const generateForceSeedPositions = (state, containerSize) => {
@@ -333,7 +422,11 @@ export default {
           return;
         }
 
-        const layout = computeComponentDirectionalLayout(component, state);
+        const layout = computeComponentLayout(
+          component,
+          state,
+          directionMode.value,
+        );
         const scale = Math.min(
           1.4,
           maxAllowedWidth / Math.max(layout.width, 1),
@@ -373,10 +466,13 @@ export default {
       const height = containerSize?.height ?? 600;
       const area = Math.max(width * height, 1);
       const k = Math.sqrt(area / Math.max(total, 1));
-      const iterations = Math.max(60, Math.min(200, total * 6));
-      let temperature = Math.min(width, height) * 0.25;
+      const iterations = Math.max(60, Math.min(220, total * 6));
+      let temperature = Math.min(width, height) * 0.3;
 
       const attractiveEdges = state.edgeMeta ?? [];
+      const restLength = k * props.edgeRestLengthFactor;
+      const springStrength = props.edgeSpringStrength / Math.max(k, 1);
+      const minSeparation = Math.max(props.nodeSeparation, restLength * 0.35);
 
       for (let iter = 0; iter < iterations; iter += 1) {
         dx.fill(0);
@@ -412,7 +508,8 @@ export default {
           const deltaX = working[source * 2] - working[target * 2];
           const deltaY = working[source * 2 + 1] - working[target * 2 + 1];
           const distance = Math.max(Math.hypot(deltaX, deltaY), 0.01);
-          const force = (distance * distance) / k;
+          const diff = distance - restLength;
+          const force = springStrength * diff;
           const fx = (deltaX / distance) * force;
           const fy = (deltaY / distance) * force;
 
@@ -431,6 +528,25 @@ export default {
         }
 
         temperature *= 0.92;
+      }
+
+      for (let i = 0; i < total; i += 1) {
+        for (let j = i + 1; j < total; j += 1) {
+          const deltaX = working[i * 2] - working[j * 2];
+          const deltaY = working[i * 2 + 1] - working[j * 2 + 1];
+          let distance = Math.hypot(deltaX, deltaY);
+          if (distance === 0) {
+            distance = 0.01;
+          }
+          if (distance >= minSeparation) continue;
+          const overlap = (minSeparation - distance) / 2;
+          const ux = deltaX / distance;
+          const uy = deltaY / distance;
+          working[i * 2] += ux * overlap;
+          working[i * 2 + 1] += uy * overlap;
+          working[j * 2] -= ux * overlap;
+          working[j * 2 + 1] -= uy * overlap;
+        }
       }
 
       let minX = Infinity;
@@ -537,6 +653,7 @@ export default {
         height: cosmosContainer.value?.clientHeight ?? 600,
       };
 
+      refreshDirectionMode();
       const positions = computePositions(
         state,
         layoutMode.value,
@@ -577,6 +694,7 @@ export default {
         height: cosmosContainer.value?.clientHeight ?? 600,
       };
 
+      refreshDirectionMode();
       const positions = computePositions(
         graphState.value,
         normalized,

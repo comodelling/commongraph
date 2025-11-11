@@ -2,7 +2,7 @@
   <div class="main-page">
     <!-- Background graph -->
     <div class="graph-background">
-      <SigmaGraphVis
+      <CosmosGraphVis
         :height="'100%'"
         :show-controls="false"
         :auto-start-force-atlas="true"
@@ -31,12 +31,12 @@
 <script>
 import { onMounted } from "vue";
 import SearchBar from "../components/common/SearchBar.vue";
-import SigmaGraphVis from "../components/graph/SigmaGraphVis.vue";
+import CosmosGraphVis from "../components/graph/GraphVis.vue";
 import { buildSearchParams } from "../utils/searchParser.js";
 import { useConfig } from "../composables/useConfig";
 
 export default {
-  components: { SearchBar, SigmaGraphVis },
+  components: { SearchBar, CosmosGraphVis },
   data() {
     return {
       quote: null,

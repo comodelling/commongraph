@@ -29,7 +29,7 @@
       </div>
       <div class="visualization-column">
         <div class="graph-container">
-          <SigmaGraphVis
+          <CosmosGraphVis
             :graph-data="subgraphData"
             :height="'300px'"
             :show-controls="false"
@@ -59,14 +59,14 @@ import { useConfig } from "../composables/useConfig";
 import RatingHistogram from "../components/poll/RatingHistogram.vue";
 import NodeListItem from "../components/node/NodeListItem.vue";
 import AggRatingMultipane from "../components/poll/AggRatingMultipane.vue";
-import SigmaGraphVis from "../components/graph/SigmaGraphVis.vue";
+import CosmosGraphVis from "../components/graph/GraphVis.vue";
 
 export default {
   components: {
     RatingHistogram,
     NodeListItem,
     AggRatingMultipane,
-    SigmaGraphVis,
+    CosmosGraphVis,
   },
   data() {
     return {

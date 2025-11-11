@@ -15,11 +15,24 @@
         Random Layout
       </button>
     </div>
+    <div v-if="hoveredNode" class="node-tooltip" :style="hoveredNodeStyle">
+      <div class="node-tooltip-title">{{ hoveredNodeTitle }}</div>
+      <div v-if="hoveredNodeSummary" class="node-tooltip-meta">
+        {{ hoveredNodeSummary }}
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
-import { nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  watch,
+} from "vue";
 import { Graph as CosmosGraph } from "@cosmos.gl/graph";
 import api from "../../api/axios";
 
@@ -87,6 +100,8 @@ export default {
     const edgeIndexMeta = ref([]);
     const currentGraphData = ref({ nodes: [], edges: [] });
     const graphState = ref(null);
+    const selectionSource = ref(null);
+    const hoveredNode = ref(null);
     const normalizeLayout = (layout) =>
       ["force", "random"].includes(layout) ? layout : "force";
     const getStoredDirection = () => {
@@ -112,6 +127,8 @@ export default {
     };
 
     const destroyGraph = () => {
+      clearNodeHover();
+      clearLinkHighlight();
       cosmosGraph.value?.destroy();
       cosmosGraph.value = null;
       nodeIndexMeta.value = [];
@@ -609,16 +626,146 @@ export default {
       }
     };
 
+    const highlightLinkNodes = (edgeMeta) => {
+      if (!edgeMeta || !cosmosGraph.value) return;
+      clearNodeHover();
+      const indices = [];
+      if (
+        typeof edgeMeta.sourceIndex === "number" &&
+        Number.isFinite(edgeMeta.sourceIndex)
+      ) {
+        indices.push(edgeMeta.sourceIndex);
+      }
+      if (
+        typeof edgeMeta.targetIndex === "number" &&
+        Number.isFinite(edgeMeta.targetIndex)
+      ) {
+        indices.push(edgeMeta.targetIndex);
+      }
+      if (!indices.length) return;
+      cosmosGraph.value.selectPointsByIndices(indices);
+      selectionSource.value = "link";
+    };
+
+    const clearLinkHighlight = () => {
+      if (selectionSource.value === "link") {
+        cosmosGraph.value?.unselectPoints();
+        selectionSource.value = null;
+      }
+    };
+
+    const handleLinkMouseOver = (index) => {
+      const edgeMeta = edgeIndexMeta.value[index];
+      if (!edgeMeta) return;
+      highlightLinkNodes(edgeMeta);
+    };
+
+    const handleLinkMouseOut = () => {
+      clearLinkHighlight();
+    };
+
+    const clearNodeHover = () => {
+      if (selectionSource.value === "node") {
+        cosmosGraph.value?.unselectPoints();
+      }
+      hoveredNode.value = null;
+      if (selectionSource.value === "node") {
+        selectionSource.value = null;
+      }
+    };
+
+    const handlePointMouseOver = (index, pointPosition) => {
+      const meta = nodeIndexMeta.value[index];
+      if (!meta || !cosmosGraph.value || !cosmosContainer.value) return;
+
+      let screenPosition = null;
+      try {
+        if (pointPosition) {
+          screenPosition =
+            cosmosGraph.value.spaceToScreenPosition(pointPosition);
+        }
+      } catch (error) {
+        screenPosition = null;
+      }
+
+      if (!screenPosition) {
+        try {
+          const positions = cosmosGraph.value.getPointPositions?.();
+          if (positions && positions.length >= (index + 1) * 2) {
+            const spacePosition = [
+              positions[index * 2],
+              positions[index * 2 + 1],
+            ];
+            screenPosition =
+              cosmosGraph.value.spaceToScreenPosition(spacePosition);
+          }
+        } catch (error) {
+          screenPosition = null;
+        }
+      }
+
+      if (!screenPosition) {
+        return;
+      }
+
+      const containerRect = cosmosContainer.value.getBoundingClientRect();
+      const [screenX, screenY] = screenPosition;
+      const withinContainer =
+        screenX >= -4 &&
+        screenX <= (containerRect?.width ?? 0) + 4 &&
+        screenY >= -4 &&
+        screenY <= (containerRect?.height ?? 0) + 4;
+      const relativeX = withinContainer
+        ? screenX
+        : screenX - (containerRect?.left ?? 0);
+      const relativeY = withinContainer
+        ? screenY
+        : screenY - (containerRect?.top ?? 0);
+
+      cosmosGraph.value.selectPointsByIndices([index]);
+      selectionSource.value = "node";
+
+      hoveredNode.value = {
+        index,
+        id: meta.id,
+        data: meta.data ?? {},
+        screenX: relativeX,
+        screenY: relativeY,
+      };
+    };
+
+    const handlePointMouseOut = () => {
+      clearNodeHover();
+    };
+
     const handlePointClick = (index) => {
       const meta = nodeIndexMeta.value[index];
       if (!meta) return;
       emit("nodeClick", meta.id);
     };
 
+    const buildEdgePayload = (edgeMeta) => {
+      if (!edgeMeta) return null;
+      const sourceMeta = nodeIndexMeta.value[edgeMeta.sourceIndex];
+      const targetMeta = nodeIndexMeta.value[edgeMeta.targetIndex];
+      const data = edgeMeta.data ?? {};
+      const sourceId = sourceMeta?.id ?? data.source_id ?? data.source ?? null;
+      const targetId = targetMeta?.id ?? data.target_id ?? data.target ?? null;
+
+      return {
+        id: edgeMeta.id,
+        sourceId,
+        targetId,
+        data,
+      };
+    };
+
     const handleLinkClick = (index) => {
       const meta = edgeIndexMeta.value[index];
       if (!meta) return;
-      emit("edgeClick", meta.id);
+      highlightLinkNodes(meta);
+      const payload = buildEdgePayload(meta);
+      emit("edgeClick", payload ?? meta.id);
     };
 
     const buildConfig = () => ({
@@ -636,10 +783,18 @@ export default {
       fitViewPadding: 0.2,
       hoveredPointCursor: "pointer",
       hoveredLinkCursor: "pointer",
+      hoveredLinkColor: getCssVariable("--highlight-color", "#ffcc66"),
+      hoveredLinkWidthIncrease: 2.5,
+      renderHoveredPointRing: true,
+      hoveredPointRingColor: getCssVariable("--highlight-color", "#ffcc66"),
       enableRightClickRepulsion: false,
       linkArrows: true,
       onPointClick: handlePointClick,
+      onPointMouseOver: handlePointMouseOver,
+      onPointMouseOut: handlePointMouseOut,
       onLinkClick: handleLinkClick,
+      onLinkMouseOver: handleLinkMouseOver,
+      onLinkMouseOut: handleLinkMouseOut,
     });
 
     const applyGraphData = (rawData, { respectSimulationState } = {}) => {
@@ -653,6 +808,8 @@ export default {
         height: cosmosContainer.value?.clientHeight ?? 600,
       };
 
+      clearNodeHover();
+      clearLinkHighlight();
       refreshDirectionMode();
       const positions = computePositions(
         state,
@@ -694,6 +851,8 @@ export default {
         height: cosmosContainer.value?.clientHeight ?? 600,
       };
 
+      clearNodeHover();
+      clearLinkHighlight();
       refreshDirectionMode();
       const positions = computePositions(
         graphState.value,
@@ -784,11 +943,55 @@ export default {
       destroyGraph();
     });
 
+    const hoveredNodeTitle = computed(() => {
+      if (!hoveredNode.value) return "";
+      const data = hoveredNode.value.data ?? {};
+      return data.title ?? data.label ?? hoveredNode.value.id ?? "";
+    });
+
+    const hoveredNodeStyle = computed(() => {
+      if (!hoveredNode.value) return {};
+      const offsetX = 14;
+      const offsetY = -18;
+      const top = Math.max(hoveredNode.value.screenY + offsetY, 0);
+      const left = Math.max(hoveredNode.value.screenX + offsetX, 0);
+      return {
+        top: `${top}px`,
+        left: `${left}px`,
+      };
+    });
+
+    const hoveredNodeSummary = computed(() => {
+      if (!hoveredNode.value) return "";
+      const data = hoveredNode.value.data ?? {};
+      const status = data.status ?? data.node_status ?? null;
+      const type = data.node_type ?? data.type ?? null;
+      const scope = data.scope ?? null;
+
+      const parts = [];
+      if (status) {
+        parts.push(status);
+      }
+      if (type) {
+        parts.push(type);
+      }
+
+      const summary = parts.join(" ");
+      if (scope) {
+        return summary ? `${summary} (${scope})` : `(${scope})`;
+      }
+      return summary;
+    });
+
     return {
       cosmosContainer,
       layoutMode,
       applyForceLayout,
       applyRandomLayout,
+      hoveredNode,
+      hoveredNodeTitle,
+      hoveredNodeStyle,
+      hoveredNodeSummary,
     };
   },
 };
@@ -869,5 +1072,33 @@ export default {
 :global(body.dark) .control-button:hover {
   background-color: #444;
   border-color: #777;
+}
+
+.node-tooltip {
+  position: absolute;
+  pointer-events: none;
+  max-width: 240px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background-color: rgba(0, 0, 0, 0.78);
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  font-size: 12px;
+  line-height: 1.4;
+  z-index: 12;
+}
+
+.node-tooltip-title {
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.node-tooltip-meta {
+  opacity: 0.85;
+}
+
+:global(body.dark) .node-tooltip {
+  background-color: rgba(20, 20, 20, 0.92);
+  color: #f5f5f5;
 }
 </style>

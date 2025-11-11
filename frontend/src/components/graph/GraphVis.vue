@@ -3,10 +3,10 @@
     <div ref="cosmosContainer" class="cosmos-container"></div>
     <div class="controls" v-if="showControls">
       <button
-        @click="applyClusteredLayout"
-        :class="['control-button', { active: layoutMode === 'clustered' }]"
+        @click="applyForceLayout"
+        :class="['control-button', { active: layoutMode === 'force' }]"
       >
-        Clustered Layout
+        Force Layout
       </button>
       <button
         @click="applyRandomLayout"
@@ -58,8 +58,8 @@ export default {
     },
     initialLayout: {
       type: String,
-      default: "clustered",
-      validator: (value) => ["clustered", "random"].includes(value),
+      default: "force",
+      validator: (value) => ["force", "random"].includes(value),
     },
   },
   emits: ["nodeClick", "edgeClick", "graphLoaded"],
@@ -71,7 +71,7 @@ export default {
     const currentGraphData = ref({ nodes: [], edges: [] });
     const graphState = ref(null);
     const normalizeLayout = (layout) =>
-      ["clustered", "random"].includes(layout) ? layout : "clustered";
+      ["force", "random"].includes(layout) ? layout : "force";
     const layoutMode = ref(normalizeLayout(props.initialLayout));
     let lastFetchId = 0;
 
@@ -303,7 +303,7 @@ export default {
       return { positions, centerX, centerY, width, height };
     };
 
-    const generateClusteredPositions = (state, containerSize) => {
+    const generateForceSeedPositions = (state, containerSize) => {
       const total = state.totalNodes;
       const positions = new Float32Array(total * 2);
       if (!total) return positions;
@@ -313,7 +313,7 @@ export default {
       const height = containerSize?.height ?? 600;
       const maxDimension = Math.max(width, height);
       const baseRadius = Math.min(
-        Math.max(220, Math.sqrt(total) * 75),
+        Math.max(220, Math.sqrt(total) * 80),
         maxDimension * 0.45,
       );
       const goldenAngle = Math.PI * (3 - Math.sqrt(5));
@@ -335,7 +335,7 @@ export default {
 
         const layout = computeComponentDirectionalLayout(component, state);
         const scale = Math.min(
-          1,
+          1.4,
           maxAllowedWidth / Math.max(layout.width, 1),
           maxAllowedHeight / Math.max(layout.height, 1),
         );
@@ -360,6 +360,112 @@ export default {
       return positions;
     };
 
+    const runStaticForceLayout = (state, containerSize) => {
+      const total = state.totalNodes;
+      if (!total) return new Float32Array(0);
+
+      const seeded = generateForceSeedPositions(state, containerSize);
+      const working = new Float32Array(seeded);
+      const dx = new Float32Array(total);
+      const dy = new Float32Array(total);
+
+      const width = containerSize?.width ?? 800;
+      const height = containerSize?.height ?? 600;
+      const area = Math.max(width * height, 1);
+      const k = Math.sqrt(area / Math.max(total, 1));
+      const iterations = Math.max(60, Math.min(200, total * 6));
+      let temperature = Math.min(width, height) * 0.25;
+
+      const attractiveEdges = state.edgeMeta ?? [];
+
+      for (let iter = 0; iter < iterations; iter += 1) {
+        dx.fill(0);
+        dy.fill(0);
+
+        for (let i = 0; i < total; i += 1) {
+          for (let j = i + 1; j < total; j += 1) {
+            const deltaX = working[i * 2] - working[j * 2];
+            const deltaY = working[i * 2 + 1] - working[j * 2 + 1];
+            const distance = Math.max(Math.hypot(deltaX, deltaY), 0.01);
+            const force = (k * k) / distance;
+            const fx = (deltaX / distance) * force;
+            const fy = (deltaY / distance) * force;
+
+            dx[i] += fx;
+            dy[i] += fy;
+            dx[j] -= fx;
+            dy[j] -= fy;
+          }
+        }
+
+        attractiveEdges.forEach((edge) => {
+          const source = edge.sourceIndex;
+          const target = edge.targetIndex;
+          if (
+            source === undefined ||
+            target === undefined ||
+            source === target
+          ) {
+            return;
+          }
+
+          const deltaX = working[source * 2] - working[target * 2];
+          const deltaY = working[source * 2 + 1] - working[target * 2 + 1];
+          const distance = Math.max(Math.hypot(deltaX, deltaY), 0.01);
+          const force = (distance * distance) / k;
+          const fx = (deltaX / distance) * force;
+          const fy = (deltaY / distance) * force;
+
+          dx[source] -= fx;
+          dy[source] -= fy;
+          dx[target] += fx;
+          dy[target] += fy;
+        });
+
+        for (let i = 0; i < total; i += 1) {
+          const disp = Math.hypot(dx[i], dy[i]);
+          if (!disp) continue;
+          const limited = Math.min(disp, temperature);
+          working[i * 2] += (dx[i] / disp) * limited;
+          working[i * 2 + 1] += (dy[i] / disp) * limited;
+        }
+
+        temperature *= 0.92;
+      }
+
+      let minX = Infinity;
+      let maxX = -Infinity;
+      let minY = Infinity;
+      let maxY = -Infinity;
+
+      for (let i = 0; i < total; i += 1) {
+        const x = working[i * 2];
+        const y = working[i * 2 + 1];
+        if (x < minX) minX = x;
+        if (x > maxX) maxX = x;
+        if (y < minY) minY = y;
+        if (y > maxY) maxY = y;
+      }
+
+      const layoutWidth = Math.max(maxX - minX, 1);
+      const layoutHeight = Math.max(maxY - minY, 1);
+      const centerX = (minX + maxX) / 2;
+      const centerY = (minY + maxY) / 2;
+      const marginRatio = 0.02;
+      const availableWidth = Math.max(width * (1 - marginRatio * 2), 200);
+      const availableHeight = Math.max(height * (1 - marginRatio * 2), 200);
+      const scaleX = availableWidth / layoutWidth;
+      const scaleY = availableHeight / layoutHeight;
+
+      const result = new Float32Array(total * 2);
+      for (let i = 0; i < total; i += 1) {
+        result[i * 2] = (working[i * 2] - centerX) * scaleX;
+        result[i * 2 + 1] = (working[i * 2 + 1] - centerY) * scaleY;
+      }
+
+      return result;
+    };
+
     const generateRandomPositions = (state, containerSize) => {
       const total = state.totalNodes;
       const positions = new Float32Array(total * 2);
@@ -381,9 +487,9 @@ export default {
       switch (mode) {
         case "random":
           return generateRandomPositions(state, containerSize);
-        case "clustered":
+        case "force":
         default:
-          return generateClusteredPositions(state, containerSize);
+          return runStaticForceLayout(state, containerSize);
       }
     };
 
@@ -409,7 +515,7 @@ export default {
       enableSimulation: false,
       enableZoom: true,
       enableDrag: true,
-      rescalePositions: true,
+      rescalePositions: false,
       fitViewOnInit: false,
       fitViewPadding: 0.2,
       hoveredPointCursor: "pointer",
@@ -441,6 +547,7 @@ export default {
       cosmosGraph.value.setLinks(state.links);
 
       cosmosGraph.value.render(0);
+      cosmosGraph.value.pause?.();
 
       nodeIndexMeta.value = state.nodeMeta;
       edgeIndexMeta.value = state.edgeMeta;
@@ -452,7 +559,11 @@ export default {
       emit("graphLoaded", currentGraphData.value);
 
       if (state.totalNodes) {
-        cosmosGraph.value.fitView(300, 0.18);
+        cosmosGraph.value.fitView(200, 0.06);
+      }
+
+      if (layoutMode.value !== "force") {
+        cosmosGraph.value?.pause?.();
       }
     };
 
@@ -476,7 +587,11 @@ export default {
       cosmosGraph.value.render(0);
 
       if (graphState.value.totalNodes) {
-        cosmosGraph.value.fitView(300, 0.18);
+        cosmosGraph.value.fitView(200, 0.06);
+      }
+
+      if (normalized !== "force") {
+        cosmosGraph.value?.pause?.();
       }
     };
 
@@ -503,8 +618,8 @@ export default {
       }
     };
 
-    const applyClusteredLayout = () => {
-      applyLayout("clustered");
+    const applyForceLayout = () => {
+      applyLayout("force");
     };
 
     const applyRandomLayout = () => {
@@ -554,7 +669,7 @@ export default {
     return {
       cosmosContainer,
       layoutMode,
-      applyClusteredLayout,
+      applyForceLayout,
       applyRandomLayout,
     };
   },

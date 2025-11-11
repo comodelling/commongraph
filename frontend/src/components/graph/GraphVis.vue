@@ -3,24 +3,10 @@
     <div ref="cosmosContainer" class="cosmos-container"></div>
     <div class="controls" v-if="showControls">
       <button
-        @click="toggleSimulation"
-        class="control-button"
-        :disabled="!enableSimulation"
-      >
-        <span v-if="!isSimulationRunning">Start Simulation</span>
-        <span v-else>Pause Simulation</span>
-      </button>
-      <button
         @click="applyClusteredLayout"
         :class="['control-button', { active: layoutMode === 'clustered' }]"
       >
         Clustered Layout
-      </button>
-      <button
-        @click="applyDirectionalLayout"
-        :class="['control-button', { active: layoutMode === 'directional' }]"
-      >
-        Directional Layout
       </button>
       <button
         @click="applyRandomLayout"
@@ -33,7 +19,7 @@
 </template>
 
 <script>
-import { nextTick, onBeforeUnmount, onMounted, ref, toRef, watch } from "vue";
+import { nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { Graph as CosmosGraph } from "@cosmos.gl/graph";
 import api from "../../api/axios";
 
@@ -44,6 +30,11 @@ const getCssVariable = (name, fallback) => {
   if (typeof window === "undefined") return fallback;
   const value = getComputedStyle(document.body).getPropertyValue(name).trim();
   return value || fallback;
+};
+
+const deterministicNoise = (index, axis = 0) => {
+  const seed = Math.sin(index * 12.9898 + axis * 78.233) * 43758.5453;
+  return seed - Math.floor(seed);
 };
 
 export default {
@@ -61,14 +52,6 @@ export default {
       type: Boolean,
       default: false,
     },
-    autoStartForceAtlas: {
-      type: Boolean,
-      default: false,
-    },
-    enableSimulation: {
-      type: Boolean,
-      default: true,
-    },
     height: {
       type: String,
       default: "400px",
@@ -76,35 +59,21 @@ export default {
     initialLayout: {
       type: String,
       default: "clustered",
-      validator: (value) =>
-        ["clustered", "directional", "random"].includes(value),
+      validator: (value) => ["clustered", "random"].includes(value),
     },
   },
   emits: ["nodeClick", "edgeClick", "graphLoaded"],
   setup(props, { emit }) {
     const cosmosContainer = ref(null);
     const cosmosGraph = ref(null);
-    const isSimulationRunning = ref(false);
     const nodeIndexMeta = ref([]);
     const edgeIndexMeta = ref([]);
     const currentGraphData = ref({ nodes: [], edges: [] });
     const graphState = ref(null);
     const normalizeLayout = (layout) =>
-      ["clustered", "directional", "random"].includes(layout)
-        ? layout
-        : "clustered";
+      ["clustered", "random"].includes(layout) ? layout : "clustered";
     const layoutMode = ref(normalizeLayout(props.initialLayout));
-    const enableSimulationRef = toRef(props, "enableSimulation");
     let lastFetchId = 0;
-
-    const updateSimulationState = () => {
-      if (!props.enableSimulation) {
-        isSimulationRunning.value = false;
-        return;
-      }
-      isSimulationRunning.value =
-        cosmosGraph.value?.isSimulationRunning ?? false;
-    };
 
     const destroyGraph = () => {
       cosmosGraph.value?.destroy();
@@ -113,7 +82,6 @@ export default {
       edgeIndexMeta.value = [];
       currentGraphData.value = { nodes: [], edges: [] };
       graphState.value = null;
-      updateSimulationState();
     };
 
     const fetchGraphData = async () => {
@@ -231,6 +199,110 @@ export default {
       return components;
     };
 
+    // Lay out nodes inside a connected component left-to-right, similar to the dagre setup in FlowEditor.
+    const computeComponentDirectionalLayout = (component, state) => {
+      const nodesInComponent = new Set(component);
+      const inDegree = new Map();
+
+      component.forEach((nodeIndex) => {
+        inDegree.set(nodeIndex, 0);
+      });
+
+      component.forEach((nodeIndex) => {
+        const outgoing = state.adjacency.out.get(nodeIndex);
+        if (!outgoing) return;
+        outgoing.forEach((target) => {
+          if (!nodesInComponent.has(target)) return;
+          inDegree.set(target, (inDegree.get(target) ?? 0) + 1);
+        });
+      });
+
+      const queue = [];
+      component.forEach((nodeIndex) => {
+        if ((inDegree.get(nodeIndex) ?? 0) === 0) {
+          queue.push(nodeIndex);
+        }
+      });
+
+      const visitOrder = [];
+      const levelMap = new Map();
+
+      while (queue.length) {
+        const nodeIndex = queue.shift();
+        visitOrder.push(nodeIndex);
+        const level = levelMap.get(nodeIndex) ?? 0;
+
+        const outgoing = state.adjacency.out.get(nodeIndex);
+        if (!outgoing) continue;
+        outgoing.forEach((target) => {
+          if (!nodesInComponent.has(target)) return;
+          const nextLevel = Math.max(level + 1, levelMap.get(target) ?? 0);
+          levelMap.set(target, nextLevel);
+          const remaining = (inDegree.get(target) ?? 0) - 1;
+          inDegree.set(target, remaining);
+          if (remaining === 0) {
+            queue.push(target);
+          }
+        });
+      }
+
+      if (visitOrder.length < component.length) {
+        let fallbackLevel = Math.max(0, ...Array.from(levelMap.values()));
+        component.forEach((nodeIndex) => {
+          if (!levelMap.has(nodeIndex)) {
+            fallbackLevel += 1;
+            levelMap.set(nodeIndex, fallbackLevel);
+          }
+        });
+      }
+
+      const bucketMap = new Map();
+      component.forEach((nodeIndex) => {
+        const level = levelMap.get(nodeIndex) ?? 0;
+        const bucket = bucketMap.get(level);
+        if (bucket) bucket.push(nodeIndex);
+        else bucketMap.set(level, [nodeIndex]);
+      });
+
+      const sortedLevels = Array.from(bucketMap.keys()).sort((a, b) => a - b);
+      const levelSpacing = Math.max(220, Math.sqrt(component.length) * 110);
+      const positions = new Map();
+
+      sortedLevels.forEach((levelValue, order) => {
+        const nodesAtLevel = bucketMap.get(levelValue) ?? [];
+        const verticalSpacing = Math.max(
+          120,
+          Math.sqrt(nodesAtLevel.length) * 90,
+        );
+        const offset = (nodesAtLevel.length - 1) / 2;
+
+        nodesAtLevel.forEach((nodeIndex, index) => {
+          const x = order * levelSpacing;
+          const y = (index - offset) * verticalSpacing;
+          positions.set(nodeIndex, { x, y });
+        });
+      });
+
+      let minX = Infinity;
+      let maxX = -Infinity;
+      let minY = Infinity;
+      let maxY = -Infinity;
+
+      positions.forEach((pos) => {
+        if (pos.x < minX) minX = pos.x;
+        if (pos.x > maxX) maxX = pos.x;
+        if (pos.y < minY) minY = pos.y;
+        if (pos.y > maxY) maxY = pos.y;
+      });
+
+      const centerX = (minX + maxX) / 2;
+      const centerY = (minY + maxY) / 2;
+      const width = Math.max(maxX - minX, 1);
+      const height = Math.max(maxY - minY, 1);
+
+      return { positions, centerX, centerY, width, height };
+    };
+
     const generateClusteredPositions = (state, containerSize) => {
       const total = state.totalNodes;
       const positions = new Float32Array(total * 2);
@@ -245,117 +317,43 @@ export default {
         maxDimension * 0.45,
       );
       const goldenAngle = Math.PI * (3 - Math.sqrt(5));
+      const maxAllowedWidth = maxDimension * 0.75;
+      const maxAllowedHeight = maxDimension * 0.65;
 
       components.forEach((component, componentIndex) => {
         const spiralRadius = baseRadius * Math.sqrt(componentIndex + 0.75);
         const angle = componentIndex * goldenAngle;
         const cx = Math.cos(angle) * spiralRadius;
         const cy = Math.sin(angle) * spiralRadius;
-        const localCount = component.length;
-        const localRadius =
-          localCount <= 1
-            ? 0
-            : Math.min(
-                Math.max(120, Math.sqrt(localCount) * 50),
-                maxDimension * 0.3,
-              );
 
-        component.forEach((nodeIndex, localIndex) => {
-          if (localCount <= 1) {
-            positions[nodeIndex * 2] = cx;
-            positions[nodeIndex * 2 + 1] = cy;
-            return;
-          }
-
-          const theta = (2 * Math.PI * localIndex) / localCount;
-          const jitter =
-            (Math.random() - 0.5) * Math.min(18, localRadius * 0.1);
-          positions[nodeIndex * 2] =
-            cx + Math.cos(theta) * localRadius + jitter;
-          positions[nodeIndex * 2 + 1] =
-            cy + Math.sin(theta) * localRadius + jitter;
-        });
-      });
-
-      return positions;
-    };
-
-    const generateDirectionalPositions = (state) => {
-      const total = state.totalNodes;
-      const positions = new Float32Array(total * 2);
-      if (!total) return positions;
-
-      const outMap = state.adjacency.out;
-      const inDegree = new Array(total).fill(0);
-
-      state.edgeMeta.forEach((edge) => {
-        inDegree[edge.targetIndex] += 1;
-      });
-
-      const remainingInDegree = [...inDegree];
-      const queue = [];
-      const levels = new Array(total).fill(0);
-      const visitOrder = [];
-
-      for (let i = 0; i < total; i += 1) {
-        if (remainingInDegree[i] === 0) {
-          queue.push(i);
+        if (component.length === 1) {
+          const nodeIndex = component[0];
+          positions[nodeIndex * 2] = cx;
+          positions[nodeIndex * 2 + 1] = cy;
+          return;
         }
-      }
 
-      while (queue.length) {
-        const nodeIndex = queue.shift();
-        visitOrder.push(nodeIndex);
-        const neighbors = outMap.get(nodeIndex);
-        if (!neighbors || neighbors.size === 0) continue;
+        const layout = computeComponentDirectionalLayout(component, state);
+        const scale = Math.min(
+          1,
+          maxAllowedWidth / Math.max(layout.width, 1),
+          maxAllowedHeight / Math.max(layout.height, 1),
+        );
 
-        neighbors.forEach((neighbor) => {
-          if (levels[neighbor] < levels[nodeIndex] + 1) {
-            levels[neighbor] = levels[nodeIndex] + 1;
-          }
-          remainingInDegree[neighbor] -= 1;
-          if (remainingInDegree[neighbor] === 0) {
-            queue.push(neighbor);
-          }
-        });
-      }
-
-      const visitedSet = new Set(visitOrder);
-      let fallbackLevel = Math.max(...levels);
-      if (!Number.isFinite(fallbackLevel)) fallbackLevel = 0;
-
-      for (let i = 0; i < total; i += 1) {
-        if (visitedSet.has(i)) continue;
-        fallbackLevel += 1;
-        levels[i] = fallbackLevel;
-      }
-
-      const layerBuckets = new Map();
-      for (let i = 0; i < total; i += 1) {
-        const level = levels[i];
-        const bucket = layerBuckets.get(level);
-        if (bucket) bucket.push(i);
-        else layerBuckets.set(level, [i]);
-      }
-
-      const sortedLevels = Array.from(layerBuckets.keys()).sort(
-        (a, b) => a - b,
-      );
-      const maxLevel = sortedLevels[sortedLevels.length - 1] ?? 0;
-      const layerSpacing = Math.max(240, Math.sqrt(total) * 90);
-
-      sortedLevels.forEach((level) => {
-        const nodesInLevel = layerBuckets.get(level) ?? [];
-        if (!nodesInLevel.length) return;
-
-        const nodeSpacing = Math.max(160, Math.sqrt(nodesInLevel.length) * 100);
-        const offset = (nodesInLevel.length - 1) / 2;
-
-        nodesInLevel.forEach((nodeIndex, index) => {
-          const x = (level - maxLevel / 2) * layerSpacing;
-          const y = (index - offset) * nodeSpacing;
-          positions[nodeIndex * 2] = x;
-          positions[nodeIndex * 2 + 1] = y;
+        layout.positions.forEach((pos, nodeIndex) => {
+          const jitterStrength = 18;
+          const jitterX =
+            (deterministicNoise(nodeIndex, componentIndex) - 0.5) *
+            2 *
+            jitterStrength;
+          const jitterY =
+            (deterministicNoise(nodeIndex, componentIndex + 1) - 0.5) *
+            2 *
+            jitterStrength;
+          positions[nodeIndex * 2] =
+            cx + (pos.x - layout.centerX) * scale + jitterX;
+          positions[nodeIndex * 2 + 1] =
+            cy + (pos.y - layout.centerY) * scale + jitterY;
         });
       });
 
@@ -381,8 +379,6 @@ export default {
     const computePositions = (state, mode, containerSize) => {
       if (!state) return new Float32Array(0);
       switch (mode) {
-        case "directional":
-          return generateDirectionalPositions(state);
         case "random":
           return generateRandomPositions(state, containerSize);
         case "clustered":
@@ -410,7 +406,7 @@ export default {
       linkColor: getCssVariable("--border-color", DEFAULT_LINK_COLOR),
       linkWidth: 1.5,
       curvedLinks: true,
-      enableSimulation: props.enableSimulation,
+      enableSimulation: false,
       enableZoom: true,
       enableDrag: true,
       rescalePositions: true,
@@ -422,10 +418,6 @@ export default {
       linkArrows: true,
       onPointClick: handlePointClick,
       onLinkClick: handleLinkClick,
-      onSimulationStart: updateSimulationState,
-      onSimulationPause: updateSimulationState,
-      onSimulationUnpause: updateSimulationState,
-      onSimulationEnd: updateSimulationState,
     });
 
     const applyGraphData = (rawData, { respectSimulationState } = {}) => {
@@ -448,15 +440,7 @@ export default {
       cosmosGraph.value.setPointPositions(positions, true);
       cosmosGraph.value.setLinks(state.links);
 
-      const shouldResume =
-        props.enableSimulation &&
-        (respectSimulationState
-          ? cosmosGraph.value.isSimulationRunning
-          : !!props.autoStartForceAtlas);
-
       cosmosGraph.value.render(0);
-      if (shouldResume) cosmosGraph.value.start(1);
-      else cosmosGraph.value.pause();
 
       nodeIndexMeta.value = state.nodeMeta;
       edgeIndexMeta.value = state.edgeMeta;
@@ -466,7 +450,6 @@ export default {
       };
 
       emit("graphLoaded", currentGraphData.value);
-      updateSimulationState();
 
       if (state.totalNodes) {
         cosmosGraph.value.fitView(300, 0.18);
@@ -477,13 +460,6 @@ export default {
       const normalized = normalizeLayout(mode);
       layoutMode.value = normalized;
       if (!cosmosGraph.value || !graphState.value) return;
-
-      const wasRunning = props.enableSimulation
-        ? (cosmosGraph.value.isSimulationRunning ?? false)
-        : false;
-      if (props.enableSimulation) {
-        cosmosGraph.value.pause();
-      }
 
       const containerSize = {
         width: cosmosContainer.value?.clientWidth ?? 800,
@@ -502,12 +478,6 @@ export default {
       if (graphState.value.totalNodes) {
         cosmosGraph.value.fitView(300, 0.18);
       }
-
-      if (props.enableSimulation && wasRunning) {
-        cosmosGraph.value.start(1);
-      }
-
-      updateSimulationState();
     };
 
     const initializeGraph = async () => {
@@ -533,31 +503,8 @@ export default {
       }
     };
 
-    const pauseSimulation = () => {
-      if (!props.enableSimulation) return;
-      cosmosGraph.value?.pause();
-      updateSimulationState();
-    };
-
-    const startSimulation = () => {
-      if (!props.enableSimulation) return;
-      cosmosGraph.value?.start(1);
-      updateSimulationState();
-    };
-
-    const toggleSimulation = () => {
-      if (!props.enableSimulation) return;
-      const running = cosmosGraph.value?.isSimulationRunning ?? false;
-      if (running) pauseSimulation();
-      else startSimulation();
-    };
-
     const applyClusteredLayout = () => {
       applyLayout("clustered");
-    };
-
-    const applyDirectionalLayout = () => {
-      applyLayout("directional");
     };
 
     const applyRandomLayout = () => {
@@ -585,15 +532,6 @@ export default {
     );
 
     watch(
-      () => props.autoStartForceAtlas,
-      (auto) => {
-        if (!props.enableSimulation || !cosmosGraph.value) return;
-        if (auto) startSimulation();
-        else pauseSimulation();
-      },
-    );
-
-    watch(
       () => props.initialLayout,
       (layout) => {
         const normalized = normalizeLayout(layout);
@@ -615,13 +553,9 @@ export default {
 
     return {
       cosmosContainer,
-      isSimulationRunning,
       layoutMode,
-      toggleSimulation,
       applyClusteredLayout,
-      applyDirectionalLayout,
       applyRandomLayout,
-      enableSimulation: enableSimulationRef,
     };
   },
 };
@@ -691,11 +625,6 @@ export default {
 .control-button.active {
   font-weight: 600;
   border-color: var(--text-color);
-}
-
-.control-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 
 :global(body.dark) .control-button {

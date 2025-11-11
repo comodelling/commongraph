@@ -21,6 +21,12 @@
         {{ hoveredNodeSummary }}
       </div>
     </div>
+    <div v-if="hoveredEdge" class="edge-tooltip" :style="hoveredEdgeStyle">
+      <div class="edge-tooltip-title">{{ hoveredEdgeLabel }}</div>
+      <div v-if="hoveredEdgeSummary" class="edge-tooltip-meta">
+        {{ hoveredEdgeSummary }}
+      </div>
+    </div>
   </div>
 </template>
 
@@ -102,6 +108,8 @@ export default {
     const graphState = ref(null);
     const selectionSource = ref(null);
     const hoveredNode = ref(null);
+    const hoveredEdge = ref(null);
+    const latestPointPositions = ref(new Float32Array(0));
     const normalizeLayout = (layout) =>
       ["force", "random"].includes(layout) ? layout : "force";
     const getStoredDirection = () => {
@@ -126,6 +134,99 @@ export default {
       }
     };
 
+    const getSpacePositionForIndex = (index) => {
+      if (typeof index !== "number" || index < 0) return null;
+      const positions = latestPointPositions.value;
+      if (!positions || positions.length < (index + 1) * 2) return null;
+      return [positions[index * 2], positions[index * 2 + 1]];
+    };
+
+    const convertSpaceToScreen = (spacePosition) => {
+      if (!cosmosGraph.value || !spacePosition) return null;
+      const projector = cosmosGraph.value.spaceToScreenPosition;
+      if (typeof projector !== "function") return null;
+      try {
+        const result = projector(spacePosition);
+        if (Array.isArray(result) && result.length >= 2) {
+          return result;
+        }
+        if (
+          typeof result?.length === "number" &&
+          result.length >= 2 &&
+          typeof result[0] === "number"
+        ) {
+          return [result[0], result[1]];
+        }
+      } catch (error) {
+        return null;
+      }
+      return null;
+    };
+
+    const mapScreenToContainer = (screenPosition) => {
+      if (!screenPosition || !cosmosContainer.value) return null;
+      const rect = cosmosContainer.value.getBoundingClientRect();
+      if (!rect.width || !rect.height) return null;
+      const canvas = cosmosContainer.value.querySelector("canvas");
+      const canvasWidth = canvas?.width ?? rect.width;
+      const canvasHeight = canvas?.height ?? rect.height;
+      const ratioX = canvasWidth / rect.width;
+      const ratioY = canvasHeight / rect.height;
+
+      const [screenX, screenY] = screenPosition;
+
+      const adjustedX = rect.width / 2 + screenX / ratioX;
+      const adjustedY = rect.height / 2 - screenY / ratioY;
+
+      return {
+        x: adjustedX,
+        y: adjustedY,
+      };
+    };
+
+    const computeScreenCoordsForIndex = (index, pointPosition) => {
+      if (!cosmosGraph.value || !cosmosContainer.value) return null;
+
+      let spacePosition = null;
+      if (
+        pointPosition &&
+        typeof pointPosition.length === "number" &&
+        pointPosition.length >= 2
+      ) {
+        spacePosition = [pointPosition[0], pointPosition[1]];
+      }
+
+      if (!spacePosition) {
+        spacePosition = getSpacePositionForIndex(index);
+      }
+
+      if (!spacePosition && cosmosGraph.value?.getPointPositions) {
+        try {
+          const currentPositions = cosmosGraph.value.getPointPositions();
+          if (currentPositions && currentPositions.length >= (index + 1) * 2) {
+            latestPointPositions.value = new Float32Array(currentPositions);
+            spacePosition = [
+              currentPositions[index * 2],
+              currentPositions[index * 2 + 1],
+            ];
+          }
+        } catch (error) {
+          spacePosition = null;
+        }
+      }
+
+      if (!spacePosition) return null;
+
+      const screenPosition = convertSpaceToScreen(spacePosition);
+      return mapScreenToContainer(screenPosition);
+    };
+
+    const resolveNodeTitle = (meta) => {
+      if (!meta) return "";
+      const data = meta.data ?? {};
+      return data.title ?? data.label ?? data.name ?? meta.id ?? "";
+    };
+
     const destroyGraph = () => {
       clearNodeHover();
       clearLinkHighlight();
@@ -135,6 +236,7 @@ export default {
       edgeIndexMeta.value = [];
       currentGraphData.value = { nodes: [], edges: [] };
       graphState.value = null;
+      latestPointPositions.value = new Float32Array(0);
     };
 
     const fetchGraphData = async () => {
@@ -648,6 +750,7 @@ export default {
     };
 
     const clearLinkHighlight = () => {
+      hoveredEdge.value = null;
       if (selectionSource.value === "link") {
         cosmosGraph.value?.unselectPoints();
         selectionSource.value = null;
@@ -658,6 +761,58 @@ export default {
       const edgeMeta = edgeIndexMeta.value[index];
       if (!edgeMeta) return;
       highlightLinkNodes(edgeMeta);
+
+      const sourceSpace = getSpacePositionForIndex(edgeMeta.sourceIndex);
+      const targetSpace = getSpacePositionForIndex(edgeMeta.targetIndex);
+
+      let midpointScreen = null;
+      if (sourceSpace && targetSpace) {
+        const midpointSpace = [
+          (sourceSpace[0] + targetSpace[0]) / 2,
+          (sourceSpace[1] + targetSpace[1]) / 2,
+        ];
+        midpointScreen = mapScreenToContainer(
+          convertSpaceToScreen(midpointSpace),
+        );
+      }
+
+      let sourceScreen = null;
+      if (!midpointScreen) {
+        sourceScreen = computeScreenCoordsForIndex(edgeMeta.sourceIndex);
+      }
+      let targetScreen = null;
+      if (!midpointScreen) {
+        targetScreen = computeScreenCoordsForIndex(edgeMeta.targetIndex);
+      }
+
+      let position = midpointScreen;
+      if (!position && sourceScreen && targetScreen) {
+        position = {
+          x: (sourceScreen.x + targetScreen.x) / 2,
+          y: (sourceScreen.y + targetScreen.y) / 2,
+        };
+      }
+
+      if (!position) {
+        position = sourceScreen || targetScreen || null;
+      }
+
+      if (!position && cosmosContainer.value) {
+        position = {
+          x: cosmosContainer.value.clientWidth / 2,
+          y: cosmosContainer.value.clientHeight / 2,
+        };
+      }
+
+      hoveredEdge.value = {
+        index,
+        id: edgeMeta.id,
+        data: edgeMeta.data ?? {},
+        sourceIndex: edgeMeta.sourceIndex,
+        targetIndex: edgeMeta.targetIndex,
+        screenX: position?.x ?? 0,
+        screenY: position?.y ?? 0,
+      };
     };
 
     const handleLinkMouseOut = () => {
@@ -674,53 +829,28 @@ export default {
       }
     };
 
-    const handlePointMouseOver = (index, pointPosition) => {
+    const handlePointMouseOver = (index, pointPosition, event) => {
       const meta = nodeIndexMeta.value[index];
       if (!meta || !cosmosGraph.value || !cosmosContainer.value) return;
 
-      let screenPosition = null;
-      try {
-        if (pointPosition) {
-          screenPosition =
-            cosmosGraph.value.spaceToScreenPosition(pointPosition);
-        }
-      } catch (error) {
-        screenPosition = null;
+      hoveredEdge.value = null;
+
+      let containerCoords = null;
+      if (event?.clientX !== undefined && event?.clientY !== undefined) {
+        const rect = cosmosContainer.value.getBoundingClientRect();
+        containerCoords = {
+          x: event.clientX - rect.left,
+          y: event.clientY - rect.top,
+        };
       }
 
-      if (!screenPosition) {
-        try {
-          const positions = cosmosGraph.value.getPointPositions?.();
-          if (positions && positions.length >= (index + 1) * 2) {
-            const spacePosition = [
-              positions[index * 2],
-              positions[index * 2 + 1],
-            ];
-            screenPosition =
-              cosmosGraph.value.spaceToScreenPosition(spacePosition);
-          }
-        } catch (error) {
-          screenPosition = null;
-        }
+      if (!containerCoords) {
+        containerCoords = computeScreenCoordsForIndex(index, pointPosition);
       }
 
-      if (!screenPosition) {
+      if (!containerCoords) {
         return;
       }
-
-      const containerRect = cosmosContainer.value.getBoundingClientRect();
-      const [screenX, screenY] = screenPosition;
-      const withinContainer =
-        screenX >= -4 &&
-        screenX <= (containerRect?.width ?? 0) + 4 &&
-        screenY >= -4 &&
-        screenY <= (containerRect?.height ?? 0) + 4;
-      const relativeX = withinContainer
-        ? screenX
-        : screenX - (containerRect?.left ?? 0);
-      const relativeY = withinContainer
-        ? screenY
-        : screenY - (containerRect?.top ?? 0);
 
       cosmosGraph.value.selectPointsByIndices([index]);
       selectionSource.value = "node";
@@ -729,8 +859,8 @@ export default {
         index,
         id: meta.id,
         data: meta.data ?? {},
-        screenX: relativeX,
-        screenY: relativeY,
+        screenX: containerCoords.x,
+        screenY: containerCoords.y,
       };
     };
 
@@ -817,6 +947,8 @@ export default {
         containerSize,
       );
 
+      latestPointPositions.value = new Float32Array(positions);
+
       cosmosGraph.value.setPointPositions(positions, true);
       cosmosGraph.value.setLinks(state.links);
 
@@ -859,6 +991,8 @@ export default {
         normalized,
         containerSize,
       );
+
+      latestPointPositions.value = new Float32Array(positions);
 
       cosmosGraph.value.setPointPositions(positions, true);
       cosmosGraph.value.render(0);
@@ -983,6 +1117,43 @@ export default {
       return summary;
     });
 
+    const hoveredEdgeLabel = computed(() => {
+      if (!hoveredEdge.value) return "";
+      const data = hoveredEdge.value.data ?? {};
+      return data.title ?? data.edge_type ?? data.type ?? "Implication";
+    });
+
+    const hoveredEdgeSummary = computed(() => {
+      const edge = hoveredEdge.value;
+      if (!edge) return "";
+
+      const sourceMeta =
+        typeof edge.sourceIndex === "number"
+          ? nodeIndexMeta.value[edge.sourceIndex]
+          : null;
+      const targetMeta =
+        typeof edge.targetIndex === "number"
+          ? nodeIndexMeta.value[edge.targetIndex]
+          : null;
+
+      const sourceTitle = resolveNodeTitle(sourceMeta) || "Source";
+      const targetTitle = resolveNodeTitle(targetMeta) || "Target";
+
+      return `${sourceTitle} → ${targetTitle}`;
+    });
+
+    const hoveredEdgeStyle = computed(() => {
+      if (!hoveredEdge.value) return {};
+      const offsetX = 12;
+      const offsetY = -12;
+      const top = Math.max(hoveredEdge.value.screenY + offsetY, 0);
+      const left = Math.max(hoveredEdge.value.screenX + offsetX, 0);
+      return {
+        top: `${top}px`,
+        left: `${left}px`,
+      };
+    });
+
     return {
       cosmosContainer,
       layoutMode,
@@ -992,6 +1163,10 @@ export default {
       hoveredNodeTitle,
       hoveredNodeStyle,
       hoveredNodeSummary,
+      hoveredEdge,
+      hoveredEdgeLabel,
+      hoveredEdgeSummary,
+      hoveredEdgeStyle,
     };
   },
 };
@@ -1099,6 +1274,36 @@ export default {
 
 :global(body.dark) .node-tooltip {
   background-color: rgba(20, 20, 20, 0.92);
+  color: #f5f5f5;
+}
+
+.edge-tooltip {
+  position: absolute;
+  pointer-events: none;
+  max-width: 260px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background-color: rgba(40, 40, 40, 0.82);
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  font-size: 12px;
+  line-height: 1.4;
+  z-index: 12;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.edge-tooltip-title {
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.edge-tooltip-meta {
+  opacity: 0.88;
+}
+
+:global(body.dark) .edge-tooltip {
+  background-color: rgba(26, 26, 26, 0.92);
+  border-color: rgba(255, 255, 255, 0.2);
   color: #f5f5f5;
 }
 </style>

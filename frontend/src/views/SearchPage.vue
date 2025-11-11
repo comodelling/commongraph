@@ -33,7 +33,6 @@
             :graph-data="subgraphData"
             :height="'300px'"
             :show-controls="true"
-            :auto-start-force-atlas="true"
             @node-click="handleNodeClick"
             @edge-click="handleEdgeClick"
             @graph-loaded="handleGraphLoaded"

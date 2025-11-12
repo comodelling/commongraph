@@ -5,6 +5,7 @@
       <CosmosGraphVis
         :height="'100%'"
         :show-controls="false"
+        opacity-mode="uniform"
         @node-click="handleNodeClick"
         @edge-click="handleEdgeClick"
         @graph-loaded="handleGraphLoaded"

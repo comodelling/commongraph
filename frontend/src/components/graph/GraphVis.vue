@@ -57,6 +57,83 @@ const deterministicNoise = (index, axis = 0) => {
   return seed - Math.floor(seed);
 };
 
+const hexToRgba = (hex, alpha = 1) => {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  if (!result) return [0.4, 0.4, 0.4, alpha]; // Fallback gray
+  const r = parseInt(result[1], 16) / 255;
+  const g = parseInt(result[2], 16) / 255;
+  const b = parseInt(result[3], 16) / 255;
+  return [r, g, b, alpha];
+};
+
+const computePointColorsBuffer = (
+  nodeMeta,
+  defaultColor,
+  opacityForSearchResult = 1.0,
+  opacityForOther = 0.4,
+) => {
+  const totalNodes = nodeMeta.length;
+  const colors = new Float32Array(totalNodes * 4);
+  const [r, g, b] = hexToRgba(defaultColor);
+
+  nodeMeta.forEach((meta, index) => {
+    const isSearchResult = meta.data?.isSearchResult ?? false;
+    const alpha = isSearchResult ? opacityForSearchResult : opacityForOther;
+    colors[index * 4] = r;
+    colors[index * 4 + 1] = g;
+    colors[index * 4 + 2] = b;
+    colors[index * 4 + 3] = alpha;
+  });
+
+  return colors;
+};
+
+const computeLinkColorsBuffer = (
+  edgeMeta,
+  nodeMeta,
+  defaultColor,
+  opacityForSearchResult = 1.0,
+  opacityForOther = 0.4,
+) => {
+  const totalEdges = edgeMeta.length;
+  const colors = new Float32Array(totalEdges * 4);
+  const [r, g, b] = hexToRgba(defaultColor);
+
+  edgeMeta.forEach((edgeMeta, index) => {
+    // An edge is considered part of search results if both endpoints are search results
+    const sourceNode = nodeMeta[edgeMeta.sourceIndex];
+    const targetNode = nodeMeta[edgeMeta.targetIndex];
+    const sourceIsSearchResult = sourceNode?.data?.isSearchResult ?? false;
+    const targetIsSearchResult = targetNode?.data?.isSearchResult ?? false;
+    const isSearchResult = sourceIsSearchResult && targetIsSearchResult;
+    const alpha = isSearchResult ? opacityForSearchResult : opacityForOther;
+
+    colors[index * 4] = r;
+    colors[index * 4 + 1] = g;
+    colors[index * 4 + 2] = b;
+    colors[index * 4 + 3] = alpha;
+  });
+
+  return colors;
+};
+
+const computePointSizesBuffer = (
+  nodeMeta,
+  baseSize = 8,
+  searchResultSize = 9,
+  otherSize = 8,
+) => {
+  const totalNodes = nodeMeta.length;
+  const sizes = new Float32Array(totalNodes);
+
+  nodeMeta.forEach((meta, index) => {
+    const isSearchResult = meta.data?.isSearchResult ?? false;
+    sizes[index] = isSearchResult ? searchResultSize : otherSize;
+  });
+
+  return sizes;
+};
+
 export default {
   name: "CosmosGraphVis",
   props: {
@@ -97,6 +174,11 @@ export default {
       type: String,
       default: "LR",
       validator: (value) => ["LR", "RL", "TB", "BT", "NONE"].includes(value),
+    },
+    opacityMode: {
+      type: String,
+      default: "filter",
+      validator: (value) => ["filter", "uniform"].includes(value),
     },
   },
   emits: ["nodeClick", "edgeClick", "graphLoaded"],
@@ -809,6 +891,34 @@ export default {
       cosmosGraph.value.setPointPositions(positions, true);
       cosmosGraph.value.setLinks(state.links);
 
+      // Determine opacity settings based on opacityMode
+      const opacitySettings =
+        props.opacityMode === "uniform"
+          ? { searchResultOpacity: 1.0, otherOpacity: 1.0 }
+          : { searchResultOpacity: 1.0, otherOpacity: 0.4 };
+
+      // Apply per-node and per-edge colors based on search result status
+      const pointColors = computePointColorsBuffer(
+        state.nodeMeta,
+        DEFAULT_NODE_COLOR,
+        opacitySettings.searchResultOpacity,
+        opacitySettings.otherOpacity,
+      );
+      cosmosGraph.value.setPointColors(pointColors);
+
+      // Apply per-node sizes
+      const pointSizes = computePointSizesBuffer(state.nodeMeta);
+      cosmosGraph.value.setPointSizes(pointSizes);
+
+      const linkColors = computeLinkColorsBuffer(
+        state.edgeMeta,
+        state.nodeMeta,
+        DEFAULT_LINK_COLOR,
+        opacitySettings.searchResultOpacity,
+        opacitySettings.otherOpacity,
+      );
+      cosmosGraph.value.setLinkColors(linkColors);
+
       cosmosGraph.value.render(0);
 
       nodeIndexMeta.value = state.nodeMeta;
@@ -852,6 +962,35 @@ export default {
       latestPointPositions.value = new Float32Array(positions);
 
       cosmosGraph.value.setPointPositions(positions, true);
+
+      // Determine opacity settings based on opacityMode
+      const opacitySettings =
+        props.opacityMode === "uniform"
+          ? { searchResultOpacity: 1.0, otherOpacity: 1.0 }
+          : { searchResultOpacity: 1.0, otherOpacity: 0.4 };
+
+      // Reapply colors when layout changes
+      const pointColors = computePointColorsBuffer(
+        nodeIndexMeta.value,
+        DEFAULT_NODE_COLOR,
+        opacitySettings.searchResultOpacity,
+        opacitySettings.otherOpacity,
+      );
+      cosmosGraph.value.setPointColors(pointColors);
+
+      // Reapply point sizes
+      const pointSizes = computePointSizesBuffer(nodeIndexMeta.value);
+      cosmosGraph.value.setPointSizes(pointSizes);
+
+      const linkColors = computeLinkColorsBuffer(
+        edgeIndexMeta.value,
+        nodeIndexMeta.value,
+        DEFAULT_LINK_COLOR,
+        opacitySettings.searchResultOpacity,
+        opacitySettings.otherOpacity,
+      );
+      cosmosGraph.value.setLinkColors(linkColors);
+
       cosmosGraph.value.render(0);
 
       if (graphState.value.totalNodes) {

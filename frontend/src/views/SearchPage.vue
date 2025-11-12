@@ -71,7 +71,8 @@ export default {
     return {
       title: "",
       nodes: [],
-      relationships: [], // Add relationships data
+      relationships: [], // Edges from the subgraph
+      subgraphNodes: [], // All nodes from subgraph (search results + connected nodes)
     };
   },
   computed: {
@@ -90,22 +91,36 @@ export default {
         return { nodes: [], edges: [] };
       }
 
-      // Transform search result nodes into graph format
-      const graphNodes = this.nodes.map((node) => ({
+      // If we have subgraph nodes from the API, use those (they include search results + connected nodes)
+      // Otherwise, just use the search results
+      let nodesToUse = this.nodes;
+      if (this.subgraphNodes.length > 0) {
+        nodesToUse = this.subgraphNodes;
+      }
+
+      // Create a Set of search result node IDs for marking
+      const searchResultIds = new Set(this.nodes.map((n) => n.node_id));
+
+      // Transform all nodes into graph format
+      const graphNodes = nodesToUse.map((node) => ({
         node_id: node.node_id,
         id: node.node_id,
-        title: node.title,
-        label: node.title,
-        node_type: node.node_type,
-        scope: node.scope,
+        title: node.title || `Node ${node.node_id}`,
+        label: node.title || `Node ${node.node_id}`,
+        node_type: node.node_type || "unknown",
+        scope: node.scope || "",
+        isSearchResult: searchResultIds.has(node.node_id),
       }));
 
       // Use actual relationships/edges from the API
       const graphEdges = this.relationships.map((rel) => ({
+        source: rel.source,
+        target: rel.target,
         source_id: rel.source,
         target_id: rel.target,
-        edge_type: rel.edge_type || rel.relationship_type || rel.type,
-        type: rel.edge_type || rel.relationship_type || rel.type,
+        edge_type:
+          rel.edge_type || rel.relationship_type || rel.type || "unknown",
+        type: rel.edge_type || rel.relationship_type || rel.type || "unknown",
       }));
 
       const result = {
@@ -113,8 +128,37 @@ export default {
         edges: graphEdges,
       };
 
-      // console.log("subgraphData computed:", result);
-      console.log("Raw relationships:", this.relationships);
+      console.log(
+        "subgraphData:",
+        result.nodes.length,
+        "nodes,",
+        result.edges.length,
+        "edges",
+      );
+      console.log(
+        "Search results:",
+        this.nodes.length,
+        "Subgraph nodes:",
+        this.subgraphNodes.length,
+      );
+      if (result.nodes.length > 0) {
+        console.log("Sample node:", JSON.stringify(result.nodes[0]));
+        console.log(
+          "All node IDs:",
+          result.nodes.map((n) => n.node_id),
+        );
+      }
+      if (result.edges.length > 0) {
+        console.log("Sample edge:", JSON.stringify(result.edges[0]));
+        console.log(
+          "All edge sources:",
+          result.edges.map((e) => e.source),
+        );
+        console.log(
+          "All edge targets:",
+          result.edges.map((e) => e.target),
+        );
+      }
 
       return result;
     },
@@ -278,61 +322,47 @@ export default {
         });
         const startTime = performance.now();
 
-        // Fetch nodes first (fast response)
-        const response = await api.get(`/nodes`, {
-          params: {
-            title,
-            node_type,
-            status,
-            tags: tagsArray.length ? tagsArray : undefined,
-            scope,
-          },
-          paramsSerializer: (params) =>
-            qs.stringify(params, { arrayFormat: "repeat" }),
-        });
+        // Fetch both search results AND subgraph together
+        const [searchResponse, subgraphResponse] = await Promise.all([
+          api.get(`/nodes`, {
+            params: {
+              title,
+              node_type,
+              status,
+              tags: tagsArray.length ? tagsArray : undefined,
+              scope,
+            },
+            paramsSerializer: (params) =>
+              qs.stringify(params, { arrayFormat: "repeat" }),
+          }),
+          api.get(`/nodes/subgraph`, {
+            params: {
+              title,
+              node_type,
+              status,
+              tags: tagsArray.length ? tagsArray : undefined,
+              scope,
+              levels: 1,
+            },
+            paramsSerializer: (params) =>
+              qs.stringify(params, { arrayFormat: "repeat" }),
+          }),
+        ]);
 
-        this.nodes = response.data;
-        this.relationships = []; // Clear previous relationships immediately
+        this.nodes = searchResponse.data;
+        this.subgraphNodes = subgraphResponse.data.nodes || [];
+        this.relationships = subgraphResponse.data.edges || [];
 
         const endTime = performance.now();
         console.log(`Search completed in ${endTime - startTime} milliseconds`);
-        console.log(`Found ${this.nodes.length} nodes`);
-
-        // Fetch relationships in the background (non-blocking)
-        this.fetchRelationshipsInBackground();
+        console.log(
+          `Found ${this.nodes.length} search results, ${this.subgraphNodes.length} total nodes in subgraph, ${this.relationships.length} edges`,
+        );
       } catch (error) {
         console.error("Error fetching nodes:", error);
         this.nodes = [];
         this.relationships = [];
-      }
-    },
-
-    async fetchRelationshipsInBackground() {
-      if (this.nodes.length === 0) {
-        return;
-      }
-
-      const nodeIds = this.nodes.map((node) => node.node_id);
-      console.log(
-        `Fetching relationships for ${nodeIds.length} nodes in background...`,
-      );
-
-      try {
-        const relationshipsResponse = await api.get(`/edges`, {
-          params: {
-            node_ids: nodeIds,
-          },
-          paramsSerializer: (params) =>
-            qs.stringify(params, { arrayFormat: "repeat" }),
-        });
-
-        this.relationships = relationshipsResponse.data || [];
-        console.log(
-          `Loaded ${this.relationships.length} relationships - graph will update automatically`,
-        );
-      } catch (relError) {
-        console.warn("Could not fetch relationships:", relError);
-        this.relationships = [];
+        this.subgraphNodes = [];
       }
     },
   },

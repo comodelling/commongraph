@@ -169,6 +169,14 @@ class GraphDatabaseInterface(ABC, metaclass=LogMeta):
         pass
 
     @abstractmethod
+    def get_search_subgraph(self, **kwargs) -> SubgraphBase:
+        """
+        Search for nodes and return a subgraph including their connections.
+        Returns nodes matching search criteria plus connected nodes up to specified levels.
+        """
+        pass
+
+    @abstractmethod
     def get_random_node(self, node_type: str = None) -> NodeBase:
         pass
 

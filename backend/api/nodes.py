@@ -31,7 +31,12 @@ from backend.models.fixed import (
     UserRead,
     EntityType,
 )
-from backend.models.dynamic import DynamicNode, NodeTypeModels, NodeSearchResult
+from backend.models.dynamic import (
+    DynamicNode,
+    NodeTypeModels,
+    NodeSearchResult,
+    DynamicSubgraph,
+)
 from backend.properties import NodeStatus
 from backend.api.scopes import get_or_create_scope
 
@@ -103,6 +108,71 @@ def search_nodes(
         # nodes_ids = [el.node_id for el in nodes]
         # medians = db_ratings.get_nodes_median_ratings(nodes_ids, RatingType.support)
         # return [node for node in nodes if medians[node.node_id] == rating]
+
+
+@router.get("/subgraph")
+def search_nodes_subgraph(
+    node_type: list[str] | str = Query(None),
+    title: str | None = None,
+    scope: str | None = None,
+    status: list[NodeStatus] | NodeStatus = Query(None),
+    tags: list[str] | None = Query(None),
+    description: str | None = None,
+    levels: int = Query(
+        1,
+        description="Number of connection levels to include (0=only search results, 1=direct connections, etc.)",
+    ),
+    user: UserRead = Depends(get_current_user),
+    db_graph: GraphDatabaseInterface | None = Depends(get_graph_db),
+    db_history: GraphHistoryRelationalInterface = Depends(get_graph_history_db),
+) -> DynamicSubgraph:
+    """
+    Search for nodes and return a subgraph including their connections.
+
+    This endpoint returns not just the search results, but also nodes connected
+    to them up to 'levels' depth, along with all edges between these nodes.
+    This allows visualization of how search results relate to each other and
+    their immediate context.
+
+    Parameters:
+    - All standard search parameters (node_type, title, scope, status, tags, description)
+    - levels: Number of connection hops to include (default=1)
+      - 0: Only search results, no additional nodes
+      - 1: Search results + direct neighbors + connections between them
+      - 2: Search results + neighbors + neighbors' neighbors, etc.
+
+    Returns:
+    - A subgraph containing nodes and edges showing the search results in context
+    """
+    # Check read permissions
+    if not can_read(user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You must be logged in to view content",
+        )
+
+    if db_graph is not None:
+        subgraph = db_graph.get_search_subgraph(
+            node_type=node_type,
+            title=title,
+            scope=scope,
+            status=status,
+            tags=tags,
+            description=description,
+            levels=levels,
+        )
+    else:
+        subgraph = db_history.get_search_subgraph(
+            node_type=node_type,
+            title=title,
+            scope=scope,
+            status=status,
+            tags=tags,
+            description=description,
+            levels=levels,
+        )
+
+    return subgraph
 
 
 @router.get("/random")

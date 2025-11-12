@@ -835,6 +835,98 @@ class GraphHistoryPostgreSQLDB(GraphHistoryRelationalInterface):
         )
         return results
 
+    def get_search_subgraph(
+        self,
+        node_type: list[str] | str | None = None,
+        title: str | None = None,
+        scope: str | None = None,
+        status: list[NodeStatus] | NodeStatus | None = None,
+        tags: list[str] | None = None,
+        description: str | None = None,
+        levels: int = 1,
+    ) -> SubgraphBase:
+        """
+        Retrieve nodes matching search criteria along with their connections
+        up to 'levels' depth. This creates a subgraph showing how search results
+        relate to each other.
+
+        Returns:
+            A subgraph containing:
+            - All nodes matching the search criteria (level 0)
+            - Nodes connected to search results (levels 1+)
+            - All edges between nodes in the subgraph
+        """
+        # First, get the search results
+        search_results = self.search_nodes(
+            node_type=node_type,
+            title=title,
+            scope=scope,
+            status=status,
+            tags=tags,
+            description=description,
+        )
+
+        if not search_results:
+            return DynamicSubgraph(nodes=[], edges=[])
+
+        # Get the whole graph to find connections
+        whole_graph = self.get_whole_graph()
+
+        # Build adjacency list for BFS
+        node_index = {node.node_id: node for node in whole_graph.nodes}
+        adjacency = {node.node_id: set() for node in whole_graph.nodes}
+
+        for edge in whole_graph.edges:
+            src = edge.source
+            tgt = edge.target
+            if src in adjacency:
+                adjacency[src].add(tgt)
+            if tgt in adjacency:
+                adjacency[tgt].add(src)
+
+        # Start BFS from all search result nodes
+        visited = set()
+        queue = []
+
+        # Add all search results as starting points (level 0)
+        search_node_ids = {node.node_id for node in search_results}
+        for node_id in search_node_ids:
+            queue.append((node_id, 0))
+            visited.add(node_id)
+
+        # BFS to find connected nodes
+        included_nodes = {}
+
+        while queue:
+            current_id, current_level = queue.pop(0)
+
+            # Add current node to included nodes
+            if current_id in node_index:
+                included_nodes[current_id] = node_index[current_id]
+
+            # Continue expanding if we haven't reached max level
+            if current_level < levels:
+                for neighbor_id in adjacency.get(current_id, []):
+                    if neighbor_id not in visited:
+                        visited.add(neighbor_id)
+                        queue.append((neighbor_id, current_level + 1))
+
+        # Get all edges between included nodes
+        included_edges = [
+            edge
+            for edge in whole_graph.edges
+            if edge.source in included_nodes and edge.target in included_nodes
+        ]
+
+        self.logger.info(
+            f"Search subgraph: {len(search_results)} search results expanded to "
+            f"{len(included_nodes)} nodes ({len(included_edges)} edges) at {levels} level(s)"
+        )
+
+        return DynamicSubgraph(
+            nodes=list(included_nodes.values()), edges=included_edges
+        )
+
     def get_random_node(self, node_type: str = None) -> NodeBase:
         nodes = self.get_whole_graph().nodes
         if node_type is not None:

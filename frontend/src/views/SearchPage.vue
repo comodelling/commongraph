@@ -29,11 +29,10 @@
       </div>
       <div class="visualization-column">
         <div class="graph-container">
-          <SigmaGraphVis
+          <CosmosGraphVis
             :graph-data="subgraphData"
             :height="'300px'"
-            :show-controls="false"
-            :auto-start-force-atlas="true"
+            :show-controls="true"
             @node-click="handleNodeClick"
             @edge-click="handleEdgeClick"
             @graph-loaded="handleGraphLoaded"
@@ -59,14 +58,14 @@ import { useConfig } from "../composables/useConfig";
 import RatingHistogram from "../components/poll/RatingHistogram.vue";
 import NodeListItem from "../components/node/NodeListItem.vue";
 import AggRatingMultipane from "../components/poll/AggRatingMultipane.vue";
-import SigmaGraphVis from "../components/graph/SigmaGraphVis.vue";
+import CosmosGraphVis from "../components/graph/GraphVis.vue";
 
 export default {
   components: {
     RatingHistogram,
     NodeListItem,
     AggRatingMultipane,
-    SigmaGraphVis,
+    CosmosGraphVis,
   },
   data() {
     return {
@@ -191,14 +190,50 @@ export default {
       }
       this.$router.push({ name: "SearchPage", query: currentQuery });
     },
+    normalizeEdgeEventPayload(payload) {
+      if (!payload) return null;
+      if (typeof payload === "object" && payload !== null) {
+        return {
+          id: payload.id ?? null,
+          sourceId: payload.sourceId ?? null,
+          targetId: payload.targetId ?? null,
+          data: payload.data ?? null,
+        };
+      }
+
+      const stringId = String(payload);
+      const match = stringId.match(/^edge_([^_]+)_([^_]+)_/);
+      if (!match) {
+        return { id: stringId, sourceId: null, targetId: null, data: null };
+      }
+
+      return {
+        id: stringId,
+        sourceId: match[1] ?? null,
+        targetId: match[2] ?? null,
+        data: null,
+      };
+    },
     handleNodeClick(nodeId) {
       console.log("Node clicked in search:", nodeId);
       // Navigate to node focus view
       this.$router.push({ name: "NodeView", params: { id: nodeId } });
     },
-    handleEdgeClick(edgeId) {
-      console.log("Edge clicked in search:", edgeId);
-      // You could show edge details or filter results
+    handleEdgeClick(edgeInfo) {
+      const payload = this.normalizeEdgeEventPayload(edgeInfo);
+      console.log("Edge clicked in search:", payload);
+      if (!payload?.sourceId || !payload?.targetId) {
+        console.warn("Unable to navigate without edge endpoints", payload);
+        return;
+      }
+
+      this.$router.push({
+        name: "EdgeView",
+        params: {
+          source_id: payload.sourceId,
+          target_id: payload.targetId,
+        },
+      });
     },
     handleGraphLoaded(data) {
       console.log(

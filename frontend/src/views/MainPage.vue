@@ -2,10 +2,9 @@
   <div class="main-page">
     <!-- Background graph -->
     <div class="graph-background">
-      <SigmaGraphVis
+      <CosmosGraphVis
         :height="'100%'"
         :show-controls="false"
-        :auto-start-force-atlas="true"
         @node-click="handleNodeClick"
         @edge-click="handleEdgeClick"
         @graph-loaded="handleGraphLoaded"
@@ -31,12 +30,12 @@
 <script>
 import { onMounted } from "vue";
 import SearchBar from "../components/common/SearchBar.vue";
-import SigmaGraphVis from "../components/graph/SigmaGraphVis.vue";
+import CosmosGraphVis from "../components/graph/GraphVis.vue";
 import { buildSearchParams } from "../utils/searchParser.js";
 import { useConfig } from "../composables/useConfig";
 
 export default {
-  components: { SearchBar, SigmaGraphVis },
+  components: { SearchBar, CosmosGraphVis },
   data() {
     return {
       quote: null,
@@ -52,14 +51,50 @@ export default {
       const params = buildSearchParams(parsedQuery);
       this.$router.push({ name: "SearchPage", query: params });
     },
+    normalizeEdgeEventPayload(payload) {
+      if (!payload) return null;
+      if (typeof payload === "object" && payload !== null) {
+        return {
+          id: payload.id ?? null,
+          sourceId: payload.sourceId ?? null,
+          targetId: payload.targetId ?? null,
+          data: payload.data ?? null,
+        };
+      }
+
+      const stringId = String(payload);
+      const match = stringId.match(/^edge_([^_]+)_([^_]+)_/);
+      if (!match) {
+        return { id: stringId, sourceId: null, targetId: null, data: null };
+      }
+
+      return {
+        id: stringId,
+        sourceId: match[1] ?? null,
+        targetId: match[2] ?? null,
+        data: null,
+      };
+    },
     handleNodeClick(nodeId) {
       console.log("Node clicked:", nodeId);
       // Navigate to node focus view
       this.$router.push({ name: "NodeView", params: { id: nodeId } });
     },
-    handleEdgeClick(edgeId) {
-      console.log("Edge clicked:", edgeId);
-      // Handle edge click - you might need to parse edge ID to get source/target
+    handleEdgeClick(edgeInfo) {
+      const payload = this.normalizeEdgeEventPayload(edgeInfo);
+      console.log("Edge clicked:", payload);
+      if (!payload?.sourceId || !payload?.targetId) {
+        console.warn("Unable to navigate without edge endpoints", payload);
+        return;
+      }
+
+      this.$router.push({
+        name: "EdgeView",
+        params: {
+          source_id: payload.sourceId,
+          target_id: payload.targetId,
+        },
+      });
     },
     handleGraphLoaded(data) {
       console.log(

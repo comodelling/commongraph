@@ -573,133 +573,11 @@ export default {
       return positions;
     };
 
+    // Native Cosmos GL simulation handles force layout now.
+    // This function is kept for reference but no longer used.
     const runStaticForceLayout = (state, containerSize) => {
-      const total = state.totalNodes;
-      if (!total) return new Float32Array(0);
-
-      const seeded = generateForceSeedPositions(state, containerSize);
-      const working = new Float32Array(seeded);
-      const dx = new Float32Array(total);
-      const dy = new Float32Array(total);
-
-      const width = containerSize?.width ?? 800;
-      const height = containerSize?.height ?? 600;
-      const area = Math.max(width * height, 1);
-      const k = Math.sqrt(area / Math.max(total, 1));
-      const iterations = Math.max(60, Math.min(220, total * 6));
-      let temperature = Math.min(width, height) * 0.3;
-
-      const attractiveEdges = state.edgeMeta ?? [];
-      const restLength = k * props.edgeRestLengthFactor;
-      const springStrength = props.edgeSpringStrength / Math.max(k, 1);
-      const minSeparation = Math.max(props.nodeSeparation, restLength * 0.35);
-
-      for (let iter = 0; iter < iterations; iter += 1) {
-        dx.fill(0);
-        dy.fill(0);
-
-        for (let i = 0; i < total; i += 1) {
-          for (let j = i + 1; j < total; j += 1) {
-            const deltaX = working[i * 2] - working[j * 2];
-            const deltaY = working[i * 2 + 1] - working[j * 2 + 1];
-            const distance = Math.max(Math.hypot(deltaX, deltaY), 0.01);
-            const force = (k * k) / distance;
-            const fx = (deltaX / distance) * force;
-            const fy = (deltaY / distance) * force;
-
-            dx[i] += fx;
-            dy[i] += fy;
-            dx[j] -= fx;
-            dy[j] -= fy;
-          }
-        }
-
-        attractiveEdges.forEach((edge) => {
-          const source = edge.sourceIndex;
-          const target = edge.targetIndex;
-          if (
-            source === undefined ||
-            target === undefined ||
-            source === target
-          ) {
-            return;
-          }
-
-          const deltaX = working[source * 2] - working[target * 2];
-          const deltaY = working[source * 2 + 1] - working[target * 2 + 1];
-          const distance = Math.max(Math.hypot(deltaX, deltaY), 0.01);
-          const diff = distance - restLength;
-          const force = springStrength * diff;
-          const fx = (deltaX / distance) * force;
-          const fy = (deltaY / distance) * force;
-
-          dx[source] -= fx;
-          dy[source] -= fy;
-          dx[target] += fx;
-          dy[target] += fy;
-        });
-
-        for (let i = 0; i < total; i += 1) {
-          const disp = Math.hypot(dx[i], dy[i]);
-          if (!disp) continue;
-          const limited = Math.min(disp, temperature);
-          working[i * 2] += (dx[i] / disp) * limited;
-          working[i * 2 + 1] += (dy[i] / disp) * limited;
-        }
-
-        temperature *= 0.92;
-      }
-
-      for (let i = 0; i < total; i += 1) {
-        for (let j = i + 1; j < total; j += 1) {
-          const deltaX = working[i * 2] - working[j * 2];
-          const deltaY = working[i * 2 + 1] - working[j * 2 + 1];
-          let distance = Math.hypot(deltaX, deltaY);
-          if (distance === 0) {
-            distance = 0.01;
-          }
-          if (distance >= minSeparation) continue;
-          const overlap = (minSeparation - distance) / 2;
-          const ux = deltaX / distance;
-          const uy = deltaY / distance;
-          working[i * 2] += ux * overlap;
-          working[i * 2 + 1] += uy * overlap;
-          working[j * 2] -= ux * overlap;
-          working[j * 2 + 1] -= uy * overlap;
-        }
-      }
-
-      let minX = Infinity;
-      let maxX = -Infinity;
-      let minY = Infinity;
-      let maxY = -Infinity;
-
-      for (let i = 0; i < total; i += 1) {
-        const x = working[i * 2];
-        const y = working[i * 2 + 1];
-        if (x < minX) minX = x;
-        if (x > maxX) maxX = x;
-        if (y < minY) minY = y;
-        if (y > maxY) maxY = y;
-      }
-
-      const layoutWidth = Math.max(maxX - minX, 1);
-      const layoutHeight = Math.max(maxY - minY, 1);
-      const centerX = (minX + maxX) / 2;
-      const centerY = (minY + maxY) / 2;
-      const marginRatio = 0.02;
-      const availableWidth = Math.max(width * (1 - marginRatio * 2), 200);
-      const availableHeight = Math.max(height * (1 - marginRatio * 2), 200);
-      const scaleX = availableWidth / layoutWidth;
-      const scaleY = availableHeight / layoutHeight;
-
-      const result = new Float32Array(total * 2);
-      for (let i = 0; i < total; i += 1) {
-        result[i * 2] = (working[i * 2] - centerX) * scaleX;
-        result[i * 2 + 1] = (working[i * 2 + 1] - centerY) * scaleY;
-      }
-
-      return result;
+      // Delegate to directional seeding; GPU will simulate from here
+      return generateForceSeedPositions(state, containerSize);
     };
 
     const generateRandomPositions = (state, containerSize) => {
@@ -876,7 +754,11 @@ export default {
       linkColor: getCssVariable("--border-color", DEFAULT_LINK_COLOR),
       linkWidth: 1.5,
       curvedLinks: true,
-      enableSimulation: false,
+      enableSimulation: true,
+      simulationLinkSpring: 0.6,
+      simulationRepulsion: 280,
+      simulationLinkDistance: 65,
+      simulationFriction: 0.82,
       enableZoom: true,
       enableDrag: true,
       rescalePositions: false,
@@ -924,7 +806,6 @@ export default {
       cosmosGraph.value.setLinks(state.links);
 
       cosmosGraph.value.render(0);
-      cosmosGraph.value.pause?.();
 
       nodeIndexMeta.value = state.nodeMeta;
       edgeIndexMeta.value = state.edgeMeta;
@@ -939,6 +820,7 @@ export default {
         cosmosGraph.value.fitView(200, 0.06);
       }
 
+      // Allow native simulation to run for force layout, pause otherwise
       if (layoutMode.value !== "force") {
         cosmosGraph.value?.pause?.();
       }

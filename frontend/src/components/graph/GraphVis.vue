@@ -41,6 +41,7 @@ import {
 } from "vue";
 import { Graph as CosmosGraph } from "@cosmos.gl/graph";
 import api from "../../api/axios";
+import { useTheme } from "../../composables/useTheme";
 
 const DEFAULT_NODE_COLOR = "#666666";
 const DEFAULT_LINK_COLOR = "#cccccc";
@@ -127,6 +128,9 @@ export default {
       ),
     );
     let lastFetchId = 0;
+
+    // Theme reactivity
+    const { isDark } = useTheme();
 
     const refreshDirectionMode = () => {
       const stored = getStoredDirection();
@@ -882,6 +886,25 @@ export default {
       }
     };
 
+    const reinitializeGraphWithCurrentData = async () => {
+      await nextTick();
+      if (!cosmosContainer.value || !currentGraphData.value) return;
+
+      // Save current data before destroying
+      const savedData = {
+        nodes: [...(currentGraphData.value.nodes ?? [])],
+        edges: [...(currentGraphData.value.edges ?? [])],
+      };
+
+      destroyGraph();
+
+      if (!cosmosContainer.value) return;
+
+      cosmosGraph.value = new CosmosGraph(cosmosContainer.value, buildConfig());
+
+      applyGraphData(savedData, { respectSimulationState: false });
+    };
+
     const applyForceLayout = () => {
       applyLayout("force");
     };
@@ -919,6 +942,16 @@ export default {
           return;
         }
         applyLayout(normalized);
+      },
+    );
+
+    // Watch for theme changes and reinitialize graph
+    watch(
+      () => isDark.value,
+      async () => {
+        if (!cosmosGraph.value || !currentGraphData.value) return;
+        // Reinitialize with new theme colors, preserving current data
+        await reinitializeGraphWithCurrentData();
       },
     );
 

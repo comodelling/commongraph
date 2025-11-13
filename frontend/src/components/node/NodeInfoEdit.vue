@@ -182,6 +182,18 @@
       </div>
     </div>
     <button class="submit-button" @click="submit">{{ actionLabel }}</button>
+    <p class="license-notice" v-if="license">
+      By publishing changes, you irrevocably agree to release your contribution
+      under the
+      <a
+        :href="getLicenseUrl(license)"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        {{ license }}
+      </a>
+      license.
+    </p>
   </div>
 </template>
 
@@ -211,11 +223,12 @@ export default {
   },
   // Use the setup() function solely to expose the meta config data.
   setup(props) {
-    const { nodeTypes, load, defaultEdgeType } = useConfig();
+    const { nodeTypes, load, defaultEdgeType, license, getLicenseUrl } =
+      useConfig();
     // block here until both nodeTypes & edgeTypes are populated
     onBeforeMount(load);
     onMounted(loadGraphSchema);
-    return { nodeTypes, defaultEdgeType, load };
+    return { nodeTypes, defaultEdgeType, load, license, getLicenseUrl };
   },
   data() {
     let editedNode = _.cloneDeep(this.node);
@@ -567,5 +580,23 @@ export default {
 .add-button {
   margin: 4px 0 0 0 !important;
   align-self: flex-start;
+}
+
+/* License notice styling */
+.license-notice {
+  font-size: 0.75rem;
+  color: #999;
+  margin-top: 12px;
+  line-height: 1.3;
+}
+
+.license-notice a {
+  color: #0066cc;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.license-notice a:hover {
+  text-decoration: underline;
 }
 </style>

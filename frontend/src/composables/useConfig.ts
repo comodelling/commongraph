@@ -14,6 +14,7 @@ const nodePollsByType = ref<Record<string, Record<string, any>>>({});
 const edgePollsByType = ref<Record<string, Record<string, any>>>({});
 const permissions = ref<Record<string, boolean>>({});
 const allowSignup = ref<boolean>(true);
+const license = ref<string>("CC BY-SA");
 
 async function load(forceReload = false) {
   if (configLoaded.value && !forceReload) return;
@@ -63,6 +64,7 @@ async function load(forceReload = false) {
     platformDescription.value = data.platform_description;
     permissions.value = data.permissions || {};
     allowSignup.value = data.allow_signup !== false;
+    license.value = data.license || "CC BY-SA";
     configLoaded.value = true;
     console.log("Config loaded", forceReload ? "(forced reload)" : "");
   } catch (error) {
@@ -77,6 +79,27 @@ function clearCache() {
 // Export for use by other composables
 export function reloadConfig() {
   return load(true);
+}
+
+/**
+ * Helper function to get the Creative Commons license URL
+ * @param licenseCode - License code like "CC BY-SA", "CC BY-NC-SA", "CC0", etc.
+ * @returns URL to the CC license deed
+ */
+function getLicenseUrl(licenseCode: string): string {
+  // Map of CC license codes to their URLs
+  const licenseMap: Record<string, string> = {
+    "CC BY": "https://creativecommons.org/licenses/by/4.0/",
+    "CC BY-SA": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "CC BY-NC": "https://creativecommons.org/licenses/by-nc/4.0/",
+    "CC BY-NC-SA": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+    "CC BY-ND": "https://creativecommons.org/licenses/by-nd/4.0/",
+    "CC BY-NC-ND": "https://creativecommons.org/licenses/by-nc-nd/4.0/",
+    CC0: "https://creativecommons.org/publicdomain/zero/1.0/",
+    "CC PDM": "https://creativecommons.org/publicdomain/mark/1.0/",
+  };
+
+  return licenseMap[licenseCode] || "https://creativecommons.org/licenses/";
 }
 
 export function useConfig() {
@@ -122,5 +145,7 @@ export function useConfig() {
     canDelete,
     canRate,
     allowSignup,
+    license,
+    getLicenseUrl,
   };
 }

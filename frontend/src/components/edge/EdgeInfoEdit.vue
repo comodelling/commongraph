@@ -82,6 +82,18 @@
     </div>
 
     <button class="submit-button" @click="submit">{{ actionLabel }}</button>
+    <p class="license-notice" v-if="license">
+      By publishing changes, you irrevocably agree to release your contribution
+      under the
+      <a
+        :href="getLicenseUrl(license)"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        {{ license }}
+      </a>
+      license.
+    </p>
   </div>
 </template>
 
@@ -106,10 +118,10 @@ export default {
   },
   emits: ["publish-edge"],
   setup() {
-    const { edgeTypes, load } = useConfig();
+    const { edgeTypes, load, license, getLicenseUrl } = useConfig();
     onMounted(load);
     onMounted(loadGraphSchema);
-    return { edgeTypes };
+    return { edgeTypes, license, getLicenseUrl };
   },
   data() {
     return {
@@ -329,5 +341,23 @@ export default {
 .add-button {
   margin: 4px 0 0 0 !important;
   align-self: flex-start;
+}
+
+/* License notice styling */
+.license-notice {
+  font-size: 0.75rem;
+  color: #999;
+  margin-top: 12px;
+  line-height: 1.3;
+}
+
+.license-notice a {
+  color: #0066cc;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.license-notice a:hover {
+  text-decoration: underline;
 }
 </style>

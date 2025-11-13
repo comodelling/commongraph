@@ -35,3 +35,7 @@ permissions: # all/loggedin/admin
   edit: all
   delete: all
   rate: all
+
+# License configuration - displayed to users when viewing/editing content
+# Supported CC licenses: CC BY, CC BY-SA, CC BY-NC, CC BY-NC-SA, CC BY-ND, CC BY-NC-ND, CC0, CC PDM
+license: "CC BY-SA"

@@ -50,6 +50,18 @@
         <span v-for="tag in node.tags" :key="tag" class="tag">{{ tag }}</span>
       </div>
     </div>
+    <!-- License Notice -->
+    <p class="license-notice" v-if="license">
+      Graph elements including text are available under the
+      <a
+        :href="getLicenseUrl(license)"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        {{ license }}
+      </a>
+      license.
+    </p>
   </div>
 </template>
 
@@ -77,7 +89,7 @@ const props = defineProps<{
 }>();
 const { node, isFavourite, isBrandNewNode, toggleFavourite } = toRefs(props);
 
-const { nodeTypes, load } = useConfig();
+const { nodeTypes, load, license, getLicenseUrl } = useConfig();
 onMounted(load);
 
 const allowed = computed(() => {
@@ -127,5 +139,23 @@ const nodeTypeTooltip = computed(() => {
   display: flex;
   flex-wrap: wrap;
   gap: 5px;
+}
+
+/* License notice styling */
+.license-notice {
+  font-size: 0.75rem;
+  color: #999;
+  margin-top: 12px;
+  line-height: 1.3;
+}
+
+.license-notice a {
+  color: #0066cc;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.license-notice a:hover {
+  text-decoration: underline;
 }
 </style>

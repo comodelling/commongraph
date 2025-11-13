@@ -31,7 +31,6 @@
         <div class="graph-container">
           <CosmosGraphVis
             :graph-data="subgraphData"
-            :height="'300px'"
             :show-controls="true"
             @node-click="handleNodeClick"
             @edge-click="handleEdgeClick"
@@ -39,11 +38,11 @@
           />
         </div>
 
-        <AggRatingMultipane
+        <!-- <AggRatingMultipane
           :nodes="nodes"
           :poll-configs="nodePolls"
           @filter-by-rating="applyRatingFilter"
-        />
+        /> -->
       </div>
     </div>
   </div>
@@ -53,7 +52,6 @@
 import api from "../api/axios";
 import qs from "qs";
 import { useRouter, useRoute } from "vue-router";
-import { computed } from "vue";
 import { useConfig } from "../composables/useConfig";
 import RatingHistogram from "../components/poll/RatingHistogram.vue";
 import NodeListItem from "../components/node/NodeListItem.vue";
@@ -419,6 +417,7 @@ export default {
 .visualization-column {
   flex: 1;
   overflow-y: auto;
+  border: none;
   border-radius: 4px;
   margin: 2px 4px 4px 2px;
   display: flex;
@@ -426,9 +425,10 @@ export default {
 }
 
 .graph-container {
-  height: 300px;
+  height: 100%;
   margin-bottom: 10px;
-  border: 1px solid var(--border-color);
+  border: none;
+  /* border: 1px solid var(--border-color); */
   border-radius: 4px;
   display: flex;
   flex-direction: column;

@@ -38,7 +38,7 @@ function getRatingColor(rating) {
   return null;
 }
 
-const defaultNodeBorderWidth = "2px";
+const defaultNodeBorderWidth = "4px";
 const defaultNodeBorderRadius = "5px";
 
 export function formatFlowEdgeProps(data, colorBy = "type") {

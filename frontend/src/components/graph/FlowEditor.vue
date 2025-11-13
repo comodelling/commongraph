@@ -390,9 +390,21 @@ async function layoutSubgraph(direction) {
   console.log("layouting subgraph with", direction);
   const currentNodes = getNodes.value;
   const currentEdges = getEdges.value;
+  const manualPositions = new Map(
+    currentNodes
+      .filter((node) => node?.data?.manualPosition)
+      .map((node) => [node.id, { ...node.position }]),
+  );
 
   if (currentNodes.length === 1) {
-    nodes.value = affectDirection(currentNodes, direction);
+    if (manualPositions.size) {
+      nodes.value = currentNodes.map((node) => {
+        const manualPos = manualPositions.get(node.id);
+        return manualPos ? { ...node, position: { ...manualPos } } : node;
+      });
+    } else {
+      nodes.value = affectDirection(currentNodes, direction);
+    }
     fitViewToContent({ zoom: 1.5 });
     return;
   } else if (currentNodes.length === 0) {
@@ -400,17 +412,28 @@ async function layoutSubgraph(direction) {
     return;
   } else if (currentEdges.length === 0) {
     console.warn("No edges supplied, falling back to simple layout");
-    nodes.value = affectDirection(currentNodes, direction).map((node, idx) => ({
-      ...node,
-      position: {
-        x: direction === "TB" || direction === "BT" ? 0 : idx * 200,
-        y: direction === "TB" || direction === "BT" ? idx * 150 : 0,
-      },
-    }));
+    nodes.value = affectDirection(currentNodes, direction).map((node, idx) => {
+      const manualPos = manualPositions.get(node.id);
+      if (manualPos) {
+        return { ...node, position: { ...manualPos } };
+      }
+      return {
+        ...node,
+        position: {
+          x: direction === "TB" || direction === "BT" ? 0 : idx * 200,
+          y: direction === "TB" || direction === "BT" ? idx * 150 : 0,
+        },
+      };
+    });
     fitViewToContent();
     return;
   }
-  nodes.value = layout(currentNodes, currentEdges, direction);
+
+  const laidOutNodes = layout(currentNodes, currentEdges, direction);
+  nodes.value = laidOutNodes.map((node) => {
+    const manualPos = manualPositions.get(node.id);
+    return manualPos ? { ...node, position: { ...manualPos } } : node;
+  });
 
   fitViewToContent();
 }
@@ -889,6 +912,14 @@ function createNodeAndEdge(event = null) {
     fromConnection: fromConnection,
   });
 
+  newNodeData = {
+    ...newNodeData,
+    data: {
+      ...newNodeData.data,
+      manualPosition: true,
+    },
+  };
+
   if (connectionInfo.value) {
     // Get allowed node types from the source node’s type
     const fc = fromConnection; // { node_type, handle_type, ... }
@@ -921,6 +952,9 @@ function createNodeAndEdge(event = null) {
   if (connectionInfo.value) {
     const newEdgeData = createEdgeOnConnection("new");
     addEdges(newEdgeData);
+    nextTick(() => {
+      emit("newEdgeCreated", newEdgeData);
+    });
   }
 
   nextTick(() => {

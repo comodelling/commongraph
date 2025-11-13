@@ -180,11 +180,13 @@
           <FlowEditor
             v-else-if="activeTab === 'flow'"
             :data="flowSubgraphData"
-            :read-only="true"
+            :read-only="!(canCreate || canEdit || canDelete)"
             :highlighted-node-id="hoveredNodeId"
             :fit-trigger="flowFitTick"
             @nodeClick="handleNodeClick"
             @edgeClick="handleEdgeClick"
+            @newNodeCreated="handleNewNodeCreated"
+            @newEdgeCreated="handleNewEdgeCreated"
           />
         </div>
 
@@ -214,6 +216,8 @@ import CosmosGraphVis from "../components/graph/GraphVis.vue";
 import FlowEditor from "../components/graph/FlowEditor.vue";
 import GraphControls from "../components/graph/GraphControls.vue";
 
+const FOCUS_GRAPH_CACHE_KEY = "focusFlowGraphSnapshot";
+
 export default {
   components: {
     RatingHistogram,
@@ -236,6 +240,8 @@ export default {
       depthLevel: parseInt(localStorage.getItem("graphDepthLevel")) || 1, // Depth level for subgraph traversal
       colorBy: localStorage.getItem("graphColorBy") || "type", // Color nodes/edges by 'type' or 'rating'
       ratings: {}, // Store node ratings fetched from API
+      pendingFocusGraph: null,
+      pendingFocusEdge: null,
     };
   },
   computed: {
@@ -838,6 +844,112 @@ export default {
       }
       this.$router.push({ name: "SearchPage", query: currentQuery });
     },
+    ensurePendingFocusGraph() {
+      if (!this.pendingFocusGraph) {
+        const baseNodesSource = this.subgraphNodes.length
+          ? this.subgraphNodes
+          : this.nodes;
+        const rawNodes = baseNodesSource.map((node) =>
+          JSON.parse(JSON.stringify(node)),
+        );
+        const rawEdges = (this.relationships || []).map((edge) => {
+          const source =
+            edge.source ?? edge.source_id ?? edge.data?.source ?? null;
+          const target =
+            edge.target ?? edge.target_id ?? edge.data?.target ?? null;
+          return JSON.parse(
+            JSON.stringify({
+              ...edge,
+              source,
+              target,
+            }),
+          );
+        });
+        this.pendingFocusGraph = { nodes: rawNodes, edges: rawEdges };
+      }
+      return this.pendingFocusGraph;
+    },
+    toRawNode(flowNode) {
+      if (!flowNode) return null;
+      const raw = flowNode.data
+        ? JSON.parse(JSON.stringify(flowNode.data))
+        : JSON.parse(JSON.stringify(flowNode));
+      if (flowNode.position && !raw.position) {
+        raw.position = JSON.parse(JSON.stringify(flowNode.position));
+      }
+      const nodeId =
+        flowNode.id ?? raw.node_id ?? raw.id ?? flowNode.data?.node_id;
+      if (nodeId != null) {
+        const numeric = Number(nodeId);
+        raw.node_id = Number.isNaN(numeric) ? nodeId : numeric;
+      }
+      return raw;
+    },
+    toRawEdge(flowEdge) {
+      if (!flowEdge) return null;
+      const raw = flowEdge.data
+        ? JSON.parse(JSON.stringify(flowEdge.data))
+        : JSON.parse(JSON.stringify(flowEdge));
+      const source =
+        flowEdge.data?.source ?? flowEdge.source ?? raw.source ?? raw.source_id;
+      const target =
+        flowEdge.data?.target ?? flowEdge.target ?? raw.target ?? raw.target_id;
+      if (source != null) {
+        const numericSource = Number(source);
+        raw.source = Number.isNaN(numericSource) ? source : numericSource;
+      }
+      if (target != null) {
+        const numericTarget = Number(target);
+        raw.target = Number.isNaN(numericTarget) ? target : numericTarget;
+      }
+      return raw;
+    },
+    upsertNodeInGraph(graph, flowNode) {
+      if (!graph || !flowNode) return;
+      const rawNode = this.toRawNode(flowNode);
+      if (!rawNode || rawNode.node_id == null) return;
+      const existingIndex = graph.nodes.findIndex(
+        (existing) => existing?.node_id === rawNode.node_id,
+      );
+      if (existingIndex >= 0) {
+        graph.nodes.splice(existingIndex, 1, rawNode);
+      } else {
+        graph.nodes.push(rawNode);
+      }
+    },
+    upsertEdgeInGraph(graph, flowEdge) {
+      if (!graph || !flowEdge) return;
+      const rawEdge = this.toRawEdge(flowEdge);
+      if (!rawEdge || rawEdge.source == null || rawEdge.target == null) return;
+      const edgeId = `${rawEdge.source}-${rawEdge.target}`;
+      const existingIndex = graph.edges.findIndex((existing) => {
+        if (!existing) return false;
+        const existingId = `${existing.source}-${existing.target}`;
+        return existingId === edgeId;
+      });
+      if (existingIndex >= 0) {
+        graph.edges.splice(existingIndex, 1, rawEdge);
+      } else {
+        graph.edges.push(rawEdge);
+      }
+    },
+    storeFocusGraphSnapshot(graph, focusNodeData, focusEdgeData = null) {
+      try {
+        const payload = {
+          nodes: graph.nodes.map((node) => JSON.parse(JSON.stringify(node))),
+          edges: graph.edges.map((edge) => JSON.parse(JSON.stringify(edge))),
+          focusNode: focusNodeData
+            ? JSON.parse(JSON.stringify(focusNodeData))
+            : null,
+          focusEdge: focusEdgeData
+            ? JSON.parse(JSON.stringify(focusEdgeData))
+            : null,
+        };
+        sessionStorage.setItem(FOCUS_GRAPH_CACHE_KEY, JSON.stringify(payload));
+      } catch (error) {
+        console.warn("Failed to cache focus graph snapshot", error);
+      }
+    },
     normalizeEdgeEventPayload(payload) {
       if (!payload) return null;
       if (typeof payload === "object" && payload !== null) {
@@ -891,6 +1003,56 @@ export default {
         data.edges?.length,
         "edges",
       );
+    },
+    handleNewNodeCreated(newNodeData) {
+      // newNodeData is the formatted node object created in FlowEditor
+      console.log("New node created in flow view:", newNodeData);
+      const graph = this.ensurePendingFocusGraph();
+      this.upsertNodeInGraph(graph, newNodeData);
+
+      const focusNodePayload = newNodeData?.data
+        ? JSON.parse(JSON.stringify(newNodeData.data))
+        : null;
+
+      this.storeFocusGraphSnapshot(
+        graph,
+        focusNodePayload,
+        this.pendingFocusEdge,
+      );
+
+      // reset cached graph so future operations start fresh
+      this.pendingFocusGraph = null;
+      this.pendingFocusEdge = null;
+
+      // Navigate to node edit view for the newly created node
+      const targetId = newNodeData?.id ?? newNodeData?.data?.node_id ?? "new";
+      this.$router.push({ name: "NodeEdit", params: { id: targetId } });
+    },
+    handleNewEdgeCreated(newEdgeData) {
+      console.log("New edge created in flow view:", newEdgeData);
+      const graph = this.ensurePendingFocusGraph();
+      this.upsertEdgeInGraph(graph, newEdgeData);
+      const rawEdge = this.toRawEdge(newEdgeData);
+      this.pendingFocusEdge = rawEdge;
+
+      const src = rawEdge?.source;
+      const tgt = rawEdge?.target;
+      const involvesNewNode = src === "new" || tgt === "new";
+
+      if (!involvesNewNode && src != null && tgt != null) {
+        this.storeFocusGraphSnapshot(graph, null, rawEdge);
+        this.pendingFocusGraph = null;
+        this.pendingFocusEdge = null;
+        this.$router.push({
+          name: "EdgeEdit",
+          params: { source_id: src, target_id: tgt },
+        });
+        return;
+      }
+
+      if (src == null || tgt == null) {
+        console.warn("New edge missing endpoints, cannot open edge editor");
+      }
     },
     async fetchNodeRatings(nodeIds) {
       if (!nodeIds.length) return;
@@ -1148,6 +1310,8 @@ export default {
       nodePollsByType,
       edgePollsByType,
       canCreate,
+      canEdit,
+      canDelete,
       defaultNodeType,
       getNodePolls,
       getEdgePolls,
@@ -1162,6 +1326,8 @@ export default {
       nodePollsByType,
       edgePollsByType,
       canCreate,
+      canEdit,
+      canDelete,
       defaultNodeType,
       getNodePolls,
       getEdgePolls,

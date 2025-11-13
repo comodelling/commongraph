@@ -88,6 +88,8 @@ import {
 import api from "../api/axios";
 import { hydrate } from "vue";
 
+const FOCUS_GRAPH_CACHE_KEY = "focusFlowGraphSnapshot";
+
 export default {
   components: {
     NodeInfo,
@@ -208,6 +210,13 @@ export default {
   },
   // when opening a brand-new node, use defaultNodeType and only include allowed props
   async created() {
+    let cachedSnapshot = null;
+    if (this.isBrandNewNode || this.isEdge) {
+      cachedSnapshot = this.consumeFocusGraphSnapshot();
+    } else {
+      this.clearFocusGraphSnapshot();
+    }
+
     if (this.isBrandNewNode) {
       // Check permissions first
       if (!this.canCreate) {
@@ -219,10 +228,17 @@ export default {
       }
 
       console.log("Opening brand new node in focus");
-      const type = this.defaultNodeType;
+      let type = cachedSnapshot?.focusNode?.node_type || this.defaultNodeType;
+      if (!this.nodeTypes[type]) {
+        console.warn(
+          "Unknown node type from snapshot, falling back to default",
+          type,
+        );
+        type = this.defaultNodeType;
+      }
       console.log("Default node type:", type);
       // const allowed = this.allowedNodeFields.value || [];
-      const allowed = this.nodeTypes[type].properties || [];
+      const allowed = this.nodeTypes[type]?.properties || [];
       console.log("Allowed node props:", allowed);
 
       // Check if there's a pre-populated title from search
@@ -231,27 +247,194 @@ export default {
         sessionStorage.removeItem("newNodeTitle"); // Clear after reading
       }
 
-      // build minimal node object
-      const node = { node_id: "new", node_type: type, new: true };
-      if (allowed.includes("title")) node.title = prePopulatedTitle || "";
-      if (allowed.includes("scope")) node.scope = "";
-      if (allowed.includes("status")) node.status = "draft";
-      if (allowed.includes("tags")) node.tags = [];
-      if (allowed.includes("references")) node.references = [];
-      if (allowed.includes("description")) node.description = "";
+      // build minimal node object (prefer snapshot data when available)
+      const nodeFromSnapshot = cachedSnapshot?.focusNode
+        ? { ...cachedSnapshot.focusNode }
+        : null;
+
+      const node = nodeFromSnapshot || { node_id: "new", node_type: type };
+      node.node_id = node.node_id ?? "new";
+      node.node_type = node.node_type || type;
+      node.new = true;
+
+      if (allowed.includes("title")) {
+        if (node.title == null || node.title === "") {
+          node.title = prePopulatedTitle || "";
+        }
+      } else {
+        delete node.title;
+      }
+      if (allowed.includes("scope")) {
+        if (node.scope == null) node.scope = "";
+      } else {
+        delete node.scope;
+      }
+      if (allowed.includes("status")) {
+        node.status = node.status || "draft";
+      } else {
+        delete node.status;
+      }
+      if (allowed.includes("tags")) {
+        if (!Array.isArray(node.tags)) node.tags = [];
+      } else {
+        delete node.tags;
+      }
+      if (allowed.includes("references")) {
+        if (!Array.isArray(node.references)) node.references = [];
+      } else {
+        delete node.references;
+      }
+      if (allowed.includes("description")) {
+        if (node.description == null) node.description = "";
+      } else {
+        delete node.description;
+      }
+
       this.node = node;
       this.$router.push({ name: "NodeEdit", params: { id: "new" } });
-      let formattedNode = formatFlowNodeProps(this.node);
-      formattedNode.label = "New Node";
-      // small delay so VueFlow has time to mount
-      setTimeout(() => {
-        this.subgraphData = { nodes: [formattedNode], edges: [] };
-      }, 45);
+      const snapshotHasGraph = Boolean(
+        cachedSnapshot?.nodes?.length || cachedSnapshot?.edges?.length,
+      );
+
+      if (snapshotHasGraph) {
+        const flowGraph = this.buildFlowGraphFromRaw(
+          cachedSnapshot.nodes,
+          cachedSnapshot.edges,
+        );
+        const targetId = this.node?.node_id?.toString();
+        if (targetId) {
+          flowGraph.nodes = flowGraph.nodes.map((n) => {
+            if (n.id === targetId) {
+              return {
+                ...n,
+                selected: true,
+                data: { ...n.data, selected: true },
+                label: n.label || this.node.title || "New Node",
+              };
+            }
+            return n;
+          });
+        }
+        this.subgraphData = flowGraph;
+      } else {
+        let formattedNode = formatFlowNodeProps(this.node, this.colorBy);
+        formattedNode.label = formattedNode.label || "New Node";
+        // small delay so VueFlow has time to mount
+        setTimeout(() => {
+          this.subgraphData = { nodes: [formattedNode], edges: [] };
+        }, 45);
+      }
+    } else if (this.isEdge && cachedSnapshot?.focusEdge) {
+      this.hydrateNewEdgeFromSnapshot(cachedSnapshot);
     } else {
       this.fetchElementAndSubgraphData();
     }
   },
   methods: {
+    consumeFocusGraphSnapshot() {
+      const raw = sessionStorage.getItem(FOCUS_GRAPH_CACHE_KEY);
+      if (!raw) return null;
+      sessionStorage.removeItem(FOCUS_GRAPH_CACHE_KEY);
+      try {
+        return JSON.parse(raw);
+      } catch (error) {
+        console.warn("Failed to parse focus graph snapshot", error);
+        return null;
+      }
+    },
+    clearFocusGraphSnapshot() {
+      sessionStorage.removeItem(FOCUS_GRAPH_CACHE_KEY);
+    },
+    buildFlowGraphFromRaw(rawNodes = [], rawEdges = []) {
+      const formattedNodes = (rawNodes || []).map((node) => {
+        const normalized = { ...node };
+        if (
+          typeof normalized.node_id === "string" &&
+          normalized.node_id !== "new"
+        ) {
+          const numericId = Number(normalized.node_id);
+          if (!Number.isNaN(numericId)) {
+            normalized.node_id = numericId;
+          }
+        }
+        return formatFlowNodeProps(normalized, this.colorBy);
+      });
+      const formattedEdges = (rawEdges || []).map((edge) => {
+        const normalized = { ...edge };
+        const resolvedSource =
+          normalized.source ?? normalized.source_id ?? normalized.data?.source;
+        const resolvedTarget =
+          normalized.target ?? normalized.target_id ?? normalized.data?.target;
+        if (resolvedSource != null) {
+          const numericSource = Number(resolvedSource);
+          normalized.source = Number.isNaN(numericSource)
+            ? resolvedSource
+            : numericSource;
+        }
+        if (resolvedTarget != null) {
+          const numericTarget = Number(resolvedTarget);
+          normalized.target = Number.isNaN(numericTarget)
+            ? resolvedTarget
+            : numericTarget;
+        }
+        return formatFlowEdgeProps(normalized, this.colorBy);
+      });
+      return { nodes: formattedNodes, edges: formattedEdges };
+    },
+    hydrateNewEdgeFromSnapshot(snapshot) {
+      const rawEdge = snapshot?.focusEdge ? { ...snapshot.focusEdge } : null;
+      if (!rawEdge) {
+        this.fetchElementAndSubgraphData();
+        return;
+      }
+
+      const sourceRaw = rawEdge.source ?? rawEdge.source_id;
+      const targetRaw = rawEdge.target ?? rawEdge.target_id;
+      const sourceIdNumber = Number(sourceRaw);
+      const targetIdNumber = Number(targetRaw);
+      const edge = {
+        ...rawEdge,
+        source:
+          Number.isNaN(sourceIdNumber) || sourceRaw === "new"
+            ? sourceRaw
+            : sourceIdNumber,
+        target:
+          Number.isNaN(targetIdNumber) || targetRaw === "new"
+            ? targetRaw
+            : targetIdNumber,
+        new: true,
+      };
+
+      const edgeTypeConfig = this.edgeTypes[edge.edge_type] || {};
+      const allowed = edgeTypeConfig.properties || [];
+      if (allowed.includes("description") && edge.description == null) {
+        edge.description = "";
+      }
+      if (allowed.includes("references") && !Array.isArray(edge.references)) {
+        edge.references = [];
+      }
+
+      const rawNodes = snapshot?.nodes || [];
+      const resolveNodeType = (nodeId) => {
+        if (nodeId == null || nodeId === "new") return null;
+        const numeric = Number(nodeId);
+        return rawNodes.find((node) => {
+          const candidate = Number(node.node_id ?? node.id);
+          return candidate === numeric;
+        })?.node_type;
+      };
+
+      edge.sourceNodeType = edge.sourceNodeType || resolveNodeType(edge.source);
+      edge.targetNodeType = edge.targetNodeType || resolveNodeType(edge.target);
+
+      this.edge = edge;
+      if (snapshot?.nodes?.length || snapshot?.edges?.length) {
+        this.subgraphData = this.buildFlowGraphFromRaw(
+          snapshot.nodes,
+          snapshot.edges,
+        );
+      }
+    },
     normalizeTypeName(type) {
       if (!type && type !== 0) {
         return null;

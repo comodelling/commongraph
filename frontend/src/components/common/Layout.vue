@@ -90,10 +90,12 @@ export default {
 
 .main-content {
   flex: 1;
+  min-width: 0;
+  min-height: 0;
   background-color: var(--background-color);
   border-radius: 5px;
   margin: 0 0 2px 2px;
-  overflow-y: auto;
+  overflow: hidden;
 }
 
 .full-width {

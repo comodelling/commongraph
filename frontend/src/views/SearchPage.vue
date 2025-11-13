@@ -1340,8 +1340,8 @@ export default {
 .search-page {
   display: flex;
   flex-direction: column;
-  height: 92vh;
-  width: 99.3vw;
+  height: 100%;
+  width: 100%;
 }
 
 .search-content {
@@ -1349,7 +1349,7 @@ export default {
   flex: 1;
   overflow: hidden;
   gap: 4px; /* Space between columns, matching ElementFocus left-panel gap */
-  padding: 0 1px 0 0; /* Small padding on right and bottom to show borders */
+  padding: 0;
   box-sizing: border-box;
 }
 
@@ -1364,6 +1364,7 @@ export default {
   border-radius: 4px;
   overflow: hidden; /* Prevent overflow */
   flex-shrink: 0; /* Don't shrink the results column */
+  min-height: 0; /* Allow flex items inside to shrink */
 }
 
 .results-column h2 {
@@ -1384,9 +1385,11 @@ export default {
 .visualization-column {
   flex: 1;
   padding: 0;
+  padding-right: 9px;
   box-sizing: border-box;
   overflow: hidden;
   min-width: 0; /* Allow flex item to shrink below content size */
+  min-height: 0; /* Allow flex item to shrink below content size */
   display: flex;
   flex-direction: column;
 }
@@ -1398,6 +1401,7 @@ export default {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  min-width: 0; /* Allow flex item to shrink below content size */
   min-height: 0; /* Allow flex item to shrink */
   position: relative;
   box-sizing: border-box;

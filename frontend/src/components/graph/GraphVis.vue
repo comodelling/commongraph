@@ -151,7 +151,7 @@ export default {
     },
     height: {
       type: String,
-      default: "400px",
+      default: "100%",
     },
     initialLayout: {
       type: String,

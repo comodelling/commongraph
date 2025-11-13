@@ -50,36 +50,39 @@
                   fill="none"
                   xmlns="http://www.w3.org/2000/svg"
                 >
+                  <!-- Left block -->
                   <rect
-                    x="1"
-                    y="5"
-                    width="4"
-                    height="6"
-                    rx="0.5"
+                    x="1.2"
+                    y="4.2"
+                    width="4.8"
+                    height="7.6"
+                    rx="1"
                     stroke="currentColor"
-                    stroke-width="1.5"
+                    stroke-width="1.6"
                     fill="none"
                   />
+                  <!-- Right block -->
                   <rect
-                    x="11"
-                    y="5"
-                    width="4"
-                    height="6"
-                    rx="0.5"
+                    x="9"
+                    y="4.2"
+                    width="4.8"
+                    height="7.6"
+                    rx="1"
                     stroke="currentColor"
-                    stroke-width="1.5"
+                    stroke-width="1.6"
                     fill="none"
                   />
-                  <line
-                    x1="5"
-                    y1="8"
-                    x2="11"
-                    y2="8"
+                  <!-- Connecting shaft -->
+                  <path
+                    d="M5.8 8 L10.2 8"
                     stroke="currentColor"
                     stroke-width="1.8"
+                    stroke-linecap="round"
+                    fill="none"
                   />
+                  <!-- Arrowhead -->
                   <path
-                    d="M 9 6 L 11 8 L 9 10"
+                    d="M9.2 6.4 L11 8 L9.2 9.6"
                     stroke="currentColor"
                     stroke-width="1.8"
                     fill="none"
@@ -100,32 +103,119 @@
                   fill="none"
                   xmlns="http://www.w3.org/2000/svg"
                 >
-                  <circle cx="4" cy="4" r="2" fill="currentColor" />
-                  <circle cx="12" cy="4" r="2" fill="currentColor" />
-                  <circle cx="8" cy="12" r="2" fill="currentColor" />
-                  <line
-                    x1="6"
-                    y1="4"
-                    x2="10"
-                    y2="4"
+                  <!-- Center node -->
+                  <circle cx="8" cy="7.5" r="1" fill="currentColor" />
+
+                  <!-- Rim circle to indicate connected ring -->
+                  <circle
+                    cx="8"
+                    cy="7.5"
+                    r="4.6"
                     stroke="currentColor"
-                    stroke-width="1.5"
+                    stroke-width="0.9"
+                    fill="none"
+                    opacity="0.9"
+                  />
+
+                  <!-- Outer nodes (slightly larger dots) -->
+                  <circle cx="8" cy="2.9" r="1.3" fill="currentColor" />
+                  <circle cx="12.45" cy="5.7" r="1.3" fill="currentColor" />
+                  <circle cx="10.55" cy="11.05" r="1.3" fill="currentColor" />
+                  <circle cx="5.45" cy="11.05" r="1.3" fill="currentColor" />
+                  <circle cx="3.55" cy="5.7" r="1.3" fill="currentColor" />
+
+                  <!-- Radial edges from center to outer nodes (thin) -->
+                  <line
+                    x1="8"
+                    y1="7.5"
+                    x2="8"
+                    y2="3.2"
+                    stroke="currentColor"
+                    stroke-width="1"
+                    stroke-linecap="round"
                   />
                   <line
-                    x1="5.4"
-                    y1="5.4"
-                    x2="6.6"
-                    y2="10.6"
+                    x1="8"
+                    y1="7.5"
+                    x2="12.0"
+                    y2="6.0"
                     stroke="currentColor"
-                    stroke-width="1.5"
+                    stroke-width="1"
+                    stroke-linecap="round"
                   />
                   <line
-                    x1="10.6"
-                    y1="5.4"
-                    x2="9.4"
-                    y2="10.6"
+                    x1="8"
+                    y1="7.5"
+                    x2="10.4"
+                    y2="9.9"
                     stroke="currentColor"
-                    stroke-width="1.5"
+                    stroke-width="1"
+                    stroke-linecap="round"
+                  />
+                  <line
+                    x1="8"
+                    y1="7.5"
+                    x2="5.6"
+                    y2="9.9"
+                    stroke="currentColor"
+                    stroke-width="1"
+                    stroke-linecap="round"
+                  />
+                  <line
+                    x1="8"
+                    y1="7.5"
+                    x2="4.0"
+                    y2="6.0"
+                    stroke="currentColor"
+                    stroke-width="1"
+                    stroke-linecap="round"
+                  />
+
+                  <!-- Connections along the rim between adjacent outer nodes (thin) -->
+                  <line
+                    x1="8"
+                    y1="2.9"
+                    x2="12.45"
+                    y2="5.7"
+                    stroke="currentColor"
+                    stroke-width="0.9"
+                    stroke-linecap="round"
+                  />
+                  <line
+                    x1="12.45"
+                    y1="5.7"
+                    x2="10.55"
+                    y2="11.05"
+                    stroke="currentColor"
+                    stroke-width="0.9"
+                    stroke-linecap="round"
+                  />
+                  <line
+                    x1="10.55"
+                    y1="11.05"
+                    x2="5.45"
+                    y2="11.05"
+                    stroke="currentColor"
+                    stroke-width="0.9"
+                    stroke-linecap="round"
+                  />
+                  <line
+                    x1="5.45"
+                    y1="11.05"
+                    x2="3.55"
+                    y2="5.7"
+                    stroke="currentColor"
+                    stroke-width="0.9"
+                    stroke-linecap="round"
+                  />
+                  <line
+                    x1="3.55"
+                    y1="5.7"
+                    x2="8"
+                    y2="2.9"
+                    stroke="currentColor"
+                    stroke-width="0.9"
+                    stroke-linecap="round"
                   />
                 </svg>
               </button>
@@ -1440,7 +1530,7 @@ export default {
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  padding: 5px 7px;
+  padding: 4px 7px;
   background-color: var(--background-color);
   border: 1px solid var(--border-color);
   border-radius: 4px;

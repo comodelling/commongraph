@@ -14,6 +14,7 @@ import UpdateSecurityQuestion from "../views/UpdateSecurityQuestion.vue";
 import UpdatePassword from "../views/UpdatePassword.vue";
 import Schema from "../views/Schema.vue";
 import AdminUsers from "../views/AdminUsers.vue";
+import PrivacyPolicy from "../views/PrivacyPolicy.vue";
 import DemoViewer from "../views/DemoViewer.vue";
 import BetaNotice from "../views/BetaNotice.vue";
 import { useUnsaved } from "../composables/useUnsaved";
@@ -34,6 +35,7 @@ const routes = [
         meta: { requiresRead: true },
       },
       { path: "about", name: "About", component: About },
+      { path: "privacy", name: "PrivacyPolicy", component: PrivacyPolicy },
       { path: "beta", name: "BetaNotice", component: BetaNotice },
       {
         path: "search",

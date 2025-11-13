@@ -90,6 +90,14 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  highlightedNodeId: {
+    type: [String, Number],
+    default: null,
+  },
+  fitTrigger: {
+    type: Number,
+    default: 0,
+  },
 });
 
 const router = useRouter();
@@ -114,6 +122,12 @@ const showSearchBar = ref(false);
 const searchBarPosition = ref({ x: 0, y: 0 });
 const searchResults = ref(null);
 const selectedDirection = ref(previousDirection.value || "LR"); // Default to Left-to-Right
+const highlightedOriginalClass = new Map();
+const isInstanceReady = ref(false);
+const pendingData = ref(null);
+const pendingHighlightId = ref(null);
+const pendingFitRequest = ref(false);
+pendingData.value = props.data;
 
 const currentNodeIds = computed(() => {
   return new Set(nodes.value.map((node) => node.id));
@@ -128,17 +142,35 @@ onInit((vueFlowInstance) => {
   // fitView()
   console.log("VueFlow instance initialised");
   console.log("onInit, selected direction", selectedDirection.value);
+  isInstanceReady.value = true;
+
+  const initialData = pendingData.value || props.data;
+  if (initialData) {
+    applyIncomingData(initialData);
+  }
+
+  if (pendingHighlightId.value != null) {
+    nextTick(() => {
+      applyNodeHighlight(pendingHighlightId.value);
+      pendingHighlightId.value = null;
+    });
+  }
+
+  if (pendingFitRequest.value) {
+    fitViewToContent();
+  }
 });
 
 // watch for changes in props.data and update nodes and edges accordingly
 watch(
   () => props.data,
   (newData) => {
-    console.log("updating subgraph data following props change");
-    updateSubgraphFromData(newData);
-    setTimeout(() => {
-      layoutSubgraph(selectedDirection.value);
-    }, 16); // leave time for nodes to initialise (size)
+    if (!newData) return;
+    pendingData.value = newData;
+    if (!isInstanceReady.value) {
+      return;
+    }
+    applyIncomingData(newData);
   },
   { immediate: false },
 );
@@ -232,6 +264,89 @@ watch(
   { immediate: true },
 );
 
+function applyNodeHighlight(nodeId) {
+  if (nodeId === undefined || nodeId === null) {
+    return;
+  }
+  const id = nodeId.toString();
+  const node = findNode(id);
+  if (!node) {
+    return;
+  }
+
+  if (!highlightedOriginalClass.has(id)) {
+    highlightedOriginalClass.set(id, node.class || "");
+  }
+
+  const classTokens = new Set((node.class || "").split(" ").filter(Boolean));
+  classTokens.add("flow-node-hovered");
+  const updatedClass = Array.from(classTokens).join(" ");
+
+  updateNode(id, { ...node, class: updatedClass });
+}
+
+function removeNodeHighlight(nodeId) {
+  if (nodeId === undefined || nodeId === null) {
+    return;
+  }
+  const id = nodeId.toString();
+  const node = findNode(id);
+  const originalClass = highlightedOriginalClass.get(id);
+
+  if (node) {
+    let targetClass = originalClass;
+    if (targetClass === undefined) {
+      const classTokens = new Set(
+        (node.class || "").split(" ").filter(Boolean),
+      );
+      classTokens.delete("flow-node-hovered");
+      targetClass = Array.from(classTokens).join(" ");
+    }
+    updateNode(id, { ...node, class: targetClass || "" });
+  }
+
+  highlightedOriginalClass.delete(id);
+}
+
+watch(
+  () => props.highlightedNodeId,
+  (newId, oldId) => {
+    if (oldId != null && oldId !== newId) {
+      removeNodeHighlight(oldId);
+    }
+    if (newId == null) {
+      return;
+    }
+
+    if (!isInstanceReady.value) {
+      pendingHighlightId.value = newId;
+      return;
+    }
+
+    nextTick(() => {
+      applyNodeHighlight(newId);
+    });
+  },
+  { immediate: true },
+);
+
+watch(
+  () => props.fitTrigger,
+  (newVal, oldVal) => {
+    if (newVal === oldVal) {
+      return;
+    }
+
+    if (!isInstanceReady.value) {
+      pendingFitRequest.value = true;
+      return;
+    }
+
+    fitViewToContent();
+  },
+  { immediate: true },
+);
+
 function updateSubgraphFromData(data) {
   console.log("Updating subgraph from data:", data);
   setNodes(data.nodes || []);
@@ -246,6 +361,20 @@ function updateSubgraphFromData(data) {
   } else {
     updateNodeData(route.params.id, { selected: true });
   }
+}
+
+function applyIncomingData(newData) {
+  console.log("Applying incoming data to flow editor", newData);
+  highlightedOriginalClass.clear();
+  updateSubgraphFromData(newData);
+  nextTick(() => {
+    layoutSubgraph(selectedDirection.value);
+    if (props.highlightedNodeId != null) {
+      nextTick(() => {
+        applyNodeHighlight(props.highlightedNodeId);
+      });
+    }
+  });
 }
 
 function selectDirection(direction, layout = false) {
@@ -264,19 +393,59 @@ async function layoutSubgraph(direction) {
 
   if (currentNodes.length === 1) {
     nodes.value = affectDirection(currentNodes, direction);
-    nextTick(() => {
-      fitView();
-      zoomTo(1.5);
-    });
+    fitViewToContent({ zoom: 1.5 });
     return;
-  } else if (currentNodes.length === 0 || currentEdges.length === 0) {
-    console.warn("Nodes or edges are empty, cannot layout subgraph");
+  } else if (currentNodes.length === 0) {
+    console.warn("Nodes array is empty, cannot layout subgraph");
+    return;
+  } else if (currentEdges.length === 0) {
+    console.warn("No edges supplied, falling back to simple layout");
+    nodes.value = affectDirection(currentNodes, direction).map((node, idx) => ({
+      ...node,
+      position: {
+        x: direction === "TB" || direction === "BT" ? 0 : idx * 200,
+        y: direction === "TB" || direction === "BT" ? idx * 150 : 0,
+      },
+    }));
+    fitViewToContent();
     return;
   }
   nodes.value = layout(currentNodes, currentEdges, direction);
 
+  fitViewToContent();
+}
+
+function fitViewToContent({ zoom } = {}) {
+  const runFit = () => {
+    const currentNodes = getNodes.value || [];
+    if (!currentNodes.length) {
+      return;
+    }
+
+    const nodeIds = currentNodes.map((node) => node.id);
+    fitView({
+      nodes: nodeIds,
+      includeHiddenNodes: true,
+      padding: 0.25,
+      duration: 0,
+    });
+
+    if (typeof zoom === "number") {
+      zoomTo(zoom);
+    }
+  };
+
+  const scheduleFit = () => {
+    if (typeof window !== "undefined" && window.requestAnimationFrame) {
+      window.requestAnimationFrame(runFit);
+    } else {
+      runFit();
+    }
+  };
+
   nextTick(() => {
-    fitView();
+    pendingFitRequest.value = false;
+    scheduleFit();
   });
 }
 
@@ -444,6 +613,10 @@ const onNodesChange = async (changes) => {
             alert(
               "Failed to delete node. Please try again or contact support if the problem persists.",
             );
+          }
+          if (!isInstanceReady.value) {
+            pendingHighlightId.value = newId;
+            return;
           }
 
           // Don't add to nextChanges so UI doesn't update
@@ -1460,5 +1633,21 @@ onEdgeMouseLeave(({ edge }) => {
 .vue-simple-context-menu .disabled:hover {
   background-color: #f5f5f5 !important;
   color: #999 !important;
+}
+
+.vue-flow__node.flow-node-connector {
+  opacity: 0.35;
+  transition: opacity 0.2s ease-in-out;
+}
+
+.vue-flow__node.flow-node-hovered {
+  opacity: 1 !important;
+  box-shadow: 0 0 0 4px rgba(100, 108, 255, 0.4);
+  transition: box-shadow 0.15s ease-in-out;
+}
+
+.vue-flow__edge.flow-edge-connector path,
+.vue-flow__edge.flow-edge-connector .vue-flow__edge-path {
+  opacity: 0.35;
 }
 </style>

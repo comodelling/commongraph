@@ -1,5 +1,9 @@
 <template>
-  <div class="node-item">
+  <div
+    class="node-item"
+    @mouseenter="$emit('hover', node.node_id)"
+    @mouseleave="$emit('leave', node.node_id)"
+  >
     <router-link :to="`/node/${node.node_id}`" class="title">
       ➜ {{ node.title }}
     </router-link>
@@ -22,6 +26,7 @@ export default {
       required: true,
     },
   },
+  emits: ["hover", "leave"],
   methods: {
     formatDate(iso) {
       const d = new Date(iso);

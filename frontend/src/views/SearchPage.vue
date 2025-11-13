@@ -22,7 +22,11 @@
           </div>
           <ul v-else>
             <div v-for="node in nodes" :key="node.node_id">
-              <NodeListItem :node="node" />
+              <NodeListItem
+                :node="node"
+                @hover="handleNodeItemHover"
+                @leave="handleNodeItemLeave"
+              />
             </div>
           </ul>
         </div>
@@ -31,8 +35,58 @@
         <div class="graph-container">
           <div class="viz-tabs">
             <button
+              :class="['tab-button', { active: activeTab === 'flow' }]"
+              @click="selectTab('flow')"
+              title="Flow View"
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 16 16"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <rect
+                  x="1"
+                  y="5"
+                  width="4"
+                  height="6"
+                  rx="0.5"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  fill="none"
+                />
+                <rect
+                  x="11"
+                  y="5"
+                  width="4"
+                  height="6"
+                  rx="0.5"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  fill="none"
+                />
+                <line
+                  x1="5"
+                  y1="8"
+                  x2="11"
+                  y2="8"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                />
+                <path
+                  d="M 9 6 L 11 8 L 9 10"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  fill="none"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </button>
+            <button
               :class="['tab-button', { active: activeTab === 'graph' }]"
-              @click="activeTab = 'graph'"
+              @click="selectTab('graph')"
               title="Graph View"
             >
               <svg
@@ -42,11 +96,9 @@
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
               >
-                <!-- Three nodes -->
                 <circle cx="4" cy="4" r="2" fill="currentColor" />
                 <circle cx="12" cy="4" r="2" fill="currentColor" />
                 <circle cx="8" cy="12" r="2" fill="currentColor" />
-                <!-- Edges connecting them - all perfectly straight -->
                 <line
                   x1="6"
                   y1="4"
@@ -70,60 +122,6 @@
                   y2="10.6"
                   stroke="currentColor"
                   stroke-width="1.5"
-                />
-              </svg>
-            </button>
-            <button
-              class="tab-button disabled"
-              disabled
-              title="Flow View (Coming Soon)"
-            >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 16 16"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <!-- Left square -->
-                <rect
-                  x="1"
-                  y="5"
-                  width="4"
-                  height="6"
-                  rx="0.5"
-                  stroke="currentColor"
-                  stroke-width="1.5"
-                  fill="none"
-                />
-                <!-- Right square -->
-                <rect
-                  x="11"
-                  y="5"
-                  width="4"
-                  height="6"
-                  rx="0.5"
-                  stroke="currentColor"
-                  stroke-width="1.5"
-                  fill="none"
-                />
-                <!-- Arrow connecting them -->
-                <line
-                  x1="5"
-                  y1="8"
-                  x2="11"
-                  y2="8"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                />
-                <!-- Arrow head (pointing right) -->
-                <path
-                  d="M 9 6 L 11 8 L 9 10"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                  fill="none"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
                 />
               </svg>
             </button>
@@ -166,6 +164,15 @@
             @edge-click="handleEdgeClick"
             @graph-loaded="handleGraphLoaded"
           />
+          <FlowEditor
+            v-else-if="activeTab === 'flow'"
+            :data="flowSubgraphData"
+            :read-only="true"
+            :highlighted-node-id="hoveredNodeId"
+            :fit-trigger="flowFitTick"
+            @nodeClick="handleNodeClick"
+            @edgeClick="handleEdgeClick"
+          />
         </div>
 
         <!-- <AggRatingMultipane
@@ -183,10 +190,15 @@ import api from "../api/axios";
 import qs from "qs";
 import { useRouter, useRoute } from "vue-router";
 import { useConfig } from "../composables/useConfig";
+import {
+  formatFlowNodeProps,
+  formatFlowEdgeProps,
+} from "../composables/formatFlowComponents";
 import RatingHistogram from "../components/poll/RatingHistogram.vue";
 import NodeListItem from "../components/node/NodeListItem.vue";
 import AggRatingMultipane from "../components/poll/AggRatingMultipane.vue";
 import CosmosGraphVis from "../components/graph/GraphVis.vue";
+import FlowEditor from "../components/graph/FlowEditor.vue";
 
 export default {
   components: {
@@ -194,6 +206,7 @@ export default {
     NodeListItem,
     AggRatingMultipane,
     CosmosGraphVis,
+    FlowEditor,
   },
   data() {
     return {
@@ -202,6 +215,9 @@ export default {
       relationships: [], // Edges from the subgraph
       subgraphNodes: [], // All nodes from subgraph (search results + connected nodes)
       activeTab: "graph", // Current visualization tab
+      hoveredNodeId: null,
+      userSelectedTab: false,
+      flowFitTick: 0,
     };
   },
   computed: {
@@ -291,6 +307,112 @@ export default {
 
       return result;
     },
+    searchResultIdSet() {
+      return new Set(
+        this.nodes
+          .map((node) => Number(node.node_id ?? node.id))
+          .filter((id) => Number.isFinite(id)),
+      );
+    },
+    flowSubgraphData() {
+      const nodesSource = this.subgraphNodes.length
+        ? this.subgraphNodes
+        : this.nodes;
+
+      if (!nodesSource.length) {
+        return { nodes: [], edges: [] };
+      }
+
+      const formattedNodes = nodesSource
+        .map((node) => {
+          const nodeId = Number(node.node_id ?? node.id);
+          if (!Number.isFinite(nodeId)) {
+            return null;
+          }
+
+          const enrichedNode = {
+            ...node,
+            node_id: nodeId,
+            title: node.title || `Node ${nodeId}`,
+          };
+
+          const formatted = formatFlowNodeProps(enrichedNode);
+          const isSearchResult = this.searchResultIdSet.has(nodeId);
+
+          formatted.data = {
+            ...formatted.data,
+            isSearchResult,
+          };
+          if (!formatted.label) {
+            formatted.label = enrichedNode.title;
+          }
+
+          if (!isSearchResult) {
+            const baseOpacityRaw = formatted.style?.opacity;
+            const baseOpacity =
+              typeof baseOpacityRaw === "number"
+                ? baseOpacityRaw
+                : parseFloat(baseOpacityRaw) || 0.95;
+            formatted.style = {
+              ...formatted.style,
+              opacity: Math.min(baseOpacity, 0.35),
+            };
+          }
+
+          const classTokens = [formatted.class];
+          classTokens.push(
+            isSearchResult ? "flow-node-search-result" : "flow-node-connector",
+          );
+          formatted.class = classTokens.filter(Boolean).join(" ");
+
+          return formatted;
+        })
+        .filter(Boolean);
+
+      const formattedEdges = this.relationships
+        .map((rel) => {
+          const sourceId = Number(rel.source ?? rel.source_id);
+          const targetId = Number(rel.target ?? rel.target_id);
+          if (!Number.isFinite(sourceId) || !Number.isFinite(targetId)) {
+            return null;
+          }
+
+          const edgeType =
+            rel.edge_type || rel.relationship_type || rel.type || "unknown";
+
+          const formatted = formatFlowEdgeProps({
+            ...rel,
+            source: sourceId,
+            target: targetId,
+            edge_type: edgeType,
+          });
+
+          const sourceIsSearch = this.searchResultIdSet.has(sourceId);
+          const targetIsSearch = this.searchResultIdSet.has(targetId);
+
+          const edgeClassTokens = [formatted.class];
+          if (!sourceIsSearch || !targetIsSearch) {
+            const baseOpacityRaw = formatted.style?.opacity;
+            const baseOpacity =
+              typeof baseOpacityRaw === "number"
+                ? baseOpacityRaw
+                : parseFloat(baseOpacityRaw) || 1;
+            formatted.style = {
+              ...formatted.style,
+              opacity: Math.min(baseOpacity, 0.35),
+            };
+            edgeClassTokens.push("flow-edge-connector");
+          } else {
+            edgeClassTokens.push("flow-edge-search-result");
+          }
+          formatted.class = edgeClassTokens.filter(Boolean).join(" ");
+
+          return formatted;
+        })
+        .filter(Boolean);
+
+      return { nodes: formattedNodes, edges: formattedEdges };
+    },
     // Nicely format the incoming title/query which may be an array, JSON string, or comma-separated
     formattedQuery() {
       const q = this.title;
@@ -341,8 +463,31 @@ export default {
         this.performSearch();
       },
     },
+    activeTab(newVal, oldVal) {
+      if (newVal === "flow" && oldVal !== "flow") {
+        this.requestFlowFit();
+      }
+    },
   },
   methods: {
+    selectTab(tab) {
+      if (tab === this.activeTab) return;
+      this.userSelectedTab = true;
+      this.activeTab = tab;
+    },
+    requestFlowFit() {
+      this.flowFitTick += 1;
+    },
+    handleNodeItemHover(nodeId) {
+      const numericId = Number(nodeId);
+      this.hoveredNodeId = Number.isFinite(numericId) ? numericId : null;
+    },
+    handleNodeItemLeave(nodeId) {
+      const numericId = Number(nodeId);
+      if (this.hoveredNodeId === numericId) {
+        this.hoveredNodeId = null;
+      }
+    },
     createNodeFromSearch() {
       // Navigate to the node edit page for a new node, passing the search query as title
       const title = this.formattedQuery;
@@ -481,6 +626,17 @@ export default {
         this.nodes = searchResponse.data;
         this.subgraphNodes = subgraphResponse.data.nodes || [];
         this.relationships = subgraphResponse.data.edges || [];
+
+        const combinedNodes = [...this.nodes, ...this.subgraphNodes];
+        const totalNodeCount = new Set(
+          combinedNodes
+            .map((node) => node?.node_id ?? node?.id)
+            .filter((id) => id !== undefined && id !== null),
+        ).size;
+        const preferredTab = totalNodeCount < 50 ? "flow" : "graph";
+        if (!this.userSelectedTab) {
+          this.activeTab = preferredTab;
+        }
 
         const endTime = performance.now();
         console.log(`Search completed in ${endTime - startTime} milliseconds`);

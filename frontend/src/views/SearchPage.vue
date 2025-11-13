@@ -29,7 +29,137 @@
       </div>
       <div class="visualization-column">
         <div class="graph-container">
+          <div class="viz-tabs">
+            <button
+              :class="['tab-button', { active: activeTab === 'graph' }]"
+              @click="activeTab = 'graph'"
+              title="Graph View"
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 16 16"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <!-- Three nodes -->
+                <circle cx="4" cy="4" r="2" fill="currentColor" />
+                <circle cx="12" cy="4" r="2" fill="currentColor" />
+                <circle cx="8" cy="12" r="2" fill="currentColor" />
+                <!-- Edges connecting them - all perfectly straight -->
+                <line
+                  x1="6"
+                  y1="4"
+                  x2="10"
+                  y2="4"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                />
+                <line
+                  x1="5.4"
+                  y1="5.4"
+                  x2="6.6"
+                  y2="10.6"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                />
+                <line
+                  x1="10.6"
+                  y1="5.4"
+                  x2="9.4"
+                  y2="10.6"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                />
+              </svg>
+            </button>
+            <button
+              class="tab-button disabled"
+              disabled
+              title="Flow View (Coming Soon)"
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 16 16"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <!-- Left square -->
+                <rect
+                  x="1"
+                  y="5"
+                  width="4"
+                  height="6"
+                  rx="0.5"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  fill="none"
+                />
+                <!-- Right square -->
+                <rect
+                  x="11"
+                  y="5"
+                  width="4"
+                  height="6"
+                  rx="0.5"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  fill="none"
+                />
+                <!-- Arrow connecting them -->
+                <line
+                  x1="5"
+                  y1="8"
+                  x2="11"
+                  y2="8"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                />
+                <!-- Arrow head (pointing right) -->
+                <path
+                  d="M 9 6 L 11 8 L 9 10"
+                  stroke="currentColor"
+                  stroke-width="1.8"
+                  fill="none"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </button>
+            <button
+              class="tab-button disabled"
+              disabled
+              title="Map View (Coming Soon)"
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 16 16"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M2 12 L6 10 L10 12 L14 10 V4 L10 6 L6 4 L2 6 Z"
+                  fill="currentColor"
+                  opacity="0.3"
+                />
+                <path
+                  d="M6 4 V10 M10 6 V12"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                />
+                <path
+                  d="M2 6 L6 4 L10 6 L14 4"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  fill="none"
+                />
+              </svg>
+            </button>
+          </div>
           <CosmosGraphVis
+            v-if="activeTab === 'graph'"
             :graph-data="subgraphData"
             :show-controls="true"
             @node-click="handleNodeClick"
@@ -71,6 +201,7 @@ export default {
       nodes: [],
       relationships: [], // Edges from the subgraph
       subgraphNodes: [], // All nodes from subgraph (search results + connected nodes)
+      activeTab: "graph", // Current visualization tab
     };
   },
   computed: {
@@ -379,26 +510,30 @@ export default {
 .search-page {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: 92vh;
+  width: 99.3vw;
 }
 
 .search-content {
   display: flex;
   flex: 1;
   overflow: hidden;
+  gap: 4px; /* Space between columns, matching ElementFocus left-panel gap */
+  padding: 0 1px 0 0; /* Small padding on right and bottom to show borders */
+  box-sizing: border-box;
 }
 
 .results-column {
-  flex: 1;
+  width: 400px; /* Match ElementFocus left-panel width */
   padding: 10px 0 5px 0px;
-  /* padding-left: 100px; */
-  /* border-right: 1px solid #ddd; */
+  padding-right: 2px; /* Match ElementFocus left-panel padding-right */
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   border: 1px solid var(--border-color);
   border-radius: 4px;
-  /* margin:  */
-  margin: 2px 2px 4px 2px;
+  overflow: hidden; /* Prevent overflow */
+  flex-shrink: 0; /* Don't shrink the results column */
 }
 
 .results-column h2 {
@@ -407,31 +542,114 @@ export default {
   padding-bottom: 10px;
   padding-right: 50px;
   border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0; /* Prevent header from shrinking */
 }
 
 .results-list {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .visualization-column {
   flex: 1;
-  overflow-y: auto;
-  border: none;
-  border-radius: 4px;
-  margin: 2px 4px 4px 2px;
+  padding: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+  min-width: 0; /* Allow flex item to shrink below content size */
   display: flex;
   flex-direction: column;
 }
 
 .graph-container {
-  height: 100%;
-  margin-bottom: 10px;
-  border: none;
-  /* border: 1px solid var(--border-color); */
+  flex: 1;
   border-radius: 4px;
+  padding-right: 2px; /* To match ElementFocus right-panel padding-right */
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+  min-height: 0; /* Allow flex item to shrink */
+  position: relative;
+  box-sizing: border-box;
+  /* No border here - it's on cosmos-container inside GraphVis */
+}
+
+.viz-tabs {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  display: flex;
+  gap: 4px;
+  z-index: 10;
+  flex-shrink: 0;
+}
+
+.tab-button {
+  padding: 6px 8px;
+  background-color: var(--background-color);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  min-width: 32px;
+  min-height: 32px;
+}
+
+.tab-button svg {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+
+.tab-button:hover:not(.disabled) {
+  background-color: var(--border-color);
+  border-color: var(--text-color);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
+}
+
+.tab-button:active:not(.disabled) {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.tab-button.active {
+  font-weight: 600;
+  border-color: var(--text-color);
+  background-color: var(--border-color);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.tab-button.disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  color: var(--muted-text-color);
+}
+
+.tab-button.disabled:hover {
+  transform: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+:global(body.dark) .tab-button {
+  background-color: #333;
+  color: #fff;
+  border-color: #555;
+}
+
+:global(body.dark) .tab-button:hover:not(.disabled) {
+  background-color: #444;
+  border-color: #777;
+}
+
+:global(body.dark) .tab-button.active {
+  background-color: #444;
+  border-color: #888;
 }
 
 .scope-group {

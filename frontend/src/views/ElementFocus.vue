@@ -445,6 +445,7 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 4px; /* Space between cards */
+  flex-shrink: 0; /* Don't shrink the left panel */
 }
 
 /* Card styling for left panel cards */
@@ -458,10 +459,11 @@ export default {
 /* Right panel for subgraph renderer; ensures full available space */
 .right-panel {
   flex: 1;
-  padding-left: 2px;
+  /* padding-left: 2px;
   padding-right: 10px;
-  padding: 1px 11px 1px 3px;
-  box-sizing: border-box;
+  padding-bottom: 3px; */
+  padding: 0px 11px 2px 3px;
+  /* box-sizing: border-box; */
   overflow: hidden;
   min-width: 0;
 }

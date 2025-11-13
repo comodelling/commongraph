@@ -1141,6 +1141,8 @@ export default {
       const status = data.status ?? data.node_status ?? null;
       const type = data.node_type ?? data.type ?? null;
       const scope = data.scope ?? null;
+      const ratingLabel = data.ratingLabel ?? null;
+      const ratingValue = data.support ?? null;
 
       const parts = [];
       if (status) {
@@ -1150,10 +1152,23 @@ export default {
         parts.push(type);
       }
 
-      const summary = parts.join(" ");
+      let summary = parts.join(" ");
       if (scope) {
-        return summary ? `${summary} (${scope})` : `(${scope})`;
+        summary = summary ? `${summary} (${scope})` : `(${scope})`;
       }
+
+      if (ratingLabel) {
+        let formattedRating = "none";
+        if (ratingValue != null) {
+          formattedRating =
+            typeof ratingValue === "number"
+              ? Number(ratingValue).toFixed(2).replace(/\.00$/, "")
+              : ratingValue;
+        }
+        const ratingLine = `median ${ratingLabel}: ${formattedRating}`;
+        summary = summary ? `${summary}\n${ratingLine}` : ratingLine;
+      }
+
       return summary;
     });
 
@@ -1178,8 +1193,23 @@ export default {
 
       const sourceTitle = resolveNodeTitle(sourceMeta) || "Source";
       const targetTitle = resolveNodeTitle(targetMeta) || "Target";
+      const ratingLabel = edge.data?.ratingLabel ?? null;
+      const ratingValue = edge.data?.causal_strength ?? null;
 
-      return `${sourceTitle} → ${targetTitle}`;
+      let summary = `${sourceTitle} → ${targetTitle}`;
+
+      if (ratingLabel) {
+        let formattedRating = "none";
+        if (ratingValue != null) {
+          formattedRating =
+            typeof ratingValue === "number"
+              ? Number(ratingValue).toFixed(2).replace(/\.00$/, "")
+              : ratingValue;
+        }
+        summary = `${summary}\nmedian ${ratingLabel}: ${formattedRating}`;
+      }
+
+      return summary;
     });
 
     const hoveredEdgeStyle = computed(() => {
@@ -1310,6 +1340,7 @@ export default {
 
 .node-tooltip-meta {
   opacity: 0.85;
+  white-space: pre-line;
 }
 
 :global(body.dark) .node-tooltip {
@@ -1339,6 +1370,7 @@ export default {
 
 .edge-tooltip-meta {
   opacity: 0.88;
+  white-space: pre-line;
 }
 
 :global(body.dark) .edge-tooltip {

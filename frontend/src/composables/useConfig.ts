@@ -10,6 +10,8 @@ const platformDescription = ref<string>("");
 const configLoaded = ref(false);
 const nodePollTypes = ref<Record<string, any>>({});
 const edgePollTypes = ref<Record<string, any>>({});
+const nodePollsByType = ref<Record<string, Record<string, any>>>({});
+const edgePollsByType = ref<Record<string, Record<string, any>>>({});
 const permissions = ref<Record<string, boolean>>({});
 const allowSignup = ref<boolean>(true);
 
@@ -19,14 +21,43 @@ async function load(forceReload = false) {
     const { data } = await api.get("/config");
     nodeTypes.value = data.node_types;
     edgeTypes.value = data.edge_types;
-    nodePollTypes.value = Object.keys(data.node_types).reduce((acc, key) => {
-      const polls = data.node_types[key].polls || {};
-      return { ...acc, ...polls };
-    }, {});
-    edgePollTypes.value = Object.keys(data.edge_types).reduce((acc, key) => {
-      const polls = data.edge_types[key].polls || {};
-      return { ...acc, ...polls };
-    }, {});
+    const pollsByNodeType: Record<string, Record<string, any>> = {};
+    const pollsByEdgeType: Record<string, Record<string, any>> = {};
+
+    nodePollTypes.value = {};
+    edgePollTypes.value = {};
+
+    const pollsConfig = (data.polls || {}) as Record<string, any>;
+    Object.entries(pollsConfig).forEach(([label, poll]) => {
+      const pollConfig = poll || {};
+      const nodeTypesList: string[] = pollConfig.node_types || [];
+      const edgeTypesList: string[] = pollConfig.edge_types || [];
+
+      if (nodeTypesList.length) {
+        nodePollTypes.value[label] = pollConfig;
+      }
+      if (edgeTypesList.length) {
+        edgePollTypes.value[label] = pollConfig;
+      }
+
+      nodeTypesList.forEach((nodeType) => {
+        if (!pollsByNodeType[nodeType]) {
+          pollsByNodeType[nodeType] = {};
+        }
+        pollsByNodeType[nodeType][label] = pollConfig;
+      });
+
+      edgeTypesList.forEach((edgeType) => {
+        if (!pollsByEdgeType[edgeType]) {
+          pollsByEdgeType[edgeType] = {};
+        }
+        pollsByEdgeType[edgeType][label] = pollConfig;
+      });
+    });
+
+    nodePollsByType.value = pollsByNodeType;
+    edgePollsByType.value = pollsByEdgeType;
+
     platformName.value = data.platform_name;
     platformTagline.value = data.platform_tagline;
     platformDescription.value = data.platform_description;
@@ -53,10 +84,10 @@ export function useConfig() {
   const defaultEdgeType = computed(() => Object.keys(edgeTypes.value)[0] || "");
 
   function getNodePolls(type: string) {
-    return nodeTypes.value[type]?.polls || {};
+    return nodePollsByType.value[type] || {};
   }
   function getEdgePolls(type: string) {
-    return edgeTypes.value[type]?.polls || {};
+    return edgePollsByType.value[type] || {};
   }
 
   // Permission helpers
@@ -80,6 +111,8 @@ export function useConfig() {
     defaultEdgeType,
     nodePollTypes,
     edgePollTypes,
+    nodePollsByType,
+    edgePollsByType,
     getNodePolls,
     getEdgePolls,
     permissions,

@@ -10,7 +10,7 @@ node_types:
       - tags
     style:
       color: "#FF6B6B"
-  
+
   wish:
     properties:
       - title
@@ -18,7 +18,7 @@ node_types:
       - tags
     style:
       color: "#4ECDC4"
-  
+
   proposal:
     properties:
       - title
@@ -26,7 +26,7 @@ node_types:
       - tags
     style:
       color: "#45B7D1"
-  
+
   action:
     properties:
       - title
@@ -34,7 +34,7 @@ node_types:
       - tags
     style:
       color: "#96CEB4"
-  
+
   objective:
     properties:
       - title
@@ -42,7 +42,7 @@ node_types:
       - tags
     style:
       color: "#FFEAA7"
-  
+
   potentiality:
     properties:
       - title
@@ -50,7 +50,7 @@ node_types:
       - tags
     style:
       color: "#DFE6E9"
-  
+
   project:
     properties:
       - title
@@ -66,7 +66,7 @@ edge_types:
       - references
     style:
       color: "#2C3E50"
-  
+
   imply:
     properties:
       - description
@@ -95,3 +95,5 @@ permissions:
   edit: all
   delete: all
   rate: all
+
+license: "CC BY-SA"   # CC BY-NC-SA or CC0

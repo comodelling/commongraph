@@ -13,7 +13,9 @@ import os
 
 # Determine project root (works whether running from root or backend/)
 _BACKEND_DIR = Path(__file__).parent
-_PROJECT_ROOT = _BACKEND_DIR.parent if (_BACKEND_DIR.parent / "config").exists() else _BACKEND_DIR
+_PROJECT_ROOT = (
+    _BACKEND_DIR.parent if (_BACKEND_DIR.parent / "config").exists() else _BACKEND_DIR
+)
 
 # Get config file path from env, defaulting to config-test.yaml for tests or config-example.yaml
 _CONFIG_FILE = os.getenv("CONFIG_FILE", "config/config-test.yaml")
@@ -43,6 +45,8 @@ PLATFORM_TAGLINE = _CONFIG.get(
 PLATFORM_DESCRIPTION = _CONFIG.get(
     "platform_description", _CONFIG.get("description_html", "")
 )
+# License configuration (e.g., CC BY-SA, CC BY-NC-SA, CC0, etc.)
+LICENSE = _CONFIG.get("license", "CC BY-SA")
 NODE_TYPE_CFG = _CONFIG["node_types"]
 EDGE_TYPE_CFG = _CONFIG["edge_types"]
 POLLS_CFG = _CONFIG.get("polls", {})

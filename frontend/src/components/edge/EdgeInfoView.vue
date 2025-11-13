@@ -36,6 +36,18 @@
       <strong :title="tooltips.edge.description">Description:</strong>
       <span class="field-value">{{ localEdge.description }}</span>
     </div>
+    <!-- License Notice -->
+    <p class="license-notice" v-if="license">
+      Edge descriptions are available under the
+      <a
+        :href="getLicenseUrl(license)"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        {{ license }}
+      </a>
+      license.
+    </p>
   </div>
 </template>
 
@@ -56,7 +68,7 @@ export default defineComponent({
   },
   emits: ["publish-edge"],
   setup(props) {
-    const { edgeTypes, load } = useConfig();
+    const { edgeTypes, load, license, getLicenseUrl } = useConfig();
     onMounted(load);
 
     const allowed = computed(() => {
@@ -77,7 +89,7 @@ export default defineComponent({
       return (tooltips.edge as any)[props.edge.edge_type] || tooltips.edge.type;
     });
 
-    return { isAllowed, edgeTypeTooltip };
+    return { isAllowed, edgeTypeTooltip, license, getLicenseUrl };
   },
   data() {
     return {
@@ -120,5 +132,23 @@ export default defineComponent({
 
 .field-value {
   flex: 1;
+}
+
+/* License notice styling */
+.license-notice {
+  font-size: 0.75rem;
+  color: #999;
+  margin-top: 12px;
+  line-height: 1.3;
+}
+
+.license-notice a {
+  color: #0066cc;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.license-notice a:hover {
+  text-decoration: underline;
 }
 </style>

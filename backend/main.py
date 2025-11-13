@@ -27,6 +27,7 @@ from backend.config import (
     NODE_TYPE_POLLS,
     EDGE_TYPE_POLLS,
     PLATFORM_TAGLINE,
+    LICENSE,
 )
 from backend.utils.permissions import get_permission_summary
 from backend.models.fixed import UserRead
@@ -138,4 +139,5 @@ def get_config(current_user: UserRead = Depends(get_current_user)):
         "permissions": get_permission_summary(current_user),
         "allow_signup": ALLOW_SIGNUP,
         "signup_requires_token": SIGNUP_REQUIRES_TOKEN,
+        "license": LICENSE,
     }

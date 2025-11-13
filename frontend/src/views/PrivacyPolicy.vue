@@ -2,13 +2,12 @@
   <div class="container">
     <div class="privacy-policy">
       <h1>Privacy Policy</h1>
-      <p class="last-updated">Last Updated: October 28, 2025</p>
+      <p class="last-updated">Last Updated: 14 November 2025</p>
 
       <section>
         <h2>Introduction</h2>
         <p>
-          We collect minimal personal data. This policy explains what information
-          we collect and how we use it.
+          This policy explains what information we collect and how we use it.
         </p>
       </section>
 
@@ -78,10 +77,7 @@
 
       <section>
         <h2>3. What Information is Public</h2>
-        <p>
-          <strong>Like Wikipedia, this is a collaborative platform where
-          contributions are public.</strong>
-        </p>
+
         <ul>
           <li>Your <strong>username</strong> is publicly visible</li>
           <li>
@@ -133,8 +129,7 @@
       <section>
         <h2>6. Cookies</h2>
         <p>
-          We use essential session cookies to keep you logged in. We do not use
-          advertising cookies or third-party tracking scripts.
+          We do not use any cookies or third-party tracking scripts.
         </p>
       </section>
 
@@ -146,10 +141,9 @@
             retained as long as your account is active.
           </li>
           <li>
-            <strong>Edit History:</strong> For historical integrity (like
-            Wikipedia), your public contributions and edit history are preserved
-            even if you delete your account. This maintains the collaborative
-            record of the platform's development.
+            <strong>Edit History:</strong> Your public contributions and edit
+            history are preserved even if you delete your account. This maintains
+            the collaborative record of the platform's development.
           </li>
           <li>
             <strong>Deleted Accounts:</strong> When you delete your account,
@@ -170,8 +164,7 @@
           </li>
           <li>
             <strong>Delete:</strong> Request deletion of your account and
-            private data (note: public contributions remain for historical
-            integrity)
+            private data
           </li>
         </ul>
         <p>
@@ -219,6 +212,10 @@
           If you have questions or concerns regarding this privacy policy or
           your personal data, please contact the platform administrators.
         </p>
+          <p>
+            You can reach us at:
+            <a :href="`mailto:${adminEmail}`" class="contact-link">{{ adminEmail }}</a>.
+          </p>
       </section>
 
       <section>
@@ -234,9 +231,15 @@
 </template>
 
 <script>
-export default {
+import { defineComponent } from "vue";
+
+export default defineComponent({
   name: "PrivacyPolicy",
-};
+  setup() {
+    const adminEmail = import.meta.env.VITE_ADMIN_EMAIL;
+    return { adminEmail };
+  },
+});
 </script>
 
 <style scoped>
@@ -299,5 +302,15 @@ export default {
 
 .privacy-policy strong {
   color: var(--color-heading);
+}
+
+.contact-link {
+  color: #646cff;
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.3s ease;
+}
+.contact-link:hover {
+  color: #535bf2;
 }
 </style>

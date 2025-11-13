@@ -90,7 +90,22 @@ export function useLayout() {
         sourcePosition = Position.Left;
         break;
     }
-    dagreGraph.setGraph({ rankdir: direction });
+    // configure dagre graph with spacing options so nodes don't overlap
+    // nodesep: minimum separation between nodes on the same rank
+    // ranksep: separation between ranks (levels)
+    // marginx/marginy: outer margin
+    const NODE_SEP = 50;
+    const RANK_SEP = 100;
+    const MARGIN_X = 20;
+    const MARGIN_Y = 20;
+
+    dagreGraph.setGraph({
+      rankdir: direction,
+      nodesep: NODE_SEP,
+      ranksep: RANK_SEP,
+      marginx: MARGIN_X,
+      marginy: MARGIN_Y,
+    });
 
     saveDirection(direction);
 
@@ -98,10 +113,26 @@ export function useLayout() {
       // if you need width+height of nodes for your layout, you can use the dimensions property of the internal node (`GraphNode` type)
       const graphNode = findNode(node.id);
 
-      dagreGraph.setNode(node.id, {
-        width: graphNode.dimensions.width || 150,
-        height: graphNode.dimensions.height || 50,
-      });
+      // fallback sizes are slightly increased to reduce accidental overlaps
+      let width = 200;
+      let height = 60;
+      if (graphNode && graphNode.dimensions) {
+        if (graphNode.dimensions.width && graphNode.dimensions.height) {
+          width = graphNode.dimensions.width;
+          height = graphNode.dimensions.height;
+        } else {
+          console.warn(
+            `Node ${node.id} missing dimensions, using fallback size. Actual:`,
+            graphNode.dimensions,
+          );
+        }
+      } else {
+        console.warn(
+          `Node ${node.id} not found or missing dimensions, using fallback size.`,
+        );
+      }
+
+      dagreGraph.setNode(node.id, { width, height });
     }
 
     for (const edge of edges) {
@@ -111,14 +142,26 @@ export function useLayout() {
     dagre.layout(dagreGraph);
 
     // set nodes with updated positions
+    // dagre returns the node center coordinates; Vue Flow expects the top-left
+    // corner as the node position. Convert by subtracting half the width/height.
     return nodes.map((node) => {
-      const nodeWithPosition = dagreGraph.node(node.id);
+      const nodeWithPosition = dagreGraph.node(node.id) || {
+        x: 0,
+        y: 0,
+        width: 0,
+        height: 0,
+      };
+      const w = nodeWithPosition.width || 0;
+      const h = nodeWithPosition.height || 0;
 
       return {
         ...node,
         targetPosition: targetPosition,
         sourcePosition: sourcePosition,
-        position: { x: nodeWithPosition.x, y: nodeWithPosition.y },
+        position: {
+          x: nodeWithPosition.x - w / 2,
+          y: nodeWithPosition.y - h / 2,
+        },
       };
     });
   }

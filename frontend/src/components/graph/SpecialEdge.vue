@@ -62,10 +62,26 @@ const props = defineProps({
 
 const path = computed(() => getBezierPath(props));
 
-const hoverText = computed(
-  () => props.data.edge_type,
-  // props.data.edge_type === "require" ? "Condition" : "Implication",
-);
+const hoverText = computed(() => {
+  const data = props.data || {};
+  const baseLabel = data.edge_type || "Implication";
+  const ratingLabel = data.ratingLabel;
+  const ratingValue = data.causal_strength;
+
+  if (!ratingLabel) {
+    return baseLabel;
+  }
+
+  let formattedRating = "none";
+  if (ratingValue != null) {
+    formattedRating =
+      typeof ratingValue === "number"
+        ? Number(ratingValue).toFixed(2).replace(/\.00$/, "")
+        : ratingValue;
+  }
+
+  return `${baseLabel}\nmedian ${ratingLabel}: ${formattedRating}`;
+});
 </script>
 
 <!-- <script>

@@ -53,6 +53,14 @@
     </div>
 
     <div class="right-panel">
+      <div class="right-panel-header">
+        <GraphControls
+          :depth="depthLevel"
+          :color-by="colorBy"
+          @update:depth="updateDepth"
+          @update:colorBy="updateColorBy"
+        />
+      </div>
       <SubgraphRenderer
         :data="subgraphData"
         @nodeClick="updateNodeFromBackend"
@@ -72,6 +80,7 @@ import NodeInfo from "../components/node/NodeInfo.vue";
 import EdgeInfo from "../components/edge/EdgeInfo.vue";
 import ElementPollPane from "../components/poll/ElementPollPane.vue";
 import SubgraphRenderer from "../components/graph/FlowEditor.vue";
+import GraphControls from "../components/graph/GraphControls.vue";
 import {
   formatFlowEdgeProps,
   formatFlowNodeProps,
@@ -85,13 +94,37 @@ export default {
     EdgeInfo,
     ElementPollPane,
     SubgraphRenderer,
+    GraphControls,
   },
   setup() {
-    const { nodeTypes, edgeTypes, defaultNodeType, canCreate, canEdit } =
-      useConfig();
+    const {
+      nodeTypes,
+      edgeTypes,
+      nodePollTypes,
+      edgePollTypes,
+      nodePollsByType,
+      edgePollsByType,
+      defaultNodeType,
+      canCreate,
+      canEdit,
+      getNodePolls,
+      getEdgePolls,
+    } = useConfig();
 
     // nodeTypes & edgeTypes will be unwrapped when used in `this.*`
-    return { nodeTypes, edgeTypes, defaultNodeType, canCreate, canEdit };
+    return {
+      nodeTypes,
+      edgeTypes,
+      nodePollTypes,
+      edgePollTypes,
+      nodePollsByType,
+      edgePollsByType,
+      defaultNodeType,
+      canCreate,
+      canEdit,
+      getNodePolls,
+      getEdgePolls,
+    };
   },
 
   data() {
@@ -103,6 +136,8 @@ export default {
       subgraphData: {},
       ratings: {},
       causalDirection: "LeftToRight",
+      depthLevel: parseInt(localStorage.getItem("graphDepthLevel")) || 2, // Default depth for ElementFocus
+      colorBy: localStorage.getItem("graphColorBy") || "type", // Color nodes/edges by 'type' or 'rating'
     };
   },
   watch: {
@@ -217,12 +252,143 @@ export default {
     }
   },
   methods: {
+    normalizeTypeName(type) {
+      if (!type && type !== 0) {
+        return null;
+      }
+      return String(type).trim().toLowerCase();
+    },
+    resolveNodePollLabel(node) {
+      if (!node) {
+        return null;
+      }
+      const directLabel =
+        node.ratingLabel || node.poll_label || node.default_poll_label || null;
+      if (directLabel) {
+        return directLabel;
+      }
+
+      const availableLabels = Array.isArray(node.available_poll_labels)
+        ? node.available_poll_labels
+        : Array.isArray(node.poll_labels)
+          ? node.poll_labels
+          : null;
+      if (availableLabels && availableLabels.length) {
+        return availableLabels[0];
+      }
+
+      const nodeType = node.node_type;
+      if (!nodeType) {
+        return null;
+      }
+
+      const candidateFromGetter = this.getNodePolls
+        ? Object.keys(this.getNodePolls(nodeType) || {})
+        : [];
+      if (candidateFromGetter.length) {
+        return candidateFromGetter[0];
+      }
+
+      const normalizedType = this.normalizeTypeName(nodeType);
+      if (!normalizedType) {
+        return null;
+      }
+
+      const pollsByType = this.nodePollsByType || {};
+      const matchedByType = Object.entries(pollsByType).find(
+        ([type]) => this.normalizeTypeName(type) === normalizedType,
+      );
+      if (matchedByType) {
+        const [_, pollConfig] = matchedByType;
+        const labels = Object.keys(pollConfig || {});
+        if (labels.length) {
+          return labels[0];
+        }
+      }
+
+      const allNodePollTypes = this.nodePollTypes || {};
+      const fromGlobal = Object.entries(allNodePollTypes).find(
+        ([, poll]) =>
+          Array.isArray(poll?.node_types) &&
+          poll.node_types.some(
+            (type) => this.normalizeTypeName(type) === normalizedType,
+          ),
+      );
+      if (fromGlobal) {
+        return fromGlobal[0];
+      }
+
+      return null;
+    },
+    resolveEdgePollLabel(edge) {
+      if (!edge) {
+        return null;
+      }
+      const directLabel =
+        edge.ratingLabel || edge.poll_label || edge.default_poll_label || null;
+      if (directLabel) {
+        return directLabel;
+      }
+
+      const availableLabels = Array.isArray(edge.available_poll_labels)
+        ? edge.available_poll_labels
+        : Array.isArray(edge.poll_labels)
+          ? edge.poll_labels
+          : null;
+      if (availableLabels && availableLabels.length) {
+        return availableLabels[0];
+      }
+
+      const edgeType = edge.edge_type || edge.type;
+      if (!edgeType) {
+        return null;
+      }
+
+      const candidateFromGetter = this.getEdgePolls
+        ? Object.keys(this.getEdgePolls(edgeType) || {})
+        : [];
+      if (candidateFromGetter.length) {
+        return candidateFromGetter[0];
+      }
+
+      const normalizedType = this.normalizeTypeName(edgeType);
+      if (!normalizedType) {
+        return null;
+      }
+
+      const pollsByType = this.edgePollsByType || {};
+      const matchedByType = Object.entries(pollsByType).find(
+        ([type]) => this.normalizeTypeName(type) === normalizedType,
+      );
+      if (matchedByType) {
+        const [_, pollConfig] = matchedByType;
+        const labels = Object.keys(pollConfig || {});
+        if (labels.length) {
+          return labels[0];
+        }
+      }
+
+      const allEdgePollTypes = this.edgePollTypes || {};
+      const fromGlobal = Object.entries(allEdgePollTypes).find(
+        ([, poll]) =>
+          Array.isArray(poll?.edge_types) &&
+          poll.edge_types.some(
+            (type) => this.normalizeTypeName(type) === normalizedType,
+          ),
+      );
+      if (fromGlobal) {
+        return fromGlobal[0];
+      }
+
+      return null;
+    },
     async fetchElementAndSubgraphData() {
       console.log("fetchElementAndSubgraphData");
       try {
+        this.ratings = {};
         const seed = this.nodeId || this.sourceId || this.targetId;
         const response = await api.get(`/graph/${seed}`, {
-          params: { levels: 10 },
+          params: { levels: this.depthLevel },
         });
         let fetched_nodes = response.data.nodes || [];
         const fetched_edges = response.data.edges || [];
@@ -237,6 +403,17 @@ export default {
         console.log("Fetched nodes:", fetched_nodes);
         this.node =
           fetched_nodes.find((node) => node.node_id === parseInt(seed)) || null;
+
+        // Debug: Log the node to see if it has support
+        if (this.node) {
+          console.log(
+            "Current node support:",
+            this.node.support,
+            "ratings:",
+            this.ratings[this.node.node_id],
+          );
+        }
+
         if (this.sourceId && this.targetId) {
           this.edge =
             updatedEdges.find(
@@ -260,10 +437,30 @@ export default {
           this.edge = null;
         }
         // Build subgraphData using formatted nodes/edges.
+        // Debug: Log nodes before formatting to check support property
+        console.log(
+          "Nodes before formatting:",
+          fetched_nodes.map((n) => ({
+            node_id: n.node_id,
+            support: n.support,
+            title: n.title,
+          })),
+        );
+
         this.subgraphData = {
-          nodes: fetched_nodes.map((node) => formatFlowNodeProps(node)),
-          edges: updatedEdges.map((edge) => formatFlowEdgeProps(edge)),
+          nodes: fetched_nodes.map((node) =>
+            formatFlowNodeProps(node, this.colorBy),
+          ),
+          edges: updatedEdges.map((edge) =>
+            formatFlowEdgeProps(edge, this.colorBy),
+          ),
         };
+
+        // Debug: Check what's actually in the formatted subgraphData
+        console.log(
+          "After formatting, first node.data:",
+          this.subgraphData.nodes[0]?.data,
+        );
       } catch (error) {
         console.error("Error fetching induced subgraph:", error);
         this.node = null;
@@ -323,11 +520,12 @@ export default {
     async fetchNodeRatings(nodeIds) {
       if (!nodeIds.length) return;
       try {
+        console.log("Fetching node ratings for IDs:", nodeIds);
         const { data } = await api.get("/nodes/ratings/median", {
           params: { node_ids: nodeIds },
         });
+        console.log("Raw node ratings:", data);
         this.ratings = data;
-        console.log("Fetched node ratings:", this.ratings);
       } catch (err) {
         console.error("Error fetching node ratings:", err);
       }
@@ -335,31 +533,181 @@ export default {
 
     async fetchEdgeRatings(edges) {
       if (!edges.length) return edges;
+      const groupedByPoll = new Map();
+
+      edges.forEach((edge) => {
+        const pollLabel = this.resolveEdgePollLabel(edge);
+        edge.ratingLabel = pollLabel;
+        edge.causal_strength = null;
+
+        if (!pollLabel) {
+          return;
+        }
+
+        if (!groupedByPoll.has(pollLabel)) {
+          groupedByPoll.set(pollLabel, []);
+        }
+        groupedByPoll.get(pollLabel).push(edge);
+      });
+
       try {
-        const edgeKeys = edges.map((e) => `${e.source}-${e.target}`);
-        const { data: edgeRatings } = await api.get("/edges/ratings/median", {
-          params: { edge_ids: edgeKeys },
-        });
-        return edges.map((edge) => {
-          const key = `${edge.source}-${edge.target}`;
-          edge.causal_strength = edgeRatings[key]?.median_rating ?? null;
-          return edge;
-        });
+        for (const [pollLabel, edgesForPoll] of groupedByPoll.entries()) {
+          const edgeKeys = edgesForPoll.map((e) => `${e.source}-${e.target}`);
+          const { data: edgeRatings } = await api.get("/edges/ratings/median", {
+            params: { edge_ids: edgeKeys, poll_label: pollLabel },
+          });
+
+          edgesForPoll.forEach((edge) => {
+            const key = `${edge.source}-${edge.target}`;
+            const ratingEntry = edgeRatings[key] ?? null;
+            const ratingValue = this.resolveRatingValue(
+              ratingEntry,
+              "median_rating",
+            );
+            edge.causal_strength = ratingValue;
+          });
+        }
       } catch (err) {
         console.error("Error fetching edge ratings:", err);
-        return edges;
       }
+
+      return edges;
     },
     updateNodesWithRatings(rawNodes) {
+      console.log(
+        "updateNodesWithRatings called with",
+        rawNodes.length,
+        "nodes",
+      );
+      console.log("Current ratings object:", this.ratings);
       return rawNodes.map((node) => {
-        if (
-          this.ratings[node.node_id] &&
-          this.ratings[node.node_id].median_rating
-        ) {
-          node.support = this.ratings[node.node_id].median_rating;
+        const nodeSpecificLabel =
+          node.ratingLabel ||
+          node.poll_label ||
+          node.default_poll_label ||
+          null;
+        const pollLabel = nodeSpecificLabel || this.resolveNodePollLabel(node);
+        const ratingEntry = this.ratings[node.node_id];
+        const ratingValue = this.resolveRatingValue(ratingEntry, pollLabel);
+
+        console.log(
+          `Node ${node.node_id}: pollLabel=`,
+          pollLabel,
+          "ratingEntry=",
+          ratingEntry,
+          "resolved rating=",
+          ratingValue,
+        );
+
+        let ratingLabel = pollLabel || nodeSpecificLabel || null;
+        if (!ratingLabel && ratingEntry && typeof ratingEntry === "object") {
+          const candidateKey = Object.keys(ratingEntry).find(
+            (key) => key !== "median_rating" && ratingEntry[key] != null,
+          );
+          if (candidateKey) {
+            ratingLabel = candidateKey;
+          }
         }
+        if (!ratingLabel && ratingValue != null) {
+          ratingLabel = "rating";
+        }
+
+        if (ratingValue != null) {
+          node.support = ratingValue;
+        } else {
+          delete node.support;
+        }
+
+        node.ratingLabel = ratingLabel || null;
+
         return node;
       });
+    },
+    resolveRatingValue(entry, keyPreference) {
+      if (entry == null) {
+        return null;
+      }
+
+      if (typeof entry === "number") {
+        return Number(entry);
+      }
+
+      if (
+        keyPreference &&
+        typeof entry === "object" &&
+        entry[keyPreference] != null
+      ) {
+        return Number(entry[keyPreference]);
+      }
+
+      if (typeof entry === "object") {
+        if (entry.median_rating != null) {
+          return Number(entry.median_rating);
+        }
+
+        if (keyPreference && entry[keyPreference] != null) {
+          return Number(entry[keyPreference]);
+        }
+
+        const firstValue = Object.values(entry).find((value) => value != null);
+        return firstValue != null ? Number(firstValue) : null;
+      }
+
+      return null;
+    },
+    getDefaultNodePollLabel(nodeType) {
+      if (!nodeType) {
+        return null;
+      }
+      return this.resolveNodePollLabel({ node_type: nodeType });
+    },
+    getDefaultEdgePollLabel(edgeType) {
+      if (!edgeType) {
+        return null;
+      }
+      return this.resolveEdgePollLabel({ edge_type: edgeType });
+    },
+    updateDepth(newDepth) {
+      console.log("Updating depth to:", newDepth);
+      this.depthLevel = newDepth;
+      localStorage.setItem("graphDepthLevel", newDepth);
+      // Re-fetch subgraph data with new depth
+      this.fetchElementAndSubgraphData();
+    },
+    updateColorBy(newColorBy) {
+      console.log("Updating color by to:", newColorBy);
+      this.colorBy = newColorBy;
+      localStorage.setItem("graphColorBy", newColorBy);
+      // Re-format the existing subgraph data with new colors (no API call needed!)
+      this.reformatSubgraphData();
+    },
+    reformatSubgraphData() {
+      // This method reformats the existing subgraph data without re-fetching from API
+      // It's much faster for color changes
+      if (!this.subgraphData.nodes || !this.subgraphData.edges) {
+        return;
+      }
+
+      // Extract the raw data from the formatted nodes/edges
+      const rawNodes = this.subgraphData.nodes.map((n) => n.data || n);
+      const rawEdges = this.subgraphData.edges.map((e) => e.data || e);
+
+      // Debug: Check if support is in the raw data
+      console.log(
+        "Reformatting - raw nodes:",
+        rawNodes.map((n) => ({
+          node_id: n.node_id,
+          support: n.support,
+          title: n.title,
+        })),
+      );
+      console.log("Reformatting with colorBy:", this.colorBy);
+
+      // Re-format with current colorBy setting
+      this.subgraphData = {
+        nodes: rawNodes.map((node) => formatFlowNodeProps(node, this.colorBy)),
+        edges: rawEdges.map((edge) => formatFlowEdgeProps(edge, this.colorBy)),
+      };
     },
     async updateNodeFromBackend(node_id) {
       try {
@@ -466,7 +814,31 @@ export default {
   /* box-sizing: border-box; */
   overflow: hidden;
   min-width: 0;
+  position: relative; /* For positioning controls */
 }
+
+.right-panel-header {
+  position: absolute;
+  top: 10px;
+  right: 90px; /* Position from the right, leaving space for compass */
+  left: auto; /* Override any left positioning */
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  padding: 6px 10px;
+  background-color: var(--background-color);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  pointer-events: auto;
+  width: auto; /* Auto width based on content */
+}
+
+:global(body.dark) .right-panel-header {
+  background-color: #333;
+  border-color: #555;
+}
+
 .error-message {
   font-weight: bold;
   margin: 30px;

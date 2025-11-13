@@ -48,12 +48,26 @@ const tooltipContent = computed(() => {
   let tooltip = parts.join(" ");
 
   // Add description on a new line if it exists
-  if (props.data.description) {
-    const desc =
-      props.data.description.length > 100
-        ? props.data.description.substring(0, 100) + "..."
-        : props.data.description;
-    tooltip += tooltip ? `\n${desc}` : desc;
+  // if (props.data.description) {
+  //   const desc =
+  //     props.data.description.length > 100
+  //       ? props.data.description.substring(0, 100) + "..."
+  //       : props.data.description;
+  //   tooltip += tooltip ? `\n${desc}` : desc;
+  // }
+
+  const ratingLabel = props.data.ratingLabel;
+  const ratingValue = props.data.support;
+  if (ratingLabel) {
+    let formattedRating = "none";
+    if (ratingValue != null) {
+      formattedRating =
+        typeof ratingValue === "number"
+          ? Number(ratingValue).toFixed(2).replace(/\.00$/, "")
+          : ratingValue;
+    }
+    const ratingLine = `median ${ratingLabel}: ${formattedRating}`;
+    tooltip += tooltip ? `\n${ratingLine}` : ratingLine;
   }
 
   return tooltip;

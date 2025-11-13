@@ -38,7 +38,7 @@
     </div>
     <!-- License Notice -->
     <p class="license-notice" v-if="license">
-      Graph elements including text are available under the
+      Edge descriptions are available under the
       <a
         :href="getLicenseUrl(license)"
         target="_blank"

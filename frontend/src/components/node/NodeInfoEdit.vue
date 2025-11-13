@@ -183,8 +183,8 @@
     </div>
     <button class="submit-button" @click="submit">{{ actionLabel }}</button>
     <p class="license-notice" v-if="license">
-      By publishing changes, you irrevocably agree to release your contribution
-      under the
+      By editing the description, you agree to release your contribution under
+      the
       <a
         :href="getLicenseUrl(license)"
         target="_blank"

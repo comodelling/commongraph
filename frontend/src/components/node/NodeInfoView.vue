@@ -52,7 +52,7 @@
     </div>
     <!-- License Notice -->
     <p class="license-notice" v-if="license">
-      Graph elements including text are available under the
+      Node descriptions are available under the
       <a
         :href="getLicenseUrl(license)"
         target="_blank"
@@ -145,7 +145,7 @@ const nodeTypeTooltip = computed(() => {
 .license-notice {
   font-size: 0.75rem;
   color: #999;
-  margin-top: 12px;
+  margin-top: 20px;
   line-height: 1.3;
 }
 

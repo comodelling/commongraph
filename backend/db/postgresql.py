@@ -38,6 +38,7 @@ from backend.settings import settings
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
+
 class UserPostgreSQLDB(UserDatabaseInterface):
     def __init__(self, database_url: str):
         super().__init__()
@@ -190,9 +191,7 @@ class RatingHistoryPostgreSQLDB(RatingHistoryRelationalInterface):
             rating = session.exec(statement).first()
             return rating
 
-    def get_node_ratings(
-        self, node_id: int, poll_label: str
-    ) -> list[RatingEvent]:
+    def get_node_ratings(self, node_id: int, poll_label: str) -> list[RatingEvent]:
         """
         Retrieve the most recent rating per user for a given node using PostgreSQL's DISTINCT ON.
         """
@@ -271,15 +270,14 @@ class RatingHistoryPostgreSQLDB(RatingHistoryRelationalInterface):
             rating = session.exec(statement).first()
             return rating
 
-    def get_node_median_rating(
-        self, node_id: int, poll_label: str
-    ) -> float | None:
+    def get_node_median_rating(self, node_id: int, poll_label: str) -> float | None:
         """
         Compute the median rating for a node + poll_label,
         considering only each user’s latest rating.
         """
         with Session(self.engine) as session:
-            stmt = text(f"""
+            stmt = text(
+                f"""
             SELECT percentile_cont(0.5)
                     WITHIN GROUP (ORDER BY rating) AS median
                 FROM (
@@ -290,7 +288,8 @@ class RatingHistoryPostgreSQLDB(RatingHistoryRelationalInterface):
                     AND poll_label = :pl
                 ORDER BY username, timestamp DESC
                 ) AS latest;
-            """)
+            """
+            )
             result = session.exec(
                 stmt,
                 params={
@@ -337,7 +336,8 @@ class RatingHistoryPostgreSQLDB(RatingHistoryRelationalInterface):
         considering only each user’s latest rating.
         """
         with Session(self.engine) as session:
-            stmt = text(f"""
+            stmt = text(
+                f"""
             SELECT percentile_cont(0.5)
                     WITHIN GROUP (ORDER BY rating) AS median
                 FROM (
@@ -349,7 +349,8 @@ class RatingHistoryPostgreSQLDB(RatingHistoryRelationalInterface):
                     AND poll_label = :pl
                 ORDER BY username, timestamp DESC
                 ) AS latest;
-            """)
+            """
+            )
             row = session.exec(
                 stmt,
                 params={
@@ -370,7 +371,8 @@ class RatingHistoryPostgreSQLDB(RatingHistoryRelationalInterface):
         if not node_ids:
             return {}
         with Session(self.engine) as session:
-            stmt = text(f"""
+            stmt = text(
+                f"""
               SELECT node_id,
                      percentile_cont(0.5)
                        WITHIN GROUP (ORDER BY rating) AS median
@@ -384,13 +386,14 @@ class RatingHistoryPostgreSQLDB(RatingHistoryRelationalInterface):
                    ORDER BY node_id, username, timestamp DESC
                 ) AS latest
                GROUP BY node_id;
-            """)
+            """
+            )
             rows = session.exec(
                 stmt,
                 params={
-                  "etype": EntityType.node.value,
-                  "pl": poll_label,
-                  "nids": tuple(node_ids),
+                    "etype": EntityType.node.value,
+                    "pl": poll_label,
+                    "nids": tuple(node_ids),
                 },
             ).all()
             # map missing ids → None
@@ -464,7 +467,8 @@ class RatingHistoryPostgreSQLDB(RatingHistoryRelationalInterface):
         if not edges:
             return {}
         with Session(self.engine) as session:
-            stmt = text(f"""
+            stmt = text(
+                f"""
               SELECT source_id, target_id,
                      percentile_cont(0.5)
                        WITHIN GROUP (ORDER BY rating) AS median
@@ -478,13 +482,14 @@ class RatingHistoryPostgreSQLDB(RatingHistoryRelationalInterface):
                    ORDER BY source_id, target_id, username, timestamp DESC
                 ) AS latest
                GROUP BY source_id, target_id;
-            """)
+            """
+            )
             rows = session.exec(
                 stmt,
                 params={
-                  "etype": EntityType.edge.value,
-                  "pl": poll_label,
-                  "pairs": tuple(edges),
+                    "etype": EntityType.edge.value,
+                    "pl": poll_label,
+                    "pairs": tuple(edges),
                 },
             ).all()
             result = {(s, t): None for s, t in edges}
@@ -550,8 +555,8 @@ class GraphHistoryPostgreSQLDB(GraphHistoryRelationalInterface):
     def _to_node(self, payload: dict) -> NodeBase:
         data = dict(payload or {})
         # ensure minimal defaults
-        #data.setdefault("node_type", "potentiality")  #TODO: check defaults
-        #data.setdefault("scope", "")
+        # data.setdefault("node_type", "potentiality")  #TODO: check defaults
+        # data.setdefault("scope", "")
         try:
             nt = data["node_type"]
         except KeyError as e:
@@ -560,7 +565,7 @@ class GraphHistoryPostgreSQLDB(GraphHistoryRelationalInterface):
         Dyn = NodeTypeModels.get(nt)
         if Dyn:
             # Dyn is a SQLModel subclass with only your config-allowed fields
-            logger.debug('blablablabla\n')
+            logger.debug("blablablabla\n")
             out = Dyn(**data)
             logger.info(f"Using dynamic model for node type: {nt}, ending up in {out}")
             return out
@@ -597,7 +602,7 @@ class GraphHistoryPostgreSQLDB(GraphHistoryRelationalInterface):
             for event in nodes_latest.values():
                 if event.state == EntityState.deleted:
                     continue
-                if event.payload['node_type'] not in NodeTypeModels:
+                if event.payload["node_type"] not in NodeTypeModels:
                     # Handle orphaned nodes with types that no longer exist
                     self.logger.warning(
                         f"Node {event.node_id} has an unknown type: {event.payload['node_type']}"
@@ -622,7 +627,7 @@ class GraphHistoryPostgreSQLDB(GraphHistoryRelationalInterface):
             for event in edges_latest.values():
                 if event.state == EntityState.deleted:
                     continue
-                if event.payload['edge_type'] not in EdgeTypeModels:
+                if event.payload["edge_type"] not in EdgeTypeModels:
                     # Handle orphaned edges with types that no longer exist
                     self.logger.warning(
                         f"Edge {event.source_id} -> {event.target_id} has an unknown type: {event.payload['edge_type']}"
@@ -647,7 +652,9 @@ class GraphHistoryPostgreSQLDB(GraphHistoryRelationalInterface):
             session.exec(delete(GraphHistoryEvent))
             session.commit()
 
-    def update_graph(self, subgraph: SubgraphBase, username: str = "system") -> SubgraphBase:
+    def update_graph(
+        self, subgraph: SubgraphBase, username: str = "system"
+    ) -> SubgraphBase:
         """
         Update the subgraph by iterating over nodes and edges.
         For each node, if it exists (by node_id), update it; otherwise, create it.
@@ -828,6 +835,98 @@ class GraphHistoryPostgreSQLDB(GraphHistoryRelationalInterface):
         )
         return results
 
+    def get_search_subgraph(
+        self,
+        node_type: list[str] | str | None = None,
+        title: str | None = None,
+        scope: str | None = None,
+        status: list[NodeStatus] | NodeStatus | None = None,
+        tags: list[str] | None = None,
+        description: str | None = None,
+        levels: int = 1,
+    ) -> SubgraphBase:
+        """
+        Retrieve nodes matching search criteria along with their connections
+        up to 'levels' depth. This creates a subgraph showing how search results
+        relate to each other.
+
+        Returns:
+            A subgraph containing:
+            - All nodes matching the search criteria (level 0)
+            - Nodes connected to search results (levels 1+)
+            - All edges between nodes in the subgraph
+        """
+        # First, get the search results
+        search_results = self.search_nodes(
+            node_type=node_type,
+            title=title,
+            scope=scope,
+            status=status,
+            tags=tags,
+            description=description,
+        )
+
+        if not search_results:
+            return DynamicSubgraph(nodes=[], edges=[])
+
+        # Get the whole graph to find connections
+        whole_graph = self.get_whole_graph()
+
+        # Build adjacency list for BFS
+        node_index = {node.node_id: node for node in whole_graph.nodes}
+        adjacency = {node.node_id: set() for node in whole_graph.nodes}
+
+        for edge in whole_graph.edges:
+            src = edge.source
+            tgt = edge.target
+            if src in adjacency:
+                adjacency[src].add(tgt)
+            if tgt in adjacency:
+                adjacency[tgt].add(src)
+
+        # Start BFS from all search result nodes
+        visited = set()
+        queue = []
+
+        # Add all search results as starting points (level 0)
+        search_node_ids = {node.node_id for node in search_results}
+        for node_id in search_node_ids:
+            queue.append((node_id, 0))
+            visited.add(node_id)
+
+        # BFS to find connected nodes
+        included_nodes = {}
+
+        while queue:
+            current_id, current_level = queue.pop(0)
+
+            # Add current node to included nodes
+            if current_id in node_index:
+                included_nodes[current_id] = node_index[current_id]
+
+            # Continue expanding if we haven't reached max level
+            if current_level < levels:
+                for neighbor_id in adjacency.get(current_id, []):
+                    if neighbor_id not in visited:
+                        visited.add(neighbor_id)
+                        queue.append((neighbor_id, current_level + 1))
+
+        # Get all edges between included nodes
+        included_edges = [
+            edge
+            for edge in whole_graph.edges
+            if edge.source in included_nodes and edge.target in included_nodes
+        ]
+
+        self.logger.info(
+            f"Search subgraph: {len(search_results)} search results expanded to "
+            f"{len(included_nodes)} nodes ({len(included_edges)} edges) at {levels} level(s)"
+        )
+
+        return DynamicSubgraph(
+            nodes=list(included_nodes.values()), edges=included_edges
+        )
+
     def get_random_node(self, node_type: str = None) -> NodeBase:
         nodes = self.get_whole_graph().nodes
         if node_type is not None:
@@ -869,6 +968,7 @@ class GraphHistoryPostgreSQLDB(GraphHistoryRelationalInterface):
             if scope_name:
                 try:
                     from backend.api.scopes import get_or_create_scope
+
                     engine = get_engine(settings.POSTGRES_DB_URL)
                     from sqlmodel import Session as _Session
 
@@ -925,6 +1025,7 @@ class GraphHistoryPostgreSQLDB(GraphHistoryRelationalInterface):
         if scope_name:
             try:
                 from backend.api.scopes import get_or_create_scope
+
                 engine = get_engine(settings.POSTGRES_DB_URL)
                 from sqlmodel import Session as _Session
 

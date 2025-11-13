@@ -1,10 +1,12 @@
 services:
   backend:
     env_file:
-      - ./.env.development
+      - ./.env
+      - ./.env.development  # Development overrides
     ports:
       - "8000:8000"
-      
+
   frontend:
-    volumes:
-      - ./.env.development:/app/.env.development:ro
+    env_file:
+      - ./.env
+      - ./.env.development  # Development overrides

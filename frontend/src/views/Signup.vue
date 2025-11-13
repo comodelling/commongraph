@@ -57,14 +57,22 @@
             required
           />
         </label>
-        <label class="checkbox-label">
+        <label v-if="signupRequiresToken">
+          Access Token (required):
           <input
-            type="checkbox"
-            v-model="acceptPrivacyPolicy"
+            v-model="signupToken"
+            type="text"
+            placeholder="Enter your access token"
             required
           />
+          <small style="color: #666">Token provided by an administrator</small>
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" v-model="acceptPrivacyPolicy" required />
           I have read and agree to the
-          <router-link to="/privacy" target="_blank">Privacy Policy</router-link>
+          <router-link to="/privacy" target="_blank"
+            >Privacy Policy</router-link
+          >
         </label>
         <button type="submit">Sign Up</button>
       </form>
@@ -75,22 +83,35 @@
 </template>
 
 <script>
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
 import api from "../api/axios";
 import router from "../router";
+import { useConfig } from "../composables/useConfig";
 
 export default {
   setup() {
+    const { load } = useConfig();
     const username = ref("");
     const password = ref("");
     const confirmPassword = ref("");
     const securityQuestion = ref("");
     const securityAnswer = ref("");
     const acceptPrivacyPolicy = ref(false);
+    const signupToken = ref("");
+    const signupRequiresToken = ref(false);
     const error = ref(null);
     const success = ref(null);
     const minPasswordLength = 8;
     const minAnswerLength = 3;
+
+    onMounted(async () => {
+      try {
+        const { data } = await api.get("/config");
+        signupRequiresToken.value = data.signup_requires_token || false;
+      } catch (err) {
+        console.error("Error loading config:", err);
+      }
+    });
 
     const signup = async () => {
       error.value = null;
@@ -138,10 +159,13 @@ export default {
             security_answer: securityAnswer.value,
           }),
         };
-        const response = await api.post(
-          `/auth/signup`,
-          user_data,
-        );
+
+        const payload = {
+          user: user_data,
+          ...(signupToken.value && { signup_token: signupToken.value }),
+        };
+
+        const response = await api.post(`/auth/signup`, payload);
         if (response.data.is_active) {
           success.value = `Signup successful for ${response.data.username}. Please log in.`;
           router.push({
@@ -165,6 +189,8 @@ export default {
       securityQuestion,
       securityAnswer,
       acceptPrivacyPolicy,
+      signupToken,
+      signupRequiresToken,
       signup,
       error,
       success,
@@ -174,8 +200,6 @@ export default {
 </script>
 
 <style scoped>
-
-
 form {
   display: flex;
   flex-direction: column;

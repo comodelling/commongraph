@@ -17,18 +17,19 @@
         :title="isNewScope ? 'Press Enter to create new scope' : ''"
       />
     </div>
-    
+
     <div v-if="showDropdown" class="dropdown" ref="dropdownRef">
-      <div v-if="loading" class="dropdown-item loading">
-        Searching...
-      </div>
-      <div v-else-if="filteredScopes.length === 0 && searchQuery" class="dropdown-item no-results">
+      <div v-if="loading" class="dropdown-item loading">Searching...</div>
+      <div
+        v-else-if="filteredScopes.length === 0 && searchQuery"
+        class="dropdown-item no-results"
+      >
         No matching scopes. Press Enter to create "{{ searchQuery }}"
       </div>
       <div
         v-for="(scope, index) in filteredScopes"
         :key="scope.scope_id"
-        :class="['dropdown-item', { 'highlighted': index === highlightedIndex }]"
+        :class="['dropdown-item', { highlighted: index === highlightedIndex }]"
         @mousedown.prevent="selectScope(scope)"
         @mouseenter="highlightedIndex = index"
       >
@@ -39,30 +40,30 @@
 </template>
 
 <script>
-import { ref, computed, onMounted, watch } from 'vue';
-import api from '../../api/axios';
+import { ref, computed, onMounted, watch } from "vue";
+import api from "../../api/axios";
 
 export default {
-  name: 'ScopeAutocomplete',
+  name: "ScopeAutocomplete",
   props: {
     modelValue: {
       type: String,
-      default: ''
+      default: "",
     },
     placeholder: {
       type: String,
-      default: 'Type to search scopes...'
+      default: "Type to search scopes...",
     },
     error: {
       type: Boolean,
-      default: false
-    }
+      default: false,
+    },
   },
-  emits: ['update:modelValue', 'blur'],
+  emits: ["update:modelValue", "blur"],
   setup(props, { emit }) {
     const inputRef = ref(null);
     const dropdownRef = ref(null);
-    const searchQuery = ref(props.modelValue || '');
+    const searchQuery = ref(props.modelValue || "");
     const allScopes = ref([]);
     const loading = ref(false);
     const showDropdown = ref(false);
@@ -73,7 +74,7 @@ export default {
     const isNewScope = computed(() => {
       if (!searchQuery.value.trim()) return false;
       return !allScopes.value.some(
-        s => s.name.toLowerCase() === searchQuery.value.toLowerCase()
+        (s) => s.name.toLowerCase() === searchQuery.value.toLowerCase(),
       );
     });
 
@@ -84,19 +85,19 @@ export default {
       }
       const query = searchQuery.value.toLowerCase();
       return allScopes.value
-        .filter(scope => scope.name.toLowerCase().includes(query))
+        .filter((scope) => scope.name.toLowerCase().includes(query))
         .slice(0, 10);
     });
 
     // Fetch scopes from API with debouncing
-    const fetchScopes = async (query = '') => {
+    const fetchScopes = async (query = "") => {
       loading.value = true;
       try {
         const params = query ? { q: query, limit: 10 } : { limit: 50 };
-        const response = await api.get('/scopes', { params });
+        const response = await api.get("/scopes", { params });
         allScopes.value = response.data;
       } catch (error) {
-        console.error('Failed to fetch scopes:', error);
+        console.error("Failed to fetch scopes:", error);
         allScopes.value = [];
       } finally {
         loading.value = false;
@@ -109,8 +110,8 @@ export default {
       debounceTimer.value = setTimeout(() => {
         fetchScopes(searchQuery.value);
       }, 300); // 300ms debounce
-      
-      emit('update:modelValue', searchQuery.value);
+
+      emit("update:modelValue", searchQuery.value);
     };
 
     const onFocus = () => {
@@ -124,13 +125,13 @@ export default {
       // Delay to allow click on dropdown items
       setTimeout(() => {
         showDropdown.value = false;
-        emit('blur');
+        emit("blur");
       }, 200);
     };
 
     const selectScope = (scope) => {
       searchQuery.value = scope.name;
-      emit('update:modelValue', scope.name);
+      emit("update:modelValue", scope.name);
       showDropdown.value = false;
       inputRef.value?.blur();
     };
@@ -152,7 +153,7 @@ export default {
         selectScope(filteredScopes.value[highlightedIndex.value]);
       } else {
         // If no scope highlighted, accept the current input as new scope
-        emit('update:modelValue', searchQuery.value);
+        emit("update:modelValue", searchQuery.value);
         showDropdown.value = false;
         inputRef.value?.blur();
       }
@@ -167,11 +168,14 @@ export default {
     };
 
     // Watch for external changes to modelValue
-    watch(() => props.modelValue, (newVal) => {
-      if (newVal !== searchQuery.value) {
-        searchQuery.value = newVal || '';
-      }
-    });
+    watch(
+      () => props.modelValue,
+      (newVal) => {
+        if (newVal !== searchQuery.value) {
+          searchQuery.value = newVal || "";
+        }
+      },
+    );
 
     onMounted(() => {
       // Initial fetch
@@ -198,7 +202,7 @@ export default {
       closeDropdown,
       focus,
     };
-  }
+  },
 };
 </script>
 

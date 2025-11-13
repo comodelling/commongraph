@@ -2,11 +2,7 @@ import logging
 from abc import ABC, ABCMeta, abstractmethod
 from functools import wraps
 
-from backend.models.base import (
-    NodeBase,
-    EdgeBase,
-    SubgraphBase
-)
+from backend.models.base import NodeBase, EdgeBase, SubgraphBase
 from backend.models.fixed import (
     User,
     UserRead,
@@ -93,9 +89,7 @@ class RatingHistoryRelationalInterface(ABC):
         """
         pass
 
-    def get_node_ratings(
-        self, node_id: int, poll_label: str
-    ) -> list[RatingEvent]:
+    def get_node_ratings(self, node_id: int, poll_label: str) -> list[RatingEvent]:
         """
         Retrieve the most recent rating per user for a given node using PostgreSQL's DISTINCT ON.
         """
@@ -121,9 +115,7 @@ class RatingHistoryRelationalInterface(ABC):
         """
         pass
 
-    def get_node_median_rating(
-        self, node_id: NodeId, poll_label: str
-    ) -> float | None:
+    def get_node_median_rating(self, node_id: NodeId, poll_label: str) -> float | None:
         """
         Retrieve the latest median rating of a given node.
         """
@@ -174,6 +166,14 @@ class GraphDatabaseInterface(ABC, metaclass=LogMeta):
 
     @abstractmethod
     def search_nodes(self, **kwargs) -> list[NodeBase]:
+        pass
+
+    @abstractmethod
+    def get_search_subgraph(self, **kwargs) -> SubgraphBase:
+        """
+        Search for nodes and return a subgraph including their connections.
+        Returns nodes matching search criteria plus connected nodes up to specified levels.
+        """
         pass
 
     @abstractmethod

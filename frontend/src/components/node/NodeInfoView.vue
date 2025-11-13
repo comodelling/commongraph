@@ -22,12 +22,15 @@
     </div>
 
     <!-- References -->
-    <div class="field-row" v-if="isAllowed('references') && node.references?.length">
+    <div
+      class="field-row"
+      v-if="isAllowed('references') && node.references?.length"
+    >
       <strong :title="tooltips.node.references">References:</strong>
       <div class="field-value">
         <ul class="references-list">
           <li
-            v-for="reference in node.references.filter(ref => ref.trim())"
+            v-for="reference in node.references.filter((ref) => ref.trim())"
             :key="reference"
           >
             {{ reference.trim() }}
@@ -88,7 +91,7 @@ function isAllowed(prop: string): boolean {
 }
 
 function formatStatus(status?: string): string {
-  if (!status || status === "unspecified") {
+  if (!status) {
     return tooltips.node.status;
   }
   return capitalise(status);

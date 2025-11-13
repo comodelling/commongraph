@@ -1,21 +1,26 @@
 <template>
   <div class="app-layout">
     <!-- Top header bar -->
-    <Header 
-      :isSideMenuOpen="isSideMenuOpen" 
-      @toggle-side-menu="toggleSideMenu" 
+    <Header
+      :isSideMenuOpen="isSideMenuOpen"
+      @toggle-side-menu="toggleSideMenu"
     />
-    
+
     <!-- Main layout area -->
-    <div :class="['layout', { 'full-width': isFocused, 'menu-collapsed': !isSideMenuOpen }]">
+    <div
+      :class="[
+        'layout',
+        { 'full-width': isFocused, 'menu-collapsed': !isSideMenuOpen },
+      ]"
+    >
       <!-- Side menu (collapsible) -->
       <SideMenu v-if="isSideMenuOpen" />
-      
+
       <!-- Main content area -->
       <div class="main-content">
         <router-view></router-view>
       </div>
-      
+
       <!-- Rating pane for focused views -->
       <div class="rating-pane">
         <router-view name="rating"></router-view>
@@ -30,9 +35,9 @@ import SideMenu from "../common/SideMenu.vue";
 import Header from "../common/Header.vue";
 
 export default {
-  components: { 
+  components: {
     SideMenu,
-    Header 
+    Header,
   },
   setup() {
     const isSideMenuOpen = ref(true);
@@ -40,20 +45,20 @@ export default {
     const toggleSideMenu = () => {
       isSideMenuOpen.value = !isSideMenuOpen.value;
       // Store preference in localStorage
-      localStorage.setItem('sideMenuOpen', isSideMenuOpen.value.toString());
+      localStorage.setItem("sideMenuOpen", isSideMenuOpen.value.toString());
     };
 
     // Restore menu state from localStorage
     onMounted(() => {
-      const stored = localStorage.getItem('sideMenuOpen');
+      const stored = localStorage.getItem("sideMenuOpen");
       if (stored !== null) {
-        isSideMenuOpen.value = stored === 'true';
+        isSideMenuOpen.value = stored === "true";
       }
     });
 
     return {
       isSideMenuOpen,
-      toggleSideMenu
+      toggleSideMenu,
     };
   },
   computed: {
@@ -85,10 +90,12 @@ export default {
 
 .main-content {
   flex: 1;
+  min-width: 0;
+  min-height: 0;
   background-color: var(--background-color);
   border-radius: 5px;
   margin: 0 0 2px 2px;
-  overflow-y: auto;
+  overflow: hidden;
 }
 
 .full-width {

@@ -187,6 +187,81 @@ class JanusGraphDB(GraphDatabaseInterface):
                     trav = trav.has("description", Text.text_contains_fuzzy(word))
             return [convert_gremlin_vertex(node) for node in trav.to_list()]
 
+    def get_search_subgraph(
+        self,
+        node_type: list[str] | str | None = None,
+        title: str | None = None,
+        scope: str | None = None,
+        status: list[NodeStatus] | NodeStatus | None = None,
+        tags: list[str] | None = None,
+        description: str | None = None,
+        levels: int = 1,
+    ) -> SubgraphBase:
+        """
+        Retrieve nodes matching search criteria along with their connections
+        up to 'levels' depth using Gremlin traversals.
+        """
+        with self.connection() as g:
+            # Start with search criteria
+            trav = g.V()
+            if node_type is not None:
+                if isinstance(node_type, list):
+                    trav = trav.has("node_type", P.within(node_type))
+                elif isinstance(node_type, str):
+                    trav = trav.has("node_type", node_type)
+            if title:
+                for word in title.split(" "):
+                    trav = trav.has("title", Text.text_contains_fuzzy(word))
+            if scope:
+                for word in scope.split(" "):
+                    trav = trav.has("scope", Text.text_contains_fuzzy(scope))
+            if status is not None:
+                if isinstance(status, list):
+                    trav = trav.has("status", P.within(status))
+                elif isinstance(status, NodeStatus):
+                    trav = trav.has("status", status)
+            if tags:
+                for tag in tags:
+                    trav = trav.has("tags", Text.text_contains_fuzzy(tag))
+            if description:
+                for word in description.split(" "):
+                    trav = trav.has("description", Text.text_contains_fuzzy(word))
+
+            # Get search result nodes
+            search_nodes = [convert_gremlin_vertex(v) for v in trav.to_list()]
+
+            if not search_nodes or levels == 0:
+                from backend.models.dynamic import DynamicSubgraph
+
+                return DynamicSubgraph(nodes=search_nodes, edges=[])
+
+            # Collect all node IDs starting from search results
+            search_ids = [node.node_id for node in search_nodes]
+
+            # Use Gremlin to get connected subgraph
+            # Start from search result nodes and expand by 'levels' hops
+            all_nodes_trav = g.V(*search_ids)
+            for _ in range(levels):
+                all_nodes_trav = all_nodes_trav.both()
+
+            # Get all unique nodes in the subgraph
+            all_nodes = [
+                convert_gremlin_vertex(v) for v in all_nodes_trav.dedup().to_list()
+            ]
+            all_node_ids = [node.node_id for node in all_nodes]
+
+            # Get all edges between these nodes
+            edges_trav = (
+                g.V(*all_node_ids)
+                .out_e()
+                .where(__.in_v().has_id(P.within(all_node_ids)))
+            )
+            edges = [convert_gremlin_edge(e) for e in edges_trav.to_list()]
+
+            from backend.models.dynamic import DynamicSubgraph
+
+            return DynamicSubgraph(nodes=all_nodes, edges=edges)
+
     def get_random_node(self, node_type: str = None) -> NodeBase:
         with self.connection() as g:
             try:

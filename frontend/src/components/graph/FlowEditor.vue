@@ -13,7 +13,10 @@ import { useLayout } from "../../composables/useLayout.js";
 import VueSimpleContextMenu from "vue-simple-context-menu";
 import "vue-simple-context-menu/dist/vue-simple-context-menu.css";
 import SearchBar from "../common/SearchBar.vue";
-import { parseSearchQuery, buildSearchParams } from "../../utils/searchParser.js";
+import {
+  parseSearchQuery,
+  buildSearchParams,
+} from "../../utils/searchParser.js";
 import SpecialNode from "./SpecialNode.vue";
 import SpecialEdge from "./SpecialEdge.vue";
 import {
@@ -22,7 +25,12 @@ import {
 } from "../../composables/formatFlowComponents.js";
 import { useUnsaved } from "../../composables/useUnsaved.js";
 import { useConfig } from "../../composables/useConfig.js";
-import { loadGraphSchema, getAllowedEdgeTypes, getAllowedTargetNodeTypes, getAllowedSourceNodeTypes } from "../../composables/useGraphSchema.js";
+import {
+  loadGraphSchema,
+  getAllowedEdgeTypes,
+  getAllowedTargetNodeTypes,
+  getAllowedSourceNodeTypes,
+} from "../../composables/useGraphSchema.js";
 
 const {
   nodeTypes,
@@ -33,13 +41,13 @@ const {
   canCreate,
   canEdit,
   canDelete,
-  canRate
-} = useConfig()
+  canRate,
+} = useConfig();
 
 onMounted(async () => {
-  await loadConfig()
-  await loadGraphSchema()
-})
+  await loadConfig();
+  await loadGraphSchema();
+});
 
 const { getAccessToken } = useAuth();
 
@@ -78,6 +86,18 @@ const props = defineProps({
   },
   updatedNode: Object,
   updatedEdge: Object,
+  readOnly: {
+    type: Boolean,
+    default: false,
+  },
+  highlightedNodeId: {
+    type: [String, Number],
+    default: null,
+  },
+  fitTrigger: {
+    type: Number,
+    default: 0,
+  },
 });
 
 const router = useRouter();
@@ -101,12 +121,17 @@ const contextMenuRef = ref(null);
 const showSearchBar = ref(false);
 const searchBarPosition = ref({ x: 0, y: 0 });
 const searchResults = ref(null);
-const selectedDirection = ref(previousDirection.value || null);
+const selectedDirection = ref(previousDirection.value || "LR"); // Default to Left-to-Right
+const highlightedOriginalClass = new Map();
+const isInstanceReady = ref(false);
+const pendingData = ref(null);
+const pendingHighlightId = ref(null);
+const pendingFitRequest = ref(false);
+pendingData.value = props.data;
 
 const currentNodeIds = computed(() => {
   return new Set(nodes.value.map((node) => node.id));
 });
-
 
 onInit((vueFlowInstance) => {
   // instance is the same as the return of `useVueFlow`
@@ -117,17 +142,35 @@ onInit((vueFlowInstance) => {
   // fitView()
   console.log("VueFlow instance initialised");
   console.log("onInit, selected direction", selectedDirection.value);
+  isInstanceReady.value = true;
+
+  const initialData = pendingData.value || props.data;
+  if (initialData) {
+    applyIncomingData(initialData);
+  }
+
+  if (pendingHighlightId.value != null) {
+    nextTick(() => {
+      applyNodeHighlight(pendingHighlightId.value);
+      pendingHighlightId.value = null;
+    });
+  }
+
+  if (pendingFitRequest.value) {
+    fitViewToContent();
+  }
 });
 
 // watch for changes in props.data and update nodes and edges accordingly
 watch(
   () => props.data,
   (newData) => {
-    console.log("updating subgraph data following props change");
-    updateSubgraphFromData(newData);
-    setTimeout(() => {
-      layoutSubgraph(selectedDirection.value);
-    }, 16); // leave time for nodes to initialise (size)
+    if (!newData) return;
+    pendingData.value = newData;
+    if (!isInstanceReady.value) {
+      return;
+    }
+    applyIncomingData(newData);
   },
   { immediate: false },
 );
@@ -221,6 +264,89 @@ watch(
   { immediate: true },
 );
 
+function applyNodeHighlight(nodeId) {
+  if (nodeId === undefined || nodeId === null) {
+    return;
+  }
+  const id = nodeId.toString();
+  const node = findNode(id);
+  if (!node) {
+    return;
+  }
+
+  if (!highlightedOriginalClass.has(id)) {
+    highlightedOriginalClass.set(id, node.class || "");
+  }
+
+  const classTokens = new Set((node.class || "").split(" ").filter(Boolean));
+  classTokens.add("flow-node-hovered");
+  const updatedClass = Array.from(classTokens).join(" ");
+
+  updateNode(id, { ...node, class: updatedClass });
+}
+
+function removeNodeHighlight(nodeId) {
+  if (nodeId === undefined || nodeId === null) {
+    return;
+  }
+  const id = nodeId.toString();
+  const node = findNode(id);
+  const originalClass = highlightedOriginalClass.get(id);
+
+  if (node) {
+    let targetClass = originalClass;
+    if (targetClass === undefined) {
+      const classTokens = new Set(
+        (node.class || "").split(" ").filter(Boolean),
+      );
+      classTokens.delete("flow-node-hovered");
+      targetClass = Array.from(classTokens).join(" ");
+    }
+    updateNode(id, { ...node, class: targetClass || "" });
+  }
+
+  highlightedOriginalClass.delete(id);
+}
+
+watch(
+  () => props.highlightedNodeId,
+  (newId, oldId) => {
+    if (oldId != null && oldId !== newId) {
+      removeNodeHighlight(oldId);
+    }
+    if (newId == null) {
+      return;
+    }
+
+    if (!isInstanceReady.value) {
+      pendingHighlightId.value = newId;
+      return;
+    }
+
+    nextTick(() => {
+      applyNodeHighlight(newId);
+    });
+  },
+  { immediate: true },
+);
+
+watch(
+  () => props.fitTrigger,
+  (newVal, oldVal) => {
+    if (newVal === oldVal) {
+      return;
+    }
+
+    if (!isInstanceReady.value) {
+      pendingFitRequest.value = true;
+      return;
+    }
+
+    fitViewToContent();
+  },
+  { immediate: true },
+);
+
 function updateSubgraphFromData(data) {
   console.log("Updating subgraph from data:", data);
   setNodes(data.nodes || []);
@@ -237,6 +363,20 @@ function updateSubgraphFromData(data) {
   }
 }
 
+function applyIncomingData(newData) {
+  console.log("Applying incoming data to flow editor", newData);
+  highlightedOriginalClass.clear();
+  updateSubgraphFromData(newData);
+  nextTick(() => {
+    layoutSubgraph(selectedDirection.value);
+    if (props.highlightedNodeId != null) {
+      nextTick(() => {
+        applyNodeHighlight(props.highlightedNodeId);
+      });
+    }
+  });
+}
+
 function selectDirection(direction, layout = false) {
   selectedDirection.value = direction;
   if (layout) {
@@ -250,22 +390,85 @@ async function layoutSubgraph(direction) {
   console.log("layouting subgraph with", direction);
   const currentNodes = getNodes.value;
   const currentEdges = getEdges.value;
+  const manualPositions = new Map(
+    currentNodes
+      .filter((node) => node?.data?.manualPosition)
+      .map((node) => [node.id, { ...node.position }]),
+  );
 
   if (currentNodes.length === 1) {
-    nodes.value = affectDirection(currentNodes, direction);
-    nextTick(() => {
-      fitView();
-      zoomTo(1.5);
-    });
+    if (manualPositions.size) {
+      nodes.value = currentNodes.map((node) => {
+        const manualPos = manualPositions.get(node.id);
+        return manualPos ? { ...node, position: { ...manualPos } } : node;
+      });
+    } else {
+      nodes.value = affectDirection(currentNodes, direction);
+    }
+    fitViewToContent({ zoom: 1.5 });
     return;
-  } else if (currentNodes.length === 0 || currentEdges.length === 0) {
-    console.warn("Nodes or edges are empty, cannot layout subgraph");
+  } else if (currentNodes.length === 0) {
+    console.warn("Nodes array is empty, cannot layout subgraph");
+    return;
+  } else if (currentEdges.length === 0) {
+    console.warn("No edges supplied, falling back to simple layout");
+    nodes.value = affectDirection(currentNodes, direction).map((node, idx) => {
+      const manualPos = manualPositions.get(node.id);
+      if (manualPos) {
+        return { ...node, position: { ...manualPos } };
+      }
+      return {
+        ...node,
+        position: {
+          x: direction === "TB" || direction === "BT" ? 0 : idx * 200,
+          y: direction === "TB" || direction === "BT" ? idx * 150 : 0,
+        },
+      };
+    });
+    fitViewToContent();
     return;
   }
-  nodes.value = layout(currentNodes, currentEdges, direction);
+
+  const laidOutNodes = layout(currentNodes, currentEdges, direction);
+  nodes.value = laidOutNodes.map((node) => {
+    const manualPos = manualPositions.get(node.id);
+    return manualPos ? { ...node, position: { ...manualPos } } : node;
+  });
+
+  fitViewToContent();
+}
+
+function fitViewToContent({ zoom } = {}) {
+  const runFit = () => {
+    const currentNodes = getNodes.value || [];
+    if (!currentNodes.length) {
+      return;
+    }
+
+    const nodeIds = currentNodes.map((node) => node.id);
+    fitView({
+      nodes: nodeIds,
+      includeHiddenNodes: true,
+      padding: 0.25,
+      duration: 0,
+    });
+
+    if (typeof zoom === "number") {
+      zoomTo(zoom);
+    }
+  };
+
+  const scheduleFit = () => {
+    if (typeof window !== "undefined" && window.requestAnimationFrame) {
+      window.requestAnimationFrame(runFit);
+    } else {
+      runFit();
+    }
+  };
 
   nextTick(() => {
-    fitView();
+    pendingFitRequest.value = false;
+    scheduleFit();
   });
 }
 
@@ -406,10 +609,10 @@ const onNodesChange = async (changes) => {
             `/nodes/${node_id}`,
             token ? { headers: { Authorization: `Bearer ${token}` } } : {},
           );
-          
+
           // Only proceed with UI update if API call succeeded
           nextChanges.push(change);
-          
+
           // find all edges connected to this node and delete them
           // note: edges on the backend have already been deleted by the above call
           const connectedEdges = getEdges.value.filter(
@@ -421,16 +624,24 @@ const onNodesChange = async (changes) => {
           }
         } catch (error) {
           console.error("Failed to delete node:", error);
-          
+
           // Show user-friendly error message
           if (error.response?.status === 403) {
-            alert("You don't have permission to delete nodes. Please log in with an account that has delete permissions.");
+            alert(
+              "You don't have permission to delete nodes. Please log in with an account that has delete permissions.",
+            );
           } else if (error.response?.status === 401) {
             alert("You need to be logged in to delete nodes.");
           } else {
-            alert("Failed to delete node. Please try again or contact support if the problem persists.");
+            alert(
+              "Failed to delete node. Please try again or contact support if the problem persists.",
+            );
           }
-          
+          if (!isInstanceReady.value) {
+            pendingHighlightId.value = newId;
+            return;
+          }
+
           // Don't add to nextChanges so UI doesn't update
         }
       }
@@ -465,21 +676,25 @@ const onEdgesChange = async (changes) => {
             { edge_type: edge_type },
             token ? { headers: { Authorization: `Bearer ${token}` } } : {},
           );
-          
+
           // Only proceed with UI update if API call succeeded
           nextChanges.push(change);
         } catch (error) {
           console.error("Failed to delete edge:", error);
-          
+
           // Show user-friendly error message
           if (error.response?.status === 403) {
-            alert("You don't have permission to delete edges. Please log in with an account that has delete permissions.");
+            alert(
+              "You don't have permission to delete edges. Please log in with an account that has delete permissions.",
+            );
           } else if (error.response?.status === 401) {
             alert("You need to be logged in to delete edges.");
           } else {
-            alert("Failed to delete edge. Please try again or contact support if the problem persists.");
+            alert(
+              "Failed to delete edge. Please try again or contact support if the problem persists.",
+            );
           }
-          
+
           // Don't add to nextChanges so UI doesn't update
         }
       }
@@ -503,30 +718,46 @@ function onConnectStart({ nodeId, handleType }) {
  */
 function onConnect(connection) {
   console.log("on connect", connection);
-  
+
+  // Block connections in read-only mode
+  if (props.readOnly) {
+    return;
+  }
+
   // Check permissions first
   if (!canCreate.value) {
-    alert("You don't have permission to create edges. Please log in with an account that has create permissions.");
+    alert(
+      "You don't have permission to create edges. Please log in with an account that has create permissions.",
+    );
     return; // Don't create the connection
   }
-  
+
   // addEdges(connection);
   console.log("connectionInfo", connectionInfo.value);
-  const target = connectionInfo.value.handleType === "source" ? connection.target : connection.source;
+  const target =
+    connectionInfo.value.handleType === "source"
+      ? connection.target
+      : connection.source;
   const newEdgeData = createEdgeOnConnection(target);
-  
-  if (newEdgeData) { // Only proceed if edge creation is allowed
+
+  if (newEdgeData) {
+    // Only proceed if edge creation is allowed
     nextTick(() => {
       emit("newEdgeCreated", newEdgeData);
     });
     addEdges(newEdgeData);
   }
-  
+
   connectionInfo.value = null;
 }
 
 function onConnectEnd(event) {
   console.log("on connect end", event);
+
+  // Block in read-only mode
+  if (props.readOnly) {
+    return;
+  }
 
   if (connectionInfo.value) {
     console.log("Connected to an empty space");
@@ -575,7 +806,7 @@ function createEdgeOnConnection(targetId) {
     window.alert(
       `Cannot create any edge type between ${
         sourceType || "new"
-      } → ${targetType || "new"}`
+      } → ${targetType || "new"}`,
     );
     return null;
   }
@@ -583,7 +814,7 @@ function createEdgeOnConnection(targetId) {
   const newEdgeData = formatFlowEdgeProps({
     source: source,
     target: target,
-    edge_type: chosenType
+    edge_type: chosenType,
   });
   console.log("New edge data (direct connection):", newEdgeData);
   return newEdgeData;
@@ -617,10 +848,18 @@ function handleSearch(query) {
 
 function createNodeAndEdge(event = null) {
   console.log("Creating a new node");
-  
+
+  // Block in read-only mode
+  if (props.readOnly) {
+    closeSearchBar();
+    return;
+  }
+
   // Check permissions first
   if (!canCreate.value) {
-    alert("You don't have permission to create nodes. Please log in with an account that has create permissions.");
+    alert(
+      "You don't have permission to create nodes. Please log in with an account that has create permissions.",
+    );
     closeSearchBar();
     return;
   }
@@ -636,11 +875,11 @@ function createNodeAndEdge(event = null) {
     const sourceNode = findNode(nodeId);
     scope = sourceNode.data.scope; // inherited scope
     tags = sourceNode.data.tags; // inherited tags
-    
+
     fromConnection = {
       id: nodeId,
       handle_type: handleType,
-      node_type: sourceNode.data.node_type
+      node_type: sourceNode.data.node_type,
       // edge_type: handleType === "source" ? "imply" : "require",
     }; // to be used to update edge data
     eventPosition = connectionInfo.value.position || {
@@ -653,9 +892,9 @@ function createNodeAndEdge(event = null) {
   } else {
     console.log("No connectionInfo available");
     // Default position for button clicks
-    eventPosition = { 
-      x: event?.clientX || 400, 
-      y: event?.clientY || 200 
+    eventPosition = {
+      x: event?.clientX || 400,
+      y: event?.clientY || 200,
     };
     // console.log("Event position:", eventPosition);
   }
@@ -664,7 +903,7 @@ function createNodeAndEdge(event = null) {
   let newNodeData = formatFlowNodeProps({
     node_id: "new",
     title: "",
-    status: "live",
+    status: "draft",
     position: screenToFlowCoordinate(eventPosition),
     scope: scope,
     node_type: defaultNodeType.value,
@@ -672,6 +911,14 @@ function createNodeAndEdge(event = null) {
     tags: tags,
     fromConnection: fromConnection,
   });
+
+  newNodeData = {
+    ...newNodeData,
+    data: {
+      ...newNodeData.data,
+      manualPosition: true,
+    },
+  };
 
   if (connectionInfo.value) {
     // Get allowed node types from the source node’s type
@@ -705,6 +952,9 @@ function createNodeAndEdge(event = null) {
   if (connectionInfo.value) {
     const newEdgeData = createEdgeOnConnection("new");
     addEdges(newEdgeData);
+    nextTick(() => {
+      emit("newEdgeCreated", newEdgeData);
+    });
   }
 
   nextTick(() => {
@@ -717,9 +967,7 @@ function createNodeAndEdge(event = null) {
 async function handleSearchResultClick(id, event) {
   console.log("search result clicked", id);
   try {
-    const response = await api.get(
-      `/nodes/${id}/`,
-    );
+    const response = await api.get(`/nodes/${id}/`);
     const node = response.data;
     // console.log("Fetched node:", node);
     let eventPosition = { x: event.clientX, y: event.clientY };
@@ -730,10 +978,11 @@ async function handleSearchResultClick(id, event) {
     addNodes(formattedNode);
 
     // if connected from existing node, create edge
-    if (connectionInfo.value) 
-    {
+    if (connectionInfo.value) {
       if (!canCreate.value) {
-        alert("You don't have permission to create edges. Please log in with an account that has create permissions.");
+        alert(
+          "You don't have permission to create edges. Please log in with an account that has create permissions.",
+        );
         return; // Don't create the connection
       }
       linkSourceToSearchResult(id);
@@ -827,57 +1076,72 @@ function showContextMenu(event, options) {
 
 function onNodeRightClick({ event, node }) {
   console.log("Node Right Click", node);
+
+  // Block context menu in read-only mode
+  if (props.readOnly) {
+    return;
+  }
+
   const options = [];
-  
+
   if (canEdit.value) {
     options.push({ name: "Edit Node", action: () => editNode(node) });
   }
-  
+
   if (canDelete.value) {
     options.push({ name: "Delete Node", action: () => deleteNode(node) });
   }
-  
+
   // Always show some option, even if just for information
   if (options.length === 0) {
     options.push({ name: "View Node", action: () => editNode(node) });
   }
-  
+
   showContextMenu(event, options);
 }
 
 function onEdgeRightClick({ event, edge }) {
   console.log("Edge Right Click", edge);
+
+  // Block context menu in read-only mode
+  if (props.readOnly) {
+    return;
+  }
+
   const options = [];
-  
+
   if (canEdit.value) {
     options.push({ name: "Edit Edge", action: () => editEdge(edge) });
   }
-  
+
   if (canDelete.value) {
     options.push({ name: "Delete Edge", action: () => deleteEdge(edge) });
   }
-  
+
   // Always show some option, even if just for information
   if (options.length === 0) {
     options.push({ name: "View Edge", action: () => editEdge(edge) });
   }
-  
+
   showContextMenu(event, options);
 }
 
 function onSelectionRightClick({ event, nodes }) {
   const options = [];
-  
+
   // Group and Tag features are not yet implemented, so we'll comment them out for now
   // if (canEdit.value) {
   //   options.push({ name: "Create Group Node", action: () => groupSelection(nodes) });
   //   options.push({ name: "Tag Selection", action: () => tagSelection(nodes) });
   // }
-  
+
   if (canDelete.value) {
-    options.push({ name: "Delete Selection", action: () => deleteSelection(nodes) });
+    options.push({
+      name: "Delete Selection",
+      action: () => deleteSelection(nodes),
+    });
   }
-  
+
   // If no actions are available, don't show context menu
   if (options.length > 0) {
     showContextMenu(event, options);
@@ -888,6 +1152,11 @@ function onPaneRightClick(event) {
   event.preventDefault();
   console.log("Pane Right Click", event);
 
+  // Block in read-only mode
+  if (props.readOnly) {
+    return;
+  }
+
   searchBarPosition.value = determinePositionWithinWindow(event);
   setTimeout(() => {
     showSearchBar.value = true;
@@ -896,34 +1165,38 @@ function onPaneRightClick(event) {
 
 function onConnectEndEmpty(event) {
   const options = [];
-  
+
   if (canCreate.value) {
-    options.push({ 
-      name: "Create New Node", 
-      action: () => createNodeAndEdge(event) 
+    options.push({
+      name: "Create New Node",
+      action: () => createNodeAndEdge(event),
     });
   } else {
-    options.push({ 
-      name: "Create New Node (No Permission)", 
+    options.push({
+      name: "Create New Node (No Permission)",
       action: () => {
-        alert("You don't have permission to create nodes. Please log in with an account that has create permissions.");
+        alert(
+          "You don't have permission to create nodes. Please log in with an account that has create permissions.",
+        );
       },
-      class: "disabled"
+      class: "disabled",
     });
   }
-  
+
   showContextMenu(event, options);
 }
 
 function editNode(node) {
   console.log("Edit Node", node);
-  
+
   // Check permissions first
   if (!canEdit.value) {
-    alert("You don't have permission to edit nodes. Please log in with an account that has edit permissions.");
+    alert(
+      "You don't have permission to edit nodes. Please log in with an account that has edit permissions.",
+    );
     return;
   }
-  
+
   router.push({ name: "NodeEdit", params: { id: node.id } });
 }
 
@@ -934,13 +1207,15 @@ function deleteNode(node) {
 
 function editEdge(edge) {
   console.log("Edit Edge", edge);
-  
+
   // Check permissions first
   if (!canEdit.value) {
-    alert("You don't have permission to edit edges. Please log in with an account that has edit permissions.");
+    alert(
+      "You don't have permission to edit edges. Please log in with an account that has edit permissions.",
+    );
     return;
   }
-  
+
   router.push({
     name: "EdgeEdit",
     params: { source_id: edge.data.source, target_id: edge.data.target },
@@ -962,7 +1237,7 @@ function tagSelection(nodes) {
   console.log("Tag Selection", nodes);
   alert("Tagging nodes is not yet supported.");
   return;
-  // potential issues: not all ndoes have a tag field, and edges may have tag field too 
+  // potential issues: not all ndoes have a tag field, and edges may have tag field too
   const nodeIds = nodes.map((node) => node.id);
   // collect tag from the user
   const tag = prompt("Enter a tag to apply to the selected nodes:");
@@ -1082,7 +1357,9 @@ onEdgeMouseLeave(({ edge }) => {
                 : 'Fetching unnconnected nodes is not yet supported'
             "
           >
-            <span style="margin-right: 5px">➔</span>{{ result.title }} ({{ result.node_type || "— no type —" }})
+            <span style="margin-right: 5px">➔</span>{{ result.title }} ({{
+              result.node_type || "— no type —"
+            }})
           </li>
         </ul>
         <p
@@ -1097,67 +1374,168 @@ onEdgeMouseLeave(({ edge }) => {
 
       <!-- <MiniMap /> -->
 
-      <Panel class="compass-panel" style="margin-top: 5px; margin-right: 2px; right: 2px">
+      <Panel
+        class="compass-panel"
+        style="margin-top: 5px; margin-right: 2px; right: 2px"
+      >
         <div class="compass-container">
-          <svg 
-            class="compass-svg" 
-            viewBox="0 0 120 120" 
-            width="60" 
-            height="60"
-          >
+          <svg class="compass-svg" viewBox="0 0 120 120" width="60" height="60">
             <!-- Outer circle -->
-            <circle 
-              cx="60" 
-              cy="60" 
-              r="58" 
-              fill="transparent" 
-              stroke="#ccc" 
+            <circle
+              cx="60"
+              cy="60"
+              r="58"
+              fill="transparent"
+              stroke="#ccc"
               stroke-width="2"
             />
-            
+
             <!-- Inner compass rose -->
             <g class="compass-rose">
               <!-- Main directional lines -->
-              <line x1="60" y1="8" x2="60" y2="112" stroke="#ddd" stroke-width="1"/>
-              <line x1="8" y1="60" x2="112" y2="60" stroke="#ddd" stroke-width="1"/>
-              
+              <line
+                x1="60"
+                y1="8"
+                x2="60"
+                y2="112"
+                stroke="#ddd"
+                stroke-width="1"
+              />
+              <line
+                x1="8"
+                y1="60"
+                x2="112"
+                y2="60"
+                stroke="#ddd"
+                stroke-width="1"
+              />
+
               <!-- Diagonal lines -->
-              <line x1="21.2" y1="21.2" x2="98.8" y2="98.8" stroke="#eee" stroke-width="1"/>
-              <line x1="98.8" y1="21.2" x2="21.2" y2="98.8" stroke="#eee" stroke-width="1"/>
+              <line
+                x1="21.2"
+                y1="21.2"
+                x2="98.8"
+                y2="98.8"
+                stroke="#eee"
+                stroke-width="1"
+              />
+              <line
+                x1="98.8"
+                y1="21.2"
+                x2="21.2"
+                y2="98.8"
+                stroke="#eee"
+                stroke-width="1"
+              />
             </g>
-            
+
             <!-- Combined quadrant groups for click and hover -->
             <g class="quadrant north" @click="selectDirection('BT', true)">
               <title>Upwards</title>
-              <path d="M 60 60 L 15 15 L 60 2 L 105 15 Z" fill="transparent" class="compass-quadrant"/>
-              <path d="M 60 60 L 45 45 L 60 8 L 75 45 Z" :fill="selectedDirection==='BT'?'#007bff':'white'" :stroke="selectedDirection==='BT'?'#007bff':'#666'" :stroke-width="selectedDirection==='BT'?3:2" class="compass-direction" pointer-events="none"/>
+              <path
+                d="M 60 60 L 15 15 L 60 2 L 105 15 Z"
+                fill="transparent"
+                class="compass-quadrant"
+              />
+              <path
+                d="M 60 60 L 45 45 L 60 8 L 75 45 Z"
+                :fill="selectedDirection === 'BT' ? '#007bff' : 'white'"
+                :stroke="selectedDirection === 'BT' ? '#007bff' : '#666'"
+                :stroke-width="selectedDirection === 'BT' ? 3 : 2"
+                class="compass-direction"
+                pointer-events="none"
+              />
             </g>
-            
+
             <g class="quadrant east" @click="selectDirection('LR', true)">
               <title>Rightwards</title>
-              <path d="M 60 60 L 105 15 L 118 60 L 105 105 Z" fill="transparent" class="compass-quadrant"/>
-              <path d="M 60 60 L 75 45 L 112 60 L 75 75 Z" :fill="selectedDirection==='LR'?'#007bff':'white'" :stroke="selectedDirection==='LR'?'#007bff':'#666'" :stroke-width="selectedDirection==='LR'?3:2" class="compass-direction" pointer-events="none"/>
+              <path
+                d="M 60 60 L 105 15 L 118 60 L 105 105 Z"
+                fill="transparent"
+                class="compass-quadrant"
+              />
+              <path
+                d="M 60 60 L 75 45 L 112 60 L 75 75 Z"
+                :fill="selectedDirection === 'LR' ? '#007bff' : 'white'"
+                :stroke="selectedDirection === 'LR' ? '#007bff' : '#666'"
+                :stroke-width="selectedDirection === 'LR' ? 3 : 2"
+                class="compass-direction"
+                pointer-events="none"
+              />
             </g>
-            
+
             <g class="quadrant south" @click="selectDirection('TB', true)">
               <title>Downwards</title>
-              <path d="M 60 60 L 105 105 L 60 118 L 15 105 Z" fill="transparent" class="compass-quadrant"/>
-              <path d="M 60 60 L 75 75 L 60 112 L 45 75 Z" :fill="selectedDirection==='TB'?'#007bff':'white'" :stroke="selectedDirection==='TB'?'#007bff':'#666'" :stroke-width="selectedDirection==='TB'?3:2" class="compass-direction" pointer-events="none"/>
+              <path
+                d="M 60 60 L 105 105 L 60 118 L 15 105 Z"
+                fill="transparent"
+                class="compass-quadrant"
+              />
+              <path
+                d="M 60 60 L 75 75 L 60 112 L 45 75 Z"
+                :fill="selectedDirection === 'TB' ? '#007bff' : 'white'"
+                :stroke="selectedDirection === 'TB' ? '#007bff' : '#666'"
+                :stroke-width="selectedDirection === 'TB' ? 3 : 2"
+                class="compass-direction"
+                pointer-events="none"
+              />
             </g>
-            
+
             <g class="quadrant west" @click="selectDirection('RL', true)">
               <title>Leftwards</title>
-              <path d="M 60 60 L 15 105 L 2 60 L 15 15 Z" fill="transparent" class="compass-quadrant"/>
-              <path d="M 60 60 L 45 75 L 8 60 L 45 45 Z" :fill="selectedDirection==='RL'?'#007bff':'white'" :stroke="selectedDirection==='RL'?'#007bff':'#666'" :stroke-width="selectedDirection==='RL'?3:2" class="compass-direction" pointer-events="none"/>
+              <path
+                d="M 60 60 L 15 105 L 2 60 L 15 15 Z"
+                fill="transparent"
+                class="compass-quadrant"
+              />
+              <path
+                d="M 60 60 L 45 75 L 8 60 L 45 45 Z"
+                :fill="selectedDirection === 'RL' ? '#007bff' : 'white'"
+                :stroke="selectedDirection === 'RL' ? '#007bff' : '#666'"
+                :stroke-width="selectedDirection === 'RL' ? 3 : 2"
+                class="compass-direction"
+                pointer-events="none"
+              />
             </g>
-            
+
             <!-- Discrete center lines to summits -->
-            <line x1="60" y1="60" x2="60" y2="8" stroke="#999" stroke-width="1" class="compass-indicator"/>
-            <line x1="60" y1="60" x2="112" y2="60" stroke="#999" stroke-width="1" class="compass-indicator"/>
-            <line x1="60" y1="60" x2="60" y2="112" stroke="#999" stroke-width="1" class="compass-indicator"/>
-            <line x1="60" y1="60" x2="8" y2="60" stroke="#999" stroke-width="1" class="compass-indicator"/>
-            
-           </svg>
+            <line
+              x1="60"
+              y1="60"
+              x2="60"
+              y2="8"
+              stroke="#999"
+              stroke-width="1"
+              class="compass-indicator"
+            />
+            <line
+              x1="60"
+              y1="60"
+              x2="112"
+              y2="60"
+              stroke="#999"
+              stroke-width="1"
+              class="compass-indicator"
+            />
+            <line
+              x1="60"
+              y1="60"
+              x2="60"
+              y2="112"
+              stroke="#999"
+              stroke-width="1"
+              class="compass-indicator"
+            />
+            <line
+              x1="60"
+              y1="60"
+              x2="8"
+              y2="60"
+              stroke="#999"
+              stroke-width="1"
+              class="compass-indicator"
+            />
+          </svg>
         </div>
       </Panel>
 
@@ -1289,5 +1667,21 @@ onEdgeMouseLeave(({ edge }) => {
 .vue-simple-context-menu .disabled:hover {
   background-color: #f5f5f5 !important;
   color: #999 !important;
+}
+
+.vue-flow__node.flow-node-connector {
+  opacity: 0.35;
+  transition: opacity 0.2s ease-in-out;
+}
+
+.vue-flow__node.flow-node-hovered {
+  opacity: 1 !important;
+  box-shadow: 0 0 0 4px rgba(100, 108, 255, 0.4);
+  transition: box-shadow 0.15s ease-in-out;
+}
+
+.vue-flow__edge.flow-edge-connector path,
+.vue-flow__edge.flow-edge-connector .vue-flow__edge-path {
+  opacity: 0.35;
 }
 </style>

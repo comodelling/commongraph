@@ -208,7 +208,6 @@ body.dark .vue-flow__edge.selected .vue-flow__edge-path {
   position: relative;
 }
 
-
 .pane-header {
   display: flex;
   justify-content: space-between;
@@ -257,7 +256,7 @@ body.dark .vue-flow__edge.selected .vue-flow__edge-path {
 .pane-header .tabs {
   display: flex;
   justify-content: flex-end; /* Flush tabs to the right */
-  position: relative;        /* Use relative positioning for normal flow */
+  position: relative; /* Use relative positioning for normal flow */
   /* margin: 0 -5px; */
   /* padding: 0; */
 }
@@ -525,8 +524,6 @@ body.dark .delete-tag-button:hover {
   align-self: center;
 }
 
-
-
 .references-list {
   margin: 0;
   padding-left: 20px;
@@ -588,7 +585,9 @@ body.dark .delete-tag-button:hover {
   align-items: center;
   justify-content: center;
   opacity: 0.6;
-  transition: opacity 0.2s ease, background-color 0.2s ease;
+  transition:
+    opacity 0.2s ease,
+    background-color 0.2s ease;
   margin-left: 4px;
 }
 

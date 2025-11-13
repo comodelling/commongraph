@@ -13,11 +13,29 @@ export default defineConfig({
   envPrefix: 'VITE_',             // expose only VITE_* to client
   server: {
     allowedHosts: [
-      'commongraph.org', 
-      'www.commongraph.org',
+      process.env.DOMAIN,
+      `www.${process.env.DOMAIN}`,
+      `api.${process.env.DOMAIN}`,
+      'commongraph.org',          // Legacy support
+      'www.commongraph.org',      // Legacy support
+      'commonoutcomes.org',       // Legacy support
+      'www.commonoutcomes.org',   // Legacy support
       'localhost',
       '127.0.0.1'
-    ]
+    ].filter(Boolean)  // Remove any undefined values
+  },
+  preview: {
+    allowedHosts: [
+      process.env.DOMAIN,
+      `www.${process.env.DOMAIN}`,
+      `api.${process.env.DOMAIN}`,
+      'commongraph.org',          // Legacy support
+      'www.commongraph.org',      // Legacy support
+      'commonoutcomes.org',       // Legacy support
+      'www.commonoutcomes.org',   // Legacy support
+      'localhost',
+      '127.0.0.1'
+    ].filter(Boolean)  // Remove any undefined values
   },
   build: {
     sourcemap: true,

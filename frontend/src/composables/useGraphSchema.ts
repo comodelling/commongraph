@@ -22,24 +22,24 @@ export async function loadGraphSchema() {
 
 export function getAllowedEdgeTypes(
   source?: string,
-  target?: string
+  target?: string,
 ): string[] {
   if (!loaded.value) return [];
 
   // both ends known
   if (source && target) {
     return schema.value.edge_types
-      .filter(e => e.source_type === source && e.target_type === target)
-      .map(e => e.label);
+      .filter((e) => e.source_type === source && e.target_type === target)
+      .map((e) => e.label);
   }
   // only source known → any edge *from* that source
   if (source && !target) {
     return Array.from(
       new Set(
         schema.value.edge_types
-          .filter(e => e.source_type === source)
-          .map(e => e.label)
-      )
+          .filter((e) => e.source_type === source)
+          .map((e) => e.label),
+      ),
     );
   }
   // only target known → any edge *to* that target
@@ -47,13 +47,13 @@ export function getAllowedEdgeTypes(
     return Array.from(
       new Set(
         schema.value.edge_types
-          .filter(e => e.target_type === target)
-          .map(e => e.label)
-      )
+          .filter((e) => e.target_type === target)
+          .map((e) => e.label),
+      ),
     );
   }
   // neither known → all edge types
-  return Array.from(new Set(schema.value.edge_types.map(e => e.label)));
+  return Array.from(new Set(schema.value.edge_types.map((e) => e.label)));
 }
 
 export function getAllowedTargetNodeTypes(source: string): string[] {
@@ -66,9 +66,9 @@ export function getAllowedTargetNodeTypes(source: string): string[] {
   return Array.from(
     new Set(
       schema.value.edge_types
-        .filter(e => e.source_type === source)
-        .map(e => e.target_type)
-    )
+        .filter((e) => e.source_type === source)
+        .map((e) => e.target_type),
+    ),
   );
 }
 
@@ -80,8 +80,8 @@ export function getAllowedSourceNodeTypes(target: string): string[] {
   return Array.from(
     new Set(
       schema.value.edge_types
-        .filter(e => e.target_type === target)
-        .map(e => e.source_type)
-    )
+        .filter((e) => e.target_type === target)
+        .map((e) => e.source_type),
+    ),
   );
 }

@@ -5,7 +5,7 @@ set -e
 create_database_if_not_exists() {
     local db_name=$1
     echo "Checking if database '$db_name' exists..."
-    
+
     # Check if database exists, create if it doesn't
     if psql -U "$POSTGRES_USER" -lqt | cut -d \| -f 1 | grep -qw "$db_name"; then
         echo "Database '$db_name' already exists"

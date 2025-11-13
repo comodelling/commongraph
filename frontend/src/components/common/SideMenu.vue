@@ -2,27 +2,31 @@
   <div class="side-menu">
     <div class="title">Menu</div>
     <router-link to="/">Main page</router-link><br />
-    <a 
-      href="#" 
-      @click="canCreate ? createNewNode() : null" 
-      :class="{ disabled: !canCreate }"
-      :title="canCreate ? 'Create a new node' : 'You need create permissions to add new nodes'"
+    <a
+      v-if="canRead && canCreate"
+      href="#"
+      @click="createNewNode"
+      title="Create a new node"
     >
-      New node
-    </a><br />
-    <a href="#" @click="fetchRandomNode">Random node</a><br />
+      New node </a
+    ><br v-if="canRead && canCreate" />
+    <a href="#" @click="fetchRandomNode" v-if="canRead">Random node</a
+    ><br v-if="canRead" />
     <!-- <router-link to="/schema">Graph schema</router-link><br /> -->
     <router-link to="/about">About</router-link>
     <br /><br />
     <div class="title">User</div>
     <div v-if="!isLoggedIn">
       <router-link to="/login">Log in</router-link><br />
-      <router-link to="/signup">Sign up</router-link><br />
+      <router-link to="/signup" v-if="allowSignup">Sign up</router-link
+      ><br v-if="allowSignup" />
     </div>
     <div v-else>
       <router-link to="/favourites">Favourites</router-link><br />
       <router-link to="/settings">Settings</router-link><br />
-      <router-link v-if="isAdmin" to="/admin/users">Manage Users<br /></router-link>
+      <router-link v-if="isAdmin" to="/admin/users"
+        >Manage Users<br
+      /></router-link>
       <a href="#" @click="logout">Log out</a>
     </div>
   </div>
@@ -34,18 +38,15 @@ import { useAuth } from "../../composables/useAuth";
 import { useConfig } from "../../composables/useConfig";
 import api from "../../api/axios";
 
-
 export default {
   setup() {
     const router = useRouter();
     const { isLoggedIn, isAdmin, clearTokens } = useAuth();
-    const { canCreate } = useConfig();
+    const { canRead, canCreate, allowSignup } = useConfig();
 
     const fetchRandomNode = async () => {
       try {
-        const response = await api.get(
-          `/nodes/random`,
-        );
+        const response = await api.get(`/nodes/random`);
         const node = response.data;
         const path = router.currentRoute.value.path;
         if (path.startsWith("/node") || path.startsWith("/edge")) {
@@ -70,12 +71,19 @@ export default {
     const logout = () => {
       clearTokens();
       // if page is favourites or settings, redirect to login
-      if (router.currentRoute.value.path === "/favourites" || router.currentRoute.value.path === "/settings" 
-          || router.currentRoute.value.path === "/admin/users" || router.currentRoute.value.path.startsWith("/node/new")
-          || router.currentRoute.value.path.startsWith("/edge/new")) {
+      if (
+        router.currentRoute.value.path === "/favourites" ||
+        router.currentRoute.value.path === "/settings" ||
+        router.currentRoute.value.path === "/admin/users" ||
+        router.currentRoute.value.path.startsWith("/node/new") ||
+        router.currentRoute.value.path.startsWith("/edge/new")
+      ) {
         router.push("/login");
       }
-      if (router.currentRoute.value.path.endsWith("/edit")  || router.currentRoute.value.path.endsWith("/edit#")) {
+      if (
+        router.currentRoute.value.path.endsWith("/edit") ||
+        router.currentRoute.value.path.endsWith("/edit#")
+      ) {
         // remove edit suffix to go back to view
         const newPath = router.currentRoute.value.path.replace(/\/edit#?$/, "");
         router.push(newPath);
@@ -88,7 +96,9 @@ export default {
       logout,
       isLoggedIn,
       isAdmin,
+      canRead,
       canCreate,
+      allowSignup,
     };
   },
 };

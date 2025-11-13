@@ -3,19 +3,23 @@
     <div class="commongraph-about">
       <header class="about-header">
         <h1 class="platform-title">About {{ platformName }}</h1>
-        <div class="subtitle"> {{ platformTagline }}</div>
+        <div class="subtitle">{{ platformTagline }}</div>
       </header>
-      
+
       <p class="description" v-html="platformDescription"></p>
 
       <p class="description">
-        It is powered by <b>CommonGraph</b>, a free and open source tool to build graph-based co-production platforms.
+        It is powered by <b>CommonGraph</b>, a free and open source tool to
+        build graph-based co-production platforms.
       </p>
 
       <div class="description">
         <p>
           For any feedback, please reach out at:
-          <a :href="`mailto:${adminEmail}`" class="contact-link">{{ adminEmail }}</a>.
+          <a :href="`mailto:${adminEmail}`" class="contact-link">{{
+            adminEmail
+          }}</a
+          >.
         </p>
       </div>
     </div>
@@ -28,9 +32,10 @@ import { useConfig } from "../composables/useConfig";
 
 export default {
   setup() {
-    const { platformName, platformTagline, platformDescription, load } = useConfig();
+    const { platformName, platformTagline, platformDescription, load } =
+      useConfig();
     const adminEmail = import.meta.env.VITE_ADMIN_EMAIL;
-    
+
     onMounted(load);
 
     return { platformName, platformTagline, platformDescription, adminEmail };
@@ -151,7 +156,7 @@ export default {
   background-color: var(--highlight-color);
   padding: 3px 6px;
   border-radius: 3px;
-  font-family: 'Courier New', monospace;
+  font-family: "Courier New", monospace;
   font-size: 0.9rem;
   border: 1px solid var(--border-color);
   color: var(--text-color);
@@ -161,15 +166,15 @@ export default {
   .about {
     padding: 1rem;
   }
-  
+
   .platform-title {
     font-size: 2rem;
   }
-  
+
   .description {
     text-align: left;
   }
-  
+
   .about-header {
     margin-bottom: 2rem;
   }

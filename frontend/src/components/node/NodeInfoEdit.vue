@@ -24,17 +24,17 @@
     <div class="field">
       <strong :title="tooltips.node.type">Type:</strong>
       <div class="field-content">
-         <select v-model="editedNode.node_type" ref="typeInput">
-           <option
-             v-for="(props, type) in nodeTypes"
-             :key="type"
-             :value="type"
-             :disabled="!isTypeAllowed(type)"
-             :title="tooltips.node[type] || tooltips.node.type"
-           >
-             {{ capitalise(type) }}
-           </option>
-         </select>
+        <select v-model="editedNode.node_type" ref="typeInput">
+          <option
+            v-for="(props, type) in nodeTypes"
+            :key="type"
+            :value="type"
+            :disabled="!isTypeAllowed(type)"
+            :title="tooltips.node[type] || tooltips.node.type"
+          >
+            {{ capitalise(type) }}
+          </option>
+        </select>
       </div>
     </div>
     <!-- Scope Field -->
@@ -62,11 +62,14 @@
       <strong :title="tooltips.node.status">Status:</strong>
       <div class="field-content">
         <select v-model="editedNode.status" ref="statusInput">
-          <option value="unspecified" :title="tooltips.node.unspecified"></option>
           <option value="draft" :title="tooltips.node.draft">Draft</option>
           <option value="live" :title="tooltips.node.live">Live</option>
-          <option value="completed" :title="tooltips.node.completed">Completed</option>
-          <option value="legacy" :title="tooltips.node.legacy">Legacy</option>
+          <option value="realised" :title="tooltips.node.realised">
+            Realised
+          </option>
+          <option value="unrealised" :title="tooltips.node.unrealised">
+            Unrealised
+          </option>
         </select>
       </div>
     </div>
@@ -98,8 +101,8 @@
               class="reference-input"
               placeholder="Enter reference..."
             />
-            <button 
-              class="delete-reference-button" 
+            <button
+              class="delete-reference-button"
               @click="deleteReference(index)"
               title="Delete reference"
             >
@@ -142,9 +145,9 @@
       <strong :title="tooltips.node.tags">Tags:</strong>
       <div class="field-content">
         <div class="tags-container">
-          <span 
-            v-for="(tag, index) in editedNode.tags" 
-            :key="index" 
+          <span
+            v-for="(tag, index) in editedNode.tags"
+            :key="index"
             class="tag"
           >
             <span
@@ -164,15 +167,17 @@
               class="tag-input"
               :style="{ width: `${Math.max(tag.length * 8 + 20, 50)}px` }"
             />
-            <button 
-              class="delete-tag-button" 
+            <button
+              class="delete-tag-button"
               @click="deleteTag(index)"
               title="Delete tag"
             >
               ×
             </button>
           </span>
-          <button class="add-button add-tag-button" @click="addTag">+ Tag</button>
+          <button class="add-button add-tag-button" @click="addTag">
+            + Tag
+          </button>
         </div>
       </div>
     </div>
@@ -205,13 +210,13 @@ export default {
     node: Object,
   },
   // Use the setup() function solely to expose the meta config data.
-   setup(props) {
-     const { nodeTypes, load, defaultEdgeType } = useConfig();
-     // block here until both nodeTypes & edgeTypes are populated
-     onBeforeMount(load);
-     onMounted(loadGraphSchema);
-     return { nodeTypes, defaultEdgeType, load };
-   },
+  setup(props) {
+    const { nodeTypes, load, defaultEdgeType } = useConfig();
+    // block here until both nodeTypes & edgeTypes are populated
+    onBeforeMount(load);
+    onMounted(loadGraphSchema);
+    return { nodeTypes, defaultEdgeType, load };
+  },
   data() {
     let editedNode = _.cloneDeep(this.node);
     return {
@@ -256,7 +261,7 @@ export default {
   methods: {
     // Use the computed allowedFields to check if a field is allowed.
     isAllowed(field) {
-      const allowed = this.allowedFields;       // ← allowedFields is already an Array
+      const allowed = this.allowedFields; // ← allowedFields is already an Array
       return allowed.includes(field);
     },
     isTypeAllowed(type) {
@@ -274,7 +279,7 @@ export default {
           ref[0].focus();
         } else if (ref) {
           // Handle component refs (like ScopeAutocomplete) vs native elements
-          if (ref.focus && typeof ref.focus === 'function') {
+          if (ref.focus && typeof ref.focus === "function") {
             ref.focus();
           } else if (ref.$el && ref.$el.focus) {
             ref.$el.focus();
@@ -344,13 +349,12 @@ export default {
         if (this.scopeError) return;
       }
 
-
       if (
         !this.editedNode.new &&
         this.editedNode.node_type !== this.node.node_type
       ) {
         const confirmChange = window.confirm(
-          "Changing the node type may have unintended consequences. Are you sure you want to proceed?"
+          "Changing the node type may have unintended consequences. Are you sure you want to proceed?",
         );
         if (!confirmChange) {
           this.editedNode.node_type = this.node.node_type;
@@ -360,12 +364,12 @@ export default {
       // Cleanup tags, references, support.
       if (this.isAllowed("references")) {
         this.editedNode.references = this.editedNode.references.filter(
-          (ref) => ref.trim() !== ""
+          (ref) => ref.trim() !== "",
         );
       }
       if (this.isAllowed("tags")) {
         this.editedNode.tags = this.editedNode.tags.filter(
-          (tag) => tag.trim() !== ""
+          (tag) => tag.trim() !== "",
         );
       }
       if (this.isAllowed("status")) {
@@ -382,7 +386,11 @@ export default {
           delete this.editedNode.new;
           delete this.editedNode.node_id;
 
-          const response = await api.post("/nodes", this.editedNode, token ? { headers: { Authorization: `Bearer ${token}` }} : {});
+          const response = await api.post(
+            "/nodes",
+            this.editedNode,
+            token ? { headers: { Authorization: `Bearer ${token}` } } : {},
+          );
           const nodeReturned = response.data;
           const target = nodeReturned.node_id;
           nodeReturned.new = true;
@@ -391,18 +399,36 @@ export default {
           if (fromConnection) {
             try {
               const possibleLabels = getAllowedEdgeTypes(
-                fromConnection.handle_type === "source" ? fromConnection.node_type : nodeReturned.node_type,
-                fromConnection.handle_type === "source" ? nodeReturned.node_type : fromConnection.node_type
+                fromConnection.handle_type === "source"
+                  ? fromConnection.node_type
+                  : nodeReturned.node_type,
+                fromConnection.handle_type === "source"
+                  ? nodeReturned.node_type
+                  : fromConnection.node_type,
               );
               if (!possibleLabels.length) {
-                console.warn("No valid edge type found to connect new node. Aborting edge creation.");
+                console.warn(
+                  "No valid edge type found to connect new node. Aborting edge creation.",
+                );
               } else {
                 const newEdge = {
-                  source: fromConnection.handle_type === "source" ? parseInt(fromConnection.id) : target,
-                  target: fromConnection.handle_type === "source" ? target : parseInt(fromConnection.id),
+                  source:
+                    fromConnection.handle_type === "source"
+                      ? parseInt(fromConnection.id)
+                      : target,
+                  target:
+                    fromConnection.handle_type === "source"
+                      ? target
+                      : parseInt(fromConnection.id),
                   edge_type: possibleLabels[0], // pick first allowed
                 };
-                await api.post("/edges", newEdge, token ? { headers: { Authorization: `Bearer ${token}` }} : {});
+                await api.post(
+                  "/edges",
+                  newEdge,
+                  token
+                    ? { headers: { Authorization: `Bearer ${token}` } }
+                    : {},
+                );
               }
             } catch (error) {
               console.error("Failed to create edge:", error);
@@ -410,16 +436,16 @@ export default {
           }
           this.$emit("publish-node", nodeReturned);
           this.editedNode = _.cloneDeep(nodeReturned);
-          this.$router.push({ name: "NodeView", params: { id: target.toString() } });
+          this.$router.push({
+            name: "NodeView",
+            params: { id: target.toString() },
+          });
         } catch (error) {
           console.error("Failed to create node:", error);
         }
       } else {
         try {
-          const response = await api.put(
-            `/nodes`,
-            this.editedNode
-          );
+          const response = await api.put(`/nodes`, this.editedNode);
           this.$emit("publish-node", response.data);
           this.editedNode = _.cloneDeep(response.data);
         } catch (error) {
@@ -454,7 +480,9 @@ export default {
       return;
     }
     if (this.editedNode.new) {
-      if (!confirm("This new node is not saved. Are you sure you want to leave?")) {
+      if (
+        !confirm("This new node is not saved. Are you sure you want to leave?")
+      ) {
         next(false);
         return;
       }

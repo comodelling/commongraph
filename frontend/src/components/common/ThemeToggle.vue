@@ -1,18 +1,18 @@
 <template>
-  <button 
-    @click="toggleTheme" 
+  <button
+    @click="toggleTheme"
     class="theme-toggle"
     :title="isDark ? 'Switch to light mode' : 'Switch to dark mode'"
     :aria-label="isDark ? 'Switch to light mode' : 'Switch to dark mode'"
   >
     <!-- Sun icon for light mode -->
-    <svg 
-      v-if="isDark" 
-      width="20" 
-      height="20" 
-      viewBox="0 0 24 24" 
-      fill="none" 
-      stroke="currentColor" 
+    <svg
+      v-if="isDark"
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
       stroke-width="2"
       class="theme-icon"
     >
@@ -26,15 +26,15 @@
       <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
       <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
     </svg>
-    
+
     <!-- Moon icon for dark mode -->
-    <svg 
-      v-else 
-      width="20" 
-      height="20" 
-      viewBox="0 0 24 24" 
-      fill="none" 
-      stroke="currentColor" 
+    <svg
+      v-else
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
       stroke-width="2"
       class="theme-icon"
     >
@@ -53,9 +53,9 @@ export default {
 
     return {
       isDark,
-      toggleTheme
+      toggleTheme,
     };
-  }
+  },
 };
 </script>
 
@@ -70,7 +70,9 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background-color 0.2s ease, color 0.2s ease;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
 }
 
 .theme-toggle:hover {

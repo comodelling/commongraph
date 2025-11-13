@@ -36,7 +36,8 @@
             make to the graph (nodes and edges).
           </li>
           <li>
-            <strong>Poll Ratings & Comments:</strong> Poll ratings and comments where applicable. Ratings are anonymous.
+            <strong>Poll Ratings & Comments:</strong> Poll ratings and comments
+            where applicable. Ratings are anonymous.
           </li>
           <li>
             <strong>Session Data:</strong> Temporary cookies to maintain your
@@ -61,7 +62,7 @@
             and contributions you make.
           </li>
           <li>
-            <strong>Anonymous, aggregated polls and ratings:</strong> To provide 
+            <strong>Anonymous, aggregated polls and ratings:</strong> To provide
             community measures to users.
           </li>
           <li>
@@ -128,9 +129,7 @@
 
       <section>
         <h2>6. Cookies</h2>
-        <p>
-          We do not use any cookies or third-party tracking scripts.
-        </p>
+        <p>We do not use any cookies or third-party tracking scripts.</p>
       </section>
 
       <section>
@@ -142,8 +141,8 @@
           </li>
           <li>
             <strong>Edit History:</strong> Your public contributions and edit
-            history are preserved even if you delete your account. This maintains
-            the collaborative record of the platform's development.
+            history are preserved even if you delete your account. This
+            maintains the collaborative record of the platform's development.
           </li>
           <li>
             <strong>Deleted Accounts:</strong> When you delete your account,
@@ -212,10 +211,13 @@
           If you have questions or concerns regarding this privacy policy or
           your personal data, please contact the platform administrators.
         </p>
-          <p>
-            You can reach us at:
-            <a :href="`mailto:${adminEmail}`" class="contact-link">{{ adminEmail }}</a>.
-          </p>
+        <p>
+          You can reach us at:
+          <a :href="`mailto:${adminEmail}`" class="contact-link">{{
+            adminEmail
+          }}</a
+          >.
+        </p>
       </section>
 
       <section>

@@ -962,6 +962,7 @@ export default {
 <style scoped>
 .focus {
   display: flex;
+  width: 100%;
   height: 100%;
   overflow: hidden;
 }

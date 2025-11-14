@@ -11,6 +11,9 @@ from backend.utils.permissions import (
     can_edit,
     can_delete,
     can_rate,
+    can_edit_field_when_draft,
+    can_edit_field_when_non_draft,
+    can_rate_element,
 )
 from backend.db.base import (
     GraphDatabaseInterface,
@@ -297,6 +300,44 @@ def update_node(
     if not Model:
         raise HTTPException(400, f"Unknown node_type {nt!r}")
 
+    # Get the current node to check its status
+    node_id = payload.get("node_id")
+    if not node_id:
+        raise HTTPException(400, "node_id is required for updates")
+
+    current_node = db_history.get_node(node_id)
+    current_status = getattr(current_node, "status", None) or "live"
+
+    # Check field-level permissions based on status
+    # If current status is non-draft, enforce restrictions for non-admins on field changes
+    if current_status != "draft":
+        restricted_fields = {"title", "node_type", "scope"}
+
+        for field in restricted_fields:
+            # Check if field was actually modified
+            current_value = getattr(current_node, field, None)
+            payload_field = "node_type" if field == "type" else field
+            payload_value = payload.get(payload_field)
+
+            if payload_field in payload and payload_value != current_value:
+                # Field is being changed, check permissions
+                if not can_edit_field_when_non_draft(user, field):
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail=f"Non-admin users cannot modify '{field}' when the node has a non-draft status",
+                    )
+
+        # Special case for status: non-admins cannot revert to draft
+        if (
+            "status" in payload
+            and payload["status"] == "draft"
+            and not (user.is_admin or user.is_super_admin)
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Non-admin users cannot revert to 'draft' status when the node has a non-draft status",
+            )
+
     # Handle scope: ensure it exists in the scopes table
     if "scope" in payload and payload["scope"]:
         try:
@@ -402,6 +443,7 @@ def log_node_rating(
     node_id: int = Path(..., description="ID of the node"),
     rating: RatingEvent = Body(...),
     user: UserRead = Depends(get_current_user),
+    db_history: GraphHistoryRelationalInterface = Depends(get_graph_history_db),
     db: RatingHistoryRelationalInterface = Depends(get_rating_history_db),
 ) -> RatingEvent:
     # Check permissions
@@ -409,6 +451,17 @@ def log_node_rating(
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Insufficient permissions to rate nodes",
+        )
+
+    # Get the node to check its status
+    node = db_history.get_node(node_id)
+    node_status = getattr(node, "status", None) or "live"
+
+    # Check if user can rate based on node status
+    if not can_rate_element(user, node_status):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cannot rate nodes with 'draft' status",
         )
 
     evt = RatingEvent(

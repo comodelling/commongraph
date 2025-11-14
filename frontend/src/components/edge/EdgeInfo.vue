@@ -56,6 +56,7 @@
           :sourceType="edge.sourceNodeType"
           :targetType="edge.targetNodeType"
           @publish-edge="updateEdgeFromEditor"
+          @preview-edge-update="previewEdgeUpdate"
         />
       </template>
       <template v-else>
@@ -156,6 +157,10 @@ export default {
       this.localIsBrandNewEdge = false; // clear local flag
       this.$emit("update-edge-from-editor", updatedEdge);
       this.switchTab("view");
+    },
+    previewEdgeUpdate(previewEdge) {
+      // Forward preview updates to parent without switching tabs
+      this.$emit("preview-edge-update", previewEdge);
     },
   },
 };

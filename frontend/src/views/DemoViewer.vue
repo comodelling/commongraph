@@ -23,6 +23,7 @@
                 :node="node"
                 :read-only="true"
                 @update-node-from-editor="updateNodeFromEditor"
+                @preview-node-update="previewNodeUpdate"
               />
               <div v-else class="info-placeholder">
                 <p>👈 Click on a node in the graph to view its details</p>
@@ -34,6 +35,7 @@
                 :edge="edge"
                 :read-only="true"
                 @update-edge-from-editor="updateEdgeFromEditor"
+                @preview-edge-update="previewEdgeUpdate"
               />
               <div v-else class="info-placeholder">
                 <p>👈 Click on an edge (arrow) to view its details</p>
@@ -315,11 +317,21 @@ export default {
       // Just update local state for UI responsiveness
     },
 
+    previewNodeUpdate(previewNode) {
+      // In demo mode, show preview updates reactively
+      this.updatedNode = { ...previewNode };
+    },
+
     updateEdgeFromEditor(updatedEdge) {
       console.log("Edge updated in demo (not saved):", updatedEdge);
       this.edge = updatedEdge;
       this.updatedEdge = updatedEdge;
       // In demo mode, we don't actually save to backend
+    },
+
+    previewEdgeUpdate(previewEdge) {
+      // In demo mode, show preview updates reactively
+      this.updatedEdge = { ...previewEdge };
     },
 
     openNewlyCreatedNode(nodeData) {

@@ -8,6 +8,7 @@
             v-if="node"
             :node="node"
             @update-node-from-editor="updateNodeFromEditor"
+            @preview-node-update="previewNodeUpdate"
           />
           <div v-else class="error-message">Node not found</div>
         </template>
@@ -16,6 +17,7 @@
             v-if="edge"
             :edge="edge"
             @update-edge-from-editor="updateEdgeFromEditor"
+            @preview-edge-update="previewEdgeUpdate"
           />
           <div v-else class="error-message">Edge not found</div>
         </template>
@@ -919,6 +921,14 @@ export default {
         console.error("Failed to update node:", error);
       }
     },
+    previewNodeUpdate(previewNode) {
+      // Update the flow view reactively while editing (without persisting)
+      try {
+        this.updatedNode = { ...previewNode };
+      } catch (error) {
+        console.error("Failed to preview node update:", error);
+      }
+    },
     updateEdgeFromEditor(updatedEdge) {
       console.log("Updating edge from editor", updatedEdge);
       try {
@@ -926,6 +936,14 @@ export default {
         this.updatedEdge = { ...updatedEdge };
       } catch (error) {
         console.error("Failed to update edge:", error);
+      }
+    },
+    previewEdgeUpdate(previewEdge) {
+      // Update the flow view reactively while editing (without persisting)
+      try {
+        this.updatedEdge = { ...previewEdge };
+      } catch (error) {
+        console.error("Failed to preview edge update:", error);
       }
     },
     openNewlyCreatedNode(newNode) {

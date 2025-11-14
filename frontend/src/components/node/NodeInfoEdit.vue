@@ -239,6 +239,9 @@ export default {
       titleError: false,
       scopeError: false,
       isSubmitting: false,
+      debouncedPreviewEmit: _.debounce((val) => {
+        this.$emit("preview-node-update", val);
+      }, 200),
     };
   },
   computed: {
@@ -523,6 +526,16 @@ export default {
     hasLocalUnsavedChanges(newVal) {
       const { setUnsaved } = useUnsaved();
       setUnsaved(newVal);
+    },
+    editedNode: {
+      handler(newVal) {
+        // Emit preview updates for both new and existing nodes
+        // Skip only when submitting to avoid duplicate updates
+        if (!this.isSubmitting) {
+          this.debouncedPreviewEmit(newVal);
+        }
+      },
+      deep: true,
     },
   },
 };

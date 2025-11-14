@@ -64,6 +64,7 @@
             :node="node"
             :nodeId="node.node_id"
             @publish-node="updateNodeFromEditor"
+            @preview-node-update="previewNodeUpdate"
           />
         </template>
         <template v-else>
@@ -181,6 +182,10 @@ export default {
     updateNodeFromEditor(updatedNode) {
       this.$emit("update-node-from-editor", updatedNode);
       this.switchTab("view");
+    },
+    previewNodeUpdate(previewNode) {
+      // Forward preview updates to parent without switching tabs
+      this.$emit("preview-node-update", previewNode);
     },
     fetchUserFavourites() {
       const { getAccessToken } = useAuth();

@@ -129,6 +129,9 @@ export default {
       editedEdge: _.cloneDeep(this.edge),
       tooltips,
       isSubmitting: false,
+      debouncedPreviewEmit: _.debounce((val) => {
+        this.$emit("preview-edge-update", val);
+      }, 200),
     };
   },
   computed: {
@@ -320,6 +323,16 @@ export default {
     hasLocalUnsavedChanges(newVal) {
       const { setUnsaved } = useUnsaved();
       setUnsaved(newVal);
+    },
+    editedEdge: {
+      handler(newVal) {
+        // Emit preview updates for both new and existing edges
+        // Skip only when submitting to avoid duplicate updates
+        if (!this.isSubmitting) {
+          this.debouncedPreviewEmit(newVal);
+        }
+      },
+      deep: true,
     },
   },
 };

@@ -1,8 +1,17 @@
 <template>
   <div class="graph-controls">
     <div class="control-group">
-      <label for="depth-control">Depth:</label>
-      <select id="depth-control" v-model="localDepth" @change="onDepthChange">
+      <label
+        for="depth-control"
+        title="Choose how many levels deep the graph should go"
+        >Depth:</label
+      >
+      <select
+        id="depth-control"
+        v-model="localDepth"
+        @change="onDepthChange"
+        title="Choose how many levels deep the graph should go"
+      >
         <option :value="1">1</option>
         <option :value="2">2</option>
         <option :value="3">3</option>
@@ -12,11 +21,14 @@
     </div>
     <div class="control-separator"></div>
     <div class="control-group">
-      <label for="color-control">Color:</label>
+      <label for="color-control" title="Choose how to color the nodes"
+        >Color:</label
+      >
       <select
         id="color-control"
         v-model="localColorBy"
         @change="onColorByChange"
+        title="Choose how to color the nodes"
       >
         <option value="type">Type</option>
         <option value="rating">Rating</option>

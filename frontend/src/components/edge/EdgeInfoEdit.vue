@@ -3,7 +3,12 @@
     <div class="field">
       <strong :title="tooltips.edge.type">Type:</strong>
       <div class="field-content">
-        <select v-model="editedEdge.edge_type">
+        <select
+          v-model="editedEdge.edge_type"
+          @keydown.enter="moveToNextField('type')"
+          @keydown.tab="handleTabKey($event, 'type')"
+          tabindex="0"
+        >
           <option
             v-for="(props, type) in edgeTypes"
             :key="type"
@@ -63,25 +68,40 @@
         <span
           v-if="editingField !== 'description' && editedEdge.description"
           @click="startEditing('description')"
+          @dblclick="startEditing('description')"
+          @keydown.enter="startEditing('description')"
+          tabindex="0"
           >{{ editedEdge.description }}</span
         >
         <textarea
           v-else-if="editingField === 'description'"
           v-model="editedEdge.description"
           @blur="stopEditing('description')"
+          @keydown.escape="cancelEditing('description')"
+          @keydown.ctrl.enter="moveToNextField('description')"
+          @keydown.meta.enter="moveToNextField('description')"
           ref="descriptionInput"
         ></textarea>
         <button
           v-else
           class="add-button add-description-button"
           @click="addDescription"
+          @keydown.enter="addDescription"
+          tabindex="0"
         >
           + Description
         </button>
       </div>
     </div>
 
-    <button class="submit-button" @click="submit">{{ actionLabel }}</button>
+    <button
+      class="submit-button"
+      @click="submit"
+      @keydown.enter="submit"
+      tabindex="0"
+    >
+      {{ actionLabel }}
+    </button>
     <p class="license-notice" v-if="license">
       By editing the description, you agree to release your contribution under
       the
@@ -129,6 +149,9 @@ export default {
       editedEdge: _.cloneDeep(this.edge),
       tooltips,
       isSubmitting: false,
+      debouncedPreviewEmit: _.debounce((val) => {
+        this.$emit("preview-edge-update", val);
+      }, 200),
     };
   },
   computed: {
@@ -209,6 +232,54 @@ export default {
     },
     capitalise(str) {
       return str.charAt(0).toUpperCase() + str.slice(1);
+    },
+    getFieldOrder() {
+      // Define the logical order of fields for keyboard navigation
+      const baseFields = ["type", "description"];
+      return baseFields.filter(
+        (field) => field === "type" || this.isAllowed(field),
+      );
+    },
+    moveToNextField(currentField) {
+      this.stopEditing(currentField);
+      const fieldOrder = this.getFieldOrder();
+      const currentIndex = fieldOrder.indexOf(currentField);
+      if (currentIndex < fieldOrder.length - 1) {
+        const nextField = fieldOrder[currentIndex + 1];
+        this.$nextTick(() => {
+          this.startEditing(nextField);
+        });
+      } else {
+        // Last field - focus submit button
+        this.$nextTick(() => {
+          const submitButton = this.$el.querySelector(".submit-button");
+          if (submitButton) submitButton.focus();
+        });
+      }
+    },
+    moveToPrevField(currentField) {
+      this.stopEditing(currentField);
+      const fieldOrder = this.getFieldOrder();
+      const currentIndex = fieldOrder.indexOf(currentField);
+      if (currentIndex > 0) {
+        const prevField = fieldOrder[currentIndex - 1];
+        this.$nextTick(() => {
+          this.startEditing(prevField);
+        });
+      }
+    },
+    handleTabKey(event, currentField) {
+      event.preventDefault();
+      if (event.shiftKey) {
+        this.moveToPrevField(currentField);
+      } else {
+        this.moveToNextField(currentField);
+      }
+    },
+    cancelEditing(field) {
+      // Restore original value and stop editing
+      this.editedEdge = _.cloneDeep(this.edge);
+      this.stopEditing(field);
     },
     onBeforeUnload(e) {
       if (this.hasLocalUnsavedChanges) {
@@ -320,6 +391,16 @@ export default {
     hasLocalUnsavedChanges(newVal) {
       const { setUnsaved } = useUnsaved();
       setUnsaved(newVal);
+    },
+    editedEdge: {
+      handler(newVal) {
+        // Emit preview updates for both new and existing edges
+        // Skip only when submitting to avoid duplicate updates
+        if (!this.isSubmitting) {
+          this.debouncedPreviewEmit(newVal);
+        }
+      },
+      deep: true,
     },
   },
 };

@@ -7,7 +7,10 @@
         <span
           v-if="editingField !== 'title'"
           @click="startEditing('title')"
+          @dblclick="startEditing('title')"
+          @keydown.enter="startEditing('title')"
           :class="{ 'error-text': titleError }"
+          tabindex="0"
         >
           {{ editedNode.title || "Click to add a title" }}
         </span>
@@ -15,6 +18,9 @@
           v-else
           v-model="editedNode.title"
           @blur="stopEditing('title')"
+          @keydown.enter="moveToNextField('title')"
+          @keydown.escape="cancelEditing('title')"
+          @keydown.tab="handleTabKey($event, 'title')"
           ref="titleInput"
           :class="{ 'error-input': titleError }"
         />
@@ -24,7 +30,13 @@
     <div class="field">
       <strong :title="tooltips.node.type">Type:</strong>
       <div class="field-content">
-        <select v-model="editedNode.node_type" ref="typeInput">
+        <select
+          v-model="editedNode.node_type"
+          ref="typeInput"
+          @keydown.enter="moveToNextField('type')"
+          @keydown.tab="handleTabKey($event, 'type')"
+          tabindex="0"
+        >
           <option
             v-for="(props, type) in nodeTypes"
             :key="type"
@@ -44,7 +56,10 @@
         <span
           v-if="editingField !== 'scope'"
           @click="startEditing('scope')"
+          @dblclick="startEditing('scope')"
+          @keydown.enter="startEditing('scope')"
           :class="{ 'error-text': scopeError }"
+          tabindex="0"
         >
           {{ editedNode.scope || "Click to add a scope" }}
         </span>
@@ -52,6 +67,9 @@
           v-else
           v-model="editedNode.scope"
           @blur="stopEditing('scope')"
+          @keydown.enter="moveToNextField('scope')"
+          @keydown.escape="cancelEditing('scope')"
+          @keydown.tab="handleTabKey($event, 'scope')"
           :error="scopeError"
           ref="scopeInput"
         />
@@ -61,7 +79,13 @@
     <div class="field" v-if="isAllowed('status')">
       <strong :title="tooltips.node.status">Status:</strong>
       <div class="field-content">
-        <select v-model="editedNode.status" ref="statusInput">
+        <select
+          v-model="editedNode.status"
+          ref="statusInput"
+          @keydown.enter="moveToNextField('status')"
+          @keydown.tab="handleTabKey($event, 'status')"
+          tabindex="0"
+        >
           <option value="draft" :title="tooltips.node.draft">Draft</option>
           <option value="live" :title="tooltips.node.live">Live</option>
           <option value="realised" :title="tooltips.node.realised">
@@ -122,6 +146,9 @@
         <span
           v-if="editingField !== 'description' && editedNode.description"
           @click="startEditing('description')"
+          @dblclick="startEditing('description')"
+          @keydown.enter="startEditing('description')"
+          tabindex="0"
         >
           {{ editedNode.description }}
         </span>
@@ -129,12 +156,17 @@
           v-else-if="editingField === 'description'"
           v-model="editedNode.description"
           @blur="stopEditing('description')"
+          @keydown.escape="cancelEditing('description')"
+          @keydown.ctrl.enter="moveToNextField('description')"
+          @keydown.meta.enter="moveToNextField('description')"
           ref="descriptionInput"
         ></textarea>
         <button
           v-else
           class="add-button add-description-button"
           @click="addDescription"
+          @keydown.enter="addDescription"
+          tabindex="0"
         >
           + Description
         </button>
@@ -181,7 +213,14 @@
         </div>
       </div>
     </div>
-    <button class="submit-button" @click="submit">{{ actionLabel }}</button>
+    <button
+      class="submit-button"
+      @click="submit"
+      @keydown.enter="submit"
+      tabindex="0"
+    >
+      {{ actionLabel }}
+    </button>
     <p class="license-notice" v-if="license">
       By editing the description, you agree to release your contribution under
       the
@@ -239,6 +278,9 @@ export default {
       titleError: false,
       scopeError: false,
       isSubmitting: false,
+      debouncedPreviewEmit: _.debounce((val) => {
+        this.$emit("preview-node-update", val);
+      }, 200),
     };
   },
   computed: {
@@ -282,6 +324,54 @@ export default {
     },
     capitalise(string) {
       return string.charAt(0).toUpperCase() + string.slice(1);
+    },
+    getFieldOrder() {
+      // Define the logical order of fields for keyboard navigation
+      const baseFields = ["title", "type", "scope", "status", "description"];
+      return baseFields.filter(
+        (field) => field === "type" || this.isAllowed(field),
+      );
+    },
+    moveToNextField(currentField) {
+      this.stopEditing(currentField);
+      const fieldOrder = this.getFieldOrder();
+      const currentIndex = fieldOrder.indexOf(currentField);
+      if (currentIndex < fieldOrder.length - 1) {
+        const nextField = fieldOrder[currentIndex + 1];
+        this.$nextTick(() => {
+          this.startEditing(nextField);
+        });
+      } else {
+        // Last field - focus submit button
+        this.$nextTick(() => {
+          const submitButton = this.$el.querySelector(".submit-button");
+          if (submitButton) submitButton.focus();
+        });
+      }
+    },
+    moveToPrevField(currentField) {
+      this.stopEditing(currentField);
+      const fieldOrder = this.getFieldOrder();
+      const currentIndex = fieldOrder.indexOf(currentField);
+      if (currentIndex > 0) {
+        const prevField = fieldOrder[currentIndex - 1];
+        this.$nextTick(() => {
+          this.startEditing(prevField);
+        });
+      }
+    },
+    handleTabKey(event, currentField) {
+      event.preventDefault();
+      if (event.shiftKey) {
+        this.moveToPrevField(currentField);
+      } else {
+        this.moveToNextField(currentField);
+      }
+    },
+    cancelEditing(field) {
+      // Restore original value and stop editing
+      this.editedNode = _.cloneDeep(this.node);
+      this.stopEditing(field);
     },
     startEditing(field) {
       this.editingField = field;
@@ -523,6 +613,16 @@ export default {
     hasLocalUnsavedChanges(newVal) {
       const { setUnsaved } = useUnsaved();
       setUnsaved(newVal);
+    },
+    editedNode: {
+      handler(newVal) {
+        // Emit preview updates for both new and existing nodes
+        // Skip only when submitting to avoid duplicate updates
+        if (!this.isSubmitting) {
+          this.debouncedPreviewEmit(newVal);
+        }
+      },
+      deep: true,
     },
   },
 };

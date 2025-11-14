@@ -1,7 +1,12 @@
 <template>
   <g>
     <title>{{ hoverText }}</title>
-    <BaseEdge :path="path[0]" :style="style" />
+    <BaseEdge
+      :path="path[0]"
+      :style="style"
+      @mouseenter="handleMouseEnter"
+      @mouseleave="handleMouseLeave"
+    />
   </g>
 
   <EdgeLabelRenderer>
@@ -20,11 +25,20 @@
       >
     </div>
   </EdgeLabelRenderer>
+
+  <Teleport to="body">
+    <div v-if="showTooltip" class="edge-tooltip" :style="tooltipStyle">
+      <div class="edge-tooltip-title">{{ edgeTooltipTitle }}</div>
+      <div v-if="edgeTooltipMeta" class="edge-tooltip-meta">
+        {{ edgeTooltipMeta }}
+      </div>
+    </div>
+  </Teleport>
 </template>
 
 <script setup>
 import { BaseEdge, EdgeLabelRenderer, getBezierPath } from "@vue-flow/core";
-import { computed } from "vue";
+import { computed, ref } from "vue";
 
 const props = defineProps({
   sourceX: Number,
@@ -62,6 +76,9 @@ const props = defineProps({
 
 const path = computed(() => getBezierPath(props));
 
+const showTooltip = ref(false);
+const tooltipStyle = ref({});
+
 const hoverText = computed(() => {
   const data = props.data || {};
   const baseLabel = data.edge_type || "Implication";
@@ -82,6 +99,55 @@ const hoverText = computed(() => {
 
   return `${baseLabel}\nmedian ${ratingLabel}: ${formattedRating}`;
 });
+
+// Edge tooltip title (edge type)
+const edgeTooltipTitle = computed(() => {
+  if (!props.data) return "Edge";
+  return props.data.edge_type || props.data.title || "Implication";
+});
+
+// Edge tooltip meta (source title -> target title and optional rating)
+const edgeTooltipMeta = computed(() => {
+  const sourceTitle =
+    props.sourceNode?.data?.title || props.sourceNode?.label || "Source";
+  const targetTitle =
+    props.targetNode?.data?.title || props.targetNode?.label || "Target";
+
+  let meta = `${sourceTitle} → ${targetTitle}`;
+
+  const ratingLabel = props.data?.ratingLabel;
+  const ratingValue = props.data?.causal_strength;
+
+  if (ratingLabel) {
+    let formattedRating = "none";
+    if (ratingValue != null) {
+      formattedRating =
+        typeof ratingValue === "number"
+          ? Number(ratingValue).toFixed(2).replace(/\.00$/, "")
+          : ratingValue;
+    }
+    const ratingLine = `median ${ratingLabel}: ${formattedRating}`;
+    meta += `\n${ratingLine}`;
+  }
+
+  return meta;
+});
+
+const handleMouseEnter = (event) => {
+  // Calculate the middle point of the path
+  const midX = props.sourceX + (props.targetX - props.sourceX) / 2;
+  const midY = props.sourceY + (props.targetY - props.sourceY) / 2;
+
+  tooltipStyle.value = {
+    top: `${midY - 30}px`,
+    left: `${midX - 60}px`,
+  };
+  showTooltip.value = true;
+};
+
+const handleMouseLeave = () => {
+  showTooltip.value = false;
+};
 </script>
 
 <!-- <script>

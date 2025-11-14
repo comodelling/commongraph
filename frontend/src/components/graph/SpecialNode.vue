@@ -1,6 +1,6 @@
 <script setup>
 import { Handle, Position, useVueFlow } from "@vue-flow/core";
-import { computed } from "vue";
+import { computed, ref } from "vue";
 
 const props = defineProps({
   id: String,
@@ -26,8 +26,17 @@ const props = defineProps({
 
 defineEmits(["updateNodeInternals"]);
 
-// Create tooltip content from node data
-const tooltipContent = computed(() => {
+const showTooltip = ref(false);
+const tooltipStyle = ref({});
+
+// Tooltip title (node title)
+const tooltipTitle = computed(() => {
+  if (!props.data) return "";
+  return props.data.title || props.label || "";
+});
+
+// Tooltip meta (status type (scope))
+const tooltipMeta = computed(() => {
   if (!props.data) return "";
 
   const parts = [];
@@ -45,16 +54,7 @@ const tooltipContent = computed(() => {
     parts.push(`(${props.data.scope})`);
   }
 
-  let tooltip = parts.join(" ");
-
-  // Add description on a new line if it exists
-  // if (props.data.description) {
-  //   const desc =
-  //     props.data.description.length > 100
-  //       ? props.data.description.substring(0, 100) + "..."
-  //       : props.data.description;
-  //   tooltip += tooltip ? `\n${desc}` : desc;
-  // }
+  let meta = parts.join(" ");
 
   const ratingLabel = props.data.ratingLabel;
   const ratingValue = props.data.support;
@@ -67,11 +67,24 @@ const tooltipContent = computed(() => {
           : ratingValue;
     }
     const ratingLine = `median ${ratingLabel}: ${formattedRating}`;
-    tooltip += tooltip ? `\n${ratingLine}` : ratingLine;
+    meta += meta ? `\n${ratingLine}` : ratingLine;
   }
 
-  return tooltip;
+  return meta;
 });
+
+const handleMouseEnter = (event) => {
+  const rect = event.target.getBoundingClientRect();
+  tooltipStyle.value = {
+    top: `${rect.top - 30}px`,
+    left: `${rect.left + rect.width / 2 - 60}px`,
+  };
+  showTooltip.value = true;
+};
+
+const handleMouseLeave = () => {
+  showTooltip.value = false;
+};
 
 // All triangles point in the same causal direction based on source position
 const triangleRotation = computed(() => {
@@ -103,7 +116,18 @@ const triangleRotation = computed(() => {
     ></div>
   </Handle>
 
-  <span :title="tooltipContent">{{ label }}</span>
+  <span @mouseenter="handleMouseEnter" @mouseleave="handleMouseLeave">
+    {{ label }}
+  </span>
+
+  <Teleport to="body">
+    <div v-if="showTooltip" class="node-tooltip" :style="tooltipStyle">
+      <div class="node-tooltip-title">{{ tooltipTitle }}</div>
+      <div v-if="tooltipMeta" class="node-tooltip-meta">
+        {{ tooltipMeta }}
+      </div>
+    </div>
+  </Teleport>
 
   <Handle
     type="target"

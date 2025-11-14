@@ -1319,63 +1319,10 @@ export default {
   border-color: #777;
 }
 
-.node-tooltip {
-  position: absolute;
-  pointer-events: none;
-  max-width: 240px;
-  padding: 8px 10px;
-  border-radius: 6px;
-  background-color: rgba(0, 0, 0, 0.78);
-  color: #ffffff;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
-  font-size: 12px;
-  line-height: 1.4;
-  z-index: 12;
-}
-
-.node-tooltip-title {
-  font-weight: 600;
-  margin-bottom: 2px;
-}
-
-.node-tooltip-meta {
-  opacity: 0.85;
-  white-space: pre-line;
-}
-
-:global(body.dark) .node-tooltip {
-  background-color: rgba(20, 20, 20, 0.92);
-  color: #f5f5f5;
-}
-
+/* GraphVis tooltips use absolute positioning within the container */
+.node-tooltip,
 .edge-tooltip {
-  position: absolute;
-  pointer-events: none;
-  max-width: 260px;
-  padding: 8px 10px;
-  border-radius: 6px;
-  background-color: rgba(40, 40, 40, 0.82);
-  color: #ffffff;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-  font-size: 12px;
-  line-height: 1.4;
+  position: absolute !important;
   z-index: 12;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-}
-
-.edge-tooltip-title {
-  font-weight: 600;
-  margin-bottom: 2px;
-}
-
-.edge-tooltip-meta {
-  opacity: 0.88;
-  white-space: pre-line;
-}
-
-:global(body.dark) .edge-tooltip {
-  background-color: rgba(26, 26, 26, 0.92);
-  border-color: rgba(255, 255, 255, 0.2);
-  color: #f5f5f5;
 }
 </style>

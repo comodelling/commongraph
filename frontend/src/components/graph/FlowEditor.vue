@@ -71,7 +71,9 @@ const {
   zoomTo,
   fitView,
   onNodeClick,
+  onNodeDoubleClick,
   onEdgeClick,
+  onEdgeDoubleClick,
   onPaneClick,
   onEdgeMouseEnter,
   onEdgeMouseLeave,
@@ -551,6 +553,23 @@ onNodeClick(({ node }) => {
   closeSearchBar();
 });
 
+onNodeDoubleClick(({ node }) => {
+  // Double-click opens edit tab directly (if allowed)
+  if (props.readOnly || !canEdit.value) {
+    return;
+  }
+  const { hasUnsavedChanges, setUnsaved } = useUnsaved();
+  if (hasUnsavedChanges.value) {
+    if (!window.confirm("You have unsaved edits. Leave without saving?")) {
+      return;
+    }
+    setUnsaved(false);
+  }
+  router.push({ name: "NodeEdit", params: { id: node.id } });
+  emit("nodeClick", node.id);
+  closeSearchBar();
+});
+
 onEdgeClick(({ edge }) => {
   const currentEdge = findEdge(
     `${route.params.source_id}-${route.params.target_id}`,
@@ -581,6 +600,26 @@ onEdgeClick(({ edge }) => {
   }
   router.push({
     name: "EdgeView",
+    params: { source_id: edge.data.source, target_id: edge.data.target },
+  });
+  emit("edgeClick", edge.data.source, edge.data.target);
+  closeSearchBar();
+});
+
+onEdgeDoubleClick(({ edge }) => {
+  // Double-click opens edit tab directly (if allowed)
+  if (props.readOnly || !canEdit.value) {
+    return;
+  }
+  const { hasUnsavedChanges, setUnsaved } = useUnsaved();
+  if (hasUnsavedChanges.value) {
+    if (!window.confirm("You have unsaved edits. Leave without saving?")) {
+      return;
+    }
+    setUnsaved(false);
+  }
+  router.push({
+    name: "EdgeEdit",
     params: { source_id: edge.data.source, target_id: edge.data.target },
   });
   emit("edgeClick", edge.data.source, edge.data.target);

@@ -17,6 +17,11 @@
           :class="{ active: currentTab === 'view', disabled: isBrandNewNode }"
           @click="switchTab('view')"
           :disabled="isBrandNewNode"
+          :title="
+            isBrandNewNode
+              ? 'View not available for new nodes'
+              : 'View node (V)'
+          "
         >
           View
         </button>
@@ -31,7 +36,7 @@
             readOnly
               ? 'Editing disabled in demo mode'
               : canEdit
-                ? 'Edit this node'
+                ? 'Edit this node (E)'
                 : 'You need edit permissions to modify nodes'
           "
         >
@@ -47,7 +52,9 @@
           :title="
             readOnly
               ? 'History not available in demo mode'
-              : 'View node history'
+              : isBrandNewNode
+                ? 'History not available for new nodes'
+                : 'View node history (H)'
           "
         >
           History
@@ -135,6 +142,8 @@ export default {
     if (this.node && this.node.node_id) {
       this.fetchUserFavourites();
     }
+    // Add keyboard shortcuts
+    window.addEventListener("keydown", this.handleKeyboardShortcut);
   },
   watch: {
     node(newVal) {
@@ -153,6 +162,9 @@ export default {
         }
       }
     },
+  },
+  beforeUnmount() {
+    window.removeEventListener("keydown", this.handleKeyboardShortcut);
   },
   methods: {
     switchTab(tab) {
@@ -186,6 +198,43 @@ export default {
     previewNodeUpdate(previewNode) {
       // Forward preview updates to parent without switching tabs
       this.$emit("preview-node-update", previewNode);
+    },
+    handleKeyboardShortcut(event) {
+      // Only handle shortcuts if not typing in an input/textarea
+      const target = event.target;
+      if (
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.tagName === "SELECT"
+      ) {
+        return;
+      }
+
+      // Check for modifier keys (Ctrl/Cmd + key) - don't interfere with browser shortcuts
+      if (event.ctrlKey || event.metaKey || event.altKey) {
+        return;
+      }
+
+      switch (event.key.toLowerCase()) {
+        case "e":
+          if (this.canEdit && !this.readOnly && !this.isBrandNewNode) {
+            event.preventDefault();
+            this.switchTab("edit");
+          }
+          break;
+        case "v":
+          if (!this.isBrandNewNode) {
+            event.preventDefault();
+            this.switchTab("view");
+          }
+          break;
+        case "h":
+          if (!this.isBrandNewNode && !this.readOnly) {
+            event.preventDefault();
+            this.switchTab("history");
+          }
+          break;
+      }
     },
     fetchUserFavourites() {
       const { getAccessToken } = useAuth();

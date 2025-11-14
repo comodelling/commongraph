@@ -9,6 +9,11 @@
           :class="{ active: currentTab === 'view' }"
           @click="switchTab('view')"
           :disabled="isBrandNewEdge"
+          :title="
+            isBrandNewEdge
+              ? 'View not available for new edges'
+              : 'View edge (V)'
+          "
         >
           View
         </button>
@@ -23,7 +28,7 @@
             readOnly
               ? 'Editing disabled in demo mode'
               : canEdit
-                ? 'Edit this edge'
+                ? 'Edit this edge (E)'
                 : 'You need edit permissions to modify edges'
           "
         >
@@ -36,7 +41,9 @@
           :title="
             readOnly
               ? 'History not available in demo mode'
-              : 'View edge history'
+              : isBrandNewEdge
+                ? 'History not available for new edges'
+                : 'View edge history (H)'
           "
         >
           History
@@ -122,6 +129,14 @@ export default {
     },
   },
 
+  mounted() {
+    // Add keyboard shortcuts
+    window.addEventListener("keydown", this.handleKeyboardShortcut);
+  },
+  beforeUnmount() {
+    window.removeEventListener("keydown", this.handleKeyboardShortcut);
+  },
+
   methods: {
     getCurrentTab() {
       if (this.$route.path.endsWith("/edit")) return "edit";
@@ -161,6 +176,43 @@ export default {
     previewEdgeUpdate(previewEdge) {
       // Forward preview updates to parent without switching tabs
       this.$emit("preview-edge-update", previewEdge);
+    },
+    handleKeyboardShortcut(event) {
+      // Only handle shortcuts if not typing in an input/textarea
+      const target = event.target;
+      if (
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.tagName === "SELECT"
+      ) {
+        return;
+      }
+
+      // Check for modifier keys (Ctrl/Cmd + key) - don't interfere with browser shortcuts
+      if (event.ctrlKey || event.metaKey || event.altKey) {
+        return;
+      }
+
+      switch (event.key.toLowerCase()) {
+        case "e":
+          if (this.canEdit && !this.readOnly && !this.isBrandNewEdge) {
+            event.preventDefault();
+            this.switchTab("edit");
+          }
+          break;
+        case "v":
+          if (!this.isBrandNewEdge) {
+            event.preventDefault();
+            this.switchTab("view");
+          }
+          break;
+        case "h":
+          if (!this.isBrandNewEdge && !this.readOnly) {
+            event.preventDefault();
+            this.switchTab("history");
+          }
+          break;
+      }
     },
   },
 };

@@ -5,7 +5,7 @@
       <strong :title="tooltips.node.title">
         Title:
         <span
-          v-if="!isDraft && !isCurrentUserAdmin"
+          v-if="nodeTypeHasStatus && !isDraft && !isCurrentUserAdmin"
           class="status-lock"
           title="Protected when not in draft"
         >
@@ -43,9 +43,9 @@
       <strong :title="tooltips.node.type">
         Type:
         <span
-          v-if="!isDraft && !isCurrentUserAdmin"
+          v-if="nodeTypeHasStatus && !isDraft && !isCurrentUserAdmin"
           class="status-lock"
-          title="Protected when not in draft"
+          title="Locked for non-admins when not in draft"
         >
           🔒
         </span>
@@ -76,7 +76,7 @@
       <strong :title="tooltips.node.scope">
         Scope:
         <span
-          v-if="!isDraft && !isCurrentUserAdmin"
+          v-if="nodeTypeHasStatus && !isDraft && !isCurrentUserAdmin"
           class="status-lock"
           title="Protected when not in draft"
         >
@@ -368,7 +368,11 @@ export default {
         if (this.editedNode.new || this.isDraft) {
           return true;
         }
-        // If non-draft, only admins can edit restricted fields (except status which has special handling)
+        // If node type doesn't have status field, allow all edits
+        if (!this.nodeTypeHasStatus) {
+          return true;
+        }
+        // If non-draft and node type has status, only admins can edit restricted fields
         const restrictedFields = ["title", "type", "scope"];
         if (restrictedFields.includes(fieldName)) {
           return this.isCurrentUserAdmin;
@@ -386,6 +390,10 @@ export default {
       }
       // If node is not in draft status, disable the draft option
       return true;
+    },
+    // Check if the current node type has a status field
+    nodeTypeHasStatus() {
+      return this.allowedFields.includes("status");
     },
   },
   methods: {

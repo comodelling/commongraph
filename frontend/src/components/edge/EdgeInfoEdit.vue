@@ -4,7 +4,7 @@
       <strong :title="tooltips.edge.type">
         Type:
         <span
-          v-if="!isDraft && !isCurrentUserAdmin"
+          v-if="edgeTypeHasStatus && !isDraft && !isCurrentUserAdmin"
           class="status-lock"
           title="Protected when not in draft"
         >
@@ -210,13 +210,21 @@ export default {
       // If edge is not in draft status, disable the draft option
       return true;
     },
+    // Check if the current edge type has a status field
+    edgeTypeHasStatus() {
+      return this.allowedFields.includes("status");
+    },
     canEditField() {
       return (fieldName) => {
         // If new edge or in draft status, allow all field edits
         if (this.editedEdge.new || this.isDraft) {
           return true;
         }
-        // If non-draft, only admins can edit edge_type (not status field anymore)
+        // If edge type doesn't have status field, allow all edits
+        if (!this.edgeTypeHasStatus) {
+          return true;
+        }
+        // If non-draft and edge type has status, only admins can edit edge_type
         const restrictedFields = ["edge_type"];
         if (restrictedFields.includes(fieldName)) {
           return this.isCurrentUserAdmin;

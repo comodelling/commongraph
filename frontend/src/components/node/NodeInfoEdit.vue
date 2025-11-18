@@ -2,15 +2,27 @@
   <div>
     <!-- Title Field -->
     <div class="field" v-if="isAllowed('title')">
-      <strong :title="tooltips.node.title">Title:</strong>
+      <strong :title="tooltips.node.title">
+        Title:
+        <span
+          v-if="nodeTypeHasStatus && !isDraft && !isCurrentUserAdmin"
+          class="status-lock"
+          title="Protected when not in draft"
+        >
+          🔒
+        </span>
+      </strong>
       <div class="field-content">
         <span
           v-if="editingField !== 'title'"
-          @click="startEditing('title')"
-          @dblclick="startEditing('title')"
-          @keydown.enter="startEditing('title')"
-          :class="{ 'error-text': titleError }"
-          tabindex="0"
+          @click="canEditField('title') && startEditing('title')"
+          @dblclick="canEditField('title') && startEditing('title')"
+          @keydown.enter="canEditField('title') && startEditing('title')"
+          :class="{
+            'error-text': titleError,
+            'field-disabled': !canEditField('title'),
+          }"
+          :tabindex="canEditField('title') ? 0 : -1"
         >
           {{ editedNode.title || "Click to add a title" }}
         </span>
@@ -28,13 +40,23 @@
     </div>
     <!-- Type Field (always allowed) -->
     <div class="field">
-      <strong :title="tooltips.node.type">Type:</strong>
+      <strong :title="tooltips.node.type">
+        Type:
+        <span
+          v-if="nodeTypeHasStatus && !isDraft && !isCurrentUserAdmin"
+          class="status-lock"
+          title="Locked for non-admins when not in draft"
+        >
+          🔒
+        </span>
+      </strong>
       <div class="field-content">
         <select
           v-model="editedNode.node_type"
           ref="typeInput"
           @keydown.enter="moveToNextField('type')"
           @keydown.tab="handleTabKey($event, 'type')"
+          :disabled="!canEditField('type')"
           tabindex="0"
         >
           <option
@@ -51,15 +73,27 @@
     </div>
     <!-- Scope Field -->
     <div class="field" v-if="isAllowed('scope')">
-      <strong :title="tooltips.node.scope">Scope:</strong>
+      <strong :title="tooltips.node.scope">
+        Scope:
+        <span
+          v-if="nodeTypeHasStatus && !isDraft && !isCurrentUserAdmin"
+          class="status-lock"
+          title="Protected when not in draft"
+        >
+          🔒
+        </span>
+      </strong>
       <div class="field-content">
         <span
           v-if="editingField !== 'scope'"
-          @click="startEditing('scope')"
-          @dblclick="startEditing('scope')"
-          @keydown.enter="startEditing('scope')"
-          :class="{ 'error-text': scopeError }"
-          tabindex="0"
+          @click="canEditField('scope') && startEditing('scope')"
+          @dblclick="canEditField('scope') && startEditing('scope')"
+          @keydown.enter="canEditField('scope') && startEditing('scope')"
+          :class="{
+            'error-text': scopeError,
+            'field-disabled': !canEditField('scope'),
+          }"
+          :tabindex="canEditField('scope') ? 0 : -1"
         >
           {{ editedNode.scope || "Click to add a scope" }}
         </span>
@@ -86,7 +120,13 @@
           @keydown.tab="handleTabKey($event, 'status')"
           tabindex="0"
         >
-          <option value="draft" :title="tooltips.node.draft">Draft</option>
+          <option
+            value="draft"
+            :title="tooltips.node.draft"
+            :disabled="isDraftOptionDisabled"
+          >
+            Draft
+          </option>
           <option value="live" :title="tooltips.node.live">Live</option>
           <option value="realised" :title="tooltips.node.realised">
             Realised
@@ -311,6 +351,49 @@ export default {
     hasLocalUnsavedChanges() {
       if (this.isSubmitting) return false;
       return JSON.stringify(this.node) !== JSON.stringify(this.editedNode);
+    },
+    // Check if this node is in draft status
+    isDraft() {
+      return this.editedNode.status === "draft";
+    },
+    // Check if the current user is an admin
+    isCurrentUserAdmin() {
+      const { hasAdminRights } = useAuth();
+      return hasAdminRights.value || false;
+    },
+    // Determine if a field can be edited based on status
+    canEditField() {
+      return (fieldName) => {
+        // If new node or in draft status, allow all field edits
+        if (this.editedNode.new || this.isDraft) {
+          return true;
+        }
+        // If node type doesn't have status field, allow all edits
+        if (!this.nodeTypeHasStatus) {
+          return true;
+        }
+        // If non-draft and node type has status, only admins can edit restricted fields
+        const restrictedFields = ["title", "type", "scope"];
+        if (restrictedFields.includes(fieldName)) {
+          return this.isCurrentUserAdmin;
+        }
+        // Status field is always editable (but validation happens on backend for draft reversion)
+        // Other fields can be edited by anyone
+        return true;
+      };
+    },
+    // Check if draft option should be disabled
+    isDraftOptionDisabled() {
+      // If the node is new or currently in draft status, allow selecting draft
+      if (this.editedNode.new || this.isDraft) {
+        return false;
+      }
+      // If node is not in draft status, disable the draft option
+      return true;
+    },
+    // Check if the current node type has a status field
+    nodeTypeHasStatus() {
+      return this.allowedFields.includes("status");
     },
   },
   methods: {
@@ -634,6 +717,25 @@ export default {
 }
 .error-text {
   color: red;
+}
+
+.field-disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  color: #999;
+}
+
+.status-lock {
+  margin-left: 4px;
+  font-size: 0.8em;
+  opacity: 0.7;
+}
+
+/* Styling for disabled fields */
+select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background-color: #f5f5f5;
 }
 
 /* Additional spacing for field consistency - closer to view mode */

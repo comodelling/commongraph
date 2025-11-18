@@ -3,7 +3,13 @@
     <!-- Question from config -->
     <h3 class="poll-question">{{ pollConfig.question }}</h3>
 
-    <!-- Histogram of past ratings: always mounted, just hidden until the “me” rating has loaded -->
+    <!-- Draft status warning -->
+    <div v-if="isDraft" class="draft-warning">
+      ⚠️ Cannot rate items with 'draft' status. Publish to a non-draft status to
+      enable ratings.
+    </div>
+
+    <!-- Histogram of past ratings: always mounted, just hidden until the "me" rating has loaded -->
     <RatingHistogram
       ref="histogram"
       :element="element"
@@ -25,7 +31,8 @@
         :class="{ selected: String(currentRating) === key }"
         @click="rate(key)"
         :style="{ backgroundColor: buttonColors[idx] }"
-        :title="label"
+        :title="isDraft ? 'Cannot rate draft items' : label"
+        :disabled="isDraft"
       >
         {{ key }}
       </button>
@@ -41,6 +48,7 @@
         v-model.number="sliderValue"
         @change="rate(sliderValue)"
         :style="{ '--pct': sliderPercent }"
+        :disabled="isDraft"
       />
       <div class="slider-value">{{ displayValue }}</div>
     </div>
@@ -131,6 +139,12 @@ export default {
         alert("Please log in to rate.");
         return;
       }
+      if (isDraft.value) {
+        alert(
+          "Cannot rate items with 'draft' status. Publish to a non-draft status to enable ratings.",
+        );
+        return;
+      }
       const num = Number(val);
       currentRating.value = num;
       const payload = {
@@ -155,10 +169,19 @@ export default {
       await histogram.value?.fetchRatings();
     };
 
-    // show '?' if no rating given
     const displayValue = computed(() => {
       if (!currentRatingLoaded.value) return "";
       return currentRating.value == null ? "?" : sliderValue.value;
+    });
+
+    // Check if element is in draft status
+    const isDraft = computed(() => {
+      if (props.element.node_id) {
+        return props.element.status === "draft";
+      } else {
+        // For edges, check the edge's status
+        return props.element.edge?.status === "draft";
+      }
     });
 
     onMounted(fetchRating);
@@ -185,6 +208,7 @@ export default {
       token, // expose token to template
       displayValue,
       sliderPercent,
+      isDraft,
     };
   },
 };
@@ -197,6 +221,17 @@ export default {
 .poll-question {
   margin-bottom: 0.5em;
 }
+
+.draft-warning {
+  background-color: #fff3cd;
+  border: 1px solid #ffc107;
+  border-radius: 4px;
+  padding: 0.75em;
+  margin-bottom: 1em;
+  color: #856404;
+  font-size: 0.9em;
+}
+
 .buttons-row {
   display: flex;
   gap: 0.5em;
@@ -211,6 +246,10 @@ export default {
   background: green;
   color: white;
   cursor: pointer;
+}
+.rating-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 .rating-button.selected {
   background: var(--accent-color);
@@ -238,6 +277,10 @@ input[type="range"] {
   margin: 0;
   appearance: none;
   background: transparent;
+}
+input[type="range"]:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 input[type="range"]::-webkit-slider-runnable-track {
   height: 8px;

@@ -1,12 +1,22 @@
 <template>
   <div>
     <div class="field">
-      <strong :title="tooltips.edge.type">Type:</strong>
+      <strong :title="tooltips.edge.type">
+        Type:
+        <span
+          v-if="edgeTypeHasStatus && !isDraft && !isCurrentUserAdmin"
+          class="status-lock"
+          title="Protected when not in draft"
+        >
+          🔒
+        </span>
+      </strong>
       <div class="field-content">
         <select
           v-model="editedEdge.edge_type"
           @keydown.enter="moveToNextField('type')"
           @keydown.tab="handleTabKey($event, 'type')"
+          :disabled="!canEditField('edge_type')"
           tabindex="0"
         >
           <option
@@ -183,6 +193,46 @@ export default {
     hasLocalUnsavedChanges() {
       if (this.isSubmitting) return false;
       return JSON.stringify(this.edge) !== JSON.stringify(this.editedEdge);
+    },
+    isDraft() {
+      return this.editedEdge.status === "draft";
+    },
+    isCurrentUserAdmin() {
+      const { hasAdminRights } = useAuth();
+      return hasAdminRights.value || false;
+    },
+    // Check if draft option should be disabled
+    isDraftOptionDisabled() {
+      // If the edge is new or currently in draft status, allow selecting draft
+      if (this.editedEdge.new || this.isDraft) {
+        return false;
+      }
+      // If edge is not in draft status, disable the draft option
+      return true;
+    },
+    // Check if the current edge type has a status field
+    edgeTypeHasStatus() {
+      return this.allowedFields.includes("status");
+    },
+    canEditField() {
+      return (fieldName) => {
+        // If new edge or in draft status, allow all field edits
+        if (this.editedEdge.new || this.isDraft) {
+          return true;
+        }
+        // If edge type doesn't have status field, allow all edits
+        if (!this.edgeTypeHasStatus) {
+          return true;
+        }
+        // If non-draft and edge type has status, only admins can edit edge_type
+        const restrictedFields = ["edge_type"];
+        if (restrictedFields.includes(fieldName)) {
+          return this.isCurrentUserAdmin;
+        }
+        // Status field is always editable (but validation happens on backend for draft reversion)
+        // Other fields can be edited by anyone
+        return true;
+      };
     },
   },
   beforeRouteLeave(to, from, next) {
@@ -410,6 +460,19 @@ export default {
 /* Additional spacing for field consistency - closer to view mode */
 .field {
   margin: 5px 0;
+}
+
+.status-lock {
+  margin-left: 4px;
+  font-size: 0.8em;
+  opacity: 0.7;
+}
+
+/* Styling for disabled fields */
+select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background-color: #f5f5f5;
 }
 
 /* Reference container styling */

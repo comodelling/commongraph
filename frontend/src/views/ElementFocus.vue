@@ -348,6 +348,67 @@ export default {
     clearFocusGraphSnapshot() {
       sessionStorage.removeItem(FOCUS_GRAPH_CACHE_KEY);
     },
+    buildGraphSnapshotForFocus() {
+      const normalizeNumericValue = (value) => {
+        if (value == null) return null;
+        const numeric = Number(value);
+        return Number.isNaN(numeric) ? value : numeric;
+      };
+
+      const nodes = (this.subgraphData.nodes || []).map((node) => {
+        const raw = node?.data ? { ...node.data } : {};
+        if (raw.node_id == null && node?.id != null) {
+          raw.node_id = normalizeNumericValue(node.id);
+        }
+        if (typeof raw.node_id === "string" && raw.node_id !== "new") {
+          const numeric = Number(raw.node_id);
+          if (!Number.isNaN(numeric)) {
+            raw.node_id = numeric;
+          }
+        }
+        return raw;
+      });
+
+      const edges = (this.subgraphData.edges || []).map((edge) => {
+        const normalized = edge?.data ? { ...edge.data } : {};
+        if (normalized.source == null && edge?.source != null) {
+          normalized.source = normalizeNumericValue(edge.source);
+        }
+        if (normalized.target == null && edge?.target != null) {
+          normalized.target = normalizeNumericValue(edge.target);
+        }
+        if (normalized.source == null && normalized.source_id != null) {
+          normalized.source = normalizeNumericValue(normalized.source_id);
+        }
+        if (normalized.target == null && normalized.target_id != null) {
+          normalized.target = normalizeNumericValue(normalized.target_id);
+        }
+        return normalized;
+      });
+
+      return { nodes, edges };
+    },
+    storeFocusGraphSnapshot(graph, focusNodeData = null, focusEdgeData = null) {
+      try {
+        const payload = {
+          nodes: (graph.nodes || []).map((node) =>
+            JSON.parse(JSON.stringify(node)),
+          ),
+          edges: (graph.edges || []).map((edge) =>
+            JSON.parse(JSON.stringify(edge)),
+          ),
+          focusNode: focusNodeData
+            ? JSON.parse(JSON.stringify(focusNodeData))
+            : null,
+          focusEdge: focusEdgeData
+            ? JSON.parse(JSON.stringify(focusEdgeData))
+            : null,
+        };
+        sessionStorage.setItem(FOCUS_GRAPH_CACHE_KEY, JSON.stringify(payload));
+      } catch (error) {
+        console.error("Failed to store focus graph snapshot:", error);
+      }
+    },
     buildFlowGraphFromRaw(rawNodes = [], rawEdges = []) {
       const formattedNodes = (rawNodes || []).map((node) => {
         const normalized = { ...node };
@@ -407,6 +468,7 @@ export default {
             : targetIdNumber,
         new: true,
       };
+      edge.selected = true;
 
       const edgeTypeConfig = this.edgeTypes[edge.edge_type] || {};
       const allowed = edgeTypeConfig.properties || [];
@@ -953,25 +1015,60 @@ export default {
           ? newNodeId
           : parseInt(fromConnection.id);
 
-      // Create a new edge object with pre-populated source/target
-      // edge_type will be selected by the user in the edge creation panel
-      this.edge = {
-        source: source,
-        target: target,
+      // Prepare allowed fields from an example edge type so the form has defaults
+      const firstEdgeType = Object.keys(this.edgeTypes || {})[0];
+      const allowedEdgeProps =
+        this.edgeTypes?.[firstEdgeType]?.properties || [];
+
+      const newEdge = {
+        source,
+        target,
         edge_type: null,
         new: true,
+        selected: true,
       };
-
-      // Initialize empty collections for allowed fields
-      if (this.edgeTypes) {
-        const firstAllowedType = Object.keys(this.edgeTypes)[0];
-        const allowed = this.edgeTypes[firstAllowedType]?.properties || [];
-        if (allowed.includes("description")) this.edge.description = "";
-        if (allowed.includes("references")) this.edge.references = [];
-        if (allowed.includes("tags")) this.edge.tags = [];
+      if (allowedEdgeProps.includes("description")) {
+        newEdge.description = "";
+      }
+      if (allowedEdgeProps.includes("references")) {
+        newEdge.references = [];
+      }
+      if (allowedEdgeProps.includes("tags")) {
+        newEdge.tags = [];
       }
 
-      // Navigate to edge edit mode with correct parameter names
+      const sourceNodeType =
+        fromConnection.handle_type === "source"
+          ? fromConnection.node_type
+          : newNode?.node_type;
+      const targetNodeType =
+        fromConnection.handle_type === "source"
+          ? newNode?.node_type
+          : fromConnection.node_type;
+
+      this.edge = {
+        ...newEdge,
+        sourceNodeType,
+        targetNodeType,
+      };
+
+      const graphSnapshot = this.buildGraphSnapshotForFocus();
+      graphSnapshot.edges = graphSnapshot.edges.filter(
+        (edge) => !(edge.source === source && edge.target === target),
+      );
+      graphSnapshot.edges.push(newEdge);
+      if (newNode) {
+        const normalizedNewNode = { ...newNode };
+        normalizedNewNode.node_id =
+          normalizedNewNode.node_id ?? normalizedNewNode.id ?? "new";
+        graphSnapshot.nodes = graphSnapshot.nodes.filter(
+          (node) => node.node_id !== normalizedNewNode.node_id,
+        );
+        graphSnapshot.nodes.push(normalizedNewNode);
+      }
+
+      this.storeFocusGraphSnapshot(graphSnapshot, null, newEdge);
+
       this.$router.push({
         name: "EdgeEdit",
         params: {

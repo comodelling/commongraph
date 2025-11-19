@@ -1104,11 +1104,25 @@ export default {
     openNewlyCreatedEdge(newEdge) {
       // use this.edgeTypes instead of calling useConfig() again
       const allowed = this.edgeTypes[newEdge.data.edge_type].properties || [];
+      const sourceId = parseInt(newEdge.data.source);
+      const targetId = parseInt(newEdge.data.target);
+      const findNodeType = (nodeId) => {
+        const nodeEntry = this.subgraphData?.nodes?.find(
+          (node) => node?.id === `${nodeId}` || node?.node_id === nodeId,
+        );
+        return nodeEntry?.data?.node_type || nodeEntry?.node_type || null;
+      };
+      const sourceNodeType =
+        newEdge.data.sourceNodeType ?? findNodeType(sourceId);
+      const targetNodeType =
+        newEdge.data.targetNodeType ?? findNodeType(targetId);
       this.edge = {
-        source: parseInt(newEdge.data.source),
-        target: parseInt(newEdge.data.target),
+        source: sourceId,
+        target: targetId,
         edge_type: newEdge.data.edge_type,
         new: true,
+        sourceNodeType,
+        targetNodeType,
       };
       if (allowed.includes("description")) this.edge.description = "";
       if (allowed.includes("references")) this.edge.references = [];

@@ -855,6 +855,8 @@ function createEdgeOnConnection(targetId) {
     target: target,
     edge_type: chosenType,
   });
+  newEdgeData.data.sourceNodeType = sourceType;
+  newEdgeData.data.targetNodeType = targetType;
   console.log("New edge data (direct connection):", newEdgeData);
   return newEdgeData;
 }

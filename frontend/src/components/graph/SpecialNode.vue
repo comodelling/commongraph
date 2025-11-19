@@ -1,6 +1,11 @@
 <script setup>
 import { Handle, Position, useVueFlow } from "@vue-flow/core";
 import { computed, ref } from "vue";
+import {
+  getAllowedSourceNodeTypes,
+  getAllowedTargetNodeTypes,
+  isGraphSchemaLoaded,
+} from "../../composables/useGraphSchema.js";
 
 const props = defineProps({
   id: String,
@@ -28,6 +33,21 @@ defineEmits(["updateNodeInternals"]);
 
 const showTooltip = ref(false);
 const tooltipStyle = ref({});
+
+const nodeType = computed(() => props.data?.node_type);
+const schemaLoaded = computed(() => isGraphSchemaLoaded());
+
+const canHaveChildren = computed(() => {
+  if (!schemaLoaded.value) return true;
+  if (!nodeType.value) return true;
+  return getAllowedTargetNodeTypes(nodeType.value).length > 0;
+});
+
+const canHaveParents = computed(() => {
+  if (!schemaLoaded.value) return true;
+  if (!nodeType.value) return true;
+  return getAllowedSourceNodeTypes(nodeType.value).length > 0;
+});
 
 // Tooltip title (node title)
 const tooltipTitle = computed(() => {
@@ -105,6 +125,7 @@ const triangleRotation = computed(() => {
 
 <template>
   <Handle
+    v-if="canHaveChildren"
     type="source"
     :position="sourcePosition"
     title="Create implications"
@@ -130,6 +151,7 @@ const triangleRotation = computed(() => {
   </Teleport>
 
   <Handle
+    v-if="canHaveParents"
     type="target"
     :position="targetPosition"
     title="Create conditions"

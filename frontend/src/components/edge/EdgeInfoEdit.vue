@@ -146,7 +146,7 @@ export default {
     sourceType: { type: String, required: false, default: null },
     targetType: { type: String, required: false, default: null },
   },
-  emits: ["publish-edge"],
+  emits: ["publish-edge", "edge-exists"],
   setup() {
     const { edgeTypes, load, license, getLicenseUrl } = useConfig();
     onMounted(load);
@@ -432,6 +432,25 @@ export default {
         this.$emit("publish-edge", response.data);
       } catch (error) {
         console.error("Failed to update edge:", error);
+        // Handle 409 Conflict: edge already exists
+        if (error.response?.status === 409) {
+          let existingEdge = null;
+          // Try to parse existing edge from response data
+          if (error.response?.data?.detail) {
+            console.log("Edge conflict detected:", error.response.data.detail);
+          }
+
+          const confirmEdit = window.confirm(
+            "An edge already exists between these nodes.\n\nWould you like to edit the existing edge instead?",
+          );
+          if (confirmEdit) {
+            // Emit event to signal that we should edit the existing edge
+            this.$emit("edge-exists", {
+              source: this.editedEdge.source,
+              target: this.editedEdge.target,
+            });
+          }
+        }
       } finally {
         this.isSubmitting = false;
       }

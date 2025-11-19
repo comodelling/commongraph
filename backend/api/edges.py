@@ -1,5 +1,8 @@
+from __future__ import annotations
+
 import logging
 import datetime
+from typing import Optional
 
 from fastapi import Body, Depends, APIRouter, HTTPException, Query, status, Path
 
@@ -118,19 +121,34 @@ def get_edges_median_ratings(
 
 @router.get("")
 def get_edges(
-    node_ids: list[NodeId] = Query(
+    node_ids: Optional[list[NodeId]] = Query(
         None, description="Optional list of node IDs to filter connections"
+    ),
+    source: Optional[NodeId] = Query(
+        None, description="Optional source node ID to retrieve specific edge"
+    ),
+    target: Optional[NodeId] = Query(
+        None, description="Optional target node ID to retrieve specific edge"
     ),
     user: UserRead = Depends(get_current_user),
     db_history: GraphHistoryRelationalInterface = Depends(get_graph_history_db),
 ) -> list[DynamicEdge]:
-    """Return edges, optionally filtered by node connections."""
+    """Return edges, optionally filtered by node connections or source/target pair."""
     # Check read permissions
     if not can_read(user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You must be logged in to view content",
         )
+
+    # If source and target are provided, retrieve the specific edge
+    if source is not None and target is not None:
+        try:
+            edge = db_history.get_edge(source, target)
+            return [edge]
+        except HTTPException:
+            # Edge not found, return empty list
+            return []
 
     full_edge_list = db_history.get_edge_list()
     if node_ids:
@@ -164,6 +182,24 @@ def create_edge(
         raise HTTPException(400, f"Unknown edge_type {et!r}")
     # TODO: validate payload further, within graph, against Graph Schema
     edge = Model(**payload)
+
+    # Check if edge already exists (identified by source and target node IDs)
+    try:
+        existing_edge = db_history.get_edge(edge.source, edge.target)
+        # Edge already exists, return 409 Conflict with the existing edge data
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="An edge already exists between these nodes",
+            headers={"X-Existing-Edge": existing_edge.model_dump_json()},
+        )
+    except HTTPException as e:
+        # If it's the conflict we just raised, re-raise it
+        if e.status_code == status.HTTP_409_CONFLICT:
+            raise
+        # If it's a 404 (edge doesn't exist), continue with creation
+        if e.status_code != 404:
+            raise
+
     out_edge = db_history.create_edge(edge, username=user.username)
     if db_graph is not None:
         db_graph.create_edge(edge)

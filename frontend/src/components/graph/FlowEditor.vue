@@ -109,6 +109,7 @@ const emit = defineEmits([
   "edgeClick",
   "newNodeCreated",
   "newEdgeCreated",
+  "editExistingEdge",
 ]);
 
 const { layout, affectDirection, previousDirection } = useLayout();
@@ -780,14 +781,60 @@ function onConnect(connection) {
   const newEdgeData = createEdgeOnConnection(target);
 
   if (newEdgeData) {
-    // Only proceed if edge creation is allowed
-    nextTick(() => {
-      emit("newEdgeCreated", newEdgeData);
-    });
-    addEdges(newEdgeData);
+    // Check if edge already exists before creating
+    checkEdgeExists(newEdgeData);
   }
 
   connectionInfo.value = null;
+}
+
+/**
+ * Check if an edge already exists between source and target nodes
+ */
+async function checkEdgeExists(edgeData) {
+  try {
+    const { getAccessToken } = useAuth();
+    const token = getAccessToken();
+
+    const response = await api.get(
+      `/edges?source=${edgeData.source}&target=${edgeData.target}`,
+      token ? { headers: { Authorization: `Bearer ${token}` } } : {},
+    );
+
+    if (response.data && response.data.length > 0) {
+      // Edge already exists
+      const existingEdge = response.data[0];
+      const confirmed = window.confirm(
+        `An edge already exists between these nodes.\n\nWould you like to edit the existing edge instead?`,
+      );
+
+      if (confirmed) {
+        // Navigate to edit the existing edge
+        const sourceNode = findNode(edgeData.source);
+        const targetNode = findNode(edgeData.target);
+        if (sourceNode && targetNode) {
+          emit("editExistingEdge", {
+            edge: existingEdge,
+            source: edgeData.source,
+            target: edgeData.target,
+          });
+        }
+      }
+    } else {
+      // Edge does not exist, proceed with creation
+      nextTick(() => {
+        emit("newEdgeCreated", edgeData);
+      });
+      addEdges(edgeData);
+    }
+  } catch (error) {
+    console.error("Error checking if edge exists:", error);
+    // On error, proceed with creation anyway (to avoid blocking on network errors)
+    nextTick(() => {
+      emit("newEdgeCreated", edgeData);
+    });
+    addEdges(edgeData);
+  }
 }
 
 function onConnectEnd(event) {
@@ -855,6 +902,8 @@ function createEdgeOnConnection(targetId) {
     target: target,
     edge_type: chosenType,
   });
+  newEdgeData.data.sourceNodeType = sourceType;
+  newEdgeData.data.targetNodeType = targetType;
   console.log("New edge data (direct connection):", newEdgeData);
   return newEdgeData;
 }
@@ -1036,11 +1085,8 @@ function linkSourceToSearchResult(id) {
   const newEdgeData = createEdgeOnConnection(id);
   console.log("New edge data (towards search result):", newEdgeData);
   if (findNode(id)) {
-    console.log("Node already exists, adding edge first");
-    addEdges(newEdgeData);
-    nextTick(() => {
-      emit("newEdgeCreated", newEdgeData);
-    });
+    console.log("Node already exists, checking if edge exists");
+    checkEdgeExists(newEdgeData);
   } else {
     nextTick(() => {
       emit("newEdgeCreated", newEdgeData);

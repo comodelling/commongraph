@@ -9,6 +9,7 @@
             :node="node"
             @update-node-from-editor="updateNodeFromEditor"
             @preview-node-update="previewNodeUpdate"
+            @request-edge-creation="handleEdgeCreationRequest"
           />
           <div v-else class="error-message">Node not found</div>
         </template>
@@ -18,6 +19,7 @@
             :edge="edge"
             @update-edge-from-editor="updateEdgeFromEditor"
             @preview-edge-update="previewEdgeUpdate"
+            @edge-exists="handleEdgeExists"
           />
           <div v-else class="error-message">Edge not found</div>
         </template>
@@ -69,6 +71,7 @@
         @edgeClick="updateEdgeFromBackend"
         @newNodeCreated="openNewlyCreatedNode"
         @newEdgeCreated="openNewlyCreatedEdge"
+        @editExistingEdge="editExistingEdge"
         :updatedNode="updatedNode"
         :updatedEdge="updatedEdge"
       />
@@ -89,6 +92,7 @@ import {
 } from "../composables/formatFlowComponents";
 import api from "../api/axios";
 import { hydrate } from "vue";
+import { getAllowedEdgeTypes } from "../composables/useGraphSchema";
 
 const FOCUS_GRAPH_CACHE_KEY = "focusFlowGraphSnapshot";
 
@@ -347,6 +351,67 @@ export default {
     clearFocusGraphSnapshot() {
       sessionStorage.removeItem(FOCUS_GRAPH_CACHE_KEY);
     },
+    buildGraphSnapshotForFocus() {
+      const normalizeNumericValue = (value) => {
+        if (value == null) return null;
+        const numeric = Number(value);
+        return Number.isNaN(numeric) ? value : numeric;
+      };
+
+      const nodes = (this.subgraphData.nodes || []).map((node) => {
+        const raw = node?.data ? { ...node.data } : {};
+        if (raw.node_id == null && node?.id != null) {
+          raw.node_id = normalizeNumericValue(node.id);
+        }
+        if (typeof raw.node_id === "string" && raw.node_id !== "new") {
+          const numeric = Number(raw.node_id);
+          if (!Number.isNaN(numeric)) {
+            raw.node_id = numeric;
+          }
+        }
+        return raw;
+      });
+
+      const edges = (this.subgraphData.edges || []).map((edge) => {
+        const normalized = edge?.data ? { ...edge.data } : {};
+        if (normalized.source == null && edge?.source != null) {
+          normalized.source = normalizeNumericValue(edge.source);
+        }
+        if (normalized.target == null && edge?.target != null) {
+          normalized.target = normalizeNumericValue(edge.target);
+        }
+        if (normalized.source == null && normalized.source_id != null) {
+          normalized.source = normalizeNumericValue(normalized.source_id);
+        }
+        if (normalized.target == null && normalized.target_id != null) {
+          normalized.target = normalizeNumericValue(normalized.target_id);
+        }
+        return normalized;
+      });
+
+      return { nodes, edges };
+    },
+    storeFocusGraphSnapshot(graph, focusNodeData = null, focusEdgeData = null) {
+      try {
+        const payload = {
+          nodes: (graph.nodes || []).map((node) =>
+            JSON.parse(JSON.stringify(node)),
+          ),
+          edges: (graph.edges || []).map((edge) =>
+            JSON.parse(JSON.stringify(edge)),
+          ),
+          focusNode: focusNodeData
+            ? JSON.parse(JSON.stringify(focusNodeData))
+            : null,
+          focusEdge: focusEdgeData
+            ? JSON.parse(JSON.stringify(focusEdgeData))
+            : null,
+        };
+        sessionStorage.setItem(FOCUS_GRAPH_CACHE_KEY, JSON.stringify(payload));
+      } catch (error) {
+        console.error("Failed to store focus graph snapshot:", error);
+      }
+    },
     buildFlowGraphFromRaw(rawNodes = [], rawEdges = []) {
       const formattedNodes = (rawNodes || []).map((node) => {
         const normalized = { ...node };
@@ -406,6 +471,7 @@ export default {
             : targetIdNumber,
         new: true,
       };
+      edge.selected = true;
 
       const edgeTypeConfig = this.edgeTypes[edge.edge_type] || {};
       const allowed = edgeTypeConfig.properties || [];
@@ -938,6 +1004,111 @@ export default {
         console.error("Failed to update edge:", error);
       }
     },
+    async handleEdgeExists(edgeInfo) {
+      // Fetch the existing edge and load it for editing
+      const { source, target } = edgeInfo;
+      try {
+        // Fetch the existing edge details from the backend
+        const response = await api.get(
+          `/edges?source=${source}&target=${target}`,
+        );
+        if (response.data && response.data.length > 0) {
+          // Load the existing edge for editing
+          this.edge = {
+            ...response.data[0],
+            new: false,
+          };
+          this.updatedEdge = { ...this.edge };
+          console.log("Loaded existing edge for editing:", this.edge);
+        }
+      } catch (error) {
+        console.error("Failed to fetch existing edge:", error);
+        window.alert("Could not load the existing edge. Please try again.");
+      }
+    },
+    handleEdgeCreationRequest(edgeCreationData) {
+      // Extract connection info from the edge creation data
+      const { fromConnection, newNodeId, newNode } = edgeCreationData;
+
+      // Determine source and target based on connection handle type
+      const source =
+        fromConnection.handle_type === "source"
+          ? parseInt(fromConnection.id)
+          : newNodeId;
+      const target =
+        fromConnection.handle_type === "source"
+          ? newNodeId
+          : parseInt(fromConnection.id);
+
+      const sourceNodeType =
+        fromConnection.handle_type === "source"
+          ? fromConnection.node_type
+          : newNode?.node_type;
+      const targetNodeType =
+        fromConnection.handle_type === "source"
+          ? newNode?.node_type
+          : fromConnection.node_type;
+
+      const allowedEdgeTypes = getAllowedEdgeTypes(
+        sourceNodeType,
+        targetNodeType,
+      );
+      const selectedEdgeType = allowedEdgeTypes.length
+        ? allowedEdgeTypes[0]
+        : null;
+      const edgeTypeForProps =
+        selectedEdgeType || Object.keys(this.edgeTypes || {})[0];
+      const allowedEdgeProps =
+        this.edgeTypes?.[edgeTypeForProps]?.properties || [];
+
+      const newEdge = {
+        source,
+        target,
+        edge_type: selectedEdgeType,
+        new: true,
+        selected: true,
+      };
+      if (allowedEdgeProps.includes("description")) {
+        newEdge.description = "";
+      }
+      if (allowedEdgeProps.includes("references")) {
+        newEdge.references = [];
+      }
+      if (allowedEdgeProps.includes("tags")) {
+        newEdge.tags = [];
+      }
+
+      this.edge = {
+        ...newEdge,
+        sourceNodeType,
+        targetNodeType,
+      };
+
+      const graphSnapshot = this.buildGraphSnapshotForFocus();
+      graphSnapshot.edges = graphSnapshot.edges.filter(
+        (edge) => !(edge.source === source && edge.target === target),
+      );
+      graphSnapshot.edges.push(newEdge);
+      if (newNode) {
+        const normalizedNewNode = { ...newNode };
+        normalizedNewNode.node_id =
+          normalizedNewNode.node_id ?? normalizedNewNode.id ?? "new";
+        graphSnapshot.nodes = graphSnapshot.nodes.filter(
+          (node) => node.node_id !== normalizedNewNode.node_id,
+        );
+        graphSnapshot.nodes.push(normalizedNewNode);
+      }
+
+      this.storeFocusGraphSnapshot(graphSnapshot, null, newEdge);
+
+      this.$router.push({
+        name: "EdgeEdit",
+        params: {
+          source_id: source,
+          target_id: target,
+        },
+      });
+    },
     previewEdgeUpdate(previewEdge) {
       // Update the flow view reactively while editing (without persisting)
       try {
@@ -957,11 +1128,25 @@ export default {
     openNewlyCreatedEdge(newEdge) {
       // use this.edgeTypes instead of calling useConfig() again
       const allowed = this.edgeTypes[newEdge.data.edge_type].properties || [];
+      const sourceId = parseInt(newEdge.data.source);
+      const targetId = parseInt(newEdge.data.target);
+      const findNodeType = (nodeId) => {
+        const nodeEntry = this.subgraphData?.nodes?.find(
+          (node) => node?.id === `${nodeId}` || node?.node_id === nodeId,
+        );
+        return nodeEntry?.data?.node_type || nodeEntry?.node_type || null;
+      };
+      const sourceNodeType =
+        newEdge.data.sourceNodeType ?? findNodeType(sourceId);
+      const targetNodeType =
+        newEdge.data.targetNodeType ?? findNodeType(targetId);
       this.edge = {
-        source: parseInt(newEdge.data.source),
-        target: parseInt(newEdge.data.target),
+        source: sourceId,
+        target: targetId,
         edge_type: newEdge.data.edge_type,
         new: true,
+        sourceNodeType,
+        targetNodeType,
       };
       if (allowed.includes("description")) this.edge.description = "";
       if (allowed.includes("references")) this.edge.references = [];
@@ -970,6 +1155,23 @@ export default {
         params: {
           source_id: this.edge.source,
           target_id: this.edge.target,
+        },
+      });
+    },
+    editExistingEdge(edgeInfo) {
+      // Load existing edge for editing
+      const { edge, source, target } = edgeInfo;
+      this.edge = {
+        ...edge,
+        new: false,
+      };
+      this.updatedEdge = { ...this.edge };
+      // Navigate to edge edit view
+      this.$router.push({
+        name: "EdgeEdit",
+        params: {
+          source_id: source,
+          target_id: target,
         },
       });
     },

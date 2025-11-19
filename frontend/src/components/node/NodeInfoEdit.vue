@@ -289,7 +289,6 @@ import {
   loadGraphSchema,
   getAllowedTargetNodeTypes,
   getAllowedSourceNodeTypes,
-  getAllowedEdgeTypes,
 } from "../../composables/useGraphSchema";
 import ScopeAutocomplete from "./ScopeAutocomplete.vue";
 
@@ -522,6 +521,18 @@ export default {
         this.startEditing("description");
       });
     },
+    ensureNodeTypeIsAllowed() {
+      if (!this.editedNode?.new) {
+        return;
+      }
+      const permittedTypes = this.allowedNodeTypes || [];
+      if (!permittedTypes.length) {
+        return;
+      }
+      if (!this.isTypeAllowed(this.editedNode.node_type)) {
+        this.editedNode.node_type = permittedTypes[0];
+      }
+    },
     async submit() {
       if (!window.confirm("Are you sure you want to submit your changes?")) {
         return;
@@ -587,51 +598,22 @@ export default {
           const target = nodeReturned.node_id;
           nodeReturned.new = true;
 
-          // If node is created *from* a connection, pick the first valid edgeType
+          // If node is created *from* a connection, emit event to open edge creation panel
           if (fromConnection) {
-            try {
-              const possibleLabels = getAllowedEdgeTypes(
-                fromConnection.handle_type === "source"
-                  ? fromConnection.node_type
-                  : nodeReturned.node_type,
-                fromConnection.handle_type === "source"
-                  ? nodeReturned.node_type
-                  : fromConnection.node_type,
-              );
-              if (!possibleLabels.length) {
-                console.warn(
-                  "No valid edge type found to connect new node. Aborting edge creation.",
-                );
-              } else {
-                const newEdge = {
-                  source:
-                    fromConnection.handle_type === "source"
-                      ? parseInt(fromConnection.id)
-                      : target,
-                  target:
-                    fromConnection.handle_type === "source"
-                      ? target
-                      : parseInt(fromConnection.id),
-                  edge_type: possibleLabels[0], // pick first allowed
-                };
-                await api.post(
-                  "/edges",
-                  newEdge,
-                  token
-                    ? { headers: { Authorization: `Bearer ${token}` } }
-                    : {},
-                );
-              }
-            } catch (error) {
-              console.error("Failed to create edge:", error);
-            }
+            this.$emit("request-edge-creation", {
+              fromConnection,
+              newNodeId: target,
+              newNode: nodeReturned,
+            });
           }
           this.$emit("publish-node", nodeReturned);
           this.editedNode = _.cloneDeep(nodeReturned);
-          this.$router.push({
-            name: "NodeView",
-            params: { id: target.toString() },
-          });
+          if (!fromConnection) {
+            this.$router.push({
+              name: "NodeView",
+              params: { id: target.toString() },
+            });
+          }
         } catch (error) {
           console.error("Failed to create node:", error);
         }
@@ -696,6 +678,7 @@ export default {
     node: {
       handler(newNode) {
         this.editedNode = _.cloneDeep(newNode);
+        this.ensureNodeTypeIsAllowed();
       },
       deep: true,
     },
@@ -712,6 +695,12 @@ export default {
         }
       },
       deep: true,
+    },
+    allowedNodeTypes: {
+      handler() {
+        this.ensureNodeTypeIsAllowed();
+      },
+      immediate: true,
     },
   },
 };

@@ -14,13 +14,23 @@ os.environ["POSTGRES_DB_URL"] = POSTGRES_TEST_DB_URL
 os.environ["SECRET_KEY"] = "testsecret"
 
 # Override authentication dependency for testing
-from backend.models.fixed import UserRead
+from backend.models.fixed import (
+    UserRead,
+    GraphHistoryEvent,
+    EntityType,
+    EntityState,
+)
+from backend.config import valid_node_types, valid_edge_types
 
 
 @pytest.fixture(scope="module", autouse=True)
 def setup_test_env():
     """Set up test environment including authentication override and database reset."""
-    from backend.db.postgresql import RatingHistoryPostgreSQLDB
+    from backend.db.postgresql import (
+        RatingHistoryPostgreSQLDB,
+        GraphHistoryPostgreSQLDB,
+    )
+    from backend.db.connections import get_graph_history_db, get_rating_history_db
 
     # Override authentication
     app.dependency_overrides[get_current_user] = lambda: UserRead(
@@ -31,15 +41,56 @@ def setup_test_env():
         is_super_admin=False,
     )
 
-    # Reset database
-    db = RatingHistoryPostgreSQLDB(POSTGRES_TEST_DB_URL)
-    db.reset_table()
+    # Reset rating database
+    rating_db = RatingHistoryPostgreSQLDB(POSTGRES_TEST_DB_URL)
+    rating_db.reset_table()
+    app.dependency_overrides[get_rating_history_db] = lambda: rating_db
+
+    # Reset graph history and seed minimal nodes/edges
+    graph_history_db = GraphHistoryPostgreSQLDB(POSTGRES_TEST_DB_URL)
+    graph_history_db.reset_whole_graph()
+    app.dependency_overrides[get_graph_history_db] = lambda: graph_history_db
+
+    node_type = list(valid_node_types())[0]
+    edge_type = list(valid_edge_types())[0]
+    node_ids = [1, 2, 10, 20, 30, 40]
+    for node_id in node_ids:
+        graph_history_db.log_event(
+            GraphHistoryEvent(
+                state=EntityState.created,
+                entity_type=EntityType.node,
+                node_id=node_id,
+                payload={"node_type": node_type},
+                username="testuser",
+            )
+        )
+
+    edge_pairs = [(10, 20), (30, 40)]
+    for source, target in edge_pairs:
+        graph_history_db.log_event(
+            GraphHistoryEvent(
+                state=EntityState.created,
+                entity_type=EntityType.edge,
+                node_id=None,
+                source_id=source,
+                target_id=target,
+                payload={
+                    "edge_type": edge_type,
+                    "source": source,
+                    "target": target,
+                },
+                username="testuser",
+            )
+        )
 
     yield
 
     # Cleanup
-    db.reset_table()
+    rating_db.reset_table()
+    graph_history_db.reset_whole_graph()
     app.dependency_overrides.pop(get_current_user, None)
+    app.dependency_overrides.pop(get_rating_history_db, None)
+    app.dependency_overrides.pop(get_graph_history_db, None)
 
 
 client = TestClient(app)

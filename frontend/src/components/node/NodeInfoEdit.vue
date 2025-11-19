@@ -521,6 +521,18 @@ export default {
         this.startEditing("description");
       });
     },
+    ensureNodeTypeIsAllowed() {
+      if (!this.editedNode?.new) {
+        return;
+      }
+      const permittedTypes = this.allowedNodeTypes || [];
+      if (!permittedTypes.length) {
+        return;
+      }
+      if (!this.isTypeAllowed(this.editedNode.node_type)) {
+        this.editedNode.node_type = permittedTypes[0];
+      }
+    },
     async submit() {
       if (!window.confirm("Are you sure you want to submit your changes?")) {
         return;
@@ -666,6 +678,7 @@ export default {
     node: {
       handler(newNode) {
         this.editedNode = _.cloneDeep(newNode);
+        this.ensureNodeTypeIsAllowed();
       },
       deep: true,
     },
@@ -682,6 +695,12 @@ export default {
         }
       },
       deep: true,
+    },
+    allowedNodeTypes: {
+      handler() {
+        this.ensureNodeTypeIsAllowed();
+      },
+      immediate: true,
     },
   },
 };

@@ -90,6 +90,7 @@ import {
 } from "../composables/formatFlowComponents";
 import api from "../api/axios";
 import { hydrate } from "vue";
+import { getAllowedEdgeTypes } from "../composables/useGraphSchema";
 
 const FOCUS_GRAPH_CACHE_KEY = "focusFlowGraphSnapshot";
 
@@ -1015,15 +1016,31 @@ export default {
           ? newNodeId
           : parseInt(fromConnection.id);
 
-      // Prepare allowed fields from an example edge type so the form has defaults
-      const firstEdgeType = Object.keys(this.edgeTypes || {})[0];
+      const sourceNodeType =
+        fromConnection.handle_type === "source"
+          ? fromConnection.node_type
+          : newNode?.node_type;
+      const targetNodeType =
+        fromConnection.handle_type === "source"
+          ? newNode?.node_type
+          : fromConnection.node_type;
+
+      const allowedEdgeTypes = getAllowedEdgeTypes(
+        sourceNodeType,
+        targetNodeType,
+      );
+      const selectedEdgeType = allowedEdgeTypes.length
+        ? allowedEdgeTypes[0]
+        : null;
+      const edgeTypeForProps =
+        selectedEdgeType || Object.keys(this.edgeTypes || {})[0];
       const allowedEdgeProps =
-        this.edgeTypes?.[firstEdgeType]?.properties || [];
+        this.edgeTypes?.[edgeTypeForProps]?.properties || [];
 
       const newEdge = {
         source,
         target,
-        edge_type: null,
+        edge_type: selectedEdgeType,
         new: true,
         selected: true,
       };
@@ -1036,15 +1053,6 @@ export default {
       if (allowedEdgeProps.includes("tags")) {
         newEdge.tags = [];
       }
-
-      const sourceNodeType =
-        fromConnection.handle_type === "source"
-          ? fromConnection.node_type
-          : newNode?.node_type;
-      const targetNodeType =
-        fromConnection.handle_type === "source"
-          ? newNode?.node_type
-          : fromConnection.node_type;
 
       this.edge = {
         ...newEdge,

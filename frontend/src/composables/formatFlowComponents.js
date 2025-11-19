@@ -86,10 +86,21 @@ export function formatFlowEdgeProps(data, colorBy = "type") {
   };
 
   return {
-    id: `${source}-${target}`,
+    // Ensure source/target ids are safe strings (preview nodes may not have node_id yet)
+    id: `${source != null ? source.toString() : `preview-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`}-${
+      target != null
+        ? target.toString()
+        : `preview-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+    }`,
     type: "special",
-    source: source.toString(),
-    target: target.toString(),
+    source:
+      source != null
+        ? source.toString()
+        : `preview-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    target:
+      target != null
+        ? target.toString()
+        : `preview-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
     markerEnd: markerEndConf,
     markerStart: undefined,
     data: { ...data, ratingLabel },
@@ -147,7 +158,11 @@ export function formatFlowNodeProps(data, colorBy = "type") {
     conf.opacity ?? (["realised", "unrealised"].includes(status) ? 0.5 : 0.95);
 
   return {
-    id: node_id.toString(),
+    // Ensure node id is a string; if missing (preview/new node), create a temporary preview id
+    id:
+      node_id != null
+        ? node_id.toString()
+        : `preview-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
     type: "special",
     position: position || { x: 0, y: 0 },
     label: title,

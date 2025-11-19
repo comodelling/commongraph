@@ -85,3 +85,7 @@ export function getAllowedSourceNodeTypes(target: string): string[] {
     ),
   );
 }
+
+export function isGraphSchemaLoaded(): boolean {
+  return loaded.value;
+}

@@ -2,7 +2,8 @@ import yaml
 import hashlib
 import json
 from pathlib import Path
-from typing import Dict, Any, List, Tuple
+from typing import Any, Dict, List, Tuple
+from enum import Enum
 
 # load env variable CONFIG_FILE
 from dotenv import load_dotenv
@@ -11,45 +12,280 @@ load_dotenv()
 # Load environment variables from .env file
 import os
 
-# Determine project root (works whether running from root or backend/)
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    FieldValidationInfo,
+    ValidationError,
+    field_validator,
+    root_validator,
+)
+
 _BACKEND_DIR = Path(__file__).parent
 _PROJECT_ROOT = (
     _BACKEND_DIR.parent if (_BACKEND_DIR.parent / "config").exists() else _BACKEND_DIR
 )
 
 # Get config file path from env, defaulting to config-test.yaml for tests or config-example.yaml
-_CONFIG_FILE = os.getenv("CONFIG_FILE", "config/config-test.yaml")
+_CONFIG_FILE = os.getenv("CONFIG_FILE") or "config/config-test.yaml"
 _CONFIG_PATH = _PROJECT_ROOT / _CONFIG_FILE
 
 
+class ConfigError(RuntimeError):
+    """Raised when the configuration file cannot be loaded or validated."""
+
+
+ALLOWED_PERMISSION_LEVELS = {"all", "loggedin", "admin"}
+
+
+class NodeTypeConfig(BaseModel):
+    properties: List[str] = Field(default_factory=list)
+    style: Dict[str, Any] = Field(default_factory=dict)
+
+    model_config = ConfigDict(extra="allow")
+
+
+class EdgeTypeConfig(BaseModel):
+    properties: List[str] = Field(default_factory=list)
+    style: Dict[str, Any] = Field(default_factory=dict)
+    between: List[Tuple[str, str]] = Field(default_factory=list)
+
+    model_config = ConfigDict(extra="allow")
+
+    @field_validator("between", mode="before")
+    def normalise_between(cls, value):
+        if value is None:
+            return []
+        normalised: List[Tuple[str, str]] = []
+        for entry in value:
+            if isinstance(entry, dict):
+                entry = tuple(entry.values())
+            if not isinstance(entry, (list, tuple)) or len(entry) != 2:
+                raise ValueError(
+                    "Each 'between' entry must be a two-element sequence of node type names"
+                )
+            normalised.append((str(entry[0]), str(entry[1])))
+        return normalised
+
+
+class AggregationMethod(str, Enum):
+    MEAN = "mean"
+    MEDIAN = "median"
+    COUNT = "count"
+
+
+class PollConfig(BaseModel):
+    question: str | None = None
+    scale: str | None = None
+    type: str | None = None
+    options: Dict[str, str] = Field(default_factory=dict)
+    range: tuple[float, float] | None = None
+    node_types: List[str] = Field(default_factory=list)
+    edge_types: List[str] = Field(default_factory=list)
+    aggregation: AggregationMethod | None = AggregationMethod.MEDIAN
+
+    model_config = ConfigDict(extra="allow")
+
+    @field_validator("options", mode="before")
+    def normalise_options(cls, value):
+        if value is None:
+            return {}
+        if isinstance(value, dict):
+            return {str(k): str(v) for k, v in value.items()}
+        if isinstance(value, list):
+            flattened: Dict[str, str] = {}
+            for entry in value:
+                if not isinstance(entry, dict) or len(entry) != 1:
+                    raise ValueError("Each option entry must be a single-key mapping")
+                key, option_value = next(iter(entry.items()))
+                flattened[str(key)] = str(option_value)
+            return flattened
+        raise TypeError(
+            "Poll options must be a mapping or a list of single-entry mappings"
+        )
+
+    @field_validator("range", mode="before")
+    def normalise_range(cls, value):
+        if value is None:
+            return None
+        if not isinstance(value, (list, tuple)) or len(value) != 2:
+            raise TypeError("Poll range must be a two-element sequence")
+        try:
+            low = float(value[0])
+            high = float(value[1])
+        except (TypeError, ValueError):
+            raise ValueError("Poll range values must be numeric")
+        if low >= high:
+            raise ValueError("Poll range must have low < high")
+        return (low, high)
+
+    @field_validator("node_types", "edge_types", mode="before")
+    def normalise_type_list(cls, value):
+        if value is None:
+            return []
+        if isinstance(value, (list, tuple)):
+            return [str(item) for item in value]
+        raise TypeError("Poll node_types and edge_types must be sequences")
+
+
+class AuthConfig(BaseModel):
+    allow_signup: bool = True
+    signup_requires_admin_approval: bool = False
+    signup_requires_token: bool = False
+
+    model_config = ConfigDict(extra="allow")
+
+
+class PermissionsConfig(BaseModel):
+    read: str = "all"
+    create: str = "all"
+    edit: str = "all"
+    delete: str = "all"
+    rate: str = "all"
+
+    model_config = ConfigDict(extra="allow")
+
+    @field_validator("read", "create", "edit", "delete", "rate")
+    def validate_levels(cls, value: str):
+        if not isinstance(value, str):
+            raise TypeError("Permission level must be a string")
+        normalised = value.strip().lower()
+        if normalised not in ALLOWED_PERMISSION_LEVELS:
+            raise ValueError(
+                f"Permission level '{value}' is invalid; expected one of {sorted(ALLOWED_PERMISSION_LEVELS)}"
+            )
+        return normalised
+
+
+class AppConfig(BaseModel):
+    platform_name: str = "CommonGraph"
+    platform_tagline: str = Field(
+        default="Building graph-based collaborative platforms together."
+    )
+    platform_description: str = ""
+    license: str | None = None
+    node_types: Dict[str, NodeTypeConfig]
+    edge_types: Dict[str, EdgeTypeConfig]
+    polls: Dict[str, PollConfig] = Field(default_factory=dict)
+    auth: AuthConfig = AuthConfig()
+    permissions: PermissionsConfig = PermissionsConfig()
+    config_version: str = "1.0.0"
+
+    model_config = ConfigDict(extra="allow")
+
+    @field_validator("platform_tagline", mode="before")
+    def prefer_tagline(cls, value, info: FieldValidationInfo):
+        if value:
+            return value
+        tagline = info.data.get("tagline")
+        if tagline:
+            return tagline
+        return "Building graph-based collaborative platforms together."
+
+    @field_validator("platform_description", mode="before")
+    def prefer_description(cls, value, info: FieldValidationInfo):
+        if value:
+            return value
+        description_html = info.data.get("description_html")
+        if description_html:
+            return description_html
+        return ""
+
+    @field_validator("license")
+    def strip_license(cls, value):
+        if value is None:
+            return None
+        trimmed = value.strip()
+        return trimmed or None
+
+    @root_validator(skip_on_failure=True)
+    def check_references(cls, values):
+        node_types = set(values.get("node_types", {}).keys())
+        edge_types = values.get("edge_types", {})
+        for edge_name, edge_def in edge_types.items():
+            for source, target in edge_def.between:
+                if source not in node_types or target not in node_types:
+                    raise ValueError(
+                        f"Edge '{edge_name}' references unknown node types in 'between': "
+                        f"{source} -> {target}"
+                    )
+        polls = values.get("polls", {})
+        for poll_name, poll in polls.items():
+            for node_type in poll.node_types:
+                if node_type not in node_types:
+                    raise ValueError(
+                        f"Poll '{poll_name}' references unknown node type '{node_type}'"
+                    )
+            for edge_type in poll.edge_types:
+                if edge_type not in edge_types:
+                    raise ValueError(
+                        f"Poll '{poll_name}' references unknown edge type '{edge_type}'"
+                    )
+        return values
+
+
 def load_config() -> Dict[str, Any]:
-    """Load configuration from YAML file"""
-    return yaml.safe_load(_CONFIG_PATH.read_text())
+    """Load configuration from YAML file without validation."""
+    try:
+        contents = _CONFIG_PATH.read_text()
+    except OSError as exc:
+        raise ConfigError(
+            f"Could not read config file at {_CONFIG_PATH}: {exc}"
+        ) from exc
+
+    try:
+        raw = yaml.safe_load(contents)
+    except yaml.YAMLError as exc:
+        raise ConfigError(f"Invalid YAML in config file {_CONFIG_PATH}: {exc}") from exc
+
+    if raw is None:
+        return {}
+    if not isinstance(raw, dict):
+        raise ConfigError(
+            f"Config file {_CONFIG_PATH} must contain a mapping at the top level"
+        )
+    return raw
+
+
+def _load_validated_config() -> AppConfig:
+    raw = load_config()
+    try:
+        return AppConfig(**raw)
+    except ValidationError as exc:
+        raise ConfigError(f"Invalid configuration at {_CONFIG_PATH}: {exc}") from exc
 
 
 def get_current_config() -> Dict[str, Any]:
-    """Get the current configuration (reloads from file)"""
-    return load_config()
+    """Get the current configuration (reloads from file and validates)."""
+    return _load_validated_config().model_dump()
 
 
 # Initial load for backward compatibility
-_CONFIG = load_config()
+_CONFIG_MODEL = _load_validated_config()
+_CONFIG = _CONFIG_MODEL.model_dump()
 
-PLATFORM_NAME = _CONFIG.get("platform_name", "CommonGraph")
-# Prefer new keys (platform_tagline, platform_description) but keep legacy fallbacks
-PLATFORM_TAGLINE = _CONFIG.get(
-    "platform_tagline",
-    _CONFIG.get("tagline", "Building graph-based collaborative platforms together."),
-)
-# Accept either `platform_description` or legacy `description_html`. Keep raw string (may contain HTML).
-PLATFORM_DESCRIPTION = _CONFIG.get(
-    "platform_description", _CONFIG.get("description_html", "")
-)
-# License configuration (e.g., CC BY-SA, CC BY-NC-SA, CC0, etc.)
-LICENSE = _CONFIG.get("license", "CC BY-SA")
+PLATFORM_NAME = _CONFIG_MODEL.platform_name
+PLATFORM_TAGLINE = _CONFIG_MODEL.platform_tagline
+PLATFORM_DESCRIPTION = _CONFIG_MODEL.platform_description
+LICENSE = _CONFIG_MODEL.license
 NODE_TYPE_CFG = _CONFIG["node_types"]
 EDGE_TYPE_CFG = _CONFIG["edge_types"]
 POLLS_CFG = _CONFIG.get("polls", {})
+
+# 6. Authentication configuration
+AUTH_CFG = _CONFIG["auth"]
+ALLOW_SIGNUP = _CONFIG_MODEL.auth.allow_signup
+SIGNUP_REQUIRES_ADMIN_APPROVAL = _CONFIG_MODEL.auth.signup_requires_admin_approval
+SIGNUP_REQUIRES_TOKEN = _CONFIG_MODEL.auth.signup_requires_token
+
+# 7. Permissions configuration
+PERMISSIONS_CFG = _CONFIG["permissions"]
+PERMISSION_READ = _CONFIG_MODEL.permissions.read
+PERMISSION_CREATE = _CONFIG_MODEL.permissions.create
+PERMISSION_EDIT = _CONFIG_MODEL.permissions.edit
+PERMISSION_DELETE = _CONFIG_MODEL.permissions.delete
+PERMISSION_RATE = _CONFIG_MODEL.permissions.rate
 
 # 2. Build maps for properties
 NODE_TYPE_PROPS = {
@@ -91,20 +327,6 @@ def get_edge_type_polls() -> dict:
 
 NODE_TYPE_POLLS = get_node_type_polls()
 EDGE_TYPE_POLLS = get_edge_type_polls()
-
-# 6. Authentication configuration
-AUTH_CFG = _CONFIG.get("auth", {})
-ALLOW_SIGNUP = AUTH_CFG.get("allow_signup", True)
-SIGNUP_REQUIRES_ADMIN_APPROVAL = AUTH_CFG.get("signup_requires_admin_approval", False)
-SIGNUP_REQUIRES_TOKEN = AUTH_CFG.get("signup_requires_token", False)
-
-# 7. Permissions configuration
-PERMISSIONS_CFG = _CONFIG.get("permissions", {})
-PERMISSION_READ = PERMISSIONS_CFG.get("read", "all")
-PERMISSION_CREATE = PERMISSIONS_CFG.get("create", "all")
-PERMISSION_EDIT = PERMISSIONS_CFG.get("edit", "all")
-PERMISSION_DELETE = PERMISSIONS_CFG.get("delete", "all")
-PERMISSION_RATE = PERMISSIONS_CFG.get("rate", "all")
 
 # Schema versioning configuration
 def _compute_config_hash(config: Dict[str, Any]) -> str:
@@ -289,7 +511,7 @@ class SchemaChangeDetector:
             old_options = old_poll.get("options", {})
             new_options = new_poll.get("options", {})
 
-            # Normalize both to strings for comparison (YAML might load numbers differently)
+            # Normalise both to strings for comparison (YAML might load numbers differently)
             old_options_str = {str(k): str(v) for k, v in old_options.items()}
             new_options_str = {str(k): str(v) for k, v in new_options.items()}
 

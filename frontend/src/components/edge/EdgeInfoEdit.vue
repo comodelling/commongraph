@@ -112,7 +112,7 @@
     >
       {{ actionLabel }}
     </button>
-    <p class="license-notice" v-if="license">
+    <p class="license-notice" v-if="shouldShowLicenseNotice">
       By editing the description, you agree to release your contribution under
       the
       <a
@@ -213,6 +213,12 @@ export default {
     // Check if the current edge type has a status field
     edgeTypeHasStatus() {
       return this.allowedFields.includes("status");
+    },
+    edgeTypeHasDescription() {
+      return this.allowedFields.includes("description");
+    },
+    shouldShowLicenseNotice() {
+      return Boolean(this.license && this.edgeTypeHasDescription);
     },
     canEditField() {
       return (fieldName) => {

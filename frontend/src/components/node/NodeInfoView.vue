@@ -51,7 +51,7 @@
       </div>
     </div>
     <!-- License Notice -->
-    <p class="license-notice" v-if="license">
+    <p class="license-notice" v-if="shouldShowLicenseNotice">
       Node descriptions are available under the
       <a
         :href="getLicenseUrl(license)"
@@ -96,6 +96,20 @@ const allowed = computed(() => {
   // Ensure nodeTypes have been loaded and node.node_type exists.
   if (!nodeTypes.value || !node.value.node_type) return [];
   return nodeTypes.value[node.value.node_type].properties || [];
+});
+
+const descriptionAllowed = computed(() =>
+  allowed.value.includes("description"),
+);
+const hasDescriptionValue = computed(() => {
+  const desc = node.value.description;
+  return typeof desc === "string" && desc.trim().length > 0;
+});
+
+const shouldShowLicenseNotice = computed(() => {
+  return Boolean(
+    license.value && descriptionAllowed.value && hasDescriptionValue.value,
+  );
 });
 
 function isAllowed(prop: string): boolean {

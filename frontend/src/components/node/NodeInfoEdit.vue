@@ -261,7 +261,7 @@
     >
       {{ actionLabel }}
     </button>
-    <p class="license-notice" v-if="license">
+    <p class="license-notice" v-if="shouldShowLicenseNotice">
       By editing the description, you agree to release your contribution under
       the
       <a
@@ -394,6 +394,12 @@ export default {
     // Check if the current node type has a status field
     nodeTypeHasStatus() {
       return this.allowedFields.includes("status");
+    },
+    nodeTypeHasDescription() {
+      return this.allowedFields.includes("description");
+    },
+    shouldShowLicenseNotice() {
+      return Boolean(this.license && this.nodeTypeHasDescription);
     },
   },
   methods: {

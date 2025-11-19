@@ -37,7 +37,7 @@
       <span class="field-value">{{ localEdge.description }}</span>
     </div>
     <!-- License Notice -->
-    <p class="license-notice" v-if="license">
+    <p class="license-notice" v-if="shouldShowLicenseNotice">
       Edge descriptions are available under the
       <a
         :href="getLicenseUrl(license)"
@@ -89,7 +89,30 @@ export default defineComponent({
       return (tooltips.edge as any)[props.edge.edge_type] || tooltips.edge.type;
     });
 
-    return { isAllowed, edgeTypeTooltip, license, getLicenseUrl };
+    const descriptionAllowed = computed(() => {
+      if (!edgeTypes.value || !props.edge.edge_type) return false;
+      const propsList = edgeTypes.value[props.edge.edge_type].properties || [];
+      return propsList.includes("description");
+    });
+
+    const hasDescriptionValue = computed(() => {
+      const desc = props.edge.description;
+      return typeof desc === "string" && desc.trim().length > 0;
+    });
+
+    const shouldShowLicenseNotice = computed(() => {
+      return Boolean(
+        license.value && descriptionAllowed.value && hasDescriptionValue.value,
+      );
+    });
+
+    return {
+      isAllowed,
+      edgeTypeTooltip,
+      license,
+      getLicenseUrl,
+      shouldShowLicenseNotice,
+    };
   },
   data() {
     return {

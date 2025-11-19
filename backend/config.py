@@ -46,7 +46,14 @@ PLATFORM_DESCRIPTION = _CONFIG.get(
     "platform_description", _CONFIG.get("description_html", "")
 )
 # License configuration (e.g., CC BY-SA, CC BY-NC-SA, CC0, etc.)
-LICENSE = _CONFIG.get("license", "CC BY-SA")
+_license_raw = _CONFIG.get("license")
+if isinstance(_license_raw, str):
+    _trimmed = _license_raw.strip()
+    LICENSE = _trimmed if _trimmed else None
+elif _license_raw is None:
+    LICENSE = None
+else:
+    LICENSE = str(_license_raw)
 NODE_TYPE_CFG = _CONFIG["node_types"]
 EDGE_TYPE_CFG = _CONFIG["edge_types"]
 POLLS_CFG = _CONFIG.get("polls", {})

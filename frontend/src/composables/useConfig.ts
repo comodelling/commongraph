@@ -14,7 +14,7 @@ const nodePollsByType = ref<Record<string, Record<string, any>>>({});
 const edgePollsByType = ref<Record<string, Record<string, any>>>({});
 const permissions = ref<Record<string, boolean>>({});
 const allowSignup = ref<boolean>(true);
-const license = ref<string>("CC BY-SA");
+const license = ref<string>("");
 
 async function load(forceReload = false) {
   if (configLoaded.value && !forceReload) return;
@@ -64,7 +64,7 @@ async function load(forceReload = false) {
     platformDescription.value = data.platform_description;
     permissions.value = data.permissions || {};
     allowSignup.value = data.allow_signup !== false;
-    license.value = data.license || "CC BY-SA";
+    license.value = data.license ?? "";
     configLoaded.value = true;
     console.log("Config loaded", forceReload ? "(forced reload)" : "");
   } catch (error) {

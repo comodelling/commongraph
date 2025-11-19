@@ -2,7 +2,15 @@
 import api from "../../api/axios.js";
 import { useAuth } from "../../composables/useAuth.js";
 import { saveAs } from "file-saver";
-import { nextTick, ref, warn, watch, computed, onMounted } from "vue";
+import {
+  nextTick,
+  ref,
+  warn,
+  watch,
+  computed,
+  onMounted,
+  onUnmounted,
+} from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { Panel, VueFlow, useVueFlow, ConnectionMode } from "@vue-flow/core";
 import { Background } from "@vue-flow/background";
@@ -130,7 +138,17 @@ const isInstanceReady = ref(false);
 const pendingData = ref(null);
 const pendingHighlightId = ref(null);
 const pendingFitRequest = ref(false);
+const pendingNodeUpdate = ref(null);
+const pendingEdgeUpdate = ref(null);
+let nodeUpdateTimeout = null;
+let edgeUpdateTimeout = null;
 pendingData.value = props.data;
+
+onUnmounted(() => {
+  // Clean up debounce timeouts on unmount
+  if (nodeUpdateTimeout) clearTimeout(nodeUpdateTimeout);
+  if (edgeUpdateTimeout) clearTimeout(edgeUpdateTimeout);
+});
 
 const currentNodeIds = computed(() => {
   return new Set(nodes.value.map((node) => node.id));
@@ -179,12 +197,29 @@ watch(
 watch(
   () => props.updatedNode,
   (newUpdatedNode) => {
-    if (newUpdatedNode) {
-      console.log("new updated node detected:", newUpdatedNode);
-      // console.log("old updated node is:", oldUpdatedNode);
-      let formattedNode = formatFlowNodeProps(newUpdatedNode);
+    // Store the pending update and debounce the actual processing
+    pendingNodeUpdate.value = newUpdatedNode;
+
+    // Clear existing timeout to debounce rapid updates
+    if (nodeUpdateTimeout) {
+      clearTimeout(nodeUpdateTimeout);
+    }
+
+    // Only process if instance is ready; otherwise wait
+    if (!isInstanceReady.value) {
+      return;
+    }
+
+    // Set a new timeout to batch rapid updates (50ms debounce)
+    nodeUpdateTimeout = setTimeout(() => {
+      const nodeToUpdate = pendingNodeUpdate.value;
+      if (!nodeToUpdate) return;
+
+      console.log("Processing debounced node update:", nodeToUpdate);
+      let formattedNode = formatFlowNodeProps(nodeToUpdate);
+
       // case of a new node (with possibly new connection too)
-      if (newUpdatedNode.new) {
+      if (nodeToUpdate.new) {
         console.log("Replacing temporary new node with a proper node");
         const node = findNode("new");
         if (node) {
@@ -225,8 +260,8 @@ watch(
         }
       }
       // case of an existing node to update
-      else if (newUpdatedNode.node_id !== "new") {
-        console.log("updating existing node with id", newUpdatedNode.node_id);
+      else if (nodeToUpdate.node_id !== "new") {
+        console.log("updating existing node with id", nodeToUpdate.node_id);
         const node = findNode(formattedNode.id);
         if (node) {
           formattedNode = {
@@ -238,31 +273,53 @@ watch(
           updateNode(node.id, formattedNode);
         } else warn("Node not found in subgraph", formattedNode);
       }
-    }
+
+      pendingNodeUpdate.value = null;
+    }, 50);
   },
-  { immediate: true },
+  { immediate: false },
 );
 
 watch(
   () => props.updatedEdge,
   (newUpdatedEdge) => {
-    console.log("Edge update detected:", newUpdatedEdge);
-    if (!newUpdatedEdge) return;
+    // Store the pending update and debounce the actual processing
+    pendingEdgeUpdate.value = newUpdatedEdge;
 
-    // Keep the existing causal_strength if missing from the updated edge
-    const oldEdge = getEdges.value.find(
-      (e) => e.id === `${newUpdatedEdge.source}-${newUpdatedEdge.target}`,
-    );
-    if (oldEdge?.data?.causal_strength && !newUpdatedEdge.causal_strength) {
-      newUpdatedEdge.causal_strength = oldEdge.data.causal_strength;
+    // Clear existing timeout to debounce rapid updates
+    if (edgeUpdateTimeout) {
+      clearTimeout(edgeUpdateTimeout);
     }
 
-    const formattedEdge = formatFlowEdgeProps(newUpdatedEdge);
-    setEdges((prevEdges) =>
-      prevEdges.map((e) => (e.id === formattedEdge.id ? formattedEdge : e)),
-    );
+    // Only process if instance is ready; otherwise wait
+    if (!isInstanceReady.value) {
+      return;
+    }
+
+    // Set a new timeout to batch rapid updates (50ms debounce)
+    edgeUpdateTimeout = setTimeout(() => {
+      const edgeToUpdate = pendingEdgeUpdate.value;
+      if (!edgeToUpdate) return;
+
+      console.log("Processing debounced edge update:", edgeToUpdate);
+
+      // Keep the existing causal_strength if missing from the updated edge
+      const oldEdge = getEdges.value.find(
+        (e) => e.id === `${edgeToUpdate.source}-${edgeToUpdate.target}`,
+      );
+      if (oldEdge?.data?.causal_strength && !edgeToUpdate.causal_strength) {
+        edgeToUpdate.causal_strength = oldEdge.data.causal_strength;
+      }
+
+      const formattedEdge = formatFlowEdgeProps(edgeToUpdate);
+      setEdges((prevEdges) =>
+        prevEdges.map((e) => (e.id === formattedEdge.id ? formattedEdge : e)),
+      );
+
+      pendingEdgeUpdate.value = null;
+    }, 50);
   },
-  { immediate: true },
+  { immediate: false },
 );
 
 function applyNodeHighlight(nodeId) {

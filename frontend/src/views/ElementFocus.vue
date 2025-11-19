@@ -9,6 +9,7 @@
             :node="node"
             @update-node-from-editor="updateNodeFromEditor"
             @preview-node-update="previewNodeUpdate"
+            @request-edge-creation="handleEdgeCreationRequest"
           />
           <div v-else class="error-message">Node not found</div>
         </template>
@@ -937,6 +938,47 @@ export default {
       } catch (error) {
         console.error("Failed to update edge:", error);
       }
+    },
+    handleEdgeCreationRequest(edgeCreationData) {
+      // Extract connection info from the edge creation data
+      const { fromConnection, newNodeId, newNode } = edgeCreationData;
+
+      // Determine source and target based on connection handle type
+      const source =
+        fromConnection.handle_type === "source"
+          ? parseInt(fromConnection.id)
+          : newNodeId;
+      const target =
+        fromConnection.handle_type === "source"
+          ? newNodeId
+          : parseInt(fromConnection.id);
+
+      // Create a new edge object with pre-populated source/target
+      // edge_type will be selected by the user in the edge creation panel
+      this.edge = {
+        source: source,
+        target: target,
+        edge_type: null,
+        new: true,
+      };
+
+      // Initialize empty collections for allowed fields
+      if (this.edgeTypes) {
+        const firstAllowedType = Object.keys(this.edgeTypes)[0];
+        const allowed = this.edgeTypes[firstAllowedType]?.properties || [];
+        if (allowed.includes("description")) this.edge.description = "";
+        if (allowed.includes("references")) this.edge.references = [];
+        if (allowed.includes("tags")) this.edge.tags = [];
+      }
+
+      // Navigate to edge edit mode with correct parameter names
+      this.$router.push({
+        name: "EdgeEdit",
+        params: {
+          source_id: source,
+          target_id: target,
+        },
+      });
     },
     previewEdgeUpdate(previewEdge) {
       // Update the flow view reactively while editing (without persisting)

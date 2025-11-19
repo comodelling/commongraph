@@ -72,6 +72,7 @@
             :nodeId="node.node_id"
             @publish-node="updateNodeFromEditor"
             @preview-node-update="previewNodeUpdate"
+            @request-edge-creation="requestEdgeCreation"
           />
         </template>
         <template v-else>
@@ -194,6 +195,10 @@ export default {
     updateNodeFromEditor(updatedNode) {
       this.$emit("update-node-from-editor", updatedNode);
       this.switchTab("view");
+    },
+    requestEdgeCreation(edgeCreationData) {
+      // Forward the edge creation request to the parent component
+      this.$emit("request-edge-creation", edgeCreationData);
     },
     previewNodeUpdate(previewNode) {
       // Forward preview updates to parent without switching tabs

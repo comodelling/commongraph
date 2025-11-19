@@ -138,20 +138,16 @@ const currentNodeIds = computed(() => {
 
 onInit((vueFlowInstance) => {
   // instance is the same as the return of `useVueFlow`
-  // vueFlowInstance.fitView()
-  // set nodes and edges from props
-  // console.log("initiating subgraph viz");
-  // updateSubgraphFromData(props.data);
-  // fitView()
   console.log("VueFlow instance initialised");
   console.log("onInit, selected direction", selectedDirection.value);
   isInstanceReady.value = true;
 
-  const initialData = pendingData.value || props.data;
-  if (initialData) {
-    applyIncomingData(initialData);
+  // If we have pending data waiting to be applied, apply it now
+  if (pendingData.value) {
+    applyIncomingData(pendingData.value);
   }
 
+  // Apply pending highlight after instance is ready
   if (pendingHighlightId.value != null) {
     nextTick(() => {
       applyNodeHighlight(pendingHighlightId.value);
@@ -159,8 +155,10 @@ onInit((vueFlowInstance) => {
     });
   }
 
+  // Apply pending fit request after instance is ready
   if (pendingFitRequest.value) {
     fitViewToContent();
+    pendingFitRequest.value = false;
   }
 });
 
@@ -372,11 +370,6 @@ function applyIncomingData(newData) {
   updateSubgraphFromData(newData);
   nextTick(() => {
     layoutSubgraph(selectedDirection.value);
-    if (props.highlightedNodeId != null) {
-      nextTick(() => {
-        applyNodeHighlight(props.highlightedNodeId);
-      });
-    }
   });
 }
 

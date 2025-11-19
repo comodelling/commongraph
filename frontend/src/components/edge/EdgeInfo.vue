@@ -64,6 +64,7 @@
           :targetType="edge.targetNodeType"
           @publish-edge="updateEdgeFromEditor"
           @preview-edge-update="previewEdgeUpdate"
+          @edge-exists="handleEdgeExists"
         />
       </template>
       <template v-else>
@@ -106,7 +107,7 @@ export default {
       default: false,
     },
   },
-  emits: ["update-edge-from-editor"],
+  emits: ["update-edge-from-editor", "edge-exists"],
   data() {
     return {
       currentTab: this.getCurrentTab(),
@@ -176,6 +177,10 @@ export default {
     previewEdgeUpdate(previewEdge) {
       // Forward preview updates to parent without switching tabs
       this.$emit("preview-edge-update", previewEdge);
+    },
+    handleEdgeExists(edgeInfo) {
+      // Emit event to parent to navigate to the existing edge
+      this.$emit("edge-exists", edgeInfo);
     },
     handleKeyboardShortcut(event) {
       // Only handle shortcuts if not typing in an input/textarea

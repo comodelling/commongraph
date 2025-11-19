@@ -277,6 +277,7 @@
             @edgeClick="handleEdgeClick"
             @newNodeCreated="handleNewNodeCreated"
             @newEdgeCreated="handleNewEdgeCreated"
+            @editExistingEdge="handleEditExistingEdge"
           />
         </div>
 
@@ -1143,6 +1144,27 @@ export default {
       if (src == null || tgt == null) {
         console.warn("New edge missing endpoints, cannot open edge editor");
       }
+    },
+    handleEditExistingEdge(edgeInfo) {
+      console.log("Editing existing edge:", edgeInfo);
+      const { edge, source, target } = edgeInfo;
+      const rawEdge = {
+        source,
+        target,
+        ...edge,
+      };
+      this.pendingFocusEdge = rawEdge;
+      this.storeFocusGraphSnapshot(
+        this.ensurePendingFocusGraph(),
+        null,
+        rawEdge,
+      );
+      this.pendingFocusGraph = null;
+      this.pendingFocusEdge = null;
+      this.$router.push({
+        name: "EdgeEdit",
+        params: { source_id: source, target_id: target },
+      });
     },
     async fetchNodeRatings(nodeIds) {
       if (!nodeIds.length) return;

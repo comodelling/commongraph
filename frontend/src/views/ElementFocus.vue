@@ -19,6 +19,7 @@
             :edge="edge"
             @update-edge-from-editor="updateEdgeFromEditor"
             @preview-edge-update="previewEdgeUpdate"
+            @edge-exists="handleEdgeExists"
           />
           <div v-else class="error-message">Edge not found</div>
         </template>
@@ -70,6 +71,7 @@
         @edgeClick="updateEdgeFromBackend"
         @newNodeCreated="openNewlyCreatedNode"
         @newEdgeCreated="openNewlyCreatedEdge"
+        @editExistingEdge="editExistingEdge"
         :updatedNode="updatedNode"
         :updatedEdge="updatedEdge"
       />
@@ -1002,6 +1004,28 @@ export default {
         console.error("Failed to update edge:", error);
       }
     },
+    async handleEdgeExists(edgeInfo) {
+      // Fetch the existing edge and load it for editing
+      const { source, target } = edgeInfo;
+      try {
+        // Fetch the existing edge details from the backend
+        const response = await api.get(
+          `/edges?source=${source}&target=${target}`,
+        );
+        if (response.data && response.data.length > 0) {
+          // Load the existing edge for editing
+          this.edge = {
+            ...response.data[0],
+            new: false,
+          };
+          this.updatedEdge = { ...this.edge };
+          console.log("Loaded existing edge for editing:", this.edge);
+        }
+      } catch (error) {
+        console.error("Failed to fetch existing edge:", error);
+        window.alert("Could not load the existing edge. Please try again.");
+      }
+    },
     handleEdgeCreationRequest(edgeCreationData) {
       // Extract connection info from the edge creation data
       const { fromConnection, newNodeId, newNode } = edgeCreationData;
@@ -1131,6 +1155,23 @@ export default {
         params: {
           source_id: this.edge.source,
           target_id: this.edge.target,
+        },
+      });
+    },
+    editExistingEdge(edgeInfo) {
+      // Load existing edge for editing
+      const { edge, source, target } = edgeInfo;
+      this.edge = {
+        ...edge,
+        new: false,
+      };
+      this.updatedEdge = { ...this.edge };
+      // Navigate to edge edit view
+      this.$router.push({
+        name: "EdgeEdit",
+        params: {
+          source_id: source,
+          target_id: target,
         },
       });
     },

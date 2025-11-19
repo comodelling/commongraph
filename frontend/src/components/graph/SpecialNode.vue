@@ -38,15 +38,23 @@ const nodeType = computed(() => props.data?.node_type);
 const schemaLoaded = computed(() => isGraphSchemaLoaded());
 
 const canHaveChildren = computed(() => {
+  // Show handles unless we're certain no children are allowed
   if (!schemaLoaded.value) return true;
   if (!nodeType.value) return true;
-  return getAllowedTargetNodeTypes(nodeType.value).length > 0;
+  const allowedTargets = getAllowedTargetNodeTypes(nodeType.value);
+  // If the function returns an empty array AND schema is loaded, hide the handle
+  // Otherwise show it (including if function returns empty for transient reasons)
+  return allowedTargets.length > 0;
 });
 
 const canHaveParents = computed(() => {
+  // Show handles unless we're certain no parents are allowed
   if (!schemaLoaded.value) return true;
   if (!nodeType.value) return true;
-  return getAllowedSourceNodeTypes(nodeType.value).length > 0;
+  const allowedSources = getAllowedSourceNodeTypes(nodeType.value);
+  // If the function returns an empty array AND schema is loaded, hide the handle
+  // Otherwise show it (including if function returns empty for transient reasons)
+  return allowedSources.length > 0;
 });
 
 // Tooltip title (node title)

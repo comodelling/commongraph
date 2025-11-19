@@ -62,14 +62,24 @@ export function getAllowedTargetNodeTypes(source: string): string[] {
   if (!source) {
     return schema.value.node_types;
   }
+  // If we have no edge types at all, something's wrong - return all node types as fallback
+  if (!schema.value.edge_types || schema.value.edge_types.length === 0) {
+    return schema.value.node_types;
+  }
   // Otherwise, show only the node types that have a valid edge from 'source'.
-  return Array.from(
+  const targets = Array.from(
     new Set(
       schema.value.edge_types
         .filter((e) => e.source_type === source)
         .map((e) => e.target_type),
     ),
   );
+  // If no edges found for this source but schema is loaded, return all node types
+  // (this handles the case where an edge type has no "between" constraint)
+  if (targets.length === 0 && schema.value.edge_types.length > 0) {
+    return schema.value.node_types;
+  }
+  return targets;
 }
 
 export function getAllowedSourceNodeTypes(target: string): string[] {
@@ -77,13 +87,23 @@ export function getAllowedSourceNodeTypes(target: string): string[] {
   if (!target) {
     return schema.value.node_types;
   }
-  return Array.from(
+  // If we have no edge types at all, something's wrong - return all node types as fallback
+  if (!schema.value.edge_types || schema.value.edge_types.length === 0) {
+    return schema.value.node_types;
+  }
+  const sources = Array.from(
     new Set(
       schema.value.edge_types
         .filter((e) => e.target_type === target)
         .map((e) => e.source_type),
     ),
   );
+  // If no edges found for this target but schema is loaded, return all node types
+  // (this handles the case where an edge type has no "between" constraint)
+  if (sources.length === 0 && schema.value.edge_types.length > 0) {
+    return schema.value.node_types;
+  }
+  return sources;
 }
 
 export function isGraphSchemaLoaded(): boolean {

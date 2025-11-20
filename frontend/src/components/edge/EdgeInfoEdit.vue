@@ -72,6 +72,37 @@
         </button>
       </div>
     </div>
+    <div class="field" v-if="isAllowed('description')">
+      <strong :title="tooltips.edge.description">Description:</strong>
+      <div class="field-content">
+        <span
+          v-if="editingField !== 'description' && editedEdge.description"
+          @click="startEditing('description')"
+          @dblclick="startEditing('description')"
+          @keydown.enter="startEditing('description')"
+          tabindex="0"
+          >{{ editedEdge.description }}</span
+        >
+        <textarea
+          v-else-if="editingField === 'description'"
+          v-model="editedEdge.description"
+          @blur="stopEditing('description')"
+          @keydown.escape="cancelEditing('description')"
+          @keydown.ctrl.enter="moveToNextField('description')"
+          @keydown.meta.enter="moveToNextField('description')"
+          ref="descriptionInput"
+        ></textarea>
+        <button
+          v-else
+          class="add-button add-description-button"
+          @click="addDescription"
+          @keydown.enter="addDescription"
+          tabindex="0"
+        >
+          + Description
+        </button>
+      </div>
+    </div>
     <div class="field" v-if="isAllowed('tags')">
       <strong :title="tooltips.edge.tags || 'Tags'">Tags:</strong>
       <div class="field-content">
@@ -107,38 +138,6 @@
         />
       </div>
     </div>
-    <div class="field" v-if="isAllowed('description')">
-      <strong :title="tooltips.edge.description">Description:</strong>
-      <div class="field-content">
-        <span
-          v-if="editingField !== 'description' && editedEdge.description"
-          @click="startEditing('description')"
-          @dblclick="startEditing('description')"
-          @keydown.enter="startEditing('description')"
-          tabindex="0"
-          >{{ editedEdge.description }}</span
-        >
-        <textarea
-          v-else-if="editingField === 'description'"
-          v-model="editedEdge.description"
-          @blur="stopEditing('description')"
-          @keydown.escape="cancelEditing('description')"
-          @keydown.ctrl.enter="moveToNextField('description')"
-          @keydown.meta.enter="moveToNextField('description')"
-          ref="descriptionInput"
-        ></textarea>
-        <button
-          v-else
-          class="add-button add-description-button"
-          @click="addDescription"
-          @keydown.enter="addDescription"
-          tabindex="0"
-        >
-          + Description
-        </button>
-      </div>
-    </div>
-
     <button
       class="submit-button"
       @click="submit"
@@ -602,7 +601,7 @@ select:disabled {
   flex-wrap: wrap;
   gap: 4px;
   align-items: center;
-  min-height: 30px;
+  min-height: 20px;
   padding: 4px 6px;
   border: 1px solid var(--tag-surface-border, #ccc);
   border-radius: 4px;

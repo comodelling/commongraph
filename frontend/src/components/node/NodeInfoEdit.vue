@@ -775,7 +775,7 @@ select:disabled {
   flex-wrap: wrap;
   gap: 4px;
   align-items: center;
-  min-height: 30px;
+  min-height: 20px;
   padding: 4px 6px;
   border: 1px solid var(--tag-surface-border, #ccc);
   border-radius: 4px;

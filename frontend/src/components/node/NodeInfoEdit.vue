@@ -225,9 +225,13 @@
         >
           <span
             v-if="editedNode.tags.length"
-            v-for="tag in editedNode.tags"
-            :key="tag"
+            v-for="(tag, index) in editedNode.tags"
+            :key="`${tag}-${index}`"
             class="tag"
+            role="button"
+            tabindex="0"
+            @click.stop="handleTagPreviewClick(tag, index)"
+            @keydown.enter.prevent.stop="handleTagPreviewClick(tag, index)"
           >
             {{ tag }}
           </span>
@@ -237,8 +241,10 @@
           v-else
           v-model="editedNode.tags"
           ref="tagsInput"
+          :edit-request="tagEditRequest"
           @blur="stopEditing('tags')"
           @keydown="handleTagSelectorKeydown"
+          @edit-request-consumed="handleTagEditConsumed"
         />
       </div>
     </div>
@@ -311,6 +317,7 @@ export default {
     return {
       editingField: null,
       editedNode: editedNode,
+      tagEditRequest: null,
       tooltips,
       titleError: false,
       scopeError: false,
@@ -473,6 +480,22 @@ export default {
         this.moveToNextField("tags");
       }
     },
+    handleTagPreviewClick(tag, index) {
+      if (!this.canEditField("tags")) {
+        return;
+      }
+      this.tagEditRequest = {
+        index,
+        tag,
+        nonce: Date.now(),
+      };
+      if (this.editingField !== "tags") {
+        this.startEditing("tags");
+      }
+    },
+    handleTagEditConsumed() {
+      this.tagEditRequest = null;
+    },
     cancelEditing(field) {
       // Restore original value and stop editing
       this.editedNode = _.cloneDeep(this.node);
@@ -498,6 +521,9 @@ export default {
     stopEditing(field) {
       if (this.editingField === field) {
         this.editingField = null;
+      }
+      if (field === "tags") {
+        this.tagEditRequest = null;
       }
     },
     addReference() {
@@ -682,6 +708,7 @@ export default {
         if (!Array.isArray(this.editedNode.tags)) {
           this.editedNode.tags = [];
         }
+        this.tagEditRequest = null;
         this.ensureNodeTypeIsAllowed();
       },
       deep: true,
@@ -749,7 +776,14 @@ select:disabled {
   gap: 4px;
   align-items: center;
   min-height: 30px;
+  padding: 4px 6px;
+  border: 1px solid var(--tag-surface-border, #ccc);
+  border-radius: 4px;
+  background: var(--tag-surface-bg, #fff);
   cursor: text;
+}
+.tags-preview span {
+  width: auto;
 }
 
 /* Keep individual tags compact and inline */
@@ -759,12 +793,14 @@ select:disabled {
   display: inline-flex !important;
   padding: 2px 8px;
   border-radius: 999px;
-  background: #e8f0fe;
+  background: var(--tag-chip-bg, #edf2ff);
+  border: 1px solid var(--tag-chip-border, #cfd8f3);
+  color: var(--tag-chip-text, #273445);
   font-size: 0.85rem;
 }
 
 .tag-placeholder {
-  color: #777;
+  color: var(--tag-placeholder-text, #777);
   font-size: 0.9rem;
 }
 

@@ -1,12 +1,26 @@
 <template>
-  <div class="tag-selector" :class="{ disabled }" @click="focusInput">
+  <div
+    class="tag-selector"
+    :class="{ disabled }"
+    ref="containerRef"
+    @click="focusInput"
+  >
     <div class="tags-row">
-      <span v-for="tag in tags" :key="tag" class="tag-chip">
-        <span>{{ tag }}</span>
+      <span
+        v-for="(tag, index) in tags"
+        :key="`${tag}-${index}`"
+        class="tag-chip"
+        role="button"
+        tabindex="0"
+        title="Click to edit tag"
+        @click="startTagEdit(tag, index)"
+        @keydown.enter.prevent="startTagEdit(tag, index)"
+      >
+        <span class="chip-text">{{ tag }}</span>
         <button
           type="button"
           class="remove-tag"
-          @click.stop="removeTag(tag)"
+          @click.stop="removeTag(index)"
           :disabled="disabled"
           aria-label="Remove tag"
         >
@@ -18,6 +32,7 @@
         v-model="inputValue"
         :placeholder="placeholder"
         :disabled="disabled"
+        title="Type to search or create tags."
         @input="onInput"
         @keydown="handleKeydown"
         @keydown.backspace="handleBackspace"
@@ -26,12 +41,14 @@
         class="tag-input"
       />
     </div>
-    <p class="helper-text">
-      Type to search existing tags or press Enter to create a new one.
-    </p>
+    <!-- <p class="helper-text">
+      Click an existing tag to change it, or press Enter to add a new one.
+    </p> -->
     <div v-if="loadError" class="error-banner">
       Failed to load suggestions.
-      <button type="button" @click.stop="retryFetch">Retry</button>
+      <button type="button" class="retry-button" @click.stop="retryFetch">
+        Retry
+      </button>
     </div>
     <ul v-if="showDropdown" class="suggestions">
       <li v-if="loading" class="suggestion-item loading">Searching...</li>
@@ -65,7 +82,7 @@
 </template>
 
 <script>
-import { ref, computed, watch, onMounted } from "vue";
+import { ref, computed, watch, onMounted, nextTick } from "vue";
 import api from "../../api/axios";
 import { useLogging } from "../../composables/useLogging";
 
@@ -88,13 +105,20 @@ export default {
       type: Number,
       default: 25,
     },
+    editRequest: {
+      type: Object,
+      default: null,
+    },
   },
-  emits: ["update:modelValue", "blur", "keydown"],
+  emits: ["update:modelValue", "blur", "keydown", "edit-request-consumed"],
   setup(props, { emit }) {
     const { debugLog } = useLogging("TagSelector");
+    const containerRef = ref(null);
     const inputRef = ref(null);
     const inputValue = ref("");
     const tags = ref([...props.modelValue]);
+    const pendingInsertIndex = ref(null);
+    const editingTagOriginal = ref(null);
     const suggestions = ref([]);
     const showDropdown = ref(false);
     const loading = ref(false);
@@ -176,7 +200,15 @@ export default {
         showDropdown.value = false;
         return;
       }
-      const updated = [...tags.value, tagToAdd];
+      const updated = [...tags.value];
+      if (
+        pendingInsertIndex.value !== null &&
+        pendingInsertIndex.value <= updated.length
+      ) {
+        updated.splice(pendingInsertIndex.value, 0, tagToAdd);
+      } else {
+        updated.push(tagToAdd);
+      }
       tags.value = updated;
       emit("update:modelValue", updated);
       inputValue.value = "";
@@ -185,12 +217,21 @@ export default {
         fetchSuggestions();
       }
       highlightedIndex.value = canCreateNewTag.value ? -1 : 0;
+      pendingInsertIndex.value = null;
+      editingTagOriginal.value = null;
     };
 
-    const removeTag = (tag) => {
-      const updated = tags.value.filter((candidate) => candidate !== tag);
+    const removeTag = (index) => {
+      const updated = tags.value.filter((_, idx) => idx !== index);
       tags.value = updated;
       emit("update:modelValue", updated);
+      if (
+        pendingInsertIndex.value !== null &&
+        index <= pendingInsertIndex.value
+      ) {
+        pendingInsertIndex.value = Math.max(0, pendingInsertIndex.value - 1);
+      }
+      nextTick(() => focusInput());
     };
 
     const focusInput = () => {
@@ -206,9 +247,70 @@ export default {
 
     const onBlur = () => {
       setTimeout(() => {
+        const activeEl =
+          typeof document !== "undefined" ? document.activeElement : null;
+        const wrapper = containerRef.value;
+        const stillInside = activeEl && wrapper && wrapper.contains(activeEl);
+        if (stillInside) {
+          return;
+        }
+        if (pendingInsertIndex.value !== null) {
+          restoreEditingTag();
+        }
         showDropdown.value = false;
         emit("blur");
       }, 150);
+    };
+
+    const cancelTagEditing = () => {
+      if (pendingInsertIndex.value === null) return;
+      if (
+        editingTagOriginal.value === null ||
+        editingTagOriginal.value === undefined
+      ) {
+        pendingInsertIndex.value = null;
+        editingTagOriginal.value = null;
+        inputValue.value = "";
+        return;
+      }
+      const updated = [...tags.value];
+      updated.splice(pendingInsertIndex.value, 0, editingTagOriginal.value);
+      tags.value = updated;
+      emit("update:modelValue", updated);
+      pendingInsertIndex.value = null;
+      inputValue.value = "";
+      editingTagOriginal.value = null;
+    };
+
+    const restoreEditingTag = () => {
+      cancelTagEditing();
+    };
+
+    const beginTagEdit = (tag, index) => {
+      if (props.disabled) return false;
+      if (
+        typeof index !== "number" ||
+        index < 0 ||
+        index >= tags.value.length
+      ) {
+        return false;
+      }
+      pendingInsertIndex.value = index;
+      editingTagOriginal.value = tag;
+      const updated = [...tags.value];
+      updated.splice(index, 1);
+      tags.value = updated;
+      emit("update:modelValue", updated);
+      inputValue.value = tag || "";
+      showDropdown.value = true;
+      highlightedIndex.value = canCreateNewTag.value ? -1 : 0;
+      scheduleFetch(tag);
+      nextTick(() => focusInput());
+      return true;
+    };
+
+    const startTagEdit = (tag, index) => {
+      beginTagEdit(tag, index);
     };
 
     const handleKeydown = (event) => {
@@ -220,6 +322,13 @@ export default {
       } else if (event.key === "ArrowUp") {
         if (highlightedIndex.value > (canCreateNewTag.value ? -1 : 0)) {
           highlightedIndex.value -= 1;
+        }
+      } else if (event.key === "Escape") {
+        if (inputValue.value) {
+          inputValue.value = "";
+          highlightedIndex.value = canCreateNewTag.value ? -1 : 0;
+        } else {
+          cancelTagEditing();
         }
       } else if (event.key === "Enter" || event.key === "Tab") {
         event.preventDefault();
@@ -238,6 +347,8 @@ export default {
         const updated = tags.value.slice(0, -1);
         tags.value = updated;
         emit("update:modelValue", updated);
+        pendingInsertIndex.value = null;
+        editingTagOriginal.value = null;
       }
     };
 
@@ -245,7 +356,31 @@ export default {
       () => props.modelValue,
       (newVal) => {
         tags.value = Array.isArray(newVal) ? [...newVal] : [];
+        if (pendingInsertIndex.value !== null) {
+          pendingInsertIndex.value = Math.min(
+            pendingInsertIndex.value,
+            tags.value.length,
+          );
+        }
       },
+    );
+
+    watch(
+      () => props.editRequest,
+      (request) => {
+        if (!request || typeof request.index !== "number") {
+          return;
+        }
+        const idx = request.index;
+        if (idx < 0 || idx >= tags.value.length) {
+          emit("edit-request-consumed");
+          return;
+        }
+        const tagValue = tags.value[idx];
+        beginTagEdit(tagValue, idx);
+        emit("edit-request-consumed");
+      },
+      { immediate: true },
     );
 
     watch(canCreateNewTag, (canCreate) => {
@@ -270,6 +405,7 @@ export default {
     });
 
     return {
+      containerRef,
       inputRef,
       inputValue,
       tags,
@@ -289,6 +425,7 @@ export default {
       handleKeydown,
       handleBackspace,
       retryFetch: () => fetchSuggestions(inputValue.value),
+      startTagEdit,
     };
   },
 };
@@ -297,71 +434,109 @@ export default {
 <style scoped>
 .tag-selector {
   position: relative;
-  border: 1px solid #ccc;
+  border: 1px solid var(--tag-surface-border, #ccc);
   border-radius: 4px;
-  padding: 4px;
-  min-height: 36px;
+  padding: 4px 6px;
+  min-height: 38px;
+  background: var(--tag-surface-bg, #fff);
+  color: var(--text-color, #1c1c1c);
 }
 .tag-selector.disabled {
-  background: #f5f5f5;
+  background: var(--tag-disabled-bg, #f5f5f5);
   pointer-events: none;
   opacity: 0.7;
 }
 .tags-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
-  align-items: center;
+  gap: 6px;
+  align-items: flex-start;
 }
 .tag-chip {
-  background: #e8f0fe;
-  color: #1a1d21;
+  background: var(--tag-chip-bg, #edf2ff);
+  color: var(--tag-chip-text, #273445);
   border-radius: 999px;
-  padding: 2px 8px;
+  padding: 3px 6px;
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 0.85rem;
+  font-size: 0.84rem;
+  border: 1px solid var(--tag-chip-border, #cfd8f3);
+  cursor: pointer;
+  transition: background 0.15s ease;
+  flex: 0 0 auto;
+  width: auto;
+  max-width: 100%;
+  line-height: 1.2;
+}
+.tag-chip:focus,
+.tag-chip:hover {
+  outline: none;
+  background: var(--tag-chip-hover-bg, #dfe8ff);
+}
+.chip-text {
+  max-width: 180px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 0 1 auto;
 }
 .tag-chip button {
   border: none;
   background: transparent;
   cursor: pointer;
-  font-size: 1rem;
+  font-size: 0.95rem;
   line-height: 1;
   padding: 0;
   color: inherit;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  margin-left: 2px;
 }
 .tag-input {
   border: none;
   outline: none;
-  min-width: 120px;
-  padding: 4px 0;
+  min-width: 90px;
+  padding: 14px 8px;
   flex: 1;
+  font-size: 0.9rem;
+  background: var(--tag-input-bg, transparent);
+  color: var(--tag-input-text, inherit);
 }
 .helper-text {
   margin: 4px 0 0;
   font-size: 0.8rem;
-  color: #666;
+  color: var(--tag-helper-text, #666);
 }
 .error-banner {
   margin: 6px 0;
   padding: 6px 8px;
-  background: #fee;
-  border: 1px solid #f99;
+  background: var(--tag-error-bg, #fee);
+  border: 1px solid var(--tag-error-border, #f99);
   border-radius: 4px;
   font-size: 0.85rem;
   display: inline-flex;
   gap: 6px;
   align-items: center;
 }
+.retry-button {
+  border: 1px solid var(--tag-error-border, #f99);
+  background: var(--tag-surface-bg, #fff);
+  border-radius: 3px;
+  padding: 2px 6px;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
 .suggestions {
   position: absolute;
   top: 100%;
   left: 0;
   right: 0;
-  background: white;
-  border: 1px solid #ccc;
+  background: var(--tag-dropdown-bg, #fff);
+  border: 1px solid var(--tag-dropdown-border, #ccc);
   border-top: none;
   max-height: 220px;
   overflow-y: auto;
@@ -375,18 +550,19 @@ export default {
   padding: 8px;
   cursor: pointer;
   font-size: 0.9rem;
+  color: var(--tag-chip-text, #273445);
 }
 .suggestion-item.create-option {
   font-weight: 600;
 }
 .suggestion-item.highlighted,
 .suggestion-item:hover {
-  background: #f0f4ff;
+  background: var(--tag-dropdown-hover-bg, #f0f4ff);
 }
 .suggestion-item.loading,
 .suggestion-item.no-results {
   font-style: italic;
-  color: #666;
+  color: var(--tag-helper-text, #666);
   cursor: default;
 }
 </style>

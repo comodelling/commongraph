@@ -101,6 +101,7 @@ import HistoryList from "../common/HistoryList.vue";
 import { useAuth } from "../../composables/useAuth";
 import { useConfig } from "../../composables/useConfig";
 import api from "../../api/axios";
+import { useLogging } from "../../composables/useLogging";
 
 export default {
   setup() {
@@ -119,6 +120,9 @@ export default {
     },
   },
   data() {
+    // Logging system
+    const { debugLog, infoLog, warnLog, errorLog, DEBUG } =
+      useLogging("NodeInfo");
     return {
       currentTab: this.$route.path.endsWith("/edit")
         ? "edit"
@@ -127,6 +131,11 @@ export default {
           : "view",
       isFavourite: false,
       userFavourites: [],
+      DEBUG,
+      debugLog,
+      infoLog,
+      warnLog,
+      errorLog,
     };
   },
   computed: {
@@ -254,7 +263,7 @@ export default {
           this.isFavourite = this.userFavourites.includes(this.node.node_id);
         })
         .catch((err) => {
-          console.error("Failed to fetch favourites:", err);
+          this.errorLog("Failed to fetch favourites:", err);
         });
     },
     toggleFavourite() {
@@ -283,7 +292,7 @@ export default {
           this.isFavourite = this.userFavourites.includes(this.node.node_id);
         })
         .catch((err) => {
-          console.error("Failed to update favourites:", err);
+          this.errorLog("Failed to update favourites:", err);
           window.alert("Failed to update favourites.");
         });
     },

@@ -68,6 +68,11 @@
 import { onMounted, reactive, toRefs } from "vue";
 import { useAuth } from "../composables/useAuth";
 import api from "../api/axios";
+import { useLogging } from "../composables/useLogging";
+
+// Logging system
+const { debugLog, infoLog, warnLog, errorLog, DEBUG } =
+  useLogging("AdminUsers");
 
 const { getAccessToken, hasAdminRights, isSuperAdmin } = useAuth();
 const state = reactive({
@@ -100,7 +105,7 @@ async function fetchUsers() {
     });
     state.users = res.data;
   } catch (error) {
-    console.error("Failed to fetch users:", error);
+    errorLog("Failed to fetch users:", error);
   }
 }
 
@@ -117,7 +122,7 @@ async function approve(username) {
       state.users[userIndex] = res.data;
     }
   } catch (error) {
-    console.error("Failed to approve user:", error);
+    errorLog("Failed to approve user:", error);
   } finally {
     setProcessing(username, false);
   }
@@ -147,7 +152,7 @@ async function toggleAdmin(user) {
       state.users[userIndex] = res.data;
     }
   } catch (error) {
-    console.error("Failed to toggle admin status:", error);
+    errorLog("Failed to toggle admin status:", error);
     // Show user-friendly error
     if (error.response?.status === 403) {
       alert(
@@ -178,7 +183,7 @@ async function toggleSuperAdmin(user) {
       state.users[userIndex] = res.data;
     }
   } catch (error) {
-    console.error("Failed to toggle super admin status:", error);
+    errorLog("Failed to toggle super admin status:", error);
     // Show user-friendly error
     if (error.response?.status === 403) {
       alert(

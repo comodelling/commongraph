@@ -291,6 +291,7 @@ import {
   getAllowedSourceNodeTypes,
 } from "../../composables/useGraphSchema";
 import ScopeAutocomplete from "./ScopeAutocomplete.vue";
+import { useLogging } from "../../composables/useLogging";
 
 export default {
   components: {
@@ -309,6 +310,9 @@ export default {
     return { nodeTypes, defaultEdgeType, load, license, getLicenseUrl };
   },
   data() {
+    const { debugLog, infoLog, warnLog, errorLog, DEBUG } =
+      useLogging("NodeInfoEdit");
+
     let editedNode = _.cloneDeep(this.node);
     return {
       editingField: null,
@@ -317,6 +321,11 @@ export default {
       titleError: false,
       scopeError: false,
       isSubmitting: false,
+      DEBUG,
+      debugLog,
+      infoLog,
+      warnLog,
+      errorLog,
       debouncedPreviewEmit: _.debounce((val) => {
         this.$emit("preview-node-update", val);
       }, 200),
@@ -615,7 +624,7 @@ export default {
             });
           }
         } catch (error) {
-          console.error("Failed to create node:", error);
+          this.errorLog("Failed to create node:", error);
         }
       } else {
         try {
@@ -623,7 +632,7 @@ export default {
           this.$emit("publish-node", response.data);
           this.editedNode = _.cloneDeep(response.data);
         } catch (error) {
-          console.error("Failed to update node:", error);
+          this.errorLog("Failed to update node:", error);
         }
       }
     },

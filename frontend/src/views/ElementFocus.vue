@@ -86,6 +86,7 @@ import EdgeInfo from "../components/edge/EdgeInfo.vue";
 import ElementPollPane from "../components/poll/ElementPollPane.vue";
 import SubgraphRenderer from "../components/graph/FlowEditor.vue";
 import GraphControls from "../components/graph/GraphControls.vue";
+import { useLogging } from "../composables/useLogging";
 import {
   formatFlowEdgeProps,
   formatFlowNodeProps,
@@ -136,6 +137,9 @@ export default {
   },
 
   data() {
+    const { debugLog, infoLog, warnLog, errorLog, DEBUG } =
+      useLogging("ElementFocus");
+
     return {
       node: undefined,
       edge: undefined,
@@ -146,6 +150,11 @@ export default {
       causalDirection: "LeftToRight",
       depthLevel: parseInt(localStorage.getItem("graphDepthLevel")) || 2, // Default depth for ElementFocus
       colorBy: localStorage.getItem("graphColorBy") || "type", // Color nodes/edges by 'type' or 'rating'
+      DEBUG,
+      debugLog,
+      infoLog,
+      warnLog,
+      errorLog,
     };
   },
   watch: {
@@ -155,7 +164,7 @@ export default {
       }
     },
     "$route.params.source_id"() {
-      console.log("Source ID changed to:", this.sourceId);
+      this.debugLog("Source ID changed to:", this.sourceId);
       if (this.sourceId) {
         this.hydrateEdgeFromCache();
       }
@@ -192,7 +201,7 @@ export default {
     },
     allowedNodeFields() {
       if (!this.node?.node_type) return [];
-      console.log("node Types allowed", this.nodeTypes);
+      this.debugLog("node Types allowed:", this.nodeTypes);
       return this.nodeTypes[this.node.node_type].properties || [];
     },
     allowedEdgeFields() {
@@ -233,7 +242,7 @@ export default {
         return;
       }
 
-      console.log("Opening brand new node in focus");
+      this.debugLog("Opening brand new node in focus");
       let type = cachedSnapshot?.focusNode?.node_type || this.defaultNodeType;
       if (!this.nodeTypes[type]) {
         console.warn(
@@ -242,10 +251,10 @@ export default {
         );
         type = this.defaultNodeType;
       }
-      console.log("Default node type:", type);
+      this.debugLog("Default node type:", type);
       // const allowed = this.allowedNodeFields.value || [];
       const allowed = this.nodeTypes[type]?.properties || [];
-      console.log("Allowed node props:", allowed);
+      this.debugLog("Allowed node props:", allowed);
 
       // Check if there's a pre-populated title from search
       const prePopulatedTitle = sessionStorage.getItem("newNodeTitle");
@@ -344,7 +353,7 @@ export default {
       try {
         return JSON.parse(raw);
       } catch (error) {
-        console.warn("Failed to parse focus graph snapshot", error);
+        this.warnLog("Failed to parse focus graph snapshot", error);
         return null;
       }
     },
@@ -409,7 +418,7 @@ export default {
         };
         sessionStorage.setItem(FOCUS_GRAPH_CACHE_KEY, JSON.stringify(payload));
       } catch (error) {
-        console.error("Failed to store focus graph snapshot:", error);
+        this.errorLog("Failed to store focus graph snapshot:", error);
       }
     },
     buildFlowGraphFromRaw(rawNodes = [], rawEdges = []) {
@@ -634,7 +643,7 @@ export default {
       return null;
     },
     async fetchElementAndSubgraphData() {
-      console.log("fetchElementAndSubgraphData");
+      this.debugLog("fetchElementAndSubgraphData");
       try {
         this.ratings = {};
         const seed = this.nodeId || this.sourceId || this.targetId;
@@ -651,18 +660,16 @@ export default {
         // Now fetch and update edge ratings
         const updatedEdges = await this.fetchEdgeRatings(fetched_edges);
 
-        console.log("Fetched nodes:", fetched_nodes);
+        this.debugLog("Fetched nodes:", fetched_nodes);
         this.node =
           fetched_nodes.find((node) => node.node_id === parseInt(seed)) || null;
 
         // Debug: Log the node to see if it has support
         if (this.node) {
-          console.log(
-            "Current node support:",
-            this.node.support,
-            "ratings:",
-            this.ratings[this.node.node_id],
-          );
+          this.debugLog("Current node support:", {
+            support: this.node.support,
+            ratings: this.ratings[this.node.node_id],
+          });
         }
 
         if (this.sourceId && this.targetId) {
@@ -683,7 +690,7 @@ export default {
             sourceNodeType: sourceNode?.node_type,
             targetNodeType: targetNode?.node_type,
           };
-          console.log("Edge found !!!!!!!!!! :", this.edge);
+          this.debugLog("Edge found:", this.edge);
         } else {
           this.edge = null;
         }
@@ -708,12 +715,12 @@ export default {
         };
 
         // Debug: Check what's actually in the formatted subgraphData
-        console.log(
+        this.debugLog(
           "After formatting, first node.data:",
           this.subgraphData.nodes[0]?.data,
         );
       } catch (error) {
-        console.error("Error fetching induced subgraph:", error);
+        this.errorLog("Error fetching induced subgraph:", error);
         this.node = null;
         this.edge = null;
         this.subgraphData = { nodes: [], edges: [] };
@@ -771,14 +778,14 @@ export default {
     async fetchNodeRatings(nodeIds) {
       if (!nodeIds.length) return;
       try {
-        console.log("Fetching node ratings for IDs:", nodeIds);
+        this.debugLog("Fetching node ratings for IDs:", nodeIds);
         const { data } = await api.get("/nodes/ratings/median", {
           params: { node_ids: nodeIds },
         });
-        console.log("Raw node ratings:", data);
+        this.debugLog("Raw node ratings:", data);
         this.ratings = data;
       } catch (err) {
-        console.error("Error fetching node ratings:", err);
+        this.errorLog("Error fetching node ratings:", err);
       }
     },
 
@@ -819,18 +826,17 @@ export default {
           });
         }
       } catch (err) {
-        console.error("Error fetching edge ratings:", err);
+        this.errorLog("Error fetching edge ratings:", err);
       }
 
       return edges;
     },
     updateNodesWithRatings(rawNodes) {
-      console.log(
-        "updateNodesWithRatings called with",
-        rawNodes.length,
-        "nodes",
-      );
-      console.log("Current ratings object:", this.ratings);
+      this.debugLog("updateNodesWithRatings called with", {
+        count: rawNodes.length,
+        nodes: rawNodes.length,
+      });
+      this.debugLog("Current ratings object:", this.ratings);
       return rawNodes.map((node) => {
         const nodeSpecificLabel =
           node.ratingLabel ||
@@ -841,13 +847,8 @@ export default {
         const ratingEntry = this.ratings[node.node_id];
         const ratingValue = this.resolveRatingValue(ratingEntry, pollLabel);
 
-        console.log(
-          `Node ${node.node_id}: pollLabel=`,
-          pollLabel,
-          "ratingEntry=",
-          ratingEntry,
-          "resolved rating=",
-          ratingValue,
+        this.debugLog(
+          `Node ${node.node_id}: pollLabel=${pollLabel}, ratingEntry=${JSON.stringify(ratingEntry)}, rating=${ratingValue}`,
         );
 
         let ratingLabel = pollLabel || nodeSpecificLabel || null;

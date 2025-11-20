@@ -139,6 +139,7 @@ import {
   loadGraphSchema,
   getAllowedEdgeTypes,
 } from "../../composables/useGraphSchema";
+import { useLogging } from "../../composables/useLogging";
 
 export default {
   props: {
@@ -154,11 +155,20 @@ export default {
     return { edgeTypes, license, getLicenseUrl };
   },
   data() {
+    // Logging system
+    const { debugLog, infoLog, warnLog, errorLog, DEBUG } =
+      useLogging("EdgeInfoEdit");
+
     return {
       editingField: null,
       editedEdge: _.cloneDeep(this.edge),
       tooltips,
       isSubmitting: false,
+      DEBUG,
+      debugLog,
+      infoLog,
+      warnLog,
+      errorLog,
       debouncedPreviewEmit: _.debounce((val) => {
         this.$emit("preview-edge-update", val);
       }, 200),
@@ -173,12 +183,10 @@ export default {
     },
     computedEdgeTypeOptions() {
       // If both ends are known, only return allowed; else return all
-      console.log(
-        "Source type:",
-        this.sourceType,
-        "Target type:",
-        this.targetType,
-      );
+      this.debugLog("computedEdgeTypeOptions - Source type:", {
+        sourceType: this.sourceType,
+        targetType: this.targetType,
+      });
       if (this.sourceType && this.targetType) {
         return getAllowedEdgeTypes(this.sourceType, this.targetType);
       }
@@ -409,7 +417,7 @@ export default {
           tag.trim(),
         );
       }
-      console.log("Submitting edge:", this.editedEdge);
+      this.debugLog("Submitting edge:", this.editedEdge);
       let response;
       try {
         this.isSubmitting = true;
@@ -420,24 +428,27 @@ export default {
             this.editedEdge,
             token ? { headers: { Authorization: `Bearer ${token}` } } : {},
           );
-          console.log("Created edge returned:", response.data);
+          this.debugLog("Created edge returned:", response.data);
         } else {
           response = await api.put(
             `/edges`,
             this.editedEdge,
             token ? { headers: { Authorization: `Bearer ${token}` } } : {},
           );
-          console.log("Updated edge returned:", response.data);
+          this.debugLog("Updated edge returned:", response.data);
         }
         this.$emit("publish-edge", response.data);
       } catch (error) {
-        console.error("Failed to update edge:", error);
+        this.errorLog("Failed to update edge:", error);
         // Handle 409 Conflict: edge already exists
         if (error.response?.status === 409) {
           let existingEdge = null;
           // Try to parse existing edge from response data
           if (error.response?.data?.detail) {
-            console.log("Edge conflict detected:", error.response.data.detail);
+            this.debugLog(
+              "Edge conflict detected:",
+              error.response.data.detail,
+            );
           }
 
           const confirmEdit = window.confirm(

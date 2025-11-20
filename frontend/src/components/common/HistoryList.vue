@@ -26,6 +26,7 @@
 
 <script>
 import api from "../../api/axios";
+import { useLogging } from "../../composables/useLogging";
 
 export default {
   props: {
@@ -45,10 +46,19 @@ export default {
     },
   },
   data() {
+    // Logging system
+    const { debugLog, infoLog, warnLog, errorLog, DEBUG } =
+      useLogging("HistoryList");
+
     return {
       history: [],
       diffVisible: {},
       diffData: {},
+      DEBUG,
+      debugLog,
+      infoLog,
+      warnLog,
+      errorLog,
     };
   },
   computed: {
@@ -63,8 +73,8 @@ export default {
   },
   async created() {
     if (!this.apiEndpoint) {
-      console.error(
-        "HistoryList: Invalid props - provide either nodeId or sourceId+targetId",
+      this.errorLog(
+        "Invalid props - provide either nodeId or sourceId+targetId",
       );
       return;
     }
@@ -73,7 +83,7 @@ export default {
       const response = await api.get(this.apiEndpoint);
       this.history = response.data.reverse(); // Reverse the order to show the most recent first
     } catch (error) {
-      console.error("Failed to fetch history:", error);
+      this.errorLog("Failed to fetch history:", error);
     }
   },
   methods: {

@@ -42,6 +42,7 @@
 <script>
 import { ref, computed, onMounted, watch } from "vue";
 import api from "../../api/axios";
+import { useLogging } from "../../composables/useLogging";
 
 export default {
   name: "ScopeAutocomplete",
@@ -61,6 +62,10 @@ export default {
   },
   emits: ["update:modelValue", "blur"],
   setup(props, { emit }) {
+    // Logging system
+    const { debugLog, infoLog, warnLog, errorLog, DEBUG } =
+      useLogging("ScopeAutocomplete");
+
     const inputRef = ref(null);
     const dropdownRef = ref(null);
     const searchQuery = ref(props.modelValue || "");
@@ -97,7 +102,7 @@ export default {
         const response = await api.get("/scopes", { params });
         allScopes.value = response.data;
       } catch (error) {
-        console.error("Failed to fetch scopes:", error);
+        errorLog("Failed to fetch scopes:", error);
         allScopes.value = [];
       } finally {
         loading.value = false;

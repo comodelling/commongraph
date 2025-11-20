@@ -14,6 +14,7 @@ import api from "../../api/axios";
 import qs from "qs";
 import Chart from "chart.js/auto";
 import { triColorGradient } from "../../utils/colorUtils";
+import { useLogging } from "../../composables/useLogging";
 
 export default {
   name: "RatingHistogram",
@@ -43,6 +44,10 @@ export default {
     },
   },
   setup(props, { emit, expose }) {
+    // Logging system
+    const { debugLog, infoLog, warnLog, errorLog, DEBUG } =
+      useLogging("RatingHistogram");
+
     const ratings = ref([]);
     const loading = ref(false);
     const error = ref(null);
@@ -123,7 +128,7 @@ export default {
 
         updateHistogram();
       } catch (e) {
-        console.error(e);
+        errorLog("Error fetching ratings:", e);
         error.value = "Error fetching ratings";
       } finally {
         loading.value = false;

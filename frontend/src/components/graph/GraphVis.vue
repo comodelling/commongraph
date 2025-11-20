@@ -40,6 +40,7 @@ import {
   watch,
 } from "vue";
 import { Graph as CosmosGraph } from "@cosmos.gl/graph";
+import { useLogging } from "../../composables/useLogging";
 import api from "../../api/axios";
 import { useTheme } from "../../composables/useTheme";
 
@@ -183,6 +184,10 @@ export default {
   },
   emits: ["nodeClick", "edgeClick", "graphLoaded"],
   setup(props, { emit }) {
+    // Logging system
+    const { debugLog, infoLog, warnLog, errorLog, DEBUG } =
+      useLogging("GraphVis");
+
     const cosmosContainer = ref(null);
     const cosmosGraph = ref(null);
     const nodeIndexMeta = ref([]);
@@ -1021,7 +1026,7 @@ export default {
 
         applyGraphData(data, { respectSimulationState: false });
       } catch (error) {
-        console.error("Error initializing Cosmos graph:", error);
+        errorLog("Error initializing Cosmos graph:", error);
       }
     };
 
@@ -1066,7 +1071,7 @@ export default {
           const data = newData ?? (await fetchGraphData());
           applyGraphData(data, { respectSimulationState: true });
         } catch (error) {
-          console.error("Error updating Cosmos graph data:", error);
+          errorLog("Error updating Cosmos graph data:", error);
         }
       },
       { deep: true },

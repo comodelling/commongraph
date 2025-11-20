@@ -39,6 +39,12 @@ import {
   getAllowedTargetNodeTypes,
   getAllowedSourceNodeTypes,
 } from "../../composables/useGraphSchema.js";
+import { useLogging } from "../../composables/useLogging";
+
+// ============ LOGGING CONFIGURATION ============
+const { debugLog, infoLog, warnLog, errorLog, DEBUG } =
+  useLogging("FlowEditor");
+// ============ END LOGGING CONFIGURATION ============
 
 const {
   nodeTypes,
@@ -156,8 +162,8 @@ const currentNodeIds = computed(() => {
 
 onInit((vueFlowInstance) => {
   // instance is the same as the return of `useVueFlow`
-  console.log("VueFlow instance initialised");
-  console.log("onInit, selected direction", selectedDirection.value);
+  infoLog("VueFlow instance initialised");
+  debugLog("onInit, selected direction:", selectedDirection.value);
   isInstanceReady.value = true;
 
   // If we have pending data waiting to be applied, apply it now
@@ -215,12 +221,12 @@ watch(
       const nodeToUpdate = pendingNodeUpdate.value;
       if (!nodeToUpdate) return;
 
-      console.log("Processing debounced node update:", nodeToUpdate);
+      debugLog("Processing debounced node update:", nodeToUpdate);
       let formattedNode = formatFlowNodeProps(nodeToUpdate);
 
       // case of a new node (with possibly new connection too)
       if (nodeToUpdate.new) {
-        console.log("Replacing temporary new node with a proper node");
+        debugLog("Replacing temporary new node with a proper node");
         const node = findNode("new");
         if (node) {
           formattedNode = {
@@ -236,32 +242,29 @@ watch(
           );
           updateNode(node.id, formattedNode);
           if (edge) {
-            console.log(
-              "Found an edge containing (the) new node. Edge: ",
-              edge,
-            );
+            debugLog("Found an edge containing (the) new node. Edge: ", edge);
             if (edge.target === "new") {
-              console.log("Updating edge target to new node");
+              debugLog("Updating edge target to new node");
               edge.target = formattedNode.id;
               edge.id = `${edge.source}-${formattedNode.id}`;
               edge.selected = false;
               edge.data.source = parseInt(edge.source);
               edge.data.target = parseInt(formattedNode.id);
             } else if (edge.source === "new") {
-              console.log("Updating edge source to new node");
+              debugLog("Updating edge source to new node");
               edge.source = formattedNode.id;
               edge.id = `${formattedNode.id}-${edge.target}`;
               edge.data.source = parseInt(formattedNode.id);
               edge.data.target = parseInt(edge.target);
             }
           } else {
-            console.log("No edge found for new node", getEdges.value);
+            debugLog("No edge found for new node", getEdges.value);
           }
         }
       }
       // case of an existing node to update
       else if (nodeToUpdate.node_id !== "new") {
-        console.log("updating existing node with id", nodeToUpdate.node_id);
+        debugLog("updating existing node with id:", nodeToUpdate.node_id);
         const node = findNode(formattedNode.id);
         if (node) {
           formattedNode = {
@@ -301,7 +304,7 @@ watch(
       const edgeToUpdate = pendingEdgeUpdate.value;
       if (!edgeToUpdate) return;
 
-      console.log("Processing debounced edge update:", edgeToUpdate);
+      debugLog("Processing debounced edge update:", edgeToUpdate);
 
       // Keep the existing causal_strength if missing from the updated edge
       const oldEdge = getEdges.value.find(
@@ -406,7 +409,7 @@ watch(
 );
 
 function updateSubgraphFromData(data) {
-  console.log("Updating subgraph from data:", data);
+  debugLog("Updating subgraph from data:", data);
   setNodes(data.nodes || []);
   setEdges(data.edges || []);
 
@@ -422,7 +425,7 @@ function updateSubgraphFromData(data) {
 }
 
 function applyIncomingData(newData) {
-  console.log("Applying incoming data to flow editor", newData);
+  debugLog("Applying incoming data to flow editor:", newData);
   highlightedOriginalClass.clear();
   updateSubgraphFromData(newData);
   nextTick(() => {
@@ -440,7 +443,7 @@ function selectDirection(direction, layout = false) {
 }
 
 async function layoutSubgraph(direction) {
-  console.log("layouting subgraph with", direction);
+  debugLog("layouting subgraph with:", direction);
   const currentNodes = getNodes.value;
   const currentEdges = getEdges.value;
   const manualPositions = new Map(
@@ -461,10 +464,10 @@ async function layoutSubgraph(direction) {
     fitViewToContent({ zoom: 1.5 });
     return;
   } else if (currentNodes.length === 0) {
-    console.warn("Nodes array is empty, cannot layout subgraph");
+    warnLog("Nodes array is empty, cannot layout subgraph");
     return;
   } else if (currentEdges.length === 0) {
-    console.warn("No edges supplied, falling back to simple layout");
+    warnLog("No edges supplied, falling back to simple layout");
     nodes.value = affectDirection(currentNodes, direction).map((node, idx) => {
       const manualPos = manualPositions.get(node.id);
       if (manualPos) {
@@ -527,7 +530,7 @@ function fitViewToContent({ zoom } = {}) {
 
 function exportSubgraph() {
   if (!getNodes.value.length) {
-    console.warn("No nodes to export");
+    warnLog("No nodes to export");
     return;
   }
 
@@ -549,7 +552,7 @@ function exportSubgraph() {
   edges = edges.filter((edge) => edge.source && edge.target);
 
   const subgraphData = { nodes, edges };
-  console.log("Exporting subgraph data:", subgraphData);
+  debugLog("Exporting subgraph data:", subgraphData);
   const blob = new Blob([JSON.stringify(subgraphData, null, 2)], {
     type: "application/json",
   });
@@ -678,7 +681,7 @@ onEdgeDoubleClick(({ edge }) => {
 });
 
 onPaneClick(({ event }) => {
-  console.log("Pane Click", event);
+  debugLog("Pane Click:", event);
   closeSearchBar();
 });
 
@@ -713,7 +716,7 @@ const onNodesChange = async (changes) => {
             removeEdges([edge.id]);
           }
         } catch (error) {
-          console.error("Failed to delete node:", error);
+          errorLog("Failed to delete node:", error);
 
           // Show user-friendly error message
           if (error.response?.status === 403) {
@@ -770,7 +773,7 @@ const onEdgesChange = async (changes) => {
           // Only proceed with UI update if API call succeeded
           nextChanges.push(change);
         } catch (error) {
-          console.error("Failed to delete edge:", error);
+          errorLog("Failed to delete edge:", error);
 
           // Show user-friendly error message
           if (error.response?.status === 403) {
@@ -797,7 +800,7 @@ const onEdgesChange = async (changes) => {
 };
 
 function onConnectStart({ nodeId, handleType }) {
-  console.log("on connect start", { nodeId, handleType });
+  debugLog("on connect start:", { nodeId, handleType });
   connectionInfo.value = { nodeId, handleType };
 }
 
@@ -807,7 +810,7 @@ function onConnectStart({ nodeId, handleType }) {
  * You can add additional properties to your new edge (like a type or label) or block the creation altogether by not calling `addEdges`
  */
 function onConnect(connection) {
-  console.log("on connect", connection);
+  debugLog("on connect:", connection);
 
   // Block connections in read-only mode
   if (props.readOnly) {
@@ -823,7 +826,7 @@ function onConnect(connection) {
   }
 
   // addEdges(connection);
-  console.log("connectionInfo", connectionInfo.value);
+  debugLog("connectionInfo:", connectionInfo.value);
   const target =
     connectionInfo.value.handleType === "source"
       ? connection.target
@@ -878,7 +881,7 @@ async function checkEdgeExists(edgeData) {
       addEdges(edgeData);
     }
   } catch (error) {
-    console.error("Error checking if edge exists:", error);
+    errorLog("Error checking if edge exists:", error);
     // On error, proceed with creation anyway (to avoid blocking on network errors)
     nextTick(() => {
       emit("newEdgeCreated", edgeData);
@@ -888,7 +891,7 @@ async function checkEdgeExists(edgeData) {
 }
 
 function onConnectEnd(event) {
-  console.log("on connect end", event);
+  debugLog("on connect end:", event);
 
   // Block in read-only mode
   if (props.readOnly) {
@@ -896,7 +899,7 @@ function onConnectEnd(event) {
   }
 
   if (connectionInfo.value) {
-    console.log("Connected to an empty space");
+    debugLog("Connected to an empty space");
     searchBarPosition.value = determinePositionWithinWindow(event);
     setTimeout(() => {
       showSearchBar.value = true;
@@ -954,17 +957,17 @@ function createEdgeOnConnection(targetId) {
   });
   newEdgeData.data.sourceNodeType = sourceType;
   newEdgeData.data.targetNodeType = targetType;
-  console.log("New edge data (direct connection):", newEdgeData);
+  debugLog("New edge data (direct connection):", newEdgeData);
   return newEdgeData;
 }
 
 function handleSearch(query) {
-  console.log("Searching for:", query);
+  debugLog("Searching for:", query);
   let params = {};
   if (typeof query === "string") {
     if (!query.trim()) {
       searchResults.value = null;
-      console.log("Empty query, not searching");
+      debugLog("Empty query, not searching");
       return;
     }
     // if a raw string is provided, parse it first
@@ -976,16 +979,16 @@ function handleSearch(query) {
   api
     .get(`/nodes/`, { params })
     .then((response) => {
-      console.log("Search results:", response.data);
+      debugLog("Search results:", response.data);
       searchResults.value = response.data;
     })
     .catch((error) => {
-      console.error("Failed to search nodes:", error);
+      errorLog("Failed to search nodes:", error);
     });
 }
 
 function createNodeAndEdge(event = null) {
-  console.log("Creating a new node");
+  debugLog("Creating a new node");
 
   // Block in read-only mode
   if (props.readOnly) {
@@ -1008,7 +1011,7 @@ function createNodeAndEdge(event = null) {
   let eventPosition = null;
 
   if (connectionInfo.value) {
-    console.log("connectionInfo value detected, creating an edge too");
+    debugLog("connectionInfo value detected, creating an edge too");
     const { nodeId, handleType } = connectionInfo.value;
     const sourceNode = findNode(nodeId);
     scope = sourceNode.data.scope; // inherited scope
@@ -1028,7 +1031,7 @@ function createNodeAndEdge(event = null) {
     eventPosition.y -= 25;
     eventPosition.x -= handleType === "target" ? 225 : 0;
   } else {
-    console.log("No connectionInfo available");
+    debugLog("No connectionInfo available");
     // Default position for button clicks
     eventPosition = {
       x: event?.clientX || 400,
@@ -1103,7 +1106,7 @@ function createNodeAndEdge(event = null) {
 }
 
 async function handleSearchResultClick(id, event) {
-  console.log("search result clicked", id);
+  debugLog("search result clicked:", id);
   try {
     const response = await api.get(`/nodes/${id}/`);
     const node = response.data;
@@ -1126,16 +1129,16 @@ async function handleSearchResultClick(id, event) {
       linkSourceToSearchResult(id);
     }
   } catch (error) {
-    console.error("Failed to fetch node:", error);
+    errorLog("Failed to fetch node:", error);
   }
 }
 
 function linkSourceToSearchResult(id) {
-  console.log("Linking source to search result id:", id);
+  debugLog("Linking source to search result id:", id);
   const newEdgeData = createEdgeOnConnection(id);
-  console.log("New edge data (towards search result):", newEdgeData);
+  debugLog("New edge data (towards search result):", newEdgeData);
   if (findNode(id)) {
-    console.log("Node already exists, checking if edge exists");
+    debugLog("Node already exists, checking if edge exists");
     checkEdgeExists(newEdgeData);
   } else {
     nextTick(() => {
@@ -1176,7 +1179,7 @@ onNodeDragStop(({ event, nodes, node }) => {
  * 3. Create a new array of nodes and pass it to the `nodes` ref
  */
 function updatePos() {
-  console.log("Updaing Node Positions");
+  debugLog("Updating Node Positions");
   const outValue = nodes.value.map((node) => {
     return {
       ...node,
@@ -1196,8 +1199,11 @@ function toggleDarkMode() {
 // ********* CONTEXT MENUS *********
 
 function showContextMenu(event, options) {
-  console.log("event location", event.clientX, event.clientY);
-  console.log("options", options);
+  debugLog("event location:", {
+    clientX: event.clientX,
+    clientY: event.clientY,
+  });
+  debugLog("options:", options);
   event.preventDefault();
   contextMenuOptions.value = options;
   let newEvent = new MouseEvent("contextmenu", {
@@ -1210,7 +1216,7 @@ function showContextMenu(event, options) {
 }
 
 function onNodeRightClick({ event, node }) {
-  console.log("Node Right Click", node);
+  debugLog("Node Right Click:", node);
 
   // Block context menu in read-only mode
   if (props.readOnly) {
@@ -1236,7 +1242,7 @@ function onNodeRightClick({ event, node }) {
 }
 
 function onEdgeRightClick({ event, edge }) {
-  console.log("Edge Right Click", edge);
+  debugLog("Edge Right Click:", edge);
 
   // Block context menu in read-only mode
   if (props.readOnly) {
@@ -1285,7 +1291,7 @@ function onSelectionRightClick({ event, nodes }) {
 
 function onPaneRightClick(event) {
   event.preventDefault();
-  console.log("Pane Right Click", event);
+  debugLog("Pane Right Click:", event);
 
   // Block in read-only mode
   if (props.readOnly) {
@@ -1322,7 +1328,7 @@ function onConnectEndEmpty(event) {
 }
 
 function editNode(node) {
-  console.log("Edit Node", node);
+  debugLog("Edit Node:", node);
 
   // Check permissions first
   if (!canEdit.value) {
@@ -1336,12 +1342,12 @@ function editNode(node) {
 }
 
 function deleteNode(node) {
-  console.log("Delete Node", node);
+  debugLog("Delete Node:", node);
   onNodesChange([{ type: "remove", id: node.id }]);
 }
 
 function editEdge(edge) {
-  console.log("Edit Edge", edge);
+  debugLog("Edit Edge:", edge);
 
   // Check permissions first
   if (!canEdit.value) {
@@ -1358,40 +1364,32 @@ function editEdge(edge) {
 }
 
 async function deleteEdge(edge) {
-  console.log("Delete Edge", edge);
+  debugLog("Delete Edge:", edge);
   onEdgesChange([{ type: "remove", id: edge.id, rightClick: true }]);
 }
 
 function groupSelection(selection) {
-  console.log("Create Group Node", selection);
+  debugLog("Create Group Node:", selection);
   // not yet supported, show a message instead
   alert("Grouping nodes is not yet supported.");
 }
 
 function tagSelection(nodes) {
-  console.log("Tag Selection", nodes);
-  alert("Tagging nodes is not yet supported.");
-  return;
-  // potential issues: not all ndoes have a tag field, and edges may have tag field too
-  const nodeIds = nodes.map((node) => node.id);
-  // collect tag from the user
-  const tag = prompt("Enter a tag to apply to the selected nodes:");
-  if (!tag) {
-    console.warn("No tag provided, not applying any tags");
-    return;
-  }
-  // send put request to the backend for each node which has the tag field and does not have this tag yet
+  debugLog("Tag Selection:", nodes);
+  alert("Tagging nodes is not yet supported");
+  // TODO: implement node tagging
+  // potential issues: not all nodes have a tag field, and edges may have tag field too
 }
 
 function deleteSelection(nodes) {
-  console.log("Delete Selection", nodes);
+  debugLog("Delete Selection:", nodes);
   const nodeIds = nodes.map((node) => node.id);
   onNodesChange(nodeIds.map((id) => ({ type: "remove", id })));
   // edge deletion is handled through the `onEdgesChange` method
 }
 
 function optionClicked({ option }) {
-  console.log("Option Clicked", option);
+  debugLog("Option Clicked:", option);
   option.action();
 }
 

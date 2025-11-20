@@ -126,7 +126,8 @@ import { useConfig } from "../composables/useConfig";
 import NodeInfo from "../components/node/NodeInfo.vue";
 import EdgeInfo from "../components/edge/EdgeInfo.vue";
 import ElementPollPane from "../components/poll/ElementPollPane.vue";
-import SubgraphRenderer from "../components/graph/FlowEditor.vue";
+import FlowEditor from "../components/graph/FlowEditor.vue";
+import { useLogging } from "../composables/useLogging";
 import {
   formatFlowEdgeProps,
   formatFlowNodeProps,
@@ -137,7 +138,7 @@ export default {
     NodeInfo,
     EdgeInfo,
     ElementPollPane,
-    SubgraphRenderer,
+    SubgraphRenderer: FlowEditor,
   },
   props: {
     demoId: {
@@ -151,6 +152,10 @@ export default {
     return { loadConfig, polls };
   },
   data() {
+    // Logging system
+    const { debugLog, infoLog, warnLog, errorLog, DEBUG } =
+      useLogging("DemoViewer");
+
     return {
       demoData: null,
       demoMetadata: null,
@@ -161,6 +166,11 @@ export default {
       edge: null,
       updatedNode: null,
       updatedEdge: null,
+      DEBUG,
+      debugLog,
+      infoLog,
+      warnLog,
+      errorLog,
     };
   },
   computed: {
@@ -194,7 +204,7 @@ export default {
     },
   },
   async mounted() {
-    console.log("DemoViewer mounted with demoId:", this.demoId);
+    this.debugLog("DemoViewer mounted with demoId:", this.demoId);
     // Load config first
     await this.loadConfig();
     await this.loadDemo();
@@ -211,10 +221,10 @@ export default {
   methods: {
     async loadDemo() {
       try {
-        console.log("Loading demo:", this.demoId);
+        this.debugLog("Loading demo:", this.demoId);
         // Load demo data from static JSON file
         const response = await fetch(`/data/demos/${this.demoId}.json`);
-        console.log("Fetch response:", response);
+        this.debugLog("Fetch response:", response);
         if (!response.ok) {
           throw new Error(
             `Demo not found: ${this.demoId} (status: ${response.status})`,
@@ -222,7 +232,7 @@ export default {
         }
 
         this.demoData = await response.json();
-        console.log("Demo data loaded:", this.demoData);
+        this.debugLog("Demo data loaded:", this.demoData);
         this.demoMetadata = this.demoData.metadata;
 
         // Format nodes and edges for FlowEditor
@@ -233,7 +243,7 @@ export default {
           formatFlowEdgeProps(edge),
         );
 
-        console.log(
+        this.debugLog(
           "Formatted nodes:",
           formattedNodes.length,
           "edges:",
@@ -246,14 +256,14 @@ export default {
         };
 
         this.demoLoaded = true;
-        console.log("Demo loaded successfully");
+        this.infoLog("Demo loaded successfully");
 
         // Force a re-render by updating the subgraphData reference
         this.$nextTick(() => {
           this.subgraphData = { ...this.subgraphData };
         });
       } catch (error) {
-        console.error("Failed to load demo:", error);
+        this.errorLog("Failed to load demo:", error);
         this.loadError = error.message;
       }
     },
@@ -310,7 +320,7 @@ export default {
     },
 
     updateNodeFromEditor(updatedNode) {
-      console.log("Node updated in demo (not saved):", updatedNode);
+      this.debugLog("Node updated in demo (not saved):", updatedNode);
       this.node = updatedNode;
       this.updatedNode = updatedNode;
       // In demo mode, we don't actually save to backend
@@ -323,7 +333,7 @@ export default {
     },
 
     updateEdgeFromEditor(updatedEdge) {
-      console.log("Edge updated in demo (not saved):", updatedEdge);
+      this.debugLog("Edge updated in demo (not saved):", updatedEdge);
       this.edge = updatedEdge;
       this.updatedEdge = updatedEdge;
       // In demo mode, we don't actually save to backend
@@ -335,7 +345,7 @@ export default {
     },
 
     openNewlyCreatedNode(nodeData) {
-      console.log("New node created in demo (not saved):", nodeData);
+      this.debugLog("New node created in demo (not saved):", nodeData);
       // In demo mode, we acknowledge but don't persist
       alert(
         "⚠️ Demo Mode: New nodes won't be saved. This is just for exploration!",
@@ -343,7 +353,7 @@ export default {
     },
 
     openNewlyCreatedEdge(edgeData) {
-      console.log("New edge created in demo (not saved):", edgeData);
+      this.debugLog("New edge created in demo (not saved):", edgeData);
       // In demo mode, we acknowledge but don't persist
       alert(
         "⚠️ Demo Mode: New edges won't be saved. This is just for exploration!",

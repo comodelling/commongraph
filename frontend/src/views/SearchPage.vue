@@ -306,6 +306,7 @@ import AggRatingMultipane from "../components/poll/AggRatingMultipane.vue";
 import CosmosGraphVis from "../components/graph/GraphVis.vue";
 import FlowEditor from "../components/graph/FlowEditor.vue";
 import GraphControls from "../components/graph/GraphControls.vue";
+import { useLogging } from "../composables/useLogging";
 
 const FOCUS_GRAPH_CACHE_KEY = "focusFlowGraphSnapshot";
 
@@ -319,6 +320,10 @@ export default {
     GraphControls,
   },
   data() {
+    // Logging system
+    const { debugLog, infoLog, warnLog, errorLog, DEBUG } =
+      useLogging("SearchPage");
+
     return {
       title: "",
       nodes: [],
@@ -333,6 +338,11 @@ export default {
       ratings: {}, // Store node ratings fetched from API
       pendingFocusGraph: null,
       pendingFocusEdge: null,
+      DEBUG,
+      debugLog,
+      infoLog,
+      warnLog,
+      errorLog,
     };
   },
   computed: {
@@ -392,33 +402,28 @@ export default {
         edges: graphEdges,
       };
 
-      console.log(
-        "subgraphData:",
-        result.nodes.length,
-        "nodes,",
-        result.edges.length,
-        "edges",
-      );
-      console.log(
-        "Search results:",
-        this.nodes.length,
-        "Subgraph nodes:",
-        this.subgraphNodes.length,
-      );
+      this.debugLog("subgraphData:", {
+        nodes: result.nodes.length,
+        edges: result.edges.length,
+      });
+      this.debugLog("Search results and subgraph nodes:", {
+        searchResults: this.nodes.length,
+        subgraphNodes: this.subgraphNodes.length,
+      });
       if (result.nodes.length > 0) {
-        console.log("Sample node:", JSON.stringify(result.nodes[0]));
-        console.log(
+        this.debugLog("Sample node:", JSON.stringify(result.nodes[0]));
+        this.debugLog(
           "All node IDs:",
           result.nodes.map((n) => n.node_id),
         );
       }
       if (result.edges.length > 0) {
-        console.log("Sample edge:", JSON.stringify(result.edges[0]));
-        console.log(
+        this.debugLog("Sample edge:", JSON.stringify(result.edges[0]));
+        this.debugLog(
           "All edge sources:",
           result.edges.map((e) => e.source),
         );
-        console.log(
+        this.debugLog(
           "All edge targets:",
           result.edges.map((e) => e.target),
         );
@@ -442,7 +447,7 @@ export default {
         return { nodes: [], edges: [] };
       }
 
-      console.log("flowSubgraphData computed - colorBy:", this.colorBy);
+      this.debugLog("flowSubgraphData computed - colorBy:", this.colorBy);
 
       const formattedNodes = nodesSource
         .map((node) => {
@@ -535,14 +540,12 @@ export default {
         })
         .filter(Boolean);
 
-      console.log(
-        "flowSubgraphData - formatted",
-        formattedNodes.length,
-        "nodes with colorBy:",
-        this.colorBy,
-      );
+      this.debugLog("flowSubgraphData - formatted nodes with colorBy", {
+        formattedNodes: formattedNodes.length,
+        colorBy: this.colorBy,
+      });
       if (formattedNodes.length > 0) {
-        console.log("Sample node style:", formattedNodes[0].style);
+        this.debugLog("Sample node style:", formattedNodes[0].style);
       }
 
       return { nodes: formattedNodes, edges: formattedEdges };
@@ -589,7 +592,7 @@ export default {
     "$route.query": {
       immediate: true,
       handler(newQuery) {
-        console.log("New query:", newQuery);
+        this.debugLog("New query:", newQuery);
         if (!newQuery) return;
         // Handle various query parameter names (q, title, etc.)
         const queryText = newQuery.q || newQuery.title || "";
@@ -745,14 +748,14 @@ export default {
     async fetchNodeRatings(nodeIds) {
       if (!nodeIds.length) return;
       try {
-        console.log("Fetching node ratings for IDs:", nodeIds);
+        this.debugLog("Fetching node ratings for IDs:", nodeIds);
         const { data } = await api.get("/nodes/ratings/median", {
           params: { node_ids: nodeIds },
         });
-        console.log("Raw node ratings:", data);
+        this.debugLog("Raw node ratings:", data);
         this.ratings = data;
       } catch (err) {
-        console.error("Error fetching node ratings:", err);
+        this.errorLog("Error fetching node ratings:", err);
       }
     },
     async fetchEdgeRatings(edges) {
@@ -792,18 +795,18 @@ export default {
           });
         }
       } catch (err) {
-        console.error("Error fetching edge ratings:", err);
+        this.errorLog("Error fetching edge ratings:", err);
       }
 
       return edges;
     },
     updateNodesWithRatings(rawNodes) {
-      console.log(
+      this.debugLog(
         "updateNodesWithRatings called with",
         rawNodes.length,
         "nodes",
       );
-      console.log("Current ratings object:", this.ratings);
+      this.debugLog("Current ratings object:", this.ratings);
       return rawNodes.map((node) => {
         const nodeSpecificLabel =
           node.ratingLabel ||
@@ -814,7 +817,7 @@ export default {
         const ratingEntry = this.ratings[node.node_id];
         const ratingValue = this.resolveRatingValue(ratingEntry, pollLabel);
 
-        console.log(
+        this.debugLog(
           `Node ${node.node_id}: pollLabel=`,
           pollLabel,
           "ratingEntry=",
@@ -892,14 +895,14 @@ export default {
       return this.resolveEdgePollLabel({ edge_type: edgeType });
     },
     updateDepth(newDepth) {
-      console.log("Updating depth to:", newDepth);
+      this.debugLog("Updating depth to:", newDepth);
       this.depthLevel = newDepth;
       localStorage.setItem("graphDepthLevel", newDepth);
       // Re-fetch subgraph data with new depth
       this.performSearch();
     },
     updateColorBy(newColorBy) {
-      console.log("Updating color by to:", newColorBy);
+      this.debugLog("Updating color by to:", newColorBy);
       this.colorBy = newColorBy;
       localStorage.setItem("graphColorBy", newColorBy);
       // No need to re-fetch - the computed properties (flowSubgraphData) will automatically update
@@ -1038,7 +1041,7 @@ export default {
         };
         sessionStorage.setItem(FOCUS_GRAPH_CACHE_KEY, JSON.stringify(payload));
       } catch (error) {
-        console.warn("Failed to cache focus graph snapshot", error);
+        this.warnLog("Failed to cache focus graph snapshot", error);
       }
     },
     normalizeEdgeEventPayload(payload) {
@@ -1066,15 +1069,15 @@ export default {
       };
     },
     handleNodeClick(nodeId) {
-      console.log("Node clicked in search:", nodeId);
+      this.debugLog("Node clicked in search:", nodeId);
       // Navigate to node focus view
       this.$router.push({ name: "NodeView", params: { id: nodeId } });
     },
     handleEdgeClick(edgeInfo) {
       const payload = this.normalizeEdgeEventPayload(edgeInfo);
-      console.log("Edge clicked in search:", payload);
+      this.debugLog("Edge clicked in search:", payload);
       if (!payload?.sourceId || !payload?.targetId) {
-        console.warn("Unable to navigate without edge endpoints", payload);
+        this.warnLog("Unable to navigate without edge endpoints", payload);
         return;
       }
 
@@ -1087,7 +1090,7 @@ export default {
       });
     },
     handleGraphLoaded(data) {
-      console.log(
+      this.debugLog(
         "Search graph loaded with",
         data.nodes?.length,
         "nodes and",
@@ -1097,7 +1100,7 @@ export default {
     },
     handleNewNodeCreated(newNodeData) {
       // newNodeData is the formatted node object created in FlowEditor
-      console.log("New node created in flow view:", newNodeData);
+      this.debugLog("New node created in flow view:", newNodeData);
       const graph = this.ensurePendingFocusGraph();
       this.upsertNodeInGraph(graph, newNodeData);
 
@@ -1120,7 +1123,7 @@ export default {
       this.$router.push({ name: "NodeEdit", params: { id: targetId } });
     },
     handleNewEdgeCreated(newEdgeData) {
-      console.log("New edge created in flow view:", newEdgeData);
+      this.debugLog("New edge created in flow view:", newEdgeData);
       const graph = this.ensurePendingFocusGraph();
       this.upsertEdgeInGraph(graph, newEdgeData);
       const rawEdge = this.toRawEdge(newEdgeData);
@@ -1142,11 +1145,11 @@ export default {
       }
 
       if (src == null || tgt == null) {
-        console.warn("New edge missing endpoints, cannot open edge editor");
+        this.warnLog("New edge missing endpoints, cannot open edge editor");
       }
     },
     handleEditExistingEdge(edgeInfo) {
-      console.log("Editing existing edge:", edgeInfo);
+      this.debugLog("Editing existing edge:", edgeInfo);
       const { edge, source, target } = edgeInfo;
       const rawEdge = {
         source,
@@ -1169,14 +1172,14 @@ export default {
     async fetchNodeRatings(nodeIds) {
       if (!nodeIds.length) return;
       try {
-        console.log("Fetching node ratings for IDs:", nodeIds);
+        this.debugLog("Fetching node ratings for IDs:", nodeIds);
         const { data } = await api.get("/nodes/ratings/median", {
           params: { node_ids: nodeIds },
         });
-        console.log("Raw node ratings:", data);
+        this.debugLog("Raw node ratings:", data);
         this.ratings = data;
       } catch (err) {
-        console.error("Error fetching node ratings:", err);
+        this.errorLog("Error fetching node ratings:", err);
       }
     },
     async fetchEdgeRatings(edges) {
@@ -1216,18 +1219,18 @@ export default {
           });
         }
       } catch (err) {
-        console.error("Error fetching edge ratings:", err);
+        this.errorLog("Error fetching edge ratings:", err);
       }
 
       return edges;
     },
     updateNodesWithRatings(rawNodes) {
-      console.log(
+      this.debugLog(
         "updateNodesWithRatings called with",
         rawNodes.length,
         "nodes",
       );
-      console.log("Current ratings object:", this.ratings);
+      this.debugLog("Current ratings object:", this.ratings);
       return rawNodes.map((node) => {
         const nodeSpecificLabel =
           node.ratingLabel ||
@@ -1238,7 +1241,7 @@ export default {
         const ratingEntry = this.ratings[node.node_id];
         const ratingValue = this.resolveRatingValue(ratingEntry, pollLabel);
 
-        console.log(
+        this.debugLog(
           `Node ${node.node_id}: pollLabel=`,
           pollLabel,
           "ratingEntry=",

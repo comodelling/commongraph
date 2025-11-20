@@ -216,41 +216,36 @@
     <div class="field" v-if="isAllowed('tags')">
       <strong :title="tooltips.node.tags">Tags:</strong>
       <div class="field-content">
-        <div class="tags-container">
+        <div
+          v-if="editingField !== 'tags'"
+          class="tags-preview"
+          @click="canEditField('tags') && startEditing('tags')"
+          @keydown.enter="canEditField('tags') && startEditing('tags')"
+          tabindex="0"
+        >
           <span
+            v-if="editedNode.tags.length"
             v-for="(tag, index) in editedNode.tags"
-            :key="index"
+            :key="`${tag}-${index}`"
             class="tag"
+            role="button"
+            tabindex="0"
+            @click.stop="handleTagPreviewClick(tag, index)"
+            @keydown.enter.prevent.stop="handleTagPreviewClick(tag, index)"
           >
-            <span
-              v-if="editingField !== `tag-${index}`"
-              @click="startEditing(`tag-${index}`)"
-              class="tag-text"
-            >
-              {{ tag }}
-            </span>
-            <input
-              v-else
-              v-model="editedNode.tags[index]"
-              @blur="stopEditing(`tag-${index}`)"
-              @keyup.enter="stopEditing(`tag-${index}`)"
-              @keyup.escape="cancelTagEdit(index)"
-              :ref="`tag-${index}Input`"
-              class="tag-input"
-              :style="{ width: `${Math.max(tag.length * 8 + 20, 50)}px` }"
-            />
-            <button
-              class="delete-tag-button"
-              @click="deleteTag(index)"
-              title="Delete tag"
-            >
-              ×
-            </button>
+            {{ tag }}
           </span>
-          <button class="add-button add-tag-button" @click="addTag">
-            + Tag
-          </button>
+          <span v-else class="tag-placeholder">Click to add tags</span>
         </div>
+        <TagSelector
+          v-else
+          v-model="editedNode.tags"
+          ref="tagsInput"
+          :edit-request="tagEditRequest"
+          @blur="stopEditing('tags')"
+          @keydown="handleTagSelectorKeydown"
+          @edit-request-consumed="handleTagEditConsumed"
+        />
       </div>
     </div>
     <button
@@ -291,11 +286,13 @@ import {
   getAllowedSourceNodeTypes,
 } from "../../composables/useGraphSchema";
 import ScopeAutocomplete from "./ScopeAutocomplete.vue";
+import TagSelector from "../common/TagSelector.vue";
 import { useLogging } from "../../composables/useLogging";
 
 export default {
   components: {
     ScopeAutocomplete,
+    TagSelector,
   },
   props: {
     node: Object,
@@ -314,9 +311,13 @@ export default {
       useLogging("NodeInfoEdit");
 
     let editedNode = _.cloneDeep(this.node);
+    if (!Array.isArray(editedNode.tags)) {
+      editedNode.tags = [];
+    }
     return {
       editingField: null,
       editedNode: editedNode,
+      tagEditRequest: null,
       tooltips,
       titleError: false,
       scopeError: false,
@@ -424,7 +425,14 @@ export default {
     },
     getFieldOrder() {
       // Define the logical order of fields for keyboard navigation
-      const baseFields = ["title", "type", "scope", "status", "description"];
+      const baseFields = [
+        "title",
+        "type",
+        "scope",
+        "status",
+        "description",
+        "tags",
+      ];
       return baseFields.filter(
         (field) => field === "type" || this.isAllowed(field),
       );
@@ -465,6 +473,29 @@ export default {
         this.moveToNextField(currentField);
       }
     },
+    handleTagSelectorKeydown(event) {
+      if (event.key === "Escape") {
+        this.cancelEditing("tags");
+      } else if (event.key === "Tab") {
+        this.moveToNextField("tags");
+      }
+    },
+    handleTagPreviewClick(tag, index) {
+      if (!this.canEditField("tags")) {
+        return;
+      }
+      this.tagEditRequest = {
+        index,
+        tag,
+        nonce: Date.now(),
+      };
+      if (this.editingField !== "tags") {
+        this.startEditing("tags");
+      }
+    },
+    handleTagEditConsumed() {
+      this.tagEditRequest = null;
+    },
     cancelEditing(field) {
       // Restore original value and stop editing
       this.editedNode = _.cloneDeep(this.node);
@@ -491,22 +522,9 @@ export default {
       if (this.editingField === field) {
         this.editingField = null;
       }
-    },
-    addTag() {
-      this.editedNode.tags.push("");
-      this.$nextTick(() => {
-        this.startEditing(`tag-${this.editedNode.tags.length - 1}`);
-      });
-    },
-    deleteTag(index) {
-      this.editedNode.tags.splice(index, 1);
-    },
-    cancelTagEdit(index) {
-      // If it's an empty tag, remove it
-      if (!this.editedNode.tags[index].trim()) {
-        this.deleteTag(index);
+      if (field === "tags") {
+        this.tagEditRequest = null;
       }
-      this.editingField = null;
     },
     addReference() {
       this.editedNode.references.push("");
@@ -687,6 +705,10 @@ export default {
     node: {
       handler(newNode) {
         this.editedNode = _.cloneDeep(newNode);
+        if (!Array.isArray(this.editedNode.tags)) {
+          this.editedNode.tags = [];
+        }
+        this.tagEditRequest = null;
         this.ensureNodeTypeIsAllowed();
       },
       deep: true,
@@ -747,33 +769,39 @@ select:disabled {
   margin: 5px 0;
 }
 
-/* Ensure tags container aligns properly and keeps tags on same line */
-.tags-container {
+/* Ensure tags preview aligns properly while keeping inline chips */
+.tags-preview {
   display: flex;
   flex-wrap: wrap;
-  gap: 3px;
+  gap: 4px;
   align-items: center;
-  margin: 0;
-  padding: 2px 0;
-  line-height: 1;
+  min-height: 30px;
+  padding: 4px 6px;
+  border: 1px solid var(--tag-surface-border, #ccc);
+  border-radius: 4px;
+  background: var(--tag-surface-bg, #fff);
+  cursor: text;
 }
-
-.tags-container strong {
-  margin-right: 10px;
+.tags-preview span {
+  width: auto;
 }
 
 /* Keep individual tags compact and inline */
-.tag {
+.tags-preview .tag {
   flex-shrink: 0;
-  min-height: 20px;
-  max-height: 20px;
+  min-height: 24px;
   display: inline-flex !important;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--tag-chip-bg, #edf2ff);
+  border: 1px solid var(--tag-chip-border, #cfd8f3);
+  color: var(--tag-chip-text, #273445);
+  font-size: 0.85rem;
 }
 
-/* Ensure tag input doesn't expand the container */
-.tag-input {
-  min-height: 14px;
-  max-height: 14px;
+.tag-placeholder {
+  color: var(--tag-placeholder-text, #777);
+  font-size: 0.9rem;
 }
 
 /* Reference container styling */

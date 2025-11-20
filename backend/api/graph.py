@@ -84,7 +84,8 @@ def get_schema():
     """Return the schema of the graph database, as a graph."""
     edge_types = []
     for edge_type in EDGE_TYPE_PROPS.keys():
-        if edge_type in EDGE_TYPE_BETWEEN and EDGE_TYPE_BETWEEN[edge_type] is not None:
+        # If 'between' is defined and non-empty, use those specific constraints
+        if edge_type in EDGE_TYPE_BETWEEN and EDGE_TYPE_BETWEEN[edge_type]:
             logger.info(f"EDGE_TYPE_BETWEEN: {EDGE_TYPE_BETWEEN}")
             for node_type1, node_type2 in EDGE_TYPE_BETWEEN[edge_type]:
                 edge_types += [
@@ -95,6 +96,7 @@ def get_schema():
                     }
                 ]
         else:
+            # If 'between' is not specified or empty, allow between any node types
             for node_type1 in NODE_TYPE_PROPS.keys():
                 for node_type2 in NODE_TYPE_PROPS.keys():
                     edge_types += [

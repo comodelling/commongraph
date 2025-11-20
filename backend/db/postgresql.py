@@ -640,6 +640,31 @@ class GraphHistoryPostgreSQLDB(GraphHistoryRelationalInterface):
             )
             return DynamicSubgraph(nodes=nodes, edges=edges)
 
+    def list_tags(self, query: str | None = None, limit: int = 50) -> list[str]:
+        table = GraphHistoryEvent.__tablename__
+        base_sql = f"""
+                SELECT DISTINCT tag
+                FROM (
+                    SELECT json_array_elements_text(payload->'tags') AS tag
+                    FROM {table}
+                                        WHERE payload->'tags' IS NOT NULL
+                      AND json_typeof(payload->'tags') = 'array'
+                ) AS tags_all
+            """
+        if query:
+            base_sql += " WHERE tag ILIKE :pattern"
+        base_sql += " ORDER BY tag LIMIT :limit"
+
+        params: dict[str, str | int] = {"limit": limit}
+        if query:
+            params["pattern"] = f"%{query}%"
+
+        stmt = text(base_sql).bindparams(**params)
+
+        with Session(self.engine) as session:
+            rows = session.exec(stmt).all()
+        return [row.tag for row in rows]
+
     def get_graph_summary(self) -> dict:
         graph = self.get_whole_graph()
         return {"nodes": len(graph.nodes), "edges": len(graph.edges)}

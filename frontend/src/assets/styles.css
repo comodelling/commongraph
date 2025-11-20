@@ -44,6 +44,22 @@ body,
   height: 100%;
   margin: 0;
   padding: 0;
+  --tag-surface-bg: #ffffff;
+  --tag-surface-border: #ccc;
+  --tag-disabled-bg: #f5f5f5;
+  --tag-chip-bg: #edf2ff;
+  --tag-chip-border: #cfd8f3;
+  --tag-chip-hover-bg: #dfe8ff;
+  --tag-chip-text: #273445;
+  --tag-helper-text: #666;
+  --tag-placeholder-text: #777;
+  --tag-input-bg: #ffffff;
+  --tag-input-text: #1c1c1c;
+  --tag-dropdown-bg: #ffffff;
+  --tag-dropdown-border: #ccc;
+  --tag-dropdown-hover-bg: #f0f4ff;
+  --tag-error-bg: #fee;
+  --tag-error-border: #f99;
 }
 
 .layout {
@@ -55,6 +71,23 @@ body,
 }
 
 .main-content {
+  /* Tag selector palette overrides */
+  --tag-surface-bg: #1b1f2a;
+  --tag-surface-border: #3a4256;
+  --tag-disabled-bg: #232838;
+  --tag-chip-bg: #2c354a;
+  --tag-chip-border: #3f4a63;
+  --tag-chip-hover-bg: #36425a;
+  --tag-chip-text: #f1f4ff;
+  --tag-helper-text: #c6c9d6;
+  --tag-placeholder-text: #9aa2c7;
+  --tag-input-bg: #161b2c;
+  --tag-input-text: #f1f4ff;
+  --tag-dropdown-bg: #1b1f2a;
+  --tag-dropdown-border: #3a4256;
+  --tag-dropdown-hover-bg: #273149;
+  --tag-error-bg: #3f2324;
+  --tag-error-border: #b76b6d;
   flex: 1;
   /* margin: 2px auto; */
   /* padding: 3px; */

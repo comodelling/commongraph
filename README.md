@@ -1,4 +1,4 @@
-# CommonGraph
+<img src="./docs/CG_logo_and_title.png" alt="CommonGraph logo" />
 
 *CommonGraph* is a software project empowering groups to build graph-based platforms for knowledge co-production and better-informed decisions.
 

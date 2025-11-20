@@ -999,7 +999,7 @@ export default {
     updateEdgeFromEditor(updatedEdge) {
       console.log("Updating edge from editor", updatedEdge);
       try {
-        this.edge = { ...updatedEdge, new: true };
+        this.edge = { ...updatedEdge, new: false };
         this.updatedEdge = { ...updatedEdge };
       } catch (error) {
         console.error("Failed to update edge:", error);

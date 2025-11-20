@@ -36,6 +36,13 @@
       <strong :title="tooltips.edge.description">Description:</strong>
       <span class="field-value">{{ localEdge.description }}</span>
     </div>
+    <!-- Tags -->
+    <div class="field-row" v-if="isAllowed('tags') && edge.tags?.length">
+      <strong :title="tooltips.node.tags">Tags:</strong>
+      <div class="field-value tags-container">
+        <span v-for="tag in edge.tags" :key="tag" class="tag">{{ tag }}</span>
+      </div>
+    </div>
     <!-- License Notice -->
     <p class="license-notice" v-if="shouldShowLicenseNotice">
       Edge descriptions are available under the
@@ -173,5 +180,11 @@ export default defineComponent({
 
 .license-notice a:hover {
   text-decoration: underline;
+}
+
+.tags-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
 }
 </style>

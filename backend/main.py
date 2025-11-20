@@ -16,6 +16,7 @@ from backend.api.edges import router as edges_router
 from backend.api.graph import router as graph_router
 from backend.api.schema import router as schema_router
 from backend.api.scopes import router as scopes_router
+from backend.api.tags import router as tags_router
 from backend.config import (
     PLATFORM_DESCRIPTION,
     PLATFORM_NAME,
@@ -97,6 +98,7 @@ app.include_router(edges_router)
 app.include_router(graph_router)
 app.include_router(schema_router)
 app.include_router(scopes_router)
+app.include_router(tags_router)
 
 
 @app.get("/")

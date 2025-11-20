@@ -72,6 +72,35 @@
         </button>
       </div>
     </div>
+    <div class="field" v-if="isAllowed('tags')">
+      <strong :title="tooltips.edge.tags || 'Tags'">Tags:</strong>
+      <div class="field-content">
+        <div
+          v-if="editingField !== 'tags'"
+          class="tags-preview"
+          @click="canEditField('tags') && startEditing('tags')"
+          @keydown.enter="canEditField('tags') && startEditing('tags')"
+          tabindex="0"
+        >
+          <span
+            v-if="editedEdge.tags.length"
+            v-for="tag in editedEdge.tags"
+            :key="tag"
+            class="tag"
+          >
+            {{ tag }}
+          </span>
+          <span v-else class="tag-placeholder">Click to add tags</span>
+        </div>
+        <TagSelector
+          v-else
+          v-model="editedEdge.tags"
+          ref="tagsInput"
+          @blur="stopEditing('tags')"
+          @keydown="handleTagSelectorKeydown"
+        />
+      </div>
+    </div>
     <div class="field" v-if="isAllowed('description')">
       <strong :title="tooltips.edge.description">Description:</strong>
       <div class="field-content">
@@ -140,8 +169,12 @@ import {
   getAllowedEdgeTypes,
 } from "../../composables/useGraphSchema";
 import { useLogging } from "../../composables/useLogging";
+import TagSelector from "../common/TagSelector.vue";
 
 export default {
+  components: {
+    TagSelector,
+  },
   props: {
     edge: { type: Object, required: true },
     sourceType: { type: String, required: false, default: null },
@@ -159,9 +192,13 @@ export default {
     const { debugLog, infoLog, warnLog, errorLog, DEBUG } =
       useLogging("EdgeInfoEdit");
 
+    let editedEdge = _.cloneDeep(this.edge);
+    if (!Array.isArray(editedEdge.tags)) {
+      editedEdge.tags = [];
+    }
     return {
       editingField: null,
-      editedEdge: _.cloneDeep(this.edge),
+      editedEdge,
       tooltips,
       isSubmitting: false,
       DEBUG,
@@ -299,7 +336,7 @@ export default {
     },
     getFieldOrder() {
       // Define the logical order of fields for keyboard navigation
-      const baseFields = ["type", "description"];
+      const baseFields = ["type", "description", "tags"];
       return baseFields.filter(
         (field) => field === "type" || this.isAllowed(field),
       );
@@ -338,6 +375,13 @@ export default {
         this.moveToPrevField(currentField);
       } else {
         this.moveToNextField(currentField);
+      }
+    },
+    handleTagSelectorKeydown(event) {
+      if (event.key === "Escape") {
+        this.cancelEditing("tags");
+      } else if (event.key === "Tab") {
+        this.moveToNextField("tags");
       }
     },
     cancelEditing(field) {
@@ -471,6 +515,9 @@ export default {
     edge: {
       handler(newEdge) {
         this.editedEdge = _.cloneDeep(newEdge);
+        if (!Array.isArray(this.editedEdge.tags)) {
+          this.editedEdge.tags = [];
+        }
       },
       deep: true,
     },
@@ -521,6 +568,30 @@ select:disabled {
 .add-button {
   margin: 4px 0 0 0 !important;
   align-self: flex-start;
+}
+
+.tags-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+  min-height: 30px;
+  cursor: text;
+}
+
+.tags-preview .tag {
+  flex-shrink: 0;
+  min-height: 24px;
+  display: inline-flex !important;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #e8f0fe;
+  font-size: 0.85rem;
+}
+
+.tag-placeholder {
+  color: #777;
+  font-size: 0.9rem;
 }
 
 /* License notice styling */

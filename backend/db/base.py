@@ -290,3 +290,8 @@ class GraphHistoryRelationalInterface(GraphDatabaseInterface):
         Revert the entity state to a given event.
         """
         pass
+
+    @abstractmethod
+    def list_tags(self, query: str | None = None, limit: int = 50) -> list[str]:
+        """Return the tags that appear on nodes or edges."""
+        pass

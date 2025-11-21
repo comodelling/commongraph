@@ -138,6 +138,38 @@
         />
       </div>
     </div>
+
+    <!-- Custom option-based properties -->
+    <template
+      v-for="customProp in customPropertyEntries"
+      :key="`edge-custom-${customProp.name}`"
+    >
+      <div class="field" v-if="isAllowed(customProp.name)">
+        <strong
+          :title="customProp.config.question || capitalise(customProp.name)"
+        >
+          {{ capitalise(customProp.name) }}:
+        </strong>
+        <div class="field-content">
+          <select
+            v-model="editedEdge[customProp.name]"
+            :disabled="!canEditField(customProp.name)"
+            :ref="`${customProp.name}Input`"
+          >
+            <option value="" disabled>
+              {{ customProp.config.placeholder || "Select an option" }}
+            </option>
+            <option
+              v-for="(label, value) in customProp.config.options"
+              :key="`${customProp.name}-${value}`"
+              :value="value"
+            >
+              {{ label }}
+            </option>
+          </select>
+        </div>
+      </div>
+    </template>
     <button
       class="submit-button"
       @click="submit"
@@ -185,7 +217,7 @@ export default {
     sourceType: { type: String, required: false, default: null },
     targetType: { type: String, required: false, default: null },
   },
-  emits: ["publish-edge", "edge-exists"],
+  emits: ["publish-edge", "edge-exists", "preview-edge-update"],
   setup() {
     const { edgeTypes, load, license, getLicenseUrl } = useConfig();
     onMounted(load);
@@ -223,6 +255,20 @@ export default {
         return Object.keys(this.editedEdge);
       }
       return this.edgeTypes[this.editedEdge.edge_type].properties || [];
+    },
+    customPropertyEntries() {
+      if (!this.edgeTypes || !this.editedEdge.edge_type) {
+        return [];
+      }
+      const typeDef = this.edgeTypes[this.editedEdge.edge_type] || {};
+      const propertyOptions = typeDef.property_options || {};
+      return Object.entries(propertyOptions)
+        .filter(([name, config]) => {
+          const hasOptions =
+            config && config.options && Object.keys(config.options).length > 0;
+          return hasOptions && this.allowedFields.includes(name);
+        })
+        .map(([name, config]) => ({ name, config }));
     },
     computedEdgeTypeOptions() {
       // If both ends are known, only return allowed; else return all
@@ -340,12 +386,17 @@ export default {
     capitalise(str) {
       return str.charAt(0).toUpperCase() + str.slice(1);
     },
+    // formatCustomPropertyLabel removed: label now always uses property name
     getFieldOrder() {
       // Define the logical order of fields for keyboard navigation
       const baseFields = ["type", "description", "tags"];
-      return baseFields.filter(
+      const allowedBase = baseFields.filter(
         (field) => field === "type" || this.isAllowed(field),
       );
+      const customFields = this.customPropertyEntries
+        .map((prop) => prop.name)
+        .filter((name) => this.isAllowed(name));
+      return [...allowedBase, ...customFields];
     },
     moveToNextField(currentField) {
       this.stopEditing(currentField);

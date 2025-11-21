@@ -50,6 +50,27 @@
         <span v-for="tag in node.tags" :key="tag" class="tag">{{ tag }}</span>
       </div>
     </div>
+    <!-- Custom option-based properties -->
+    <template
+      v-for="customProp in customPropertyEntries"
+      :key="customProp.name"
+    >
+      <div class="field-row" v-if="hasCustomValue(customProp.name)">
+        <strong
+          :title="customProp.config.question || capitalise(customProp.name)"
+        >
+          {{ capitalise(customProp.name) }}:
+        </strong>
+        <span class="field-value">
+          {{
+            getCustomPropertyDisplay(
+              customProp.config,
+              getCustomValue(customProp.name),
+            )
+          }}
+        </span>
+      </div>
+    </template>
     <!-- License Notice -->
     <p class="license-notice" v-if="shouldShowLicenseNotice">
       Node descriptions are available under the
@@ -98,6 +119,23 @@ const allowed = computed(() => {
   return nodeTypes.value[node.value.node_type].properties || [];
 });
 
+type CustomPropertyEntry = {
+  name: string;
+  config: Record<string, any>;
+};
+
+const customPropertyEntries = computed<CustomPropertyEntry[]>(() => {
+  if (!nodeTypes.value || !node.value.node_type) return [];
+  const typeDef = nodeTypes.value[node.value.node_type] || {};
+  const propertyOptions: Record<string, any> = typeDef.property_options || {};
+  return Object.entries(propertyOptions)
+    .filter(([name, config]) => {
+      const optionMap = (config as Record<string, any>)?.options || {};
+      return allowed.value.includes(name) && Object.keys(optionMap).length > 0;
+    })
+    .map(([name, config]) => ({ name, config: config as Record<string, any> }));
+});
+
 const descriptionAllowed = computed(() =>
   allowed.value.includes("description"),
 );
@@ -130,6 +168,37 @@ function capitalise(str: string): string {
 const nodeTypeTooltip = computed(() => {
   return (tooltips.node as any)[node.value.node_type] || tooltips.node.type;
 });
+
+function formatCustomPropertyLabel(name: string, config: Record<string, any>) {
+  // formatCustomPropertyLabel removed: label now always uses property name
+}
+
+function getCustomValue(propName: string): any {
+  return (node.value as Record<string, any>)[propName];
+}
+
+function hasCustomValue(propName: string): boolean {
+  const value = getCustomValue(propName);
+  if (value === undefined || value === null) {
+    return false;
+  }
+  if (typeof value === "string") {
+    return value.trim().length > 0;
+  }
+  return true;
+}
+
+function getCustomPropertyDisplay(
+  config: Record<string, any>,
+  value: any,
+): string {
+  if (value === undefined || value === null) {
+    return "";
+  }
+  const options = config?.options || {};
+  const key = typeof value === "string" ? value : String(value);
+  return options[key] ?? String(value);
+}
 </script>
 
 <style scoped>

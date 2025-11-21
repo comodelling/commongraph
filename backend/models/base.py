@@ -1,5 +1,5 @@
 import datetime
-from pydantic import model_validator
+from pydantic import model_validator, ConfigDict
 from sqlmodel import SQLModel
 
 from backend.config import valid_edge_types, valid_node_types
@@ -8,6 +8,8 @@ from backend.models.fixed import NodeId
 
 class NodeBase(SQLModel):
     """Base Node model"""
+
+    model_config = ConfigDict(extra="allow")
 
     node_id: NodeId | None = None  # node id is not created by client
     node_type: str
@@ -34,6 +36,8 @@ class PartialNodeBase(NodeBase):
 
 class EdgeBase(SQLModel):
     """Base Edge model"""
+
+    model_config = ConfigDict(extra="allow")
 
     edge_type: str
     source: NodeId

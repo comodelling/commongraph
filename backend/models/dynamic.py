@@ -47,6 +47,12 @@ def _make_dynamic(
                     default = ...
                 fields[f] = (anno, default)
 
+        # Add generic slots for any remaining allowed properties so they round-trip through the API
+        for prop in allowed:
+            if prop in fields:
+                continue
+            fields[prop] = (Any, None)
+
         name = f"{type_name.title()}{base.__name__}"
         out[type_name] = create_model(name, __base__=base, **fields)
         logger.info(f"Dynamic model created: {name}, fields: {list(fields.keys())}")

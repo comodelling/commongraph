@@ -35,6 +35,7 @@ from backend.models.fixed import (
     UserRead,
     EntityType,
 )
+from backend.config import filter_edge_props
 
 
 logger = logging.getLogger(__name__)
@@ -180,8 +181,12 @@ def create_edge(
     Model = EdgeTypeModels.get(et)
     if not Model:
         raise HTTPException(400, f"Unknown edge_type {et!r}")
+
+    # Filter payload to only include allowed properties for this edge type
+    filtered_payload = filter_edge_props(et, payload)
+
     # TODO: validate payload further, within graph, against Graph Schema
-    edge = Model(**payload)
+    edge = Model(**filtered_payload)
 
     # Check if edge already exists (identified by source and target node IDs)
     try:
@@ -264,8 +269,11 @@ def update_edge(
                 detail="Non-admin users cannot revert to 'draft' status when the edge has a non-draft status",
             )
 
+    # Filter payload to only include allowed properties for this edge type
+    filtered_payload = filter_edge_props(et, payload)
+
     # TODO: validate payload further, within graph, against Graph Schema
-    edge = Model(**payload)
+    edge = Model(**filtered_payload)
     out_edge = db_history.update_edge(edge, username=user.username)
     if db_graph is not None:
         db_graph.update_edge(edge)

@@ -1074,8 +1074,8 @@ function createNodeAndEdge(event = null) {
     }
   }
 
-  // Remove properties not allowed by the default node type
-  const allowedProps = nodeTypes.value[defaultNodeType.value].properties || [];
+  // Remove properties not allowed by the actual node type (which may have been updated above)
+  const allowedProps = nodeTypes.value[newNodeData.node_type]?.properties || [];
   if (!allowedProps.includes("status")) {
     delete newNodeData.status;
   }

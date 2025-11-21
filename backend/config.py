@@ -889,9 +889,15 @@ def valid_edge_types() -> set[str]:
 
 def filter_node_props(node_type: str, data: dict) -> dict:
     allowed = NODE_TYPE_PROPS.get(node_type, set())
-    return {k: v for k, v in data.items() if k in allowed}
+    # Always preserve base node properties
+    base_props = {"node_id", "node_type"}
+    allowed_with_base = allowed | base_props
+    return {k: v for k, v in data.items() if k in allowed_with_base}
 
 
 def filter_edge_props(edge_type: str, data: dict) -> dict:
     allowed = EDGE_TYPE_PROPS.get(edge_type, set())
-    return {k: v for k, v in data.items() if k in allowed}
+    # Always preserve base edge properties
+    base_props = {"edge_type", "source", "target"}
+    allowed_with_base = allowed | base_props
+    return {k: v for k, v in data.items() if k in allowed_with_base}

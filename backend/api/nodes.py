@@ -42,6 +42,7 @@ from backend.models.dynamic import (
 )
 from backend.properties import NodeStatus
 from backend.api.scopes import get_or_create_scope
+from backend.config import filter_node_props
 
 logger = logging.getLogger(__name__)
 
@@ -99,6 +100,10 @@ def search_nodes(
         )
         # merge node → NodeSearchResult
         payload = node.model_dump()
+        # Filter to only include allowed properties for this node type
+        node_type_value = payload.get("node_type")
+        if node_type_value:
+            payload = filter_node_props(node_type_value, payload)
         payload["last_modified"] = last_ts
         out.append(NodeSearchResult(**payload))
 
@@ -246,8 +251,11 @@ def create_node(
             session.rollback()
             raise HTTPException(500, f"Failed to create scope: {str(e)}")
 
+    # Filter payload to only include allowed properties for this node type
+    filtered_payload = filter_node_props(nt, payload)
+
     # TODO: validate payload further, within graph, against Graph Schema
-    node = Model(**payload)
+    node = Model(**filtered_payload)
 
     if db_graph is not None:
         node = db_graph.create_node(node)
@@ -348,8 +356,11 @@ def update_node(
             session.rollback()
             raise HTTPException(500, f"Failed to create scope: {str(e)}")
 
+    # Filter payload to only include allowed properties for this node type
+    filtered_payload = filter_node_props(nt, payload)
+
     # TODO: validate payload further, within graph, against Graph Schema
-    node = Model(**payload)
+    node = Model(**filtered_payload)
     node_out = db_history.update_node(node, username=user.username)
     if db_graph is not None:
         db_graph.update_node(node)

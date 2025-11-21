@@ -69,6 +69,7 @@ export default {
     element: { type: Object, required: true },
     pollLabel: { type: String, required: true },
     pollConfig: { type: Object, required: true },
+    statusAllowed: { type: Boolean, default: true },
   },
   setup(props) {
     const currentRating = ref(null);
@@ -176,12 +177,13 @@ export default {
 
     // Check if element is in draft status
     const isDraft = computed(() => {
+      if (!props.statusAllowed) {
+        return false;
+      }
       if (props.element.node_id) {
         return props.element.status === "draft";
-      } else {
-        // For edges, check the edge's status
-        return props.element.edge?.status === "draft";
       }
+      return props.element.edge?.status === "draft";
     });
 
     onMounted(fetchRating);

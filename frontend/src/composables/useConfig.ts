@@ -16,6 +16,61 @@ const permissions = ref<Record<string, boolean>>({});
 const allowSignup = ref<boolean>(true);
 const license = ref<string>("");
 
+function toStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return value
+    .map((entry) => (typeof entry === "string" ? entry : String(entry)))
+    .filter((entry) => Boolean(entry));
+}
+
+function pushUnique(list: string[], value?: string | null) {
+  if (!value) {
+    return;
+  }
+  if (!list.includes(value)) {
+    list.push(value);
+  }
+}
+
+function buildAggregatedPolls(data: Record<string, any>): Record<string, any> {
+  const aggregated: Record<string, any> = {};
+  const basePolls = (data?.polls || {}) as Record<string, any>;
+
+  const ensureEntry = (label: string, pollConfig: Record<string, any> = {}) => {
+    if (!aggregated[label]) {
+      aggregated[label] = {
+        ...pollConfig,
+        node_types: toStringArray(pollConfig?.node_types),
+        edge_types: toStringArray(pollConfig?.edge_types),
+      };
+    }
+    return aggregated[label];
+  };
+
+  Object.entries(basePolls || {}).forEach(([label, pollConfig]) => {
+    ensureEntry(label, pollConfig || {});
+  });
+
+  const addFromTypes = (
+    typeMap: Record<string, any> | undefined,
+    targetField: "node_types" | "edge_types",
+  ) => {
+    Object.entries(typeMap || {}).forEach(([typeName, typeDef]) => {
+      Object.entries(typeDef?.polls || {}).forEach(([label, pollConfig]) => {
+        const entry = ensureEntry(label, pollConfig || {});
+        pushUnique(entry[targetField], typeName);
+      });
+    });
+  };
+
+  addFromTypes(data?.node_types, "node_types");
+  addFromTypes(data?.edge_types, "edge_types");
+
+  return aggregated;
+}
+
 async function load(forceReload = false) {
   if (configLoaded.value && !forceReload) return;
   try {
@@ -28,7 +83,7 @@ async function load(forceReload = false) {
     nodePollTypes.value = {};
     edgePollTypes.value = {};
 
-    const pollsConfig = (data.polls || {}) as Record<string, any>;
+    const pollsConfig = buildAggregatedPolls(data);
     Object.entries(pollsConfig).forEach(([label, poll]) => {
       const pollConfig = poll || {};
       const nodeTypesList: string[] = pollConfig.node_types || [];
@@ -113,6 +168,30 @@ export function useConfig() {
     return edgePollsByType.value[type] || {};
   }
 
+  function nodeAllowsProperty(
+    type: string | null | undefined,
+    prop: string,
+  ): boolean {
+    if (!type || !prop) {
+      return false;
+    }
+    const typeDef = nodeTypes.value?.[type];
+    const properties: string[] = (typeDef?.properties as string[]) || [];
+    return properties.includes(prop);
+  }
+
+  function edgeAllowsProperty(
+    type: string | null | undefined,
+    prop: string,
+  ): boolean {
+    if (!type || !prop) {
+      return false;
+    }
+    const typeDef = edgeTypes.value?.[type];
+    const properties: string[] = (typeDef?.properties as string[]) || [];
+    return properties.includes(prop);
+  }
+
   // Permission helpers
   const canRead = computed(() => permissions.value.read !== false); // Default to true for backward compatibility
   const canCreate = computed(() => permissions.value.create || false);
@@ -138,6 +217,8 @@ export function useConfig() {
     edgePollsByType,
     getNodePolls,
     getEdgePolls,
+    nodeAllowsProperty,
+    edgeAllowsProperty,
     permissions,
     canRead,
     canCreate,

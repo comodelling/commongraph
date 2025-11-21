@@ -19,7 +19,7 @@
     </router-link>
     <div class="subtitle">
       <span class="meta">
-        {{ node.scope || "—" }} — {{ node.status || "—" }} —
+        {{ node.scope || "—" }} — {{ nodeStatusDisplay(node) }} —
         <span v-if="node.last_modified">{{
           formatDate(node.last_modified)
         }}</span>
@@ -42,7 +42,7 @@ export default {
   },
   emits: ["hover", "leave"],
   setup() {
-    const { nodeTypes } = useConfig();
+    const { nodeTypes, nodeAllowsProperty } = useConfig();
 
     function typeColor(nodeType) {
       if (!nodeType) return null;
@@ -51,7 +51,17 @@ export default {
       return style.borderColor || style.border_colour || null;
     }
 
-    return { typeColor };
+    function nodeStatusDisplay(node) {
+      if (!node || !nodeAllowsProperty) {
+        return "—";
+      }
+      if (!nodeAllowsProperty(node.node_type, "status")) {
+        return "—";
+      }
+      return node.status || "—";
+    }
+
+    return { typeColor, nodeStatusDisplay };
   },
   methods: {
     formatDate(iso) {

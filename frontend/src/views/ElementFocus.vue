@@ -34,9 +34,13 @@
           :key="`node-${pollLabel}-${node.node_id}`"
         >
           <ElementPollPane
-            :element="{ node_id: node.node_id }"
+            :element="{
+              node_id: node.node_id,
+              status: nodeStatusAllowed(node) ? node.status : undefined,
+            }"
             :poll-label="pollLabel"
             :poll-config="pollConfig"
+            :status-allowed="nodeStatusAllowed(node)"
           />
         </div>
       </template>
@@ -48,21 +52,29 @@
           :key="`edge-${pollLabel}-${edge.source}-${edge.target}`"
         >
           <ElementPollPane
-            :element="{ edge: { source: edge.source, target: edge.target } }"
+            :element="{
+              edge: {
+                source: edge.source,
+                target: edge.target,
+                status: edgeStatusAllowed(edge) ? edge.status : undefined,
+              },
+            }"
             :poll-label="pollLabel"
             :poll-config="pollConfig"
+            :status-allowed="edgeStatusAllowed(edge)"
           />
         </div>
       </template>
     </div>
-
     <div class="right-panel">
       <div class="right-panel-header">
         <GraphControls
           :depth="depthLevel"
-          :color-by="colorBy"
+          :node-color-by="nodeColorBy"
+          :edge-color-by="edgeColorBy"
           @update:depth="updateDepth"
-          @update:colorBy="updateColorBy"
+          @update:nodeColorBy="updateNodeColorBy"
+          @update:edgeColorBy="updateEdgeColorBy"
         />
       </div>
       <SubgraphRenderer
@@ -94,6 +106,12 @@ import {
 import api from "../api/axios";
 import { hydrate } from "vue";
 import { getAllowedEdgeTypes } from "../composables/useGraphSchema";
+import {
+  COLOR_MODE_TYPE,
+  EDGE_COLOR_STORAGE_KEY,
+  LEGACY_COLOR_STORAGE_KEY,
+  NODE_COLOR_STORAGE_KEY,
+} from "../utils/graphColoring";
 
 const FOCUS_GRAPH_CACHE_KEY = "focusFlowGraphSnapshot";
 
@@ -118,6 +136,8 @@ export default {
       canEdit,
       getNodePolls,
       getEdgePolls,
+      nodeAllowsProperty,
+      edgeAllowsProperty,
     } = useConfig();
 
     // nodeTypes & edgeTypes will be unwrapped when used in `this.*`
@@ -133,6 +153,8 @@ export default {
       canEdit,
       getNodePolls,
       getEdgePolls,
+      nodeAllowsProperty,
+      edgeAllowsProperty,
     };
   },
 
@@ -149,7 +171,14 @@ export default {
       ratings: {},
       causalDirection: "LeftToRight",
       depthLevel: parseInt(localStorage.getItem("graphDepthLevel")) || 2, // Default depth for ElementFocus
-      colorBy: localStorage.getItem("graphColorBy") || "type", // Color nodes/edges by 'type' or 'rating'
+      nodeColorBy:
+        localStorage.getItem(NODE_COLOR_STORAGE_KEY) ||
+        localStorage.getItem(LEGACY_COLOR_STORAGE_KEY) ||
+        COLOR_MODE_TYPE,
+      edgeColorBy:
+        localStorage.getItem(EDGE_COLOR_STORAGE_KEY) ||
+        localStorage.getItem(LEGACY_COLOR_STORAGE_KEY) ||
+        COLOR_MODE_TYPE,
       DEBUG,
       debugLog,
       infoLog,
@@ -332,7 +361,7 @@ export default {
         }
         this.subgraphData = flowGraph;
       } else {
-        let formattedNode = formatFlowNodeProps(this.node, this.colorBy);
+        let formattedNode = formatFlowNodeProps(this.node, this.nodeColorBy);
         formattedNode.label = formattedNode.label || "New Node";
         // small delay so VueFlow has time to mount
         setTimeout(() => {
@@ -433,7 +462,7 @@ export default {
             normalized.node_id = numericId;
           }
         }
-        return formatFlowNodeProps(normalized, this.colorBy);
+        return formatFlowNodeProps(normalized, this.nodeColorBy);
       });
       const formattedEdges = (rawEdges || []).map((edge) => {
         const normalized = { ...edge };
@@ -453,9 +482,45 @@ export default {
             ? resolvedTarget
             : numericTarget;
         }
-        return formatFlowEdgeProps(normalized, this.colorBy);
+        return formatFlowEdgeProps(normalized, this.edgeColorBy);
       });
       return { nodes: formattedNodes, edges: formattedEdges };
+    },
+    nodeStatusAllowed(node) {
+      if (!node || !this.nodeAllowsProperty || !node.node_type) {
+        return false;
+      }
+      return this.nodeAllowsProperty(node.node_type, "status");
+    },
+    edgeStatusAllowed(edge) {
+      if (!edge || !this.edgeAllowsProperty || !edge.edge_type) {
+        return false;
+      }
+      return this.edgeAllowsProperty(edge.edge_type, "status");
+    },
+    sanitizeNode(node) {
+      if (!node) {
+        return node;
+      }
+      if (
+        !this.nodeStatusAllowed(node) &&
+        Object.prototype.hasOwnProperty.call(node, "status")
+      ) {
+        delete node.status;
+      }
+      return node;
+    },
+    sanitizeEdge(edge) {
+      if (!edge) {
+        return edge;
+      }
+      if (
+        !this.edgeStatusAllowed(edge) &&
+        Object.prototype.hasOwnProperty.call(edge, "status")
+      ) {
+        delete edge.status;
+      }
+      return edge;
     },
     hydrateNewEdgeFromSnapshot(snapshot) {
       const rawEdge = snapshot?.focusEdge ? { ...snapshot.focusEdge } : null;
@@ -651,14 +716,20 @@ export default {
           params: { levels: this.depthLevel },
         });
         let fetched_nodes = response.data.nodes || [];
-        const fetched_edges = response.data.edges || [];
+        fetched_nodes = fetched_nodes.map((node) =>
+          this.sanitizeNode({ ...node }),
+        );
+        const fetched_edges = (response.data.edges || []).map((edge) =>
+          this.sanitizeEdge({ ...edge }),
+        );
 
         // Fetch and update node ratings as before
         await this.fetchNodeRatings(fetched_nodes.map((node) => node.node_id));
         fetched_nodes = this.updateNodesWithRatings(fetched_nodes);
 
         // Now fetch and update edge ratings
-        const updatedEdges = await this.fetchEdgeRatings(fetched_edges);
+        const ratedEdges = (await this.fetchEdgeRatings(fetched_edges)) || [];
+        const updatedEdges = ratedEdges.map((edge) => this.sanitizeEdge(edge));
 
         this.debugLog("Fetched nodes:", fetched_nodes);
         this.node =
@@ -707,10 +778,10 @@ export default {
 
         this.subgraphData = {
           nodes: fetched_nodes.map((node) =>
-            formatFlowNodeProps(node, this.colorBy),
+            formatFlowNodeProps(node, this.nodeColorBy),
           ),
           edges: updatedEdges.map((edge) =>
-            formatFlowEdgeProps(edge, this.colorBy),
+            formatFlowEdgeProps(edge, this.edgeColorBy),
           ),
         };
 
@@ -753,11 +824,11 @@ export default {
           api.get(`/nodes/${s}`),
           api.get(`/nodes/${t}`),
         ]).then(([eRes, sRes, tRes]) => {
-          this.edge = {
+          this.edge = this.sanitizeEdge({
             ...eRes.data,
             sourceNodeType: sRes.data.node_type,
             targetNodeType: tRes.data.node_type,
-          };
+          });
         });
       }
     },
@@ -767,11 +838,11 @@ export default {
       const nodeRaw = nodes.find((n) => n.node_id === Number(nodeId));
 
       if (nodeRaw) {
-        this.node = nodeRaw;
+        this.node = this.sanitizeNode({ ...nodeRaw });
       } else {
         // fallback to a single call
         api.get(`/nodes/${nodeId}`).then((res) => {
-          this.node = res.data;
+          this.node = this.sanitizeNode({ ...res.data });
         });
       }
     },
@@ -926,11 +997,16 @@ export default {
       // Re-fetch subgraph data with new depth
       this.fetchElementAndSubgraphData();
     },
-    updateColorBy(newColorBy) {
-      console.log("Updating color by to:", newColorBy);
-      this.colorBy = newColorBy;
-      localStorage.setItem("graphColorBy", newColorBy);
-      // Re-format the existing subgraph data with new colors (no API call needed!)
+    updateNodeColorBy(newNodeColorBy) {
+      console.log("Updating node color by to:", newNodeColorBy);
+      this.nodeColorBy = newNodeColorBy;
+      localStorage.setItem(NODE_COLOR_STORAGE_KEY, newNodeColorBy);
+      this.reformatSubgraphData();
+    },
+    updateEdgeColorBy(newEdgeColorBy) {
+      console.log("Updating edge color by to:", newEdgeColorBy);
+      this.edgeColorBy = newEdgeColorBy;
+      localStorage.setItem(EDGE_COLOR_STORAGE_KEY, newEdgeColorBy);
       this.reformatSubgraphData();
     },
     reformatSubgraphData() {
@@ -953,12 +1029,19 @@ export default {
           title: n.title,
         })),
       );
-      console.log("Reformatting with colorBy:", this.colorBy);
+      console.log("Reformatting with colors:", {
+        node: this.nodeColorBy,
+        edge: this.edgeColorBy,
+      });
 
       // Re-format with current colorBy setting
       this.subgraphData = {
-        nodes: rawNodes.map((node) => formatFlowNodeProps(node, this.colorBy)),
-        edges: rawEdges.map((edge) => formatFlowEdgeProps(edge, this.colorBy)),
+        nodes: rawNodes.map((node) =>
+          formatFlowNodeProps(node, this.nodeColorBy),
+        ),
+        edges: rawEdges.map((edge) =>
+          formatFlowEdgeProps(edge, this.edgeColorBy),
+        ),
       };
     },
     async updateNodeFromBackend(node_id) {

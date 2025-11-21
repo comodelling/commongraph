@@ -42,7 +42,11 @@ from backend.models.dynamic import (
 )
 from backend.properties import NodeStatus
 from backend.api.scopes import get_or_create_scope
-from backend.config import filter_node_props
+from backend.config import (
+    filter_node_props,
+    node_type_allows_property,
+    strip_disallowed_status,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -199,8 +203,12 @@ def get_random_node(
         )
 
     if isinstance(db, JanusGraphDB):
-        return db.get_random_node(node_type)
-    return db_history.get_random_node(node_type)
+        node = db.get_random_node(node_type)
+    else:
+        node = db_history.get_random_node(node_type)
+
+    node_dict = node.model_dump() if hasattr(node, "model_dump") else dict(node)
+    return strip_disallowed_status(node_dict)
 
 
 @router.get("/{node_id}")
@@ -217,7 +225,9 @@ def get_node(
             detail="You must be logged in to view content",
         )
 
-    return db_history.get_node(node_id)
+    node = db_history.get_node(node_id)
+    node_dict = node.model_dump() if hasattr(node, "model_dump") else dict(node)
+    return strip_disallowed_status(node_dict)
 
 
 @router.post("", status_code=status.HTTP_201_CREATED)
@@ -467,9 +477,11 @@ def log_node_rating(
     # Get the node to check its status
     node = db_history.get_node(node_id)
     node_status = getattr(node, "status", None) or "live"
+    node_type = getattr(node, "node_type", None)
+    status_allowed = node_type_allows_property(node_type, "status")
 
     # Check if user can rate based on node status
-    if not can_rate_element(user, node_status):
+    if not can_rate_element(user, node_status, status_allowed=status_allowed):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Cannot rate nodes with 'draft' status",

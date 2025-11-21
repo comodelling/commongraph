@@ -1,5 +1,6 @@
 import { useConfig } from "./useConfig";
-const { nodeTypes, edgeTypes } = useConfig();
+import { COLOR_MODE_TYPE, parseColorToken } from "../utils/graphColoring";
+const { nodeTypes, edgeTypes, nodeAllowsProperty } = useConfig();
 
 const defaultThemeBorderColor = "var(--border-color)";
 const defaultThemeEdgeColor = "var(--border-color)";
@@ -11,6 +12,145 @@ const defaultStrengthColors = {
   D: "#fb6a4a",
   E: "#a50f15",
 };
+
+const nodePropertyPaletteCache = new Map();
+const edgePropertyPaletteCache = new Map();
+
+function hexToRgb(hex) {
+  const value = hex.replace("#", "");
+  const bigint = parseInt(value, 16);
+  return {
+    r: (bigint >> 16) & 255,
+    g: (bigint >> 8) & 255,
+    b: bigint & 255,
+  };
+}
+
+function rgbToHex({ r, g, b }) {
+  const clamp = (num) => Math.min(255, Math.max(0, Math.round(num)));
+  return `#${[clamp(r), clamp(g), clamp(b)]
+    .map((num) => num.toString(16).padStart(2, "0"))
+    .join("")}`;
+}
+
+function interpolateColor(start, end, factor) {
+  return {
+    r: start.r + (end.r - start.r) * factor,
+    g: start.g + (end.g - start.g) * factor,
+    b: start.b + (end.b - start.b) * factor,
+  };
+}
+
+function generateBluePurpleScale(count) {
+  const start = hexToRgb("#3b82f6");
+  const end = hexToRgb("#a855f7");
+  if (count <= 1) {
+    return [rgbToHex(start)];
+  }
+  const colors = [];
+  for (let index = 0; index < count; index += 1) {
+    const t = index / (count - 1);
+    colors.push(rgbToHex(interpolateColor(start, end, t)));
+  }
+  return colors;
+}
+
+function normalizeOptionKey(value) {
+  if (value == null) {
+    return null;
+  }
+  if (Array.isArray(value)) {
+    return normalizeOptionKey(value[0]);
+  }
+  return typeof value === "string" ? value : String(value);
+}
+
+function getPropertyValue(entity, propertyName) {
+  if (!propertyName || !entity) {
+    return null;
+  }
+  const rawValue = entity[propertyName];
+  if (Array.isArray(rawValue)) {
+    return rawValue.length ? rawValue[0] : null;
+  }
+  return rawValue ?? null;
+}
+
+function lookupPropertyConfig(scope, typeName, propertyName) {
+  if (!propertyName) {
+    return null;
+  }
+  const collection = scope === "node" ? nodeTypes.value : edgeTypes.value;
+  if (!collection) {
+    return null;
+  }
+  const typeDef = collection[typeName] || {};
+  const propertyOptions = typeDef.property_options || {};
+  if (propertyOptions[propertyName]) {
+    return propertyOptions[propertyName];
+  }
+
+  const fallback = Object.values(collection).find(
+    (def) => def?.property_options?.[propertyName],
+  );
+  return fallback?.property_options?.[propertyName] || null;
+}
+
+function getCustomPropertyColor(scope, typeName, propertyName, optionValue) {
+  const normalizedValue = normalizeOptionKey(optionValue);
+  if (!propertyName || normalizedValue == null) {
+    return null;
+  }
+
+  const propertyConfig = lookupPropertyConfig(scope, typeName, propertyName);
+  const optionMap = propertyConfig?.options || {};
+  const optionKeys = Object.keys(optionMap);
+  if (!optionKeys.length) {
+    return null;
+  }
+
+  const cache =
+    scope === "node" ? nodePropertyPaletteCache : edgePropertyPaletteCache;
+  if (!cache.has(propertyName)) {
+    const palette = new Map();
+    const colors = generateBluePurpleScale(optionKeys.length);
+    optionKeys.forEach((key, index) => {
+      palette.set(key, colors[index]);
+    });
+    cache.set(propertyName, palette);
+  }
+
+  return cache.get(propertyName).get(normalizedValue) || null;
+}
+
+function getNodePollValue(nodeData, pollLabel) {
+  if (!pollLabel) {
+    return null;
+  }
+  if (nodeData?.pollRatings && nodeData.pollRatings[pollLabel] != null) {
+    return nodeData.pollRatings[pollLabel];
+  }
+  if (nodeData?.ratingLabel === pollLabel && nodeData?.support != null) {
+    return nodeData.support;
+  }
+  return null;
+}
+
+function getEdgePollValue(edgeData, pollLabel) {
+  if (!pollLabel) {
+    return null;
+  }
+  if (edgeData?.pollRatings && edgeData.pollRatings[pollLabel] != null) {
+    return edgeData.pollRatings[pollLabel];
+  }
+  if (
+    edgeData?.ratingLabel === pollLabel &&
+    edgeData?.causal_strength != null
+  ) {
+    return edgeData.causal_strength;
+  }
+  return null;
+}
 
 // Convert numeric rating (1-5) to letter grade (A-E)
 // Assuming 5 is best (A) and 1 is worst (E)
@@ -41,40 +181,33 @@ function getRatingColor(rating) {
 const defaultNodeBorderWidth = "4px";
 const defaultNodeBorderRadius = "5px";
 
-export function formatFlowEdgeProps(data, colorBy = "type") {
-  const { source, target, edge_type, selected, causal_strength, ratingLabel } =
-    data;
+export function formatFlowEdgeProps(data, colorBy = COLOR_MODE_TYPE) {
+  const { source, target, edge_type, selected } = data;
   const conf = edgeTypes.value[edge_type]?.style || {};
-  console.log(
-    "formatFlowEdgeProps - colorBy:",
-    colorBy,
-    "causal_strength:",
-    causal_strength,
-  );
+  const colorMode = parseColorToken(colorBy);
 
   let strokeColor;
-  if (colorBy === "rating") {
-    // Use rating-based color (supports both numeric and letter grades)
-    if (causal_strength != null) {
-      const ratingColor = getRatingColor(causal_strength);
-      strokeColor = ratingColor || defaultThemeEdgeColor;
-      console.log(
-        "Using rating color for edge:",
-        causal_strength,
-        "->",
-        strokeColor,
-      );
-    } else {
-      strokeColor = defaultThemeEdgeColor;
-      console.log(
-        "No rating for edge, using theme default color:",
-        strokeColor,
-      );
-    }
+  let effectiveStrength = data.causal_strength;
+  let effectiveRatingLabel = data.ratingLabel;
+
+  if (colorMode.mode === "poll") {
+    const pollValue = getEdgePollValue(data, colorMode.key);
+    effectiveStrength = pollValue;
+    effectiveRatingLabel = colorMode.key || data.ratingLabel;
+    strokeColor =
+      pollValue != null
+        ? getRatingColor(pollValue) || defaultThemeEdgeColor
+        : defaultThemeEdgeColor;
+  } else if (colorMode.mode === "property") {
+    const propertyColor = getCustomPropertyColor(
+      "edge",
+      edge_type,
+      colorMode.key,
+      getPropertyValue(data, colorMode.key),
+    );
+    strokeColor = propertyColor || conf.stroke || defaultThemeEdgeColor;
   } else {
-    // Use type-based color from config
     strokeColor = conf.stroke || defaultThemeEdgeColor;
-    console.log("Using type color from config for edge:", strokeColor);
   }
 
   const strokeWidth = conf.strokeWidth ?? 1.5;
@@ -103,13 +236,17 @@ export function formatFlowEdgeProps(data, colorBy = "type") {
         : `preview-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
     markerEnd: markerEndConf,
     markerStart: undefined,
-    data: { ...data, ratingLabel },
+    data: {
+      ...data,
+      ratingLabel: effectiveRatingLabel,
+      causal_strength: effectiveStrength,
+    },
     selected: !!selected,
     style: { stroke: strokeColor, strokeWidth },
   };
 }
 
-export function formatFlowNodeProps(data, colorBy = "type") {
+export function formatFlowNodeProps(data, colorBy = COLOR_MODE_TYPE) {
   const {
     node_id,
     title,
@@ -121,42 +258,44 @@ export function formatFlowNodeProps(data, colorBy = "type") {
     ratingLabel,
   } = data;
   const conf = nodeTypes.value[node_type]?.style || {};
-  console.log(
-    "formatFlowNodeProps - colorBy:",
-    colorBy,
-    "support:",
-    support,
-    "node_type:",
-    node_type,
-  );
+  const colorMode = parseColorToken(colorBy);
+  const statusAllowed =
+    typeof nodeAllowsProperty === "function" &&
+    nodeAllowsProperty(node_type, "status");
+  const normalizedStatus =
+    statusAllowed && typeof status === "string" ? status : undefined;
 
   let borderColor;
-  if (colorBy === "rating") {
-    if (support != null) {
-      // Use rating-based color (supports both numeric and letter grades)
-      const ratingColor = getRatingColor(support);
-      borderColor = ratingColor || defaultThemeBorderColor;
-      console.log("Using rating color:", support, "->", borderColor);
-    } else {
-      borderColor = defaultThemeBorderColor;
-      console.log(
-        "No rating for node, using theme default color:",
-        borderColor,
-      );
-    }
+  let effectiveSupport = support;
+  let effectiveRatingLabel = ratingLabel;
+
+  if (colorMode.mode === "poll") {
+    const pollValue = getNodePollValue(data, colorMode.key);
+    effectiveSupport = pollValue;
+    effectiveRatingLabel = colorMode.key || ratingLabel;
+    borderColor =
+      pollValue != null
+        ? getRatingColor(pollValue) || defaultThemeBorderColor
+        : defaultThemeBorderColor;
+  } else if (colorMode.mode === "property") {
+    const propertyColor = getCustomPropertyColor(
+      "node",
+      node_type,
+      colorMode.key,
+      getPropertyValue(data, colorMode.key),
+    );
+    borderColor = propertyColor || conf.borderColor || defaultThemeBorderColor;
   } else {
-    // Use type-based color from config
     borderColor = conf.borderColor || defaultThemeBorderColor;
-    console.log("Using type color from config:", borderColor);
   }
 
   const borderWidth = conf.borderWidth || defaultNodeBorderWidth;
   const borderRadius = conf.borderRadius || defaultNodeBorderRadius;
   const borderStyle =
-    conf.borderStyle ||
-    (status !== undefined && status === "draft" ? "dotted" : "solid");
+    conf.borderStyle || (normalizedStatus === "draft" ? "dotted" : "solid");
   const opacity =
-    conf.opacity ?? (["realised", "unrealised"].includes(status) ? 0.5 : 0.95);
+    conf.opacity ??
+    (["realised", "unrealised"].includes(normalizedStatus) ? 0.5 : 0.95);
 
   return {
     // Ensure node id is a string; if missing (preview/new node), create a temporary preview id
@@ -168,7 +307,11 @@ export function formatFlowNodeProps(data, colorBy = "type") {
     position: position || { x: 0, y: 0 },
     label: title,
     selected: !!selected,
-    data: { ...data, ratingLabel },
+    data: {
+      ...data,
+      ratingLabel: effectiveRatingLabel,
+      support: effectiveSupport,
+    },
     style: { opacity, borderColor, borderWidth, borderStyle, borderRadius },
   };
 }

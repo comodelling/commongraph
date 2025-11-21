@@ -35,7 +35,7 @@ from backend.models.fixed import (
     UserRead,
     EntityType,
 )
-from backend.config import filter_edge_props
+from backend.config import edge_type_allows_property, filter_edge_props
 
 
 logger = logging.getLogger(__name__)
@@ -389,9 +389,11 @@ def log_edge_rating(
     # Get the edge to check its status
     edge = db_history.get_edge(source_id, target_id)
     edge_status = getattr(edge, "status", None) or "live"
+    edge_type = getattr(edge, "edge_type", None)
+    status_allowed = edge_type_allows_property(edge_type, "status")
 
     # Check if user can rate based on edge status
-    if not can_rate_element(user, edge_status):
+    if not can_rate_element(user, edge_status, status_allowed=status_allowed):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Cannot rate edges with 'draft' status",

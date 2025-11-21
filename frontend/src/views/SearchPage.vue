@@ -253,9 +253,11 @@
             <div class="viz-controls">
               <GraphControls
                 :depth="depthLevel"
-                :color-by="colorBy"
+                :node-color-by="nodeColorBy"
+                :edge-color-by="edgeColorBy"
                 @update:depth="updateDepth"
-                @update:colorBy="updateColorBy"
+                @update:nodeColorBy="updateNodeColorBy"
+                @update:edgeColorBy="updateEdgeColorBy"
               />
             </div>
           </div>
@@ -307,6 +309,12 @@ import CosmosGraphVis from "../components/graph/GraphVis.vue";
 import FlowEditor from "../components/graph/FlowEditor.vue";
 import GraphControls from "../components/graph/GraphControls.vue";
 import { useLogging } from "../composables/useLogging";
+import {
+  COLOR_MODE_TYPE,
+  EDGE_COLOR_STORAGE_KEY,
+  LEGACY_COLOR_STORAGE_KEY,
+  NODE_COLOR_STORAGE_KEY,
+} from "../utils/graphColoring";
 
 const FOCUS_GRAPH_CACHE_KEY = "focusFlowGraphSnapshot";
 
@@ -334,7 +342,14 @@ export default {
       userSelectedTab: false,
       flowFitTick: 0,
       depthLevel: parseInt(localStorage.getItem("graphDepthLevel")) || 1, // Depth level for subgraph traversal
-      colorBy: localStorage.getItem("graphColorBy") || "type", // Color nodes/edges by 'type' or 'rating'
+      nodeColorBy:
+        localStorage.getItem(NODE_COLOR_STORAGE_KEY) ||
+        localStorage.getItem(LEGACY_COLOR_STORAGE_KEY) ||
+        COLOR_MODE_TYPE,
+      edgeColorBy:
+        localStorage.getItem(EDGE_COLOR_STORAGE_KEY) ||
+        localStorage.getItem(LEGACY_COLOR_STORAGE_KEY) ||
+        COLOR_MODE_TYPE,
       ratings: {}, // Store node ratings fetched from API
       pendingFocusGraph: null,
       pendingFocusEdge: null,
@@ -447,7 +462,10 @@ export default {
         return { nodes: [], edges: [] };
       }
 
-      this.debugLog("flowSubgraphData computed - colorBy:", this.colorBy);
+      this.debugLog("flowSubgraphData computed - colors:", {
+        node: this.nodeColorBy,
+        edge: this.edgeColorBy,
+      });
 
       const formattedNodes = nodesSource
         .map((node) => {
@@ -462,7 +480,7 @@ export default {
             title: node.title || `Node ${nodeId}`,
           };
 
-          const formatted = formatFlowNodeProps(enrichedNode, this.colorBy);
+          const formatted = formatFlowNodeProps(enrichedNode, this.nodeColorBy);
           const isSearchResult = this.searchResultIdSet.has(nodeId);
 
           formatted.data = {
@@ -513,7 +531,7 @@ export default {
               target: targetId,
               edge_type: edgeType,
             },
-            this.colorBy,
+            this.edgeColorBy,
           );
 
           const sourceIsSearch = this.searchResultIdSet.has(sourceId);
@@ -540,9 +558,10 @@ export default {
         })
         .filter(Boolean);
 
-      this.debugLog("flowSubgraphData - formatted nodes with colorBy", {
+      this.debugLog("flowSubgraphData - formatted nodes with colors", {
         formattedNodes: formattedNodes.length,
-        colorBy: this.colorBy,
+        nodeColorBy: this.nodeColorBy,
+        edgeColorBy: this.edgeColorBy,
       });
       if (formattedNodes.length > 0) {
         this.debugLog("Sample node style:", formattedNodes[0].style);
@@ -607,6 +626,24 @@ export default {
     },
   },
   methods: {
+    nodeStatusAllowed(node) {
+      if (!node || !this.nodeAllowsProperty) {
+        return false;
+      }
+      return this.nodeAllowsProperty(node.node_type, "status");
+    },
+    sanitizeNode(node) {
+      if (!node) {
+        return node;
+      }
+      if (
+        !this.nodeStatusAllowed(node) &&
+        Object.prototype.hasOwnProperty.call(node, "status")
+      ) {
+        delete node.status;
+      }
+      return node;
+    },
     normalizeTypeName(type) {
       if (!type && type !== 0) {
         return null;
@@ -760,43 +797,118 @@ export default {
     },
     async fetchEdgeRatings(edges) {
       if (!edges.length) return edges;
-      const groupedByPoll = new Map();
 
-      edges.forEach((edge) => {
-        const pollLabel = this.resolveEdgePollLabel(edge);
-        edge.ratingLabel = pollLabel;
-        edge.causal_strength = null;
+      const pollConfig = this.edgePollTypes || {};
+      const pollLabels = Object.keys(pollConfig || {});
+      const edgeKeys = Array.from(
+        new Set(
+          edges
+            .map((edge) => {
+              const source = edge.source ?? edge.source_id;
+              const target = edge.target ?? edge.target_id;
+              if (source == null || target == null) {
+                return null;
+              }
+              return `${source}-${target}`;
+            })
+            .filter(Boolean),
+        ),
+      );
 
-        if (!pollLabel) {
-          return;
+      if (!edgeKeys.length) {
+        return edges;
+      }
+
+      if (!pollLabels.length) {
+        const groupedByPoll = new Map();
+
+        edges.forEach((edge) => {
+          const pollLabel = this.resolveEdgePollLabel(edge);
+          edge.ratingLabel = pollLabel;
+          edge.causal_strength = null;
+
+          if (!pollLabel) {
+            return;
+          }
+
+          if (!groupedByPoll.has(pollLabel)) {
+            groupedByPoll.set(pollLabel, []);
+          }
+          groupedByPoll.get(pollLabel).push(edge);
+        });
+
+        try {
+          for (const [pollLabel, edgesForPoll] of groupedByPoll.entries()) {
+            const keysForPoll = edgesForPoll.map(
+              (e) => `${e.source}-${e.target}`,
+            );
+            const { data: edgeRatings } = await api.get(
+              "/edges/ratings/median",
+              {
+                params: { edge_ids: keysForPoll, poll_label: pollLabel },
+              },
+            );
+
+            edgesForPoll.forEach((edge) => {
+              const key = `${edge.source}-${edge.target}`;
+              const ratingEntry = edgeRatings[key] ?? null;
+              const ratingValue = this.resolveRatingValue(
+                ratingEntry,
+                "median_rating",
+              );
+              edge.pollRatings = {
+                ...(edge.pollRatings || {}),
+                ...(ratingValue != null ? { [pollLabel]: ratingValue } : {}),
+              };
+              edge.causal_strength = ratingValue;
+            });
+          }
+        } catch (err) {
+          this.errorLog("Error fetching edge ratings:", err);
         }
 
-        if (!groupedByPoll.has(pollLabel)) {
-          groupedByPoll.set(pollLabel, []);
-        }
-        groupedByPoll.get(pollLabel).push(edge);
-      });
+        return edges;
+      }
 
+      const pollResults = {};
       try {
-        for (const [pollLabel, edgesForPoll] of groupedByPoll.entries()) {
-          const edgeKeys = edgesForPoll.map((e) => `${e.source}-${e.target}`);
-          const { data: edgeRatings } = await api.get("/edges/ratings/median", {
+        for (const pollLabel of pollLabels) {
+          const { data } = await api.get("/edges/ratings/median", {
             params: { edge_ids: edgeKeys, poll_label: pollLabel },
           });
-
-          edgesForPoll.forEach((edge) => {
-            const key = `${edge.source}-${edge.target}`;
-            const ratingEntry = edgeRatings[key] ?? null;
-            const ratingValue = this.resolveRatingValue(
-              ratingEntry,
-              "median_rating",
-            );
-            edge.causal_strength = ratingValue;
-          });
+          pollResults[pollLabel] = data;
         }
       } catch (err) {
         this.errorLog("Error fetching edge ratings:", err);
+        return edges;
       }
+
+      edges.forEach((edge) => {
+        const key = `${edge.source}-${edge.target}`;
+        const ratingMap = {};
+        pollLabels.forEach((pollLabel) => {
+          const ratingEntry = pollResults[pollLabel]?.[key] ?? null;
+          const ratingValue = this.resolveRatingValue(
+            ratingEntry,
+            "median_rating",
+          );
+          if (ratingValue != null) {
+            ratingMap[pollLabel] = ratingValue;
+          }
+        });
+
+        edge.pollRatings = ratingMap;
+        const defaultLabel =
+          edge.ratingLabel ||
+          edge.poll_label ||
+          edge.default_poll_label ||
+          this.resolveEdgePollLabel(edge);
+        edge.ratingLabel = defaultLabel || null;
+        edge.causal_strength =
+          defaultLabel && ratingMap[defaultLabel] != null
+            ? ratingMap[defaultLabel]
+            : null;
+      });
 
       return edges;
     },
@@ -816,6 +928,12 @@ export default {
         const pollLabel = nodeSpecificLabel || this.resolveNodePollLabel(node);
         const ratingEntry = this.ratings[node.node_id];
         const ratingValue = this.resolveRatingValue(ratingEntry, pollLabel);
+        const normalizedRatings =
+          ratingEntry && typeof ratingEntry === "object"
+            ? { ...ratingEntry }
+            : pollLabel && ratingEntry != null
+              ? { [pollLabel]: Number(ratingEntry) }
+              : {};
 
         this.debugLog(
           `Node ${node.node_id}: pollLabel=`,
@@ -846,6 +964,7 @@ export default {
         }
 
         node.ratingLabel = ratingLabel || null;
+        node.pollRatings = normalizedRatings;
 
         return node;
       });
@@ -901,12 +1020,15 @@ export default {
       // Re-fetch subgraph data with new depth
       this.performSearch();
     },
-    updateColorBy(newColorBy) {
-      this.debugLog("Updating color by to:", newColorBy);
-      this.colorBy = newColorBy;
-      localStorage.setItem("graphColorBy", newColorBy);
-      // No need to re-fetch - the computed properties (flowSubgraphData) will automatically update
-      // This makes color changes instant and dynamic!
+    updateNodeColorBy(newNodeColorBy) {
+      this.debugLog("Updating node color by to:", newNodeColorBy);
+      this.nodeColorBy = newNodeColorBy;
+      localStorage.setItem(NODE_COLOR_STORAGE_KEY, newNodeColorBy);
+    },
+    updateEdgeColorBy(newEdgeColorBy) {
+      this.debugLog("Updating edge color by to:", newEdgeColorBy);
+      this.edgeColorBy = newEdgeColorBy;
+      localStorage.setItem(EDGE_COLOR_STORAGE_KEY, newEdgeColorBy);
     },
     handleNodeItemHover(nodeId) {
       const numericId = Number(nodeId);
@@ -1184,43 +1306,118 @@ export default {
     },
     async fetchEdgeRatings(edges) {
       if (!edges.length) return edges;
-      const groupedByPoll = new Map();
 
-      edges.forEach((edge) => {
-        const pollLabel = this.resolveEdgePollLabel(edge);
-        edge.ratingLabel = pollLabel;
-        edge.causal_strength = null;
+      const pollConfig = this.edgePollTypes || {};
+      const pollLabels = Object.keys(pollConfig || {});
+      const edgeKeys = Array.from(
+        new Set(
+          edges
+            .map((edge) => {
+              const source = edge.source ?? edge.source_id;
+              const target = edge.target ?? edge.target_id;
+              if (source == null || target == null) {
+                return null;
+              }
+              return `${source}-${target}`;
+            })
+            .filter(Boolean),
+        ),
+      );
 
-        if (!pollLabel) {
-          return;
+      if (!edgeKeys.length) {
+        return edges;
+      }
+
+      if (!pollLabels.length) {
+        const groupedByPoll = new Map();
+
+        edges.forEach((edge) => {
+          const pollLabel = this.resolveEdgePollLabel(edge);
+          edge.ratingLabel = pollLabel;
+          edge.causal_strength = null;
+
+          if (!pollLabel) {
+            return;
+          }
+
+          if (!groupedByPoll.has(pollLabel)) {
+            groupedByPoll.set(pollLabel, []);
+          }
+          groupedByPoll.get(pollLabel).push(edge);
+        });
+
+        try {
+          for (const [pollLabel, edgesForPoll] of groupedByPoll.entries()) {
+            const keysForPoll = edgesForPoll.map(
+              (e) => `${e.source}-${e.target}`,
+            );
+            const { data: edgeRatings } = await api.get(
+              "/edges/ratings/median",
+              {
+                params: { edge_ids: keysForPoll, poll_label: pollLabel },
+              },
+            );
+
+            edgesForPoll.forEach((edge) => {
+              const key = `${edge.source}-${edge.target}`;
+              const ratingEntry = edgeRatings[key] ?? null;
+              const ratingValue = this.resolveRatingValue(
+                ratingEntry,
+                "median_rating",
+              );
+              edge.pollRatings = {
+                ...(edge.pollRatings || {}),
+                ...(ratingValue != null ? { [pollLabel]: ratingValue } : {}),
+              };
+              edge.causal_strength = ratingValue;
+            });
+          }
+        } catch (err) {
+          this.errorLog("Error fetching edge ratings:", err);
         }
 
-        if (!groupedByPoll.has(pollLabel)) {
-          groupedByPoll.set(pollLabel, []);
-        }
-        groupedByPoll.get(pollLabel).push(edge);
-      });
+        return edges;
+      }
 
+      const pollResults = {};
       try {
-        for (const [pollLabel, edgesForPoll] of groupedByPoll.entries()) {
-          const edgeKeys = edgesForPoll.map((e) => `${e.source}-${e.target}`);
-          const { data: edgeRatings } = await api.get("/edges/ratings/median", {
+        for (const pollLabel of pollLabels) {
+          const { data } = await api.get("/edges/ratings/median", {
             params: { edge_ids: edgeKeys, poll_label: pollLabel },
           });
-
-          edgesForPoll.forEach((edge) => {
-            const key = `${edge.source}-${edge.target}`;
-            const ratingEntry = edgeRatings[key] ?? null;
-            const ratingValue = this.resolveRatingValue(
-              ratingEntry,
-              "median_rating",
-            );
-            edge.causal_strength = ratingValue;
-          });
+          pollResults[pollLabel] = data;
         }
       } catch (err) {
         this.errorLog("Error fetching edge ratings:", err);
+        return edges;
       }
+
+      edges.forEach((edge) => {
+        const key = `${edge.source}-${edge.target}`;
+        const ratingMap = {};
+        pollLabels.forEach((pollLabel) => {
+          const ratingEntry = pollResults[pollLabel]?.[key] ?? null;
+          const ratingValue = this.resolveRatingValue(
+            ratingEntry,
+            "median_rating",
+          );
+          if (ratingValue != null) {
+            ratingMap[pollLabel] = ratingValue;
+          }
+        });
+
+        edge.pollRatings = ratingMap;
+        const defaultLabel =
+          edge.ratingLabel ||
+          edge.poll_label ||
+          edge.default_poll_label ||
+          this.resolveEdgePollLabel(edge);
+        edge.ratingLabel = defaultLabel || null;
+        edge.causal_strength =
+          defaultLabel && ratingMap[defaultLabel] != null
+            ? ratingMap[defaultLabel]
+            : null;
+      });
 
       return edges;
     },
@@ -1381,11 +1578,18 @@ export default {
 
         if (allNodeIds.length) {
           await this.fetchNodeRatings(Array.from(new Set(allNodeIds)));
-          this.nodes = this.updateNodesWithRatings(this.nodes);
-          subgraphNodes = this.updateNodesWithRatings(subgraphNodes);
+          this.nodes = this.updateNodesWithRatings(this.nodes).map((node) =>
+            this.sanitizeNode(node),
+          );
+          subgraphNodes = this.updateNodesWithRatings(subgraphNodes).map(
+            (node) => this.sanitizeNode(node),
+          );
         } else {
           this.ratings = {};
         }
+
+        this.nodes = this.nodes.map((node) => this.sanitizeNode(node));
+        subgraphNodes = subgraphNodes.map((node) => this.sanitizeNode(node));
 
         relationships = await this.fetchEdgeRatings(relationships);
 
@@ -1430,6 +1634,7 @@ export default {
       defaultNodeType,
       getNodePolls,
       getEdgePolls,
+      nodeAllowsProperty,
     } = useConfig();
     const nodePolls = nodePollTypes.value;
     return {
@@ -1446,6 +1651,7 @@ export default {
       defaultNodeType,
       getNodePolls,
       getEdgePolls,
+      nodeAllowsProperty,
     };
   },
 };

@@ -887,12 +887,36 @@ def valid_edge_types() -> set[str]:
     return set(EDGE_TYPE_PROPS)
 
 
+def node_type_allows_property(node_type: str | None, property_name: str) -> bool:
+    if not node_type or not property_name:
+        return False
+    return property_name in NODE_TYPE_PROPS.get(node_type, set())
+
+
+def edge_type_allows_property(edge_type: str | None, property_name: str) -> bool:
+    if not edge_type or not property_name:
+        return False
+    return property_name in EDGE_TYPE_PROPS.get(edge_type, set())
+
+
+def strip_disallowed_status(node_dict: dict) -> dict:
+    node_type = node_dict.get("node_type")
+    if node_type_allows_property(node_type, "status"):
+        return node_dict
+    if "status" not in node_dict:
+        return node_dict
+    cleaned = dict(node_dict)
+    cleaned.pop("status", None)
+    return cleaned
+
+
 def filter_node_props(node_type: str, data: dict) -> dict:
     allowed = NODE_TYPE_PROPS.get(node_type, set())
     # Always preserve base node properties
     base_props = {"node_id", "node_type"}
     allowed_with_base = allowed | base_props
-    return {k: v for k, v in data.items() if k in allowed_with_base}
+    filtered = {k: v for k, v in data.items() if k in allowed_with_base}
+    return strip_disallowed_status(filtered)
 
 
 def filter_edge_props(edge_type: str, data: dict) -> dict:

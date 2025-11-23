@@ -9,34 +9,37 @@
       enable ratings.
     </div>
 
-    <!-- Histogram of past ratings: always mounted, just hidden until the "me" rating has loaded -->
-    <RatingHistogram
-      ref="histogram"
-      :element="element"
-      :pollLabel="pollLabel"
-      :pollConfig="pollConfig"
-      :aggregate="false"
-    />
+    <!-- Only show rating UI if not draft -->
+    <template v-if="!isDraft">
+      <!-- Histogram of past ratings: always mounted, just hidden until the "me" rating has loaded -->
+      <RatingHistogram
+        ref="histogram"
+        :element="element"
+        :pollLabel="pollLabel"
+        :pollConfig="pollConfig"
+        :aggregate="false"
+      />
 
-    <div v-if="token && !currentRatingLoaded" class="loading">
-      Loading your rating…
-    </div>
+      <div v-if="token && !currentRatingLoaded" class="loading">
+        Loading your rating…
+      </div>
 
-    <!-- Discrete buttons -->
-    <div v-if="pollConfig.scale === 'discrete'" class="buttons-row">
-      <button
-        v-for="(label, key, idx) in pollConfig.options"
-        :key="key"
-        class="rating-button"
-        :class="{ selected: String(currentRating) === key }"
-        @click="rate(key)"
-        :style="{ backgroundColor: buttonColors[idx] }"
-        :title="isDraft ? 'Cannot rate draft items' : label"
-        :disabled="isDraft"
-      >
-        {{ key }}
-      </button>
-    </div>
+      <!-- Discrete buttons -->
+      <div v-if="pollConfig.scale === 'discrete'" class="buttons-row">
+        <button
+          v-for="(label, key, idx) in pollConfig.options"
+          :key="key"
+          class="rating-button"
+          :class="{ selected: String(currentRating) === key }"
+          @click="rate(key)"
+          :style="{ backgroundColor: buttonColors[idx] }"
+          :title="label"
+          :disabled="isDraft"
+        >
+          {{ key }}
+        </button>
+      </div>
+    </template>
 
     <!-- Continuous slider -->
     <div v-else-if="pollConfig.scale === 'continuous'" class="slider-container">

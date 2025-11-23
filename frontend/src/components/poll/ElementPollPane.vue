@@ -20,7 +20,10 @@
         :aggregate="false"
       />
 
-      <div v-if="token && !currentRatingLoaded" class="loading">
+      <div
+        v-if="(token || allowAnonRate) && !currentRatingLoaded"
+        class="loading"
+      >
         Loading your rating…
       </div>
 
@@ -33,11 +36,15 @@
           :class="{ selected: String(currentRating) === key }"
           @click="rate(key)"
           :style="{ backgroundColor: buttonColors[idx] }"
-          :title="label"
-          :disabled="isDraft"
+          :title="!token && !allowAnonRate ? 'Please log in to rate' : label"
+          :disabled="isDraft || (!token && !allowAnonRate)"
         >
           {{ key }}
         </button>
+      </div>
+      <!-- Helper text for login-required state -->
+      <div v-if="!token && !allowAnonRate" class="rating-helper">
+        Please <router-link to="/login">log in</router-link> to rate.
       </div>
     </template>
 
@@ -51,7 +58,8 @@
         v-model.number="sliderValue"
         @change="rate(sliderValue)"
         :style="{ '--pct': sliderPercent }"
-        :disabled="isDraft"
+        :disabled="isDraft || (!token && !allowAnonRate)"
+        :title="!token && !allowAnonRate ? 'Please log in to rate' : ''"
       />
       <div class="slider-value">{{ displayValue }}</div>
     </div>
@@ -62,6 +70,8 @@
 import { ref, onMounted, watch, computed } from "vue";
 import api from "../../api/axios";
 import { useAuth } from "../../composables/useAuth";
+import { useRouter } from "vue-router";
+import { useConfig } from "../../composables/useConfig";
 import RatingHistogram from "./RatingHistogram.vue";
 import { triColorGradient } from "../../utils/colorUtils";
 
@@ -79,7 +89,14 @@ export default {
     const currentRatingLoaded = ref(false);
     const histogram = ref(null);
     const { getAccessToken } = useAuth();
-    const token = getAccessToken();
+    // token is a computed wrapper around the auth state so it updates when tokens are set/cleared
+    const token = computed(() => getAccessToken());
+    const router = useRouter();
+    const { permissions } = useConfig();
+    const allowAnonRate = computed(() => {
+      const mode = permissions.value?.rate;
+      return mode === true || mode === "all";
+    });
 
     // continuous slider defaults
     const rangeMin = computed(() => props.pollConfig.range?.[0] ?? 0);
@@ -108,21 +125,29 @@ export default {
 
     // load my existing rating
     const fetchRating = async () => {
-      if (!token) return;
+      if (!token.value) {
+        // nothing to fetch for anonymous users; mark loaded so UI doesn't spin
+        currentRatingLoaded.value = true;
+        return;
+      }
       try {
         const params = { poll_label: props.pollLabel };
         let response;
         if (props.element.node_id) {
           response = await api.get(
             `/nodes/${props.element.node_id}/ratings/me`,
-            { params, headers: { Authorization: `Bearer ${token}` } },
+            token.value
+              ? { params, headers: { Authorization: `Bearer ${token.value}` } }
+              : { params },
           );
         } else {
           const { source, target } = props.element.edge;
-          response = await api.get(`/edges/${source}/${target}/ratings/me`, {
-            params,
-            headers: { Authorization: `Bearer ${token}` },
-          });
+          response = await api.get(
+            `/edges/${source}/${target}/ratings/me`,
+            token.value
+              ? { params, headers: { Authorization: `Bearer ${token.value}` } }
+              : { params },
+          );
         }
         if (response.data) {
           currentRating.value = Number(response.data.rating);
@@ -139,8 +164,16 @@ export default {
 
     // submit a new rating
     const rate = async (val) => {
-      if (!token) {
-        alert("Please log in to rate.");
+      // If the user is not logged in and anonymous rating is not permitted,
+      // prompt to log in and offer to navigate to the Login page.
+      if (!token.value && !allowAnonRate.value) {
+        // Using confirm so the user can choose to navigate to the login page
+        const goToLogin = window.confirm(
+          "Please log in to rate. Would you like to go to the login page now?",
+        );
+        if (goToLogin) {
+          router.push({ name: "Login" });
+        }
         return;
       }
       if (isDraft.value) {
@@ -158,16 +191,24 @@ export default {
       };
       if (props.element.node_id) {
         payload.node_id = props.element.node_id;
-        await api.post(`/nodes/${props.element.node_id}/ratings`, payload, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        await api.post(
+          `/nodes/${props.element.node_id}/ratings`,
+          payload,
+          token.value
+            ? { headers: { Authorization: `Bearer ${token.value}` } }
+            : {},
+        );
       } else {
         const { source, target } = props.element.edge;
         payload.source_id = source;
         payload.target_id = target;
-        await api.post(`/edges/${source}/${target}/ratings`, payload, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        await api.post(
+          `/edges/${source}/${target}/ratings`,
+          payload,
+          token.value
+            ? { headers: { Authorization: `Bearer ${token.value}` } }
+            : {},
+        );
       }
       // refresh histogram
       await histogram.value?.fetchRatings();
@@ -211,6 +252,7 @@ export default {
       buttonColors,
       optionKeys,
       token, // expose token to template
+      allowAnonRate,
       displayValue,
       sliderPercent,
       isDraft,
@@ -274,6 +316,16 @@ export default {
 .slider-value {
   min-width: 2em;
   text-align: center;
+}
+
+.rating-helper {
+  margin-top: 0.5em;
+  font-size: 0.9em;
+  color: var(--muted-text, #666);
+}
+.rating-helper a {
+  color: var(--accent-color);
+  text-decoration: underline;
 }
 
 /* continuous slider styling via pseudo-elements */

@@ -4,22 +4,22 @@
     @mouseenter="$emit('hover', node.node_id)"
     @mouseleave="$emit('leave', node.node_id)"
   >
-    <router-link
-      :to="`/node/${node.node_id}`"
-      class="title"
-      :style="{ color: typeColor(node.node_type) || 'var(--text-color)' }"
-    >
+    <router-link :to="`/node/${node.node_id}`" class="title">
       ➜ {{ node.title }}
       <span
         class="node-type"
         :style="{ color: typeColor(node.node_type) || 'var(--text-color)' }"
       >
-        ({{ node.node_type }})
+        <template v-if="node.scope">({{ node.scope }})</template>
+        <template v-else></template>
       </span>
     </router-link>
     <div class="subtitle">
       <span class="meta">
-        {{ node.scope || "—" }} — {{ nodeStatusDisplay(node) }} —
+        {{ node.node_type }} —
+        <template v-if="hasStatus(node)">
+          {{ nodeStatusDisplay(node) }} —
+        </template>
         <span v-if="node.last_modified">{{
           formatDate(node.last_modified)
         }}</span>
@@ -61,7 +61,13 @@ export default {
       return node.status || "—";
     }
 
-    return { typeColor, nodeStatusDisplay };
+    function hasStatus(node) {
+      if (!node || !nodeAllowsProperty) return false;
+      if (!nodeAllowsProperty(node.node_type, "status")) return false;
+      return !!node.status;
+    }
+
+    return { typeColor, nodeStatusDisplay, hasStatus };
   },
   methods: {
     formatDate(iso) {

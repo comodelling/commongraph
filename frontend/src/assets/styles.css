@@ -71,7 +71,20 @@ body,
 }
 
 .main-content {
-  /* Tag selector palette overrides */
+  /* Tag selector palette overrides for dark mode only */
+  flex: 1;
+  /* margin: 2px auto; */
+  /* padding: 3px; */
+  /* border: 1px solid var(--border-color); */
+  background-color: var(--background-color);
+  border-radius: 5px;
+  /* max-height: 90%; */
+  /* overflow-y: auto; */
+  /* padding-right: 150px; */
+  justify-content: center;
+}
+
+body.dark .main-content {
   --tag-surface-bg: #1b1f2a;
   --tag-surface-border: #3a4256;
   --tag-disabled-bg: #232838;
@@ -88,16 +101,6 @@ body,
   --tag-dropdown-hover-bg: #273149;
   --tag-error-bg: #3f2324;
   --tag-error-border: #b76b6d;
-  flex: 1;
-  /* margin: 2px auto; */
-  /* padding: 3px; */
-  /* border: 1px solid var(--border-color); */
-  background-color: var(--background-color);
-  border-radius: 5px;
-  /* max-height: 90%; */
-  /* overflow-y: auto; */
-  /* padding-right: 150px; */
-  justify-content: center;
 }
 
 /* anchors */
@@ -452,7 +455,7 @@ body.dark .invalid-reference .reference-input {
 
 .tag {
   background-color: #e0e0e0;
-  border-radius: 12px;
+  border-radius: 6px;
   padding: 3px 8px 3px 8px;
   font-size: 11px;
   cursor: pointer;
@@ -489,7 +492,7 @@ body.dark .tag {
 .tag-input {
   padding: 3px 6px;
   font-size: 11px;
-  border-radius: 12px;
+  border-radius: 6px;
   border: 1px solid #007bff;
   background-color: white;
   min-width: 50px;

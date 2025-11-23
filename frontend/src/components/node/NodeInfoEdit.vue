@@ -224,7 +224,6 @@
           tabindex="0"
         >
           <span
-            v-if="editedNode.tags.length"
             v-for="(tag, index) in editedNode.tags"
             :key="`${tag}-${index}`"
             class="tag"
@@ -235,7 +234,17 @@
           >
             {{ tag }}
           </span>
-          <span v-else class="tag-placeholder">Click to add tags</span>
+          <button
+            class="add-button add-tag-button"
+            @click.stop="canEditField('tags') && startEditing('tags')"
+            :disabled="!canEditField('tags')"
+            title="Add a tag"
+          >
+            +
+          </button>
+          <span v-if="editedNode.tags.length === 0" class="tag-placeholder"
+            >Click to add tags</span
+          >
         </div>
         <TagSelector
           v-else
@@ -827,11 +836,11 @@ select:disabled {
   flex-wrap: wrap;
   gap: 4px;
   align-items: center;
-  min-height: 20px;
+  min-height: 24px;
   padding: 4px 6px;
-  border: 1px solid var(--tag-surface-border, #ccc);
-  border-radius: 4px;
-  background: var(--tag-surface-bg, #fff);
+  border: 1px solid var(--border-color);
+  border-radius: 2px;
+  background: var(--background-color);
   cursor: text;
 }
 .tags-preview span {
@@ -841,14 +850,50 @@ select:disabled {
 /* Keep individual tags compact and inline */
 .tags-preview .tag {
   flex-shrink: 0;
-  min-height: 24px;
+  min-height: auto;
+  height: auto;
   display: inline-flex !important;
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: var(--tag-chip-bg, #edf2ff);
-  border: 1px solid var(--tag-chip-border, #cfd8f3);
-  color: var(--tag-chip-text, #273445);
-  font-size: 0.85rem;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: #e0e0e0;
+  border: 1px solid #ccc;
+  color: #333;
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+body.dark .tags-preview .tag {
+  background: #404040;
+  border-color: #555;
+  color: #f0f0f0;
+}
+
+.add-tag-button {
+  margin: 0 !important;
+  padding: 2px 6px !important;
+  font-size: 12px !important;
+  height: auto !important;
+  min-height: auto !important;
+  background-color: #6c757d !important;
+  color: white !important;
+}
+
+body.dark .add-tag-button {
+  background-color: #5a6268 !important;
+}
+
+.add-tag-button:hover:not(:disabled) {
+  opacity: 1 !important;
+  background-color: #5a6268 !important;
+}
+
+body.dark .add-tag-button:hover:not(:disabled) {
+  background-color: #505050 !important;
+}
+
+.add-tag-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .tag-placeholder {

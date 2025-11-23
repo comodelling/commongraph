@@ -59,12 +59,23 @@
         </option>
       </select>
     </div>
+    <template v-if="showInfoButton">
+      <div class="control-separator"></div>
+      <button
+        :class="['info-button', { active: infoMode }]"
+        @click="onInfoToggle"
+        title="Toggle type labels"
+      >
+        <Icon name="info" />
+      </button>
+    </template>
   </div>
 </template>
 
 <script>
 import { computed, ref, watch } from "vue";
 import { useConfig } from "../../composables/useConfig";
+import Icon from "../common/Icon.vue";
 import {
   COLOR_MODE_TYPE,
   humanizeLabel,
@@ -74,6 +85,9 @@ import {
 
 export default {
   name: "GraphControls",
+  components: {
+    Icon,
+  },
   props: {
     depth: {
       type: Number,
@@ -87,8 +101,21 @@ export default {
       type: String,
       default: COLOR_MODE_TYPE,
     },
+    showInfoButton: {
+      type: Boolean,
+      default: false,
+    },
+    infoMode: {
+      type: Boolean,
+      default: false,
+    },
   },
-  emits: ["update:depth", "update:nodeColorBy", "update:edgeColorBy"],
+  emits: [
+    "update:depth",
+    "update:nodeColorBy",
+    "update:edgeColorBy",
+    "update:infoMode",
+  ],
   setup(props, { emit }) {
     const { nodeTypes, edgeTypes, nodePollTypes, edgePollTypes, load } =
       useConfig();
@@ -146,6 +173,10 @@ export default {
       emit("update:edgeColorBy", normalized);
     };
 
+    const onInfoToggle = () => {
+      emit("update:infoMode", !props.infoMode);
+    };
+
     return {
       localDepth,
       localNodeColorBy,
@@ -155,6 +186,7 @@ export default {
       onDepthChange,
       onNodeColorChange,
       onEdgeColorChange,
+      onInfoToggle,
     };
   },
 };
@@ -202,7 +234,7 @@ function buildColorOptions(pollSource = {}, typeSource = {}) {
 <style scoped>
 .graph-controls {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 8px;
   align-items: center;
   padding: 0;
@@ -231,7 +263,7 @@ function buildColorOptions(pollSource = {}, typeSource = {}) {
 }
 
 .control-group select {
-  padding: 4px 6px;
+  padding: 3px 5px;
   font-size: 11px;
   background-color: var(--background-color);
   color: var(--text-color);
@@ -240,6 +272,7 @@ function buildColorOptions(pollSource = {}, typeSource = {}) {
   cursor: pointer;
   transition: all 0.2s;
   min-width: 20px;
+  height: 24px;
 }
 
 .control-group select:hover {
@@ -260,5 +293,45 @@ function buildColorOptions(pollSource = {}, typeSource = {}) {
 
 :global(body.dark) .control-group select:hover {
   border-color: #777;
+}
+
+.info-button {
+  padding: 3px 6px;
+  background-color: var(--background-color);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+  border-radius: 3px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  min-width: 24px;
+  min-height: 24px;
+}
+
+.info-button:hover {
+  border-color: var(--text-color);
+}
+
+.info-button.active {
+  font-weight: 600;
+  border-color: var(--text-color);
+  background-color: var(--border-color);
+}
+
+:global(body.dark) .info-button {
+  background-color: #2a2a2a;
+  color: #fff;
+  border-color: #555;
+}
+
+:global(body.dark) .info-button:hover {
+  border-color: #777;
+}
+
+:global(body.dark) .info-button.active {
+  background-color: #444;
+  border-color: #888;
 }
 </style>

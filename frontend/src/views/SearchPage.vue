@@ -251,28 +251,18 @@
                   </svg>
                 </button>
               </div>
-              <div
-                class="viz-info"
-                style="margin-top: 6px; display: flex; gap: 4px"
-              >
-                <button
-                  :class="['tab-button', { active: infoMode }]"
-                  @click="toggleInfoMode"
-                  title="Toggle type labels"
-                  style="min-width: 32px"
-                >
-                  <Icon name="info" />
-                </button>
-              </div>
             </div>
             <div class="viz-controls">
               <GraphControls
                 :depth="depthLevel"
                 :node-color-by="nodeColorBy"
                 :edge-color-by="edgeColorBy"
+                :show-info-button="true"
+                :info-mode="infoMode"
                 @update:depth="updateDepth"
                 @update:nodeColorBy="updateNodeColorBy"
                 @update:edgeColorBy="updateEdgeColorBy"
+                @update:infoMode="toggleInfoMode"
               />
             </div>
           </div>
@@ -1788,8 +1778,8 @@ export default {
   left: 10px;
   right: 10px;
   display: flex;
-  justify-content: flex-start; /* Align to left, not space-between */
-  align-items: center;
+  justify-content: center; /* Center the controls */
+  align-items: flex-start;
   z-index: 10;
   gap: 16px;
   pointer-events: none; /* Allow clicks to pass through empty space */
@@ -1811,6 +1801,9 @@ export default {
 }
 
 .viz-left {
+  position: absolute;
+  left: 0;
+  top: 0;
   display: flex;
   flex-direction: column;
   pointer-events: auto; /* ensure buttons inside are clickable even though parent header may have pointer-events: none */
@@ -1820,7 +1813,7 @@ export default {
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  padding: 4px 7px;
+  padding: 4px 8px;
   background-color: var(--background-color);
   border: 1px solid var(--border-color);
   border-radius: 4px;

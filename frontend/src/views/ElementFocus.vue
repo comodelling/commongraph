@@ -72,21 +72,17 @@
           :depth="depthLevel"
           :node-color-by="nodeColorBy"
           :edge-color-by="edgeColorBy"
+          :show-info-button="true"
+          :info-mode="infoMode"
           @update:depth="updateDepth"
           @update:nodeColorBy="updateNodeColorBy"
           @update:edgeColorBy="updateEdgeColorBy"
+          @update:infoMode="toggleInfoMode"
         />
-        <button
-          :class="['tab-button', { active: infoMode }]"
-          @click="toggleInfoMode"
-          title="Toggle type labels"
-          style="margin-left: 8px"
-        >
-          <Icon name="info" />
-        </button>
       </div>
       <SubgraphRenderer
         :data="subgraphData"
+        :info-control-visible="false"
         @nodeClick="updateNodeFromBackend"
         @edgeClick="updateEdgeFromBackend"
         @newNodeCreated="openNewlyCreatedNode"
@@ -210,20 +206,6 @@ export default {
       if (this.id) {
         this.hydrateNodeFromCache();
       }
-    },
-    toggleInfoMode() {
-      const current = this.infoMode;
-      const next = !current;
-      try {
-        localStorage.setItem(
-          "commongraph:flow:infoMode",
-          next ? "true" : "false",
-        );
-      } catch (err) {}
-      window.dispatchEvent(
-        new CustomEvent("commongraph-infoMode-set", { detail: next }),
-      );
-      this.infoMode = next;
     },
     "$route.params.source_id"() {
       this.debugLog("Source ID changed to:", this.sourceId);
@@ -1292,6 +1274,20 @@ export default {
         },
       });
     },
+    toggleInfoMode() {
+      const current = this.infoMode;
+      const next = !current;
+      try {
+        localStorage.setItem(
+          "commongraph:flow:infoMode",
+          next ? "true" : "false",
+        );
+      } catch (err) {}
+      window.dispatchEvent(
+        new CustomEvent("commongraph-infoMode-set", { detail: next }),
+      );
+      this.infoMode = next;
+    },
   },
 };
 </script>
@@ -1341,18 +1337,21 @@ export default {
 .right-panel-header {
   position: absolute;
   top: 10px;
-  right: 90px; /* Position from the right, leaving space for compass */
-  left: auto; /* Override any left positioning */
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 10;
   display: flex;
   align-items: center;
-  padding: 6px 10px;
+  justify-content: center;
+  padding: 4px 8px;
   background-color: var(--background-color);
   border: 1px solid var(--border-color);
   border-radius: 4px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   pointer-events: auto;
   width: auto; /* Auto width based on content */
+  max-width: calc(100% - 180px); /* Leave space for compass on right */
+  white-space: nowrap; /* Prevent wrapping */
 }
 
 :global(body.dark) .right-panel-header {

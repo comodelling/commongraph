@@ -113,9 +113,10 @@ export default {
 <style scoped>
 .main-page {
   position: relative;
-  width: 100%;
+  width: 99%;
   height: 100%;
-  overflow: hidden;
+  /* overflow: hidden; */
+  box-sizing: border-box;
 }
 
 /* Background graph layer */
@@ -127,6 +128,7 @@ export default {
   height: 100%;
   z-index: 1;
   opacity: 0.8;
+  box-sizing: border-box;
 }
 
 /* Foreground content panel */
@@ -139,6 +141,8 @@ export default {
   height: 100%;
   padding: 20px;
   pointer-events: none; /* Allow clicks to pass through to graph */
+  box-sizing: border-box;
+  width: 100%;
 }
 
 .content {

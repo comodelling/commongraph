@@ -1675,6 +1675,9 @@ onEdgeMouseLeave(({ edge }) => {
 
       <Controls
         position="top-right"
+        :showFitView="true"
+        :showInteractive="false"
+        :showZoom="true"
         style="margin-top: 72px; margin-right: 20px"
       >
         <ControlButton title="Export subgraph as JSON" @click="exportSubgraph">

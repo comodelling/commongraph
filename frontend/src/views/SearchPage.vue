@@ -45,51 +45,43 @@
                   title="Flow View"
                 >
                   <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 16 16"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 20 20"
                     fill="none"
                     xmlns="http://www.w3.org/2000/svg"
                   >
-                    <!-- Left block -->
+                    <!-- Left node -->
                     <rect
-                      x="1.2"
-                      y="4.2"
-                      width="4.8"
-                      height="7.6"
-                      rx="1"
+                      x="1"
+                      y="5.5"
+                      width="6"
+                      height="9"
+                      rx="1.2"
                       stroke="currentColor"
-                      stroke-width="1.6"
+                      stroke-width="1.4"
                       fill="none"
                     />
-                    <!-- Right block -->
+                    <!-- Right node -->
                     <rect
-                      x="9"
-                      y="4.2"
-                      width="4.8"
-                      height="7.6"
-                      rx="1"
+                      x="13"
+                      y="5.5"
+                      width="6"
+                      height="9"
+                      rx="1.2"
                       stroke="currentColor"
-                      stroke-width="1.6"
+                      stroke-width="1.4"
                       fill="none"
                     />
-                    <!-- Connecting shaft -->
+                    <!-- Edge arrow -->
                     <path
-                      d="M5.8 8 L10.2 8"
+                      d="M7.5 10 L12.5 10"
                       stroke="currentColor"
-                      stroke-width="1.8"
+                      stroke-width="2"
                       stroke-linecap="round"
-                      fill="none"
                     />
-                    <!-- Arrowhead -->
-                    <path
-                      d="M9.2 6.4 L11 8 L9.2 9.6"
-                      stroke="currentColor"
-                      stroke-width="1.8"
-                      fill="none"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    />
+                    <!-- Arrowhead (filled triangle) -->
+                    <path d="M11.5 8 L14 10 L11.5 12 Z" fill="currentColor" />
                   </svg>
                 </button>
                 <button
@@ -98,125 +90,76 @@
                   title="Graph View"
                 >
                   <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 16 16"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 20 20"
                     fill="none"
                     xmlns="http://www.w3.org/2000/svg"
                   >
-                    <!-- Center node -->
-                    <circle cx="8" cy="7.5" r="1" fill="currentColor" />
+                    <!-- Center node (larger) -->
+                    <circle cx="10" cy="10" r="1.5" fill="currentColor" />
 
-                    <!-- Rim circle to indicate connected ring -->
-                    <circle
-                      cx="8"
-                      cy="7.5"
-                      r="4.6"
+                    <!-- Outer nodes positioned in pentagon -->
+                    <circle cx="10" cy="3" r="1.8" fill="currentColor" />
+                    <circle cx="16.5" cy="7.5" r="1.8" fill="currentColor" />
+                    <circle cx="13.5" cy="15" r="1.8" fill="currentColor" />
+                    <circle cx="6.5" cy="15" r="1.8" fill="currentColor" />
+                    <circle cx="3.5" cy="7.5" r="1.8" fill="currentColor" />
+
+                    <!-- Edges from center to outer nodes -->
+                    <line
+                      x1="10"
+                      y1="10"
+                      x2="10"
+                      y2="4.8"
                       stroke="currentColor"
-                      stroke-width="0.9"
+                      stroke-width="1.2"
+                      opacity="0.7"
+                    />
+                    <line
+                      x1="10"
+                      y1="10"
+                      x2="14.8"
+                      y2="7.8"
+                      stroke="currentColor"
+                      stroke-width="1.2"
+                      opacity="0.7"
+                    />
+                    <line
+                      x1="10"
+                      y1="10"
+                      x2="12.8"
+                      y2="13.5"
+                      stroke="currentColor"
+                      stroke-width="1.2"
+                      opacity="0.7"
+                    />
+                    <line
+                      x1="10"
+                      y1="10"
+                      x2="7.2"
+                      y2="13.5"
+                      stroke="currentColor"
+                      stroke-width="1.2"
+                      opacity="0.7"
+                    />
+                    <line
+                      x1="10"
+                      y1="10"
+                      x2="5.2"
+                      y2="7.8"
+                      stroke="currentColor"
+                      stroke-width="1.2"
+                      opacity="0.7"
+                    />
+
+                    <!-- Outer ring connections -->
+                    <path
+                      d="M10 3 L16.5 7.5 L13.5 15 L6.5 15 L3.5 7.5 Z"
+                      stroke="currentColor"
+                      stroke-width="1"
                       fill="none"
-                      opacity="0.9"
-                    />
-
-                    <!-- Outer nodes (slightly larger dots) -->
-                    <circle cx="8" cy="2.9" r="1.3" fill="currentColor" />
-                    <circle cx="12.45" cy="5.7" r="1.3" fill="currentColor" />
-                    <circle cx="10.55" cy="11.05" r="1.3" fill="currentColor" />
-                    <circle cx="5.45" cy="11.05" r="1.3" fill="currentColor" />
-                    <circle cx="3.55" cy="5.7" r="1.3" fill="currentColor" />
-
-                    <!-- Radial edges from center to outer nodes (thin) -->
-                    <line
-                      x1="8"
-                      y1="7.5"
-                      x2="8"
-                      y2="3.2"
-                      stroke="currentColor"
-                      stroke-width="1"
-                      stroke-linecap="round"
-                    />
-                    <line
-                      x1="8"
-                      y1="7.5"
-                      x2="12.0"
-                      y2="6.0"
-                      stroke="currentColor"
-                      stroke-width="1"
-                      stroke-linecap="round"
-                    />
-                    <line
-                      x1="8"
-                      y1="7.5"
-                      x2="10.4"
-                      y2="9.9"
-                      stroke="currentColor"
-                      stroke-width="1"
-                      stroke-linecap="round"
-                    />
-                    <line
-                      x1="8"
-                      y1="7.5"
-                      x2="5.6"
-                      y2="9.9"
-                      stroke="currentColor"
-                      stroke-width="1"
-                      stroke-linecap="round"
-                    />
-                    <line
-                      x1="8"
-                      y1="7.5"
-                      x2="4.0"
-                      y2="6.0"
-                      stroke="currentColor"
-                      stroke-width="1"
-                      stroke-linecap="round"
-                    />
-
-                    <!-- Connections along the rim between adjacent outer nodes (thin) -->
-                    <line
-                      x1="8"
-                      y1="2.9"
-                      x2="12.45"
-                      y2="5.7"
-                      stroke="currentColor"
-                      stroke-width="0.9"
-                      stroke-linecap="round"
-                    />
-                    <line
-                      x1="12.45"
-                      y1="5.7"
-                      x2="10.55"
-                      y2="11.05"
-                      stroke="currentColor"
-                      stroke-width="0.9"
-                      stroke-linecap="round"
-                    />
-                    <line
-                      x1="10.55"
-                      y1="11.05"
-                      x2="5.45"
-                      y2="11.05"
-                      stroke="currentColor"
-                      stroke-width="0.9"
-                      stroke-linecap="round"
-                    />
-                    <line
-                      x1="5.45"
-                      y1="11.05"
-                      x2="3.55"
-                      y2="5.7"
-                      stroke="currentColor"
-                      stroke-width="0.9"
-                      stroke-linecap="round"
-                    />
-                    <line
-                      x1="3.55"
-                      y1="5.7"
-                      x2="8"
-                      y2="2.9"
-                      stroke="currentColor"
-                      stroke-width="0.9"
-                      stroke-linecap="round"
+                      opacity="0.4"
                     />
                   </svg>
                 </button>
@@ -226,26 +169,32 @@
                   title="Map View (Coming Soon)"
                 >
                   <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 16 16"
+                    width="20"
+                    height="20"
+                    viewBox="0 0 20 20"
                     fill="none"
                     xmlns="http://www.w3.org/2000/svg"
                   >
+                    <!-- Map background -->
                     <path
-                      d="M2 12 L6 10 L10 12 L14 10 V4 L10 6 L6 4 L2 6 Z"
+                      d="M2 14 L6.5 12 L13.5 14.5 L18 12.5 V4.5 L13.5 6.5 L6.5 4 L2 6 Z"
                       fill="currentColor"
-                      opacity="0.3"
+                      opacity="0.25"
                     />
+                    <!-- Fold lines -->
                     <path
-                      d="M6 4 V10 M10 6 V12"
+                      d="M6.5 4 V12 M13.5 6.5 V14.5"
                       stroke="currentColor"
-                      stroke-width="1.5"
+                      stroke-width="1.8"
+                      stroke-linecap="round"
                     />
+                    <!-- Top edge -->
                     <path
-                      d="M2 6 L6 4 L10 6 L14 4"
+                      d="M2 6 L6.5 4 L13.5 6.5 L18 4.5"
                       stroke="currentColor"
-                      stroke-width="1.5"
+                      stroke-width="1.6"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
                       fill="none"
                     />
                   </svg>
@@ -1837,8 +1786,8 @@ export default {
 }
 
 .tab-button svg {
-  width: 16px;
-  height: 16px;
+  width: 20px;
+  height: 20px;
   display: block;
 }
 

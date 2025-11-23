@@ -47,31 +47,22 @@ defineProps({
     />
   </svg>
 
-  <svg v-if="name === 'info'" width="18" height="18" viewBox="0 0 24 24">
+  <svg v-if="name === 'info'" width="20" height="20" viewBox="0 0 24 24">
     <circle
       cx="12"
       cy="12"
-      r="10"
+      r="10.5"
       stroke="currentColor"
-      stroke-width="1"
+      stroke-width="1.5"
       fill="none"
     />
+    <!-- Dot on top (i dot) -->
+    <circle cx="12" cy="8" r="1.2" fill="currentColor" />
+    <!-- Vertical line of i -->
     <path
-      d="M12 8v1"
+      d="M12 11v6"
       stroke="currentColor"
-      stroke-width="2.2"
-      stroke-linecap="round"
-    />
-    <path
-      d="M11.5 11h1"
-      stroke="currentColor"
-      stroke-width="2"
-      stroke-linecap="round"
-    />
-    <path
-      d="M12 13v3"
-      stroke="currentColor"
-      stroke-width="2.2"
+      stroke-width="2.5"
       stroke-linecap="round"
     />
   </svg>

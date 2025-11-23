@@ -44,6 +44,7 @@ body,
   height: 100%;
   margin: 0;
   padding: 0;
+  overflow: hidden;
   --tag-surface-bg: #ffffff;
   --tag-surface-border: #ccc;
   --tag-disabled-bg: #f5f5f5;

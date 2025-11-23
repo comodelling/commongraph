@@ -41,9 +41,38 @@ defineProps({
   <svg v-if="name === 'export'" width="16" height="16" viewBox="0 0 24 24">
     <path
       d="M12 2L12 14M12 14L8 10M12 14L16 10M4 18H20V22H4V18Z"
-      stroke="black"
+      stroke="currentColor"
       stroke-width="2"
       fill="none"
+    />
+  </svg>
+
+  <svg v-if="name === 'info'" width="18" height="18" viewBox="0 0 24 24">
+    <circle
+      cx="12"
+      cy="12"
+      r="10"
+      stroke="currentColor"
+      stroke-width="1"
+      fill="none"
+    />
+    <path
+      d="M12 8v1"
+      stroke="currentColor"
+      stroke-width="2.2"
+      stroke-linecap="round"
+    />
+    <path
+      d="M11.5 11h1"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+    />
+    <path
+      d="M12 13v3"
+      stroke="currentColor"
+      stroke-width="2.2"
+      stroke-linecap="round"
     />
   </svg>
 

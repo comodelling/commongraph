@@ -20,6 +20,9 @@
       }"
       class="nodrag nopan"
     >
+      <div v-if="infoModeActive && data.edge_type" class="edge-type-label">
+        {{ data.edge_type }}
+      </div>
       <span v-if="data.cprob !== null && data.cprob !== undefined"
         >{{ data.cprob * 100 }}%</span
       >
@@ -38,7 +41,7 @@
 
 <script setup>
 import { BaseEdge, EdgeLabelRenderer, getBezierPath } from "@vue-flow/core";
-import { computed, ref } from "vue";
+import { computed, ref, inject } from "vue";
 
 const props = defineProps({
   sourceX: Number,
@@ -78,6 +81,8 @@ const path = computed(() => getBezierPath(props));
 
 const showTooltip = ref(false);
 const tooltipStyle = ref({});
+// Inject info mode active from FlowEditor
+const infoModeActive = inject("infoModeActive", ref(false));
 
 const hoverText = computed(() => {
   const data = props.data || {};
@@ -156,3 +161,30 @@ export default {
   inheritAttrs: true,
 };
 </script> -->
+
+<style scoped>
+.edge-type-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(
+    --text-color
+  ); /* match node text color variable for light/dark consistency */
+  text-align: center;
+  pointer-events: none;
+  margin-bottom: 4px;
+}
+.edge-type-label {
+  background: rgba(255, 255, 255, 0.85);
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+}
+
+/* ensure the edge type label doesn't shift layout and is centered */
+.nodrag.nopan .edge-type-label {
+  display: inline-block;
+  position: relative;
+  transform: translateY(-10%);
+  pointer-events: none;
+}
+</style>

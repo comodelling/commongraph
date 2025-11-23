@@ -37,218 +37,233 @@
             class="viz-header"
             :class="{ 'has-compass': activeTab === 'flow' }"
           >
-            <div class="viz-tabs">
-              <button
-                :class="['tab-button', { active: activeTab === 'flow' }]"
-                @click="selectTab('flow')"
-                title="Flow View"
-              >
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 16 16"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
+            <div class="viz-left">
+              <div class="viz-tabs">
+                <button
+                  :class="['tab-button', { active: activeTab === 'flow' }]"
+                  @click="selectTab('flow')"
+                  title="Flow View"
                 >
-                  <!-- Left block -->
-                  <rect
-                    x="1.2"
-                    y="4.2"
-                    width="4.8"
-                    height="7.6"
-                    rx="1"
-                    stroke="currentColor"
-                    stroke-width="1.6"
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 16 16"
                     fill="none"
-                  />
-                  <!-- Right block -->
-                  <rect
-                    x="9"
-                    y="4.2"
-                    width="4.8"
-                    height="7.6"
-                    rx="1"
-                    stroke="currentColor"
-                    stroke-width="1.6"
-                    fill="none"
-                  />
-                  <!-- Connecting shaft -->
-                  <path
-                    d="M5.8 8 L10.2 8"
-                    stroke="currentColor"
-                    stroke-width="1.8"
-                    stroke-linecap="round"
-                    fill="none"
-                  />
-                  <!-- Arrowhead -->
-                  <path
-                    d="M9.2 6.4 L11 8 L9.2 9.6"
-                    stroke="currentColor"
-                    stroke-width="1.8"
-                    fill="none"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                </svg>
-              </button>
-              <button
-                :class="['tab-button', { active: activeTab === 'graph' }]"
-                @click="selectTab('graph')"
-                title="Graph View"
-              >
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 16 16"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <!-- Left block -->
+                    <rect
+                      x="1.2"
+                      y="4.2"
+                      width="4.8"
+                      height="7.6"
+                      rx="1"
+                      stroke="currentColor"
+                      stroke-width="1.6"
+                      fill="none"
+                    />
+                    <!-- Right block -->
+                    <rect
+                      x="9"
+                      y="4.2"
+                      width="4.8"
+                      height="7.6"
+                      rx="1"
+                      stroke="currentColor"
+                      stroke-width="1.6"
+                      fill="none"
+                    />
+                    <!-- Connecting shaft -->
+                    <path
+                      d="M5.8 8 L10.2 8"
+                      stroke="currentColor"
+                      stroke-width="1.8"
+                      stroke-linecap="round"
+                      fill="none"
+                    />
+                    <!-- Arrowhead -->
+                    <path
+                      d="M9.2 6.4 L11 8 L9.2 9.6"
+                      stroke="currentColor"
+                      stroke-width="1.8"
+                      fill="none"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </button>
+                <button
+                  :class="['tab-button', { active: activeTab === 'graph' }]"
+                  @click="selectTab('graph')"
+                  title="Graph View"
                 >
-                  <!-- Center node -->
-                  <circle cx="8" cy="7.5" r="1" fill="currentColor" />
-
-                  <!-- Rim circle to indicate connected ring -->
-                  <circle
-                    cx="8"
-                    cy="7.5"
-                    r="4.6"
-                    stroke="currentColor"
-                    stroke-width="0.9"
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 16 16"
                     fill="none"
-                    opacity="0.9"
-                  />
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <!-- Center node -->
+                    <circle cx="8" cy="7.5" r="1" fill="currentColor" />
 
-                  <!-- Outer nodes (slightly larger dots) -->
-                  <circle cx="8" cy="2.9" r="1.3" fill="currentColor" />
-                  <circle cx="12.45" cy="5.7" r="1.3" fill="currentColor" />
-                  <circle cx="10.55" cy="11.05" r="1.3" fill="currentColor" />
-                  <circle cx="5.45" cy="11.05" r="1.3" fill="currentColor" />
-                  <circle cx="3.55" cy="5.7" r="1.3" fill="currentColor" />
+                    <!-- Rim circle to indicate connected ring -->
+                    <circle
+                      cx="8"
+                      cy="7.5"
+                      r="4.6"
+                      stroke="currentColor"
+                      stroke-width="0.9"
+                      fill="none"
+                      opacity="0.9"
+                    />
 
-                  <!-- Radial edges from center to outer nodes (thin) -->
-                  <line
-                    x1="8"
-                    y1="7.5"
-                    x2="8"
-                    y2="3.2"
-                    stroke="currentColor"
-                    stroke-width="1"
-                    stroke-linecap="round"
-                  />
-                  <line
-                    x1="8"
-                    y1="7.5"
-                    x2="12.0"
-                    y2="6.0"
-                    stroke="currentColor"
-                    stroke-width="1"
-                    stroke-linecap="round"
-                  />
-                  <line
-                    x1="8"
-                    y1="7.5"
-                    x2="10.4"
-                    y2="9.9"
-                    stroke="currentColor"
-                    stroke-width="1"
-                    stroke-linecap="round"
-                  />
-                  <line
-                    x1="8"
-                    y1="7.5"
-                    x2="5.6"
-                    y2="9.9"
-                    stroke="currentColor"
-                    stroke-width="1"
-                    stroke-linecap="round"
-                  />
-                  <line
-                    x1="8"
-                    y1="7.5"
-                    x2="4.0"
-                    y2="6.0"
-                    stroke="currentColor"
-                    stroke-width="1"
-                    stroke-linecap="round"
-                  />
+                    <!-- Outer nodes (slightly larger dots) -->
+                    <circle cx="8" cy="2.9" r="1.3" fill="currentColor" />
+                    <circle cx="12.45" cy="5.7" r="1.3" fill="currentColor" />
+                    <circle cx="10.55" cy="11.05" r="1.3" fill="currentColor" />
+                    <circle cx="5.45" cy="11.05" r="1.3" fill="currentColor" />
+                    <circle cx="3.55" cy="5.7" r="1.3" fill="currentColor" />
 
-                  <!-- Connections along the rim between adjacent outer nodes (thin) -->
-                  <line
-                    x1="8"
-                    y1="2.9"
-                    x2="12.45"
-                    y2="5.7"
-                    stroke="currentColor"
-                    stroke-width="0.9"
-                    stroke-linecap="round"
-                  />
-                  <line
-                    x1="12.45"
-                    y1="5.7"
-                    x2="10.55"
-                    y2="11.05"
-                    stroke="currentColor"
-                    stroke-width="0.9"
-                    stroke-linecap="round"
-                  />
-                  <line
-                    x1="10.55"
-                    y1="11.05"
-                    x2="5.45"
-                    y2="11.05"
-                    stroke="currentColor"
-                    stroke-width="0.9"
-                    stroke-linecap="round"
-                  />
-                  <line
-                    x1="5.45"
-                    y1="11.05"
-                    x2="3.55"
-                    y2="5.7"
-                    stroke="currentColor"
-                    stroke-width="0.9"
-                    stroke-linecap="round"
-                  />
-                  <line
-                    x1="3.55"
-                    y1="5.7"
-                    x2="8"
-                    y2="2.9"
-                    stroke="currentColor"
-                    stroke-width="0.9"
-                    stroke-linecap="round"
-                  />
-                </svg>
-              </button>
-              <button
-                class="tab-button disabled"
-                disabled
-                title="Map View (Coming Soon)"
-              >
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 16 16"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
+                    <!-- Radial edges from center to outer nodes (thin) -->
+                    <line
+                      x1="8"
+                      y1="7.5"
+                      x2="8"
+                      y2="3.2"
+                      stroke="currentColor"
+                      stroke-width="1"
+                      stroke-linecap="round"
+                    />
+                    <line
+                      x1="8"
+                      y1="7.5"
+                      x2="12.0"
+                      y2="6.0"
+                      stroke="currentColor"
+                      stroke-width="1"
+                      stroke-linecap="round"
+                    />
+                    <line
+                      x1="8"
+                      y1="7.5"
+                      x2="10.4"
+                      y2="9.9"
+                      stroke="currentColor"
+                      stroke-width="1"
+                      stroke-linecap="round"
+                    />
+                    <line
+                      x1="8"
+                      y1="7.5"
+                      x2="5.6"
+                      y2="9.9"
+                      stroke="currentColor"
+                      stroke-width="1"
+                      stroke-linecap="round"
+                    />
+                    <line
+                      x1="8"
+                      y1="7.5"
+                      x2="4.0"
+                      y2="6.0"
+                      stroke="currentColor"
+                      stroke-width="1"
+                      stroke-linecap="round"
+                    />
+
+                    <!-- Connections along the rim between adjacent outer nodes (thin) -->
+                    <line
+                      x1="8"
+                      y1="2.9"
+                      x2="12.45"
+                      y2="5.7"
+                      stroke="currentColor"
+                      stroke-width="0.9"
+                      stroke-linecap="round"
+                    />
+                    <line
+                      x1="12.45"
+                      y1="5.7"
+                      x2="10.55"
+                      y2="11.05"
+                      stroke="currentColor"
+                      stroke-width="0.9"
+                      stroke-linecap="round"
+                    />
+                    <line
+                      x1="10.55"
+                      y1="11.05"
+                      x2="5.45"
+                      y2="11.05"
+                      stroke="currentColor"
+                      stroke-width="0.9"
+                      stroke-linecap="round"
+                    />
+                    <line
+                      x1="5.45"
+                      y1="11.05"
+                      x2="3.55"
+                      y2="5.7"
+                      stroke="currentColor"
+                      stroke-width="0.9"
+                      stroke-linecap="round"
+                    />
+                    <line
+                      x1="3.55"
+                      y1="5.7"
+                      x2="8"
+                      y2="2.9"
+                      stroke="currentColor"
+                      stroke-width="0.9"
+                      stroke-linecap="round"
+                    />
+                  </svg>
+                </button>
+                <button
+                  class="tab-button disabled"
+                  disabled
+                  title="Map View (Coming Soon)"
                 >
-                  <path
-                    d="M2 12 L6 10 L10 12 L14 10 V4 L10 6 L6 4 L2 6 Z"
-                    fill="currentColor"
-                    opacity="0.3"
-                  />
-                  <path
-                    d="M6 4 V10 M10 6 V12"
-                    stroke="currentColor"
-                    stroke-width="1.5"
-                  />
-                  <path
-                    d="M2 6 L6 4 L10 6 L14 4"
-                    stroke="currentColor"
-                    stroke-width="1.5"
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 16 16"
                     fill="none"
-                  />
-                </svg>
-              </button>
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M2 12 L6 10 L10 12 L14 10 V4 L10 6 L6 4 L2 6 Z"
+                      fill="currentColor"
+                      opacity="0.3"
+                    />
+                    <path
+                      d="M6 4 V10 M10 6 V12"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                    />
+                    <path
+                      d="M2 6 L6 4 L10 6 L14 4"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                      fill="none"
+                    />
+                  </svg>
+                </button>
+              </div>
+              <div
+                class="viz-info"
+                style="margin-top: 6px; display: flex; gap: 4px"
+              >
+                <button
+                  :class="['tab-button', { active: infoMode }]"
+                  @click="toggleInfoMode"
+                  title="Toggle type labels"
+                  style="min-width: 32px"
+                >
+                  <Icon name="info" />
+                </button>
+              </div>
             </div>
             <div class="viz-controls">
               <GraphControls
@@ -272,6 +287,7 @@
           <FlowEditor
             v-else-if="activeTab === 'flow'"
             :data="flowSubgraphData"
+            :info-control-visible="false"
             :read-only="!(canCreate || canEdit || canDelete)"
             :highlighted-node-id="hoveredNodeId"
             :fit-trigger="flowFitTick"
@@ -308,6 +324,7 @@ import AggRatingMultipane from "../components/poll/AggRatingMultipane.vue";
 import CosmosGraphVis from "../components/graph/GraphVis.vue";
 import FlowEditor from "../components/graph/FlowEditor.vue";
 import GraphControls from "../components/graph/GraphControls.vue";
+import Icon from "../components/common/Icon.vue";
 import { useLogging } from "../composables/useLogging";
 import {
   COLOR_MODE_TYPE,
@@ -326,6 +343,7 @@ export default {
     CosmosGraphVis,
     FlowEditor,
     GraphControls,
+    Icon,
   },
   data() {
     // Logging system
@@ -354,6 +372,7 @@ export default {
       pendingFocusGraph: null,
       pendingFocusEdge: null,
       DEBUG,
+      infoMode: localStorage.getItem("commongraph:flow:infoMode") === "true",
       debugLog,
       infoLog,
       warnLog,
@@ -1220,6 +1239,25 @@ export default {
         "edges",
       );
     },
+    getCurrentInfoMode() {
+      return this.infoMode;
+    },
+    toggleInfoMode() {
+      const current = this.infoMode;
+      const next = !current;
+      try {
+        localStorage.setItem(
+          "commongraph:flow:infoMode",
+          next ? "true" : "false",
+        );
+      } catch (err) {
+        // ignore localStorage errors
+      }
+      window.dispatchEvent(
+        new CustomEvent("commongraph-infoMode-set", { detail: next }),
+      );
+      this.infoMode = next;
+    },
     handleNewNodeCreated(newNodeData) {
       // newNodeData is the formatted node object created in FlowEditor
       this.debugLog("New node created in flow view:", newNodeData);
@@ -1654,6 +1692,21 @@ export default {
       nodeAllowsProperty,
     };
   },
+  mounted() {
+    // Keep the info icon state in sync with localStorage, and subscribe to external toggle events
+    this._infoModeHandler = (e) => {
+      if (typeof e?.detail === "boolean") {
+        this.infoMode = e.detail;
+      }
+    };
+    window.addEventListener("commongraph-infoMode-set", this._infoModeHandler);
+  },
+  beforeUnmount() {
+    window.removeEventListener(
+      "commongraph-infoMode-set",
+      this._infoModeHandler,
+    );
+  },
 };
 </script>
 
@@ -1755,6 +1808,12 @@ export default {
   display: flex;
   gap: 4px;
   flex-shrink: 0;
+}
+
+.viz-left {
+  display: flex;
+  flex-direction: column;
+  pointer-events: auto; /* ensure buttons inside are clickable even though parent header may have pointer-events: none */
 }
 
 .viz-controls {

@@ -10,6 +10,7 @@ import {
   computed,
   onMounted,
   onUnmounted,
+  provide,
 } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { Panel, VueFlow, useVueFlow, ConnectionMode } from "@vue-flow/core";
@@ -114,6 +115,10 @@ const props = defineProps({
     type: Number,
     default: 0,
   },
+  infoControlVisible: {
+    type: Boolean,
+    default: true,
+  },
 });
 
 const router = useRouter();
@@ -133,6 +138,31 @@ const nodes = ref([]);
 const edges = ref([]);
 const connectionInfo = ref(null);
 const dark = ref(false);
+const INFO_MODE_KEY = "commongraph:flow:infoMode";
+const infoMode = ref(false); // persistent info mode toggle
+
+// Load persisted value from localStorage if available
+onMounted(() => {
+  try {
+    const saved = localStorage.getItem(INFO_MODE_KEY);
+    if (saved != null) {
+      infoMode.value = saved === "true";
+    }
+  } catch (err) {
+    // ignore
+  }
+});
+
+// Persist when changed
+watch(infoMode, (val) => {
+  try {
+    localStorage.setItem(INFO_MODE_KEY, val ? "true" : "false");
+  } catch (err) {
+    // ignore
+  }
+});
+const infoHover = ref(false); // transient, hovering over the info icon
+const infoModeActive = computed(() => infoMode.value || infoHover.value);
 const contextMenuOptions = ref([]);
 const contextMenuRef = ref(null);
 const showSearchBar = ref(false);
@@ -185,6 +215,28 @@ onInit((vueFlowInstance) => {
     pendingFitRequest.value = false;
   }
 });
+
+// Listen for window events to allow toggling info mode from other parts of the app
+const handleInfoModeSet = (e) => {
+  if (typeof e?.detail === "boolean") infoMode.value = e.detail;
+};
+const handleInfoModeToggle = () => {
+  infoMode.value = !infoMode.value;
+};
+onMounted(() => {
+  window.addEventListener("commongraph-infoMode-set", handleInfoModeSet);
+  window.addEventListener("commongraph-infoMode-toggle", handleInfoModeToggle);
+});
+onUnmounted(() => {
+  window.removeEventListener("commongraph-infoMode-set", handleInfoModeSet);
+  window.removeEventListener(
+    "commongraph-infoMode-toggle",
+    handleInfoModeToggle,
+  );
+});
+
+// Make info mode available to child nodes and edges via injection
+provide("infoModeActive", infoModeActive);
 
 // watch for changes in props.data and update nodes and edges accordingly
 watch(
@@ -1197,6 +1249,10 @@ function toggleDarkMode() {
   dark.value = !dark.value;
 }
 
+function toggleInfoMode() {
+  infoMode.value = !infoMode.value;
+}
+
 // ********* CONTEXT MENUS *********
 
 function showContextMenu(event, options) {
@@ -1674,6 +1730,25 @@ onEdgeMouseLeave(({ edge }) => {
       </Panel>
 
       <Controls
+        v-if="infoControlVisible"
+        position="top-left"
+        :showFitView="false"
+        :showInteractive="false"
+        :showZoom="false"
+        style="margin-top: 6px; margin-left: 10px"
+      >
+        <ControlButton
+          :title="infoMode ? 'Hide type labels' : 'Show type labels'"
+          @click="toggleInfoMode"
+          @mouseenter="infoHover = true"
+          @mouseleave="infoHover = false"
+          :class="{ 'info-active': infoMode }"
+        >
+          <Icon name="info" />
+        </ControlButton>
+      </Controls>
+
+      <Controls
         position="top-right"
         :showFitView="true"
         :showInteractive="false"
@@ -1817,8 +1892,28 @@ onEdgeMouseLeave(({ edge }) => {
   transition: box-shadow 0.15s ease-in-out;
 }
 
-.vue-flow__edge.flow-edge-connector path,
-.vue-flow__edge.flow-edge-connector .vue-flow__edge-path {
-  opacity: 0.35;
+/* Info button styles */
+/* Info button styles */
+.vue-flow__controls .info-active {
+  background-color: var(--node-color) !important;
+  border-color: var(--node-color) !important;
+  color: inherit !important; /* Keep icon color unchanged in light mode */
+}
+.vue-flow__controls .info-active:hover {
+  filter: brightness(1.05);
+}
+
+/* In dark mode we still want the icon to be visible; force to contrast color */
+/* In dark mode we still want the icon to be visible; force to contrast color */
+body.dark .vue-flow__controls .info-active {
+  color: var(--bg-contrast-color, white) !important;
+}
+body.dark .vue-flow__controls .info-active svg {
+  color: inherit !important;
+}
+
+/* In light mode, keep icon colored using primary color when active to keep it visible */
+body:not(.dark) .vue-flow__controls .info-active svg {
+  color: var(--primary-color, #007bff) !important;
 }
 </style>

@@ -76,6 +76,14 @@
           @update:nodeColorBy="updateNodeColorBy"
           @update:edgeColorBy="updateEdgeColorBy"
         />
+        <button
+          :class="['tab-button', { active: infoMode }]"
+          @click="toggleInfoMode"
+          title="Toggle type labels"
+          style="margin-left: 8px"
+        >
+          <Icon name="info" />
+        </button>
       </div>
       <SubgraphRenderer
         :data="subgraphData"
@@ -98,6 +106,7 @@ import EdgeInfo from "../components/edge/EdgeInfo.vue";
 import ElementPollPane from "../components/poll/ElementPollPane.vue";
 import SubgraphRenderer from "../components/graph/FlowEditor.vue";
 import GraphControls from "../components/graph/GraphControls.vue";
+import Icon from "../components/common/Icon.vue";
 import { useLogging } from "../composables/useLogging";
 import {
   formatFlowEdgeProps,
@@ -122,6 +131,7 @@ export default {
     ElementPollPane,
     SubgraphRenderer,
     GraphControls,
+    Icon,
   },
   setup() {
     const {
@@ -184,13 +194,36 @@ export default {
       infoLog,
       warnLog,
       errorLog,
+      // info mode persisted flag (shared between views)
+      infoMode: localStorage.getItem("commongraph:flow:infoMode") === "true",
     };
+  },
+  mounted() {
+    window.addEventListener("commongraph-infoMode-set", (e) => {
+      if (typeof e?.detail === "boolean") {
+        this.infoMode = e.detail;
+      }
+    });
   },
   watch: {
     "$route.params.id"() {
       if (this.id) {
         this.hydrateNodeFromCache();
       }
+    },
+    toggleInfoMode() {
+      const current = this.infoMode;
+      const next = !current;
+      try {
+        localStorage.setItem(
+          "commongraph:flow:infoMode",
+          next ? "true" : "false",
+        );
+      } catch (err) {}
+      window.dispatchEvent(
+        new CustomEvent("commongraph-infoMode-set", { detail: next }),
+      );
+      this.infoMode = next;
     },
     "$route.params.source_id"() {
       this.debugLog("Source ID changed to:", this.sourceId);

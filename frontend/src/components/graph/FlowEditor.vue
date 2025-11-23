@@ -466,24 +466,25 @@ async function layoutSubgraph(direction) {
   } else if (currentNodes.length === 0) {
     warnLog("Nodes array is empty, cannot layout subgraph");
     return;
-  } else if (currentEdges.length === 0) {
-    warnLog("No edges supplied, falling back to simple layout");
-    nodes.value = affectDirection(currentNodes, direction).map((node, idx) => {
-      const manualPos = manualPositions.get(node.id);
-      if (manualPos) {
-        return { ...node, position: { ...manualPos } };
-      }
-      return {
-        ...node,
-        position: {
-          x: direction === "TB" || direction === "BT" ? 0 : idx * 200,
-          y: direction === "TB" || direction === "BT" ? idx * 150 : 0,
-        },
-      };
-    });
-    fitViewToContent();
-    return;
   }
+  // else if (currentEdges.length === 0) {
+  //   warnLog("No edges supplied, falling back to simple layout");
+  //   nodes.value = affectDirection(currentNodes, direction).map((node, idx) => {
+  //     const manualPos = manualPositions.get(node.id);
+  //     if (manualPos) {
+  //       return { ...node, position: { ...manualPos } };
+  //     }
+  //     return {
+  //       ...node,
+  //       position: {
+  //         x: direction === "TB" || direction === "BT" ? 0 : idx * 200,
+  //         y: direction === "TB" || direction === "BT" ? idx * 150 : 0,
+  //       },
+  //     };
+  //   });
+  //   fitViewToContent();
+  //   return;
+  // }
 
   const laidOutNodes = layout(currentNodes, currentEdges, direction);
   nodes.value = laidOutNodes.map((node) => {

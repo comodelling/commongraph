@@ -1,0 +1,6 @@
+# Documentation dependencies
+# Install with: pip install -r requirements.txt
+# Deploy with: mkdocs gh-deploy
+
+mkdocs==1.6.1
+mkdocs-material==9.5.50

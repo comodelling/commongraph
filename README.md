@@ -46,7 +46,7 @@ See [Contributing Guide](https://docs.commongraph.org/contributing/) for develop
 
 ## License
 
-Code: GNU Affero General Public License v3.0 — see [COPYING](COPYING) for details.
+Code: GNU Affero General Public License v3.0 or later — see [LICENSES/AGPL-3.0-or-later.txt](LICENSES/AGPL-3.0-or-later.txt) for details.
 Docs: CC BY-SA 4.0, see [docs/LICENSE](docs/LICENSE) for details
 
 ## Credits

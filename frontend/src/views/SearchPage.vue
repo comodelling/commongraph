@@ -37,225 +37,181 @@
             class="viz-header"
             :class="{ 'has-compass': activeTab === 'flow' }"
           >
-            <div class="viz-tabs">
-              <button
-                :class="['tab-button', { active: activeTab === 'flow' }]"
-                @click="selectTab('flow')"
-                title="Flow View"
-              >
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 16 16"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
+            <div class="viz-left">
+              <div class="viz-tabs">
+                <button
+                  :class="['tab-button', { active: activeTab === 'flow' }]"
+                  @click="selectTab('flow')"
+                  title="Flow View"
                 >
-                  <!-- Left block -->
-                  <rect
-                    x="1.2"
-                    y="4.2"
-                    width="4.8"
-                    height="7.6"
-                    rx="1"
-                    stroke="currentColor"
-                    stroke-width="1.6"
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 20 20"
                     fill="none"
-                  />
-                  <!-- Right block -->
-                  <rect
-                    x="9"
-                    y="4.2"
-                    width="4.8"
-                    height="7.6"
-                    rx="1"
-                    stroke="currentColor"
-                    stroke-width="1.6"
-                    fill="none"
-                  />
-                  <!-- Connecting shaft -->
-                  <path
-                    d="M5.8 8 L10.2 8"
-                    stroke="currentColor"
-                    stroke-width="1.8"
-                    stroke-linecap="round"
-                    fill="none"
-                  />
-                  <!-- Arrowhead -->
-                  <path
-                    d="M9.2 6.4 L11 8 L9.2 9.6"
-                    stroke="currentColor"
-                    stroke-width="1.8"
-                    fill="none"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                </svg>
-              </button>
-              <button
-                :class="['tab-button', { active: activeTab === 'graph' }]"
-                @click="selectTab('graph')"
-                title="Graph View"
-              >
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 16 16"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <!-- Left node -->
+                    <rect
+                      x="1"
+                      y="5.5"
+                      width="6"
+                      height="9"
+                      rx="1.2"
+                      stroke="currentColor"
+                      stroke-width="1.4"
+                      fill="none"
+                    />
+                    <!-- Right node -->
+                    <rect
+                      x="13"
+                      y="5.5"
+                      width="6"
+                      height="9"
+                      rx="1.2"
+                      stroke="currentColor"
+                      stroke-width="1.4"
+                      fill="none"
+                    />
+                    <!-- Edge arrow -->
+                    <path
+                      d="M7.5 10 L12.5 10"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                    />
+                    <!-- Arrowhead (filled triangle) -->
+                    <path d="M11.5 8 L14 10 L11.5 12 Z" fill="currentColor" />
+                  </svg>
+                </button>
+                <button
+                  :class="['tab-button', { active: activeTab === 'graph' }]"
+                  @click="selectTab('graph')"
+                  title="Graph View"
                 >
-                  <!-- Center node -->
-                  <circle cx="8" cy="7.5" r="1" fill="currentColor" />
-
-                  <!-- Rim circle to indicate connected ring -->
-                  <circle
-                    cx="8"
-                    cy="7.5"
-                    r="4.6"
-                    stroke="currentColor"
-                    stroke-width="0.9"
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 20 20"
                     fill="none"
-                    opacity="0.9"
-                  />
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <!-- Center node (larger) -->
+                    <circle cx="10" cy="10" r="1.5" fill="currentColor" />
 
-                  <!-- Outer nodes (slightly larger dots) -->
-                  <circle cx="8" cy="2.9" r="1.3" fill="currentColor" />
-                  <circle cx="12.45" cy="5.7" r="1.3" fill="currentColor" />
-                  <circle cx="10.55" cy="11.05" r="1.3" fill="currentColor" />
-                  <circle cx="5.45" cy="11.05" r="1.3" fill="currentColor" />
-                  <circle cx="3.55" cy="5.7" r="1.3" fill="currentColor" />
+                    <!-- Outer nodes positioned in pentagon -->
+                    <circle cx="10" cy="3" r="1.8" fill="currentColor" />
+                    <circle cx="16.5" cy="7.5" r="1.8" fill="currentColor" />
+                    <circle cx="13.5" cy="15" r="1.8" fill="currentColor" />
+                    <circle cx="6.5" cy="15" r="1.8" fill="currentColor" />
+                    <circle cx="3.5" cy="7.5" r="1.8" fill="currentColor" />
 
-                  <!-- Radial edges from center to outer nodes (thin) -->
-                  <line
-                    x1="8"
-                    y1="7.5"
-                    x2="8"
-                    y2="3.2"
-                    stroke="currentColor"
-                    stroke-width="1"
-                    stroke-linecap="round"
-                  />
-                  <line
-                    x1="8"
-                    y1="7.5"
-                    x2="12.0"
-                    y2="6.0"
-                    stroke="currentColor"
-                    stroke-width="1"
-                    stroke-linecap="round"
-                  />
-                  <line
-                    x1="8"
-                    y1="7.5"
-                    x2="10.4"
-                    y2="9.9"
-                    stroke="currentColor"
-                    stroke-width="1"
-                    stroke-linecap="round"
-                  />
-                  <line
-                    x1="8"
-                    y1="7.5"
-                    x2="5.6"
-                    y2="9.9"
-                    stroke="currentColor"
-                    stroke-width="1"
-                    stroke-linecap="round"
-                  />
-                  <line
-                    x1="8"
-                    y1="7.5"
-                    x2="4.0"
-                    y2="6.0"
-                    stroke="currentColor"
-                    stroke-width="1"
-                    stroke-linecap="round"
-                  />
+                    <!-- Edges from center to outer nodes -->
+                    <line
+                      x1="10"
+                      y1="10"
+                      x2="10"
+                      y2="4.8"
+                      stroke="currentColor"
+                      stroke-width="1.2"
+                      opacity="0.7"
+                    />
+                    <line
+                      x1="10"
+                      y1="10"
+                      x2="14.8"
+                      y2="7.8"
+                      stroke="currentColor"
+                      stroke-width="1.2"
+                      opacity="0.7"
+                    />
+                    <line
+                      x1="10"
+                      y1="10"
+                      x2="12.8"
+                      y2="13.5"
+                      stroke="currentColor"
+                      stroke-width="1.2"
+                      opacity="0.7"
+                    />
+                    <line
+                      x1="10"
+                      y1="10"
+                      x2="7.2"
+                      y2="13.5"
+                      stroke="currentColor"
+                      stroke-width="1.2"
+                      opacity="0.7"
+                    />
+                    <line
+                      x1="10"
+                      y1="10"
+                      x2="5.2"
+                      y2="7.8"
+                      stroke="currentColor"
+                      stroke-width="1.2"
+                      opacity="0.7"
+                    />
 
-                  <!-- Connections along the rim between adjacent outer nodes (thin) -->
-                  <line
-                    x1="8"
-                    y1="2.9"
-                    x2="12.45"
-                    y2="5.7"
-                    stroke="currentColor"
-                    stroke-width="0.9"
-                    stroke-linecap="round"
-                  />
-                  <line
-                    x1="12.45"
-                    y1="5.7"
-                    x2="10.55"
-                    y2="11.05"
-                    stroke="currentColor"
-                    stroke-width="0.9"
-                    stroke-linecap="round"
-                  />
-                  <line
-                    x1="10.55"
-                    y1="11.05"
-                    x2="5.45"
-                    y2="11.05"
-                    stroke="currentColor"
-                    stroke-width="0.9"
-                    stroke-linecap="round"
-                  />
-                  <line
-                    x1="5.45"
-                    y1="11.05"
-                    x2="3.55"
-                    y2="5.7"
-                    stroke="currentColor"
-                    stroke-width="0.9"
-                    stroke-linecap="round"
-                  />
-                  <line
-                    x1="3.55"
-                    y1="5.7"
-                    x2="8"
-                    y2="2.9"
-                    stroke="currentColor"
-                    stroke-width="0.9"
-                    stroke-linecap="round"
-                  />
-                </svg>
-              </button>
-              <button
-                class="tab-button disabled"
-                disabled
-                title="Map View (Coming Soon)"
-              >
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 16 16"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
+                    <!-- Outer ring connections -->
+                    <path
+                      d="M10 3 L16.5 7.5 L13.5 15 L6.5 15 L3.5 7.5 Z"
+                      stroke="currentColor"
+                      stroke-width="1"
+                      fill="none"
+                      opacity="0.4"
+                    />
+                  </svg>
+                </button>
+                <button
+                  class="tab-button disabled"
+                  disabled
+                  title="Map View (Coming Soon)"
                 >
-                  <path
-                    d="M2 12 L6 10 L10 12 L14 10 V4 L10 6 L6 4 L2 6 Z"
-                    fill="currentColor"
-                    opacity="0.3"
-                  />
-                  <path
-                    d="M6 4 V10 M10 6 V12"
-                    stroke="currentColor"
-                    stroke-width="1.5"
-                  />
-                  <path
-                    d="M2 6 L6 4 L10 6 L14 4"
-                    stroke="currentColor"
-                    stroke-width="1.5"
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 20 20"
                     fill="none"
-                  />
-                </svg>
-              </button>
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <!-- Map background -->
+                    <path
+                      d="M2 14 L6.5 12 L13.5 14.5 L18 12.5 V4.5 L13.5 6.5 L6.5 4 L2 6 Z"
+                      fill="currentColor"
+                      opacity="0.25"
+                    />
+                    <!-- Fold lines -->
+                    <path
+                      d="M6.5 4 V12 M13.5 6.5 V14.5"
+                      stroke="currentColor"
+                      stroke-width="1.8"
+                      stroke-linecap="round"
+                    />
+                    <!-- Top edge -->
+                    <path
+                      d="M2 6 L6.5 4 L13.5 6.5 L18 4.5"
+                      stroke="currentColor"
+                      stroke-width="1.6"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      fill="none"
+                    />
+                  </svg>
+                </button>
+              </div>
             </div>
             <div class="viz-controls">
               <GraphControls
                 :depth="depthLevel"
-                :color-by="colorBy"
+                :node-color-by="nodeColorBy"
+                :edge-color-by="edgeColorBy"
+                :show-info-button="true"
+                :info-mode="infoMode"
                 @update:depth="updateDepth"
-                @update:colorBy="updateColorBy"
+                @update:nodeColorBy="updateNodeColorBy"
+                @update:edgeColorBy="updateEdgeColorBy"
+                @update:infoMode="toggleInfoMode"
               />
             </div>
           </div>
@@ -270,6 +226,7 @@
           <FlowEditor
             v-else-if="activeTab === 'flow'"
             :data="flowSubgraphData"
+            :info-control-visible="false"
             :read-only="!(canCreate || canEdit || canDelete)"
             :highlighted-node-id="hoveredNodeId"
             :fit-trigger="flowFitTick"
@@ -306,7 +263,14 @@ import AggRatingMultipane from "../components/poll/AggRatingMultipane.vue";
 import CosmosGraphVis from "../components/graph/GraphVis.vue";
 import FlowEditor from "../components/graph/FlowEditor.vue";
 import GraphControls from "../components/graph/GraphControls.vue";
+import Icon from "../components/common/Icon.vue";
 import { useLogging } from "../composables/useLogging";
+import {
+  COLOR_MODE_TYPE,
+  EDGE_COLOR_STORAGE_KEY,
+  LEGACY_COLOR_STORAGE_KEY,
+  NODE_COLOR_STORAGE_KEY,
+} from "../utils/graphColoring";
 
 const FOCUS_GRAPH_CACHE_KEY = "focusFlowGraphSnapshot";
 
@@ -318,6 +282,7 @@ export default {
     CosmosGraphVis,
     FlowEditor,
     GraphControls,
+    Icon,
   },
   data() {
     // Logging system
@@ -334,11 +299,19 @@ export default {
       userSelectedTab: false,
       flowFitTick: 0,
       depthLevel: parseInt(localStorage.getItem("graphDepthLevel")) || 1, // Depth level for subgraph traversal
-      colorBy: localStorage.getItem("graphColorBy") || "type", // Color nodes/edges by 'type' or 'rating'
+      nodeColorBy:
+        localStorage.getItem(NODE_COLOR_STORAGE_KEY) ||
+        localStorage.getItem(LEGACY_COLOR_STORAGE_KEY) ||
+        COLOR_MODE_TYPE,
+      edgeColorBy:
+        localStorage.getItem(EDGE_COLOR_STORAGE_KEY) ||
+        localStorage.getItem(LEGACY_COLOR_STORAGE_KEY) ||
+        COLOR_MODE_TYPE,
       ratings: {}, // Store node ratings fetched from API
       pendingFocusGraph: null,
       pendingFocusEdge: null,
       DEBUG,
+      infoMode: localStorage.getItem("commongraph:flow:infoMode") === "true",
       debugLog,
       infoLog,
       warnLog,
@@ -447,7 +420,10 @@ export default {
         return { nodes: [], edges: [] };
       }
 
-      this.debugLog("flowSubgraphData computed - colorBy:", this.colorBy);
+      this.debugLog("flowSubgraphData computed - colors:", {
+        node: this.nodeColorBy,
+        edge: this.edgeColorBy,
+      });
 
       const formattedNodes = nodesSource
         .map((node) => {
@@ -462,7 +438,7 @@ export default {
             title: node.title || `Node ${nodeId}`,
           };
 
-          const formatted = formatFlowNodeProps(enrichedNode, this.colorBy);
+          const formatted = formatFlowNodeProps(enrichedNode, this.nodeColorBy);
           const isSearchResult = this.searchResultIdSet.has(nodeId);
 
           formatted.data = {
@@ -513,7 +489,7 @@ export default {
               target: targetId,
               edge_type: edgeType,
             },
-            this.colorBy,
+            this.edgeColorBy,
           );
 
           const sourceIsSearch = this.searchResultIdSet.has(sourceId);
@@ -540,9 +516,10 @@ export default {
         })
         .filter(Boolean);
 
-      this.debugLog("flowSubgraphData - formatted nodes with colorBy", {
+      this.debugLog("flowSubgraphData - formatted nodes with colors", {
         formattedNodes: formattedNodes.length,
-        colorBy: this.colorBy,
+        nodeColorBy: this.nodeColorBy,
+        edgeColorBy: this.edgeColorBy,
       });
       if (formattedNodes.length > 0) {
         this.debugLog("Sample node style:", formattedNodes[0].style);
@@ -607,6 +584,24 @@ export default {
     },
   },
   methods: {
+    nodeStatusAllowed(node) {
+      if (!node || !this.nodeAllowsProperty) {
+        return false;
+      }
+      return this.nodeAllowsProperty(node.node_type, "status");
+    },
+    sanitizeNode(node) {
+      if (!node) {
+        return node;
+      }
+      if (
+        !this.nodeStatusAllowed(node) &&
+        Object.prototype.hasOwnProperty.call(node, "status")
+      ) {
+        delete node.status;
+      }
+      return node;
+    },
     normalizeTypeName(type) {
       if (!type && type !== 0) {
         return null;
@@ -760,43 +755,118 @@ export default {
     },
     async fetchEdgeRatings(edges) {
       if (!edges.length) return edges;
-      const groupedByPoll = new Map();
 
-      edges.forEach((edge) => {
-        const pollLabel = this.resolveEdgePollLabel(edge);
-        edge.ratingLabel = pollLabel;
-        edge.causal_strength = null;
+      const pollConfig = this.edgePollTypes || {};
+      const pollLabels = Object.keys(pollConfig || {});
+      const edgeKeys = Array.from(
+        new Set(
+          edges
+            .map((edge) => {
+              const source = edge.source ?? edge.source_id;
+              const target = edge.target ?? edge.target_id;
+              if (source == null || target == null) {
+                return null;
+              }
+              return `${source}-${target}`;
+            })
+            .filter(Boolean),
+        ),
+      );
 
-        if (!pollLabel) {
-          return;
+      if (!edgeKeys.length) {
+        return edges;
+      }
+
+      if (!pollLabels.length) {
+        const groupedByPoll = new Map();
+
+        edges.forEach((edge) => {
+          const pollLabel = this.resolveEdgePollLabel(edge);
+          edge.ratingLabel = pollLabel;
+          edge.causal_strength = null;
+
+          if (!pollLabel) {
+            return;
+          }
+
+          if (!groupedByPoll.has(pollLabel)) {
+            groupedByPoll.set(pollLabel, []);
+          }
+          groupedByPoll.get(pollLabel).push(edge);
+        });
+
+        try {
+          for (const [pollLabel, edgesForPoll] of groupedByPoll.entries()) {
+            const keysForPoll = edgesForPoll.map(
+              (e) => `${e.source}-${e.target}`,
+            );
+            const { data: edgeRatings } = await api.get(
+              "/edges/ratings/median",
+              {
+                params: { edge_ids: keysForPoll, poll_label: pollLabel },
+              },
+            );
+
+            edgesForPoll.forEach((edge) => {
+              const key = `${edge.source}-${edge.target}`;
+              const ratingEntry = edgeRatings[key] ?? null;
+              const ratingValue = this.resolveRatingValue(
+                ratingEntry,
+                "median_rating",
+              );
+              edge.pollRatings = {
+                ...(edge.pollRatings || {}),
+                ...(ratingValue != null ? { [pollLabel]: ratingValue } : {}),
+              };
+              edge.causal_strength = ratingValue;
+            });
+          }
+        } catch (err) {
+          this.errorLog("Error fetching edge ratings:", err);
         }
 
-        if (!groupedByPoll.has(pollLabel)) {
-          groupedByPoll.set(pollLabel, []);
-        }
-        groupedByPoll.get(pollLabel).push(edge);
-      });
+        return edges;
+      }
 
+      const pollResults = {};
       try {
-        for (const [pollLabel, edgesForPoll] of groupedByPoll.entries()) {
-          const edgeKeys = edgesForPoll.map((e) => `${e.source}-${e.target}`);
-          const { data: edgeRatings } = await api.get("/edges/ratings/median", {
+        for (const pollLabel of pollLabels) {
+          const { data } = await api.get("/edges/ratings/median", {
             params: { edge_ids: edgeKeys, poll_label: pollLabel },
           });
-
-          edgesForPoll.forEach((edge) => {
-            const key = `${edge.source}-${edge.target}`;
-            const ratingEntry = edgeRatings[key] ?? null;
-            const ratingValue = this.resolveRatingValue(
-              ratingEntry,
-              "median_rating",
-            );
-            edge.causal_strength = ratingValue;
-          });
+          pollResults[pollLabel] = data;
         }
       } catch (err) {
         this.errorLog("Error fetching edge ratings:", err);
+        return edges;
       }
+
+      edges.forEach((edge) => {
+        const key = `${edge.source}-${edge.target}`;
+        const ratingMap = {};
+        pollLabels.forEach((pollLabel) => {
+          const ratingEntry = pollResults[pollLabel]?.[key] ?? null;
+          const ratingValue = this.resolveRatingValue(
+            ratingEntry,
+            "median_rating",
+          );
+          if (ratingValue != null) {
+            ratingMap[pollLabel] = ratingValue;
+          }
+        });
+
+        edge.pollRatings = ratingMap;
+        const defaultLabel =
+          edge.ratingLabel ||
+          edge.poll_label ||
+          edge.default_poll_label ||
+          this.resolveEdgePollLabel(edge);
+        edge.ratingLabel = defaultLabel || null;
+        edge.causal_strength =
+          defaultLabel && ratingMap[defaultLabel] != null
+            ? ratingMap[defaultLabel]
+            : null;
+      });
 
       return edges;
     },
@@ -816,6 +886,12 @@ export default {
         const pollLabel = nodeSpecificLabel || this.resolveNodePollLabel(node);
         const ratingEntry = this.ratings[node.node_id];
         const ratingValue = this.resolveRatingValue(ratingEntry, pollLabel);
+        const normalizedRatings =
+          ratingEntry && typeof ratingEntry === "object"
+            ? { ...ratingEntry }
+            : pollLabel && ratingEntry != null
+              ? { [pollLabel]: Number(ratingEntry) }
+              : {};
 
         this.debugLog(
           `Node ${node.node_id}: pollLabel=`,
@@ -846,6 +922,7 @@ export default {
         }
 
         node.ratingLabel = ratingLabel || null;
+        node.pollRatings = normalizedRatings;
 
         return node;
       });
@@ -901,12 +978,15 @@ export default {
       // Re-fetch subgraph data with new depth
       this.performSearch();
     },
-    updateColorBy(newColorBy) {
-      this.debugLog("Updating color by to:", newColorBy);
-      this.colorBy = newColorBy;
-      localStorage.setItem("graphColorBy", newColorBy);
-      // No need to re-fetch - the computed properties (flowSubgraphData) will automatically update
-      // This makes color changes instant and dynamic!
+    updateNodeColorBy(newNodeColorBy) {
+      this.debugLog("Updating node color by to:", newNodeColorBy);
+      this.nodeColorBy = newNodeColorBy;
+      localStorage.setItem(NODE_COLOR_STORAGE_KEY, newNodeColorBy);
+    },
+    updateEdgeColorBy(newEdgeColorBy) {
+      this.debugLog("Updating edge color by to:", newEdgeColorBy);
+      this.edgeColorBy = newEdgeColorBy;
+      localStorage.setItem(EDGE_COLOR_STORAGE_KEY, newEdgeColorBy);
     },
     handleNodeItemHover(nodeId) {
       const numericId = Number(nodeId);
@@ -1098,6 +1178,25 @@ export default {
         "edges",
       );
     },
+    getCurrentInfoMode() {
+      return this.infoMode;
+    },
+    toggleInfoMode() {
+      const current = this.infoMode;
+      const next = !current;
+      try {
+        localStorage.setItem(
+          "commongraph:flow:infoMode",
+          next ? "true" : "false",
+        );
+      } catch (err) {
+        // ignore localStorage errors
+      }
+      window.dispatchEvent(
+        new CustomEvent("commongraph-infoMode-set", { detail: next }),
+      );
+      this.infoMode = next;
+    },
     handleNewNodeCreated(newNodeData) {
       // newNodeData is the formatted node object created in FlowEditor
       this.debugLog("New node created in flow view:", newNodeData);
@@ -1184,43 +1283,118 @@ export default {
     },
     async fetchEdgeRatings(edges) {
       if (!edges.length) return edges;
-      const groupedByPoll = new Map();
 
-      edges.forEach((edge) => {
-        const pollLabel = this.resolveEdgePollLabel(edge);
-        edge.ratingLabel = pollLabel;
-        edge.causal_strength = null;
+      const pollConfig = this.edgePollTypes || {};
+      const pollLabels = Object.keys(pollConfig || {});
+      const edgeKeys = Array.from(
+        new Set(
+          edges
+            .map((edge) => {
+              const source = edge.source ?? edge.source_id;
+              const target = edge.target ?? edge.target_id;
+              if (source == null || target == null) {
+                return null;
+              }
+              return `${source}-${target}`;
+            })
+            .filter(Boolean),
+        ),
+      );
 
-        if (!pollLabel) {
-          return;
+      if (!edgeKeys.length) {
+        return edges;
+      }
+
+      if (!pollLabels.length) {
+        const groupedByPoll = new Map();
+
+        edges.forEach((edge) => {
+          const pollLabel = this.resolveEdgePollLabel(edge);
+          edge.ratingLabel = pollLabel;
+          edge.causal_strength = null;
+
+          if (!pollLabel) {
+            return;
+          }
+
+          if (!groupedByPoll.has(pollLabel)) {
+            groupedByPoll.set(pollLabel, []);
+          }
+          groupedByPoll.get(pollLabel).push(edge);
+        });
+
+        try {
+          for (const [pollLabel, edgesForPoll] of groupedByPoll.entries()) {
+            const keysForPoll = edgesForPoll.map(
+              (e) => `${e.source}-${e.target}`,
+            );
+            const { data: edgeRatings } = await api.get(
+              "/edges/ratings/median",
+              {
+                params: { edge_ids: keysForPoll, poll_label: pollLabel },
+              },
+            );
+
+            edgesForPoll.forEach((edge) => {
+              const key = `${edge.source}-${edge.target}`;
+              const ratingEntry = edgeRatings[key] ?? null;
+              const ratingValue = this.resolveRatingValue(
+                ratingEntry,
+                "median_rating",
+              );
+              edge.pollRatings = {
+                ...(edge.pollRatings || {}),
+                ...(ratingValue != null ? { [pollLabel]: ratingValue } : {}),
+              };
+              edge.causal_strength = ratingValue;
+            });
+          }
+        } catch (err) {
+          this.errorLog("Error fetching edge ratings:", err);
         }
 
-        if (!groupedByPoll.has(pollLabel)) {
-          groupedByPoll.set(pollLabel, []);
-        }
-        groupedByPoll.get(pollLabel).push(edge);
-      });
+        return edges;
+      }
 
+      const pollResults = {};
       try {
-        for (const [pollLabel, edgesForPoll] of groupedByPoll.entries()) {
-          const edgeKeys = edgesForPoll.map((e) => `${e.source}-${e.target}`);
-          const { data: edgeRatings } = await api.get("/edges/ratings/median", {
+        for (const pollLabel of pollLabels) {
+          const { data } = await api.get("/edges/ratings/median", {
             params: { edge_ids: edgeKeys, poll_label: pollLabel },
           });
-
-          edgesForPoll.forEach((edge) => {
-            const key = `${edge.source}-${edge.target}`;
-            const ratingEntry = edgeRatings[key] ?? null;
-            const ratingValue = this.resolveRatingValue(
-              ratingEntry,
-              "median_rating",
-            );
-            edge.causal_strength = ratingValue;
-          });
+          pollResults[pollLabel] = data;
         }
       } catch (err) {
         this.errorLog("Error fetching edge ratings:", err);
+        return edges;
       }
+
+      edges.forEach((edge) => {
+        const key = `${edge.source}-${edge.target}`;
+        const ratingMap = {};
+        pollLabels.forEach((pollLabel) => {
+          const ratingEntry = pollResults[pollLabel]?.[key] ?? null;
+          const ratingValue = this.resolveRatingValue(
+            ratingEntry,
+            "median_rating",
+          );
+          if (ratingValue != null) {
+            ratingMap[pollLabel] = ratingValue;
+          }
+        });
+
+        edge.pollRatings = ratingMap;
+        const defaultLabel =
+          edge.ratingLabel ||
+          edge.poll_label ||
+          edge.default_poll_label ||
+          this.resolveEdgePollLabel(edge);
+        edge.ratingLabel = defaultLabel || null;
+        edge.causal_strength =
+          defaultLabel && ratingMap[defaultLabel] != null
+            ? ratingMap[defaultLabel]
+            : null;
+      });
 
       return edges;
     },
@@ -1381,11 +1555,18 @@ export default {
 
         if (allNodeIds.length) {
           await this.fetchNodeRatings(Array.from(new Set(allNodeIds)));
-          this.nodes = this.updateNodesWithRatings(this.nodes);
-          subgraphNodes = this.updateNodesWithRatings(subgraphNodes);
+          this.nodes = this.updateNodesWithRatings(this.nodes).map((node) =>
+            this.sanitizeNode(node),
+          );
+          subgraphNodes = this.updateNodesWithRatings(subgraphNodes).map(
+            (node) => this.sanitizeNode(node),
+          );
         } else {
           this.ratings = {};
         }
+
+        this.nodes = this.nodes.map((node) => this.sanitizeNode(node));
+        subgraphNodes = subgraphNodes.map((node) => this.sanitizeNode(node));
 
         relationships = await this.fetchEdgeRatings(relationships);
 
@@ -1430,6 +1611,7 @@ export default {
       defaultNodeType,
       getNodePolls,
       getEdgePolls,
+      nodeAllowsProperty,
     } = useConfig();
     const nodePolls = nodePollTypes.value;
     return {
@@ -1446,7 +1628,23 @@ export default {
       defaultNodeType,
       getNodePolls,
       getEdgePolls,
+      nodeAllowsProperty,
     };
+  },
+  mounted() {
+    // Keep the info icon state in sync with localStorage, and subscribe to external toggle events
+    this._infoModeHandler = (e) => {
+      if (typeof e?.detail === "boolean") {
+        this.infoMode = e.detail;
+      }
+    };
+    window.addEventListener("commongraph-infoMode-set", this._infoModeHandler);
+  },
+  beforeUnmount() {
+    window.removeEventListener(
+      "commongraph-infoMode-set",
+      this._infoModeHandler,
+    );
   },
 };
 </script>
@@ -1529,8 +1727,8 @@ export default {
   left: 10px;
   right: 10px;
   display: flex;
-  justify-content: flex-start; /* Align to left, not space-between */
-  align-items: center;
+  justify-content: center; /* Center the controls */
+  align-items: flex-start;
   z-index: 10;
   gap: 16px;
   pointer-events: none; /* Allow clicks to pass through empty space */
@@ -1551,11 +1749,20 @@ export default {
   flex-shrink: 0;
 }
 
+.viz-left {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  pointer-events: auto; /* ensure buttons inside are clickable even though parent header may have pointer-events: none */
+}
+
 .viz-controls {
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  padding: 4px 7px;
+  padding: 4px 8px;
   background-color: var(--background-color);
   border: 1px solid var(--border-color);
   border-radius: 4px;
@@ -1579,8 +1786,8 @@ export default {
 }
 
 .tab-button svg {
-  width: 16px;
-  height: 16px;
+  width: 20px;
+  height: 20px;
   display: block;
 }
 

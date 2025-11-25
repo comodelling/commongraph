@@ -1,6 +1,6 @@
 <script setup>
 import { Handle, Position, useVueFlow } from "@vue-flow/core";
-import { computed, ref } from "vue";
+import { computed, ref, inject } from "vue";
 import {
   getAllowedSourceNodeTypes,
   getAllowedTargetNodeTypes,
@@ -114,6 +114,12 @@ const handleMouseLeave = () => {
   showTooltip.value = false;
 };
 
+// Inject info mode active state from FlowEditor
+const infoModeActive = inject("infoModeActive", ref(false));
+const showTypeLabel = computed(
+  () => infoModeActive.value && !!props.data?.node_type,
+);
+
 // All triangles point in the same causal direction based on source position
 const triangleRotation = computed(() => {
   switch (props.sourcePosition) {
@@ -132,44 +138,48 @@ const triangleRotation = computed(() => {
 </script>
 
 <template>
-  <Handle
-    v-if="canHaveChildren"
-    type="source"
-    :position="sourcePosition"
-    title="Create implications"
-    class="triangle-handle source-handle"
-  >
-    <div
-      class="triangle-arrow"
-      :style="{ transform: `rotate(${triangleRotation})` }"
-    ></div>
-  </Handle>
-
-  <span @mouseenter="handleMouseEnter" @mouseleave="handleMouseLeave">
-    {{ label }}
-  </span>
-
-  <Teleport to="body">
-    <div v-if="showTooltip" class="node-tooltip" :style="tooltipStyle">
-      <div class="node-tooltip-title">{{ tooltipTitle }}</div>
-      <div v-if="tooltipMeta" class="node-tooltip-meta">
-        {{ tooltipMeta }}
-      </div>
+  <div class="special-node-wrapper">
+    <Handle
+      v-if="canHaveChildren"
+      type="source"
+      :position="sourcePosition"
+      title="Create implications"
+      class="triangle-handle source-handle"
+    >
+      <div
+        class="triangle-arrow"
+        :style="{ transform: `rotate(${triangleRotation})` }"
+      ></div>
+    </Handle>
+    <div v-if="showTypeLabel" class="node-type-label">
+      {{ props.data.node_type }}
     </div>
-  </Teleport>
+    <span @mouseenter="handleMouseEnter" @mouseleave="handleMouseLeave">
+      {{ label }}
+    </span>
 
-  <Handle
-    v-if="canHaveParents"
-    type="target"
-    :position="targetPosition"
-    title="Create conditions"
-    class="triangle-handle target-handle"
-  >
-    <div
-      class="triangle-arrow"
-      :style="{ transform: `rotate(${triangleRotation})` }"
-    ></div>
-  </Handle>
+    <Teleport to="body">
+      <div v-if="showTooltip" class="node-tooltip" :style="tooltipStyle">
+        <div class="node-tooltip-title">{{ tooltipTitle }}</div>
+        <div v-if="tooltipMeta" class="node-tooltip-meta">
+          {{ tooltipMeta }}
+        </div>
+      </div>
+    </Teleport>
+
+    <Handle
+      v-if="canHaveParents"
+      type="target"
+      :position="targetPosition"
+      title="Create conditions"
+      class="triangle-handle target-handle"
+    >
+      <div
+        class="triangle-arrow"
+        :style="{ transform: `rotate(${triangleRotation})` }"
+      ></div>
+    </Handle>
+  </div>
 </template>
 
 <style scoped>
@@ -209,4 +219,30 @@ const triangleRotation = computed(() => {
 }
 
 /* Dark mode support - already uses CSS variables */
+/* Node label CSS */
+.node-type-label {
+  font-size: 12px;
+  color: inherit; /* match node text color; keeps label visible over dark nodes */
+  font-weight: 600;
+  display: block;
+  text-align: center;
+  pointer-events: none; /* Shouldn't interfere with dragging or clicks */
+  position: absolute;
+  top: -18px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+}
+/* Slight background so the label is readable above nodes */
+.node-type-label {
+  background: rgba(255, 255, 255, 0.85);
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+}
+
+.special-node-wrapper {
+  /* note: intentionally do not set position: relative here so that handles remain outside the node. */
+  position: static;
+}
 </style>

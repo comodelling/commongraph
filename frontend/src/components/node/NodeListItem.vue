@@ -4,22 +4,22 @@
     @mouseenter="$emit('hover', node.node_id)"
     @mouseleave="$emit('leave', node.node_id)"
   >
-    <router-link
-      :to="`/node/${node.node_id}`"
-      class="title"
-      :style="{ color: typeColor(node.node_type) || 'var(--text-color)' }"
-    >
+    <router-link :to="`/node/${node.node_id}`" class="title">
       ➜ {{ node.title }}
       <span
         class="node-type"
         :style="{ color: typeColor(node.node_type) || 'var(--text-color)' }"
       >
-        ({{ node.node_type }})
+        <template v-if="node.scope">({{ node.scope }})</template>
+        <template v-else></template>
       </span>
     </router-link>
     <div class="subtitle">
       <span class="meta">
-        {{ node.scope || "—" }} — {{ node.status || "—" }} —
+        {{ node.node_type }} —
+        <template v-if="hasStatus(node)">
+          {{ nodeStatusDisplay(node) }} —
+        </template>
         <span v-if="node.last_modified">{{
           formatDate(node.last_modified)
         }}</span>
@@ -42,7 +42,7 @@ export default {
   },
   emits: ["hover", "leave"],
   setup() {
-    const { nodeTypes } = useConfig();
+    const { nodeTypes, nodeAllowsProperty } = useConfig();
 
     function typeColor(nodeType) {
       if (!nodeType) return null;
@@ -51,7 +51,23 @@ export default {
       return style.borderColor || style.border_colour || null;
     }
 
-    return { typeColor };
+    function nodeStatusDisplay(node) {
+      if (!node || !nodeAllowsProperty) {
+        return "—";
+      }
+      if (!nodeAllowsProperty(node.node_type, "status")) {
+        return "—";
+      }
+      return node.status || "—";
+    }
+
+    function hasStatus(node) {
+      if (!node || !nodeAllowsProperty) return false;
+      if (!nodeAllowsProperty(node.node_type, "status")) return false;
+      return !!node.status;
+    }
+
+    return { typeColor, nodeStatusDisplay, hasStatus };
   },
   methods: {
     formatDate(iso) {

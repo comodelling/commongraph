@@ -19,6 +19,7 @@ from pydantic import (
     FieldValidationInfo,
     ValidationError,
     field_validator,
+    model_validator,
     root_validator,
 )
 
@@ -39,15 +40,117 @@ class ConfigError(RuntimeError):
 ALLOWED_PERMISSION_LEVELS = {"all", "loggedin", "admin"}
 
 
+class PropertyOptionConfig(BaseModel):
+    question: str | None = None
+    scale: str | None = None
+    type: str | None = None
+    options: Dict[str, str] = Field(default_factory=dict)
+    range: tuple[float, float] | None = None
+
+    model_config = ConfigDict(extra="allow")
+
+    @field_validator("options", mode="before")
+    def normalise_options(cls, value):
+        if value is None:
+            return {}
+        if isinstance(value, dict):
+            return {str(k): str(v) for k, v in value.items()}
+        if isinstance(value, list):
+            flattened: Dict[str, str] = {}
+            for entry in value:
+                if not isinstance(entry, dict) or len(entry) != 1:
+                    raise ValueError("Each option entry must be a single-key mapping")
+                key, option_value = next(iter(entry.items()))
+                flattened[str(key)] = str(option_value)
+            return flattened
+        raise TypeError(
+            "Property options must be a mapping or a list of single-entry mappings"
+        )
+
+    @field_validator("range", mode="before")
+    def normalise_range(cls, value):
+        if value is None:
+            return None
+        if not isinstance(value, (list, tuple)) or len(value) != 2:
+            raise TypeError("Property range must be a two-element sequence")
+        try:
+            low = float(value[0])
+            high = float(value[1])
+        except (TypeError, ValueError):
+            raise ValueError("Property range values must be numeric")
+        if low >= high:
+            raise ValueError("Property range must have low < high")
+        return (low, high)
+
+
+class PropertyDefinition(BaseModel):
+    name: str
+    options: PropertyOptionConfig | None = None
+
+    model_config = ConfigDict(extra="allow")
+
+    @model_validator(mode="before")
+    @classmethod
+    def parse_definition(cls, value: Any):
+        if isinstance(value, cls):
+            return value
+        if isinstance(value, str):
+            return {"name": value}
+        if isinstance(value, dict):
+            if "name" in value:
+                return value
+            if len(value) != 1:
+                raise ValueError(
+                    "Property definitions must be strings or single-key mappings"
+                )
+            prop_name, prop_config = next(iter(value.items()))
+            if prop_config is None:
+                return {"name": str(prop_name)}
+            if not isinstance(prop_config, dict):
+                raise TypeError("Property configuration must be a mapping")
+            return {"name": str(prop_name), "options": prop_config}
+        raise TypeError(
+            "Property definitions must be strings or mappings of {name: config}"
+        )
+
+
+def _normalise_property_definitions(raw: Any) -> List[PropertyDefinition]:
+    if raw is None:
+        return []
+    if isinstance(raw, list):
+        return [PropertyDefinition.model_validate(entry) for entry in raw]
+    raise TypeError("Properties must be provided as a list")
+
+
+def _property_name_set(raw: Any) -> set[str]:
+    return {prop.name for prop in _normalise_property_definitions(raw)}
+
+
+def _property_option_map(raw: Any) -> Dict[str, Dict[str, Any]]:
+    options: Dict[str, Dict[str, Any]] = {}
+    for prop in _normalise_property_definitions(raw):
+        if prop.options is not None:
+            options[prop.name] = prop.options.model_dump()
+    return options
+
+
+def _get_properties_block(conf: Any) -> Any:
+    if conf is None:
+        return []
+    if isinstance(conf, dict):
+        return conf.get("properties", [])
+    return getattr(conf, "properties", [])
+
+
 class NodeTypeConfig(BaseModel):
-    properties: List[str] = Field(default_factory=list)
+    properties: List[PropertyDefinition] = Field(default_factory=list)
     style: Dict[str, Any] = Field(default_factory=dict)
 
     model_config = ConfigDict(extra="allow")
 
 
 class EdgeTypeConfig(BaseModel):
-    properties: List[str] = Field(default_factory=list)
+    properties: List[PropertyDefinition] = Field(default_factory=list)
     style: Dict[str, Any] = Field(default_factory=dict)
     between: List[Tuple[str, str]] = Field(default_factory=list)
 
@@ -273,6 +376,24 @@ NODE_TYPE_CFG = _CONFIG["node_types"]
 EDGE_TYPE_CFG = _CONFIG["edge_types"]
 POLLS_CFG = _CONFIG.get("polls", {})
 
+# Helpers to build property metadata from validated config models
+def _build_property_maps(configs: Dict[str, BaseModel]):
+    props_map: Dict[str, set[str]] = {}
+    option_map: Dict[str, Dict[str, Any]] = {}
+    for type_name, cfg in configs.items():
+        properties = getattr(cfg, "properties", [])
+        props_map[type_name] = {prop.name for prop in properties}
+        option_map[type_name] = {
+            prop.name: prop.options.model_dump()
+            for prop in properties
+            if getattr(prop, "options", None) is not None
+        }
+    return props_map, option_map
+
+
+NODE_TYPE_PROPS, NODE_PROPERTY_OPTIONS = _build_property_maps(_CONFIG_MODEL.node_types)
+EDGE_TYPE_PROPS, EDGE_PROPERTY_OPTIONS = _build_property_maps(_CONFIG_MODEL.edge_types)
+
 # 6. Authentication configuration
 AUTH_CFG = _CONFIG["auth"]
 ALLOW_SIGNUP = _CONFIG_MODEL.auth.allow_signup
@@ -288,13 +409,6 @@ PERMISSION_DELETE = _CONFIG_MODEL.permissions.delete
 PERMISSION_RATE = _CONFIG_MODEL.permissions.rate
 
 # 2. Build maps for properties
-NODE_TYPE_PROPS = {
-    nt: set(defn.get("properties", [])) for nt, defn in NODE_TYPE_CFG.items()
-}
-EDGE_TYPE_PROPS = {
-    et: set(defn.get("properties", [])) for et, defn in EDGE_TYPE_CFG.items()
-}
-
 # 3. Build maps for styles
 NODE_TYPE_STYLE = {nt: defn.get("style", {}) for nt, defn in NODE_TYPE_CFG.items()}
 EDGE_TYPE_STYLE = {et: defn.get("style", {}) for et, defn in EDGE_TYPE_CFG.items()}
@@ -389,8 +503,10 @@ class SchemaChangeDetector:
 
         # Check property changes for existing node types
         for node_type in old_nodes & new_nodes:
-            old_props = set(old_config["node_types"][node_type].get("properties", []))
-            new_props = set(new_config["node_types"][node_type].get("properties", []))
+            old_conf = old_config["node_types"][node_type]
+            new_conf = new_config["node_types"][node_type]
+            old_props = _property_name_set(_get_properties_block(old_conf))
+            new_props = _property_name_set(_get_properties_block(new_conf))
 
             for added_prop in new_props - old_props:
                 changes.append(
@@ -410,6 +526,21 @@ class SchemaChangeDetector:
                         "warning": "This will affect existing node data",
                     }
                 )
+
+            old_options = _property_option_map(_get_properties_block(old_conf))
+            new_options = _property_option_map(_get_properties_block(new_conf))
+            for prop_name in old_props & new_props:
+                if old_options.get(prop_name) != new_options.get(prop_name):
+                    changes.append(
+                        {
+                            "type": "change_node_property_options",
+                            "node_type": node_type,
+                            "property": prop_name,
+                            "old_options": old_options.get(prop_name),
+                            "new_options": new_options.get(prop_name),
+                            "warning": "Changing property options may affect existing node data",
+                        }
+                    )
 
         # Check edge type changes
         old_edges = set(old_config.get("edge_types", {}).keys())
@@ -435,8 +566,10 @@ class SchemaChangeDetector:
 
         # Check property changes for existing edge types
         for edge_type in old_edges & new_edges:
-            old_props = set(old_config["edge_types"][edge_type].get("properties", []))
-            new_props = set(new_config["edge_types"][edge_type].get("properties", []))
+            old_conf = old_config["edge_types"][edge_type]
+            new_conf = new_config["edge_types"][edge_type]
+            old_props = _property_name_set(_get_properties_block(old_conf))
+            new_props = _property_name_set(_get_properties_block(new_conf))
 
             for added_prop in new_props - old_props:
                 changes.append(
@@ -457,9 +590,32 @@ class SchemaChangeDetector:
                     }
                 )
 
+            old_prop_options = _property_option_map(_get_properties_block(old_conf))
+            new_prop_options = _property_option_map(_get_properties_block(new_conf))
+            for prop_name in old_props & new_props:
+                if old_prop_options.get(prop_name) != new_prop_options.get(prop_name):
+                    changes.append(
+                        {
+                            "type": "change_edge_property_options",
+                            "edge_type": edge_type,
+                            "property": prop_name,
+                            "old_options": old_prop_options.get(prop_name),
+                            "new_options": new_prop_options.get(prop_name),
+                            "warning": "Changing property options may affect existing edge data",
+                        }
+                    )
+
             # Check for changes in 'between' constraints (critical for graph schema)
-            old_between = old_config["edge_types"][edge_type].get("between", [])
-            new_between = new_config["edge_types"][edge_type].get("between", [])
+            old_between = (
+                old_conf.get("between", [])
+                if isinstance(old_conf, dict)
+                else getattr(old_conf, "between", [])
+            )
+            new_between = (
+                new_conf.get("between", [])
+                if isinstance(new_conf, dict)
+                else getattr(new_conf, "between", [])
+            )
 
             if old_between != new_between:
                 changes.append(
@@ -731,11 +887,41 @@ def valid_edge_types() -> set[str]:
     return set(EDGE_TYPE_PROPS)
 
 
+def node_type_allows_property(node_type: str | None, property_name: str) -> bool:
+    if not node_type or not property_name:
+        return False
+    return property_name in NODE_TYPE_PROPS.get(node_type, set())
+
+
+def edge_type_allows_property(edge_type: str | None, property_name: str) -> bool:
+    if not edge_type or not property_name:
+        return False
+    return property_name in EDGE_TYPE_PROPS.get(edge_type, set())
+
+
+def strip_disallowed_status(node_dict: dict) -> dict:
+    node_type = node_dict.get("node_type")
+    if node_type_allows_property(node_type, "status"):
+        return node_dict
+    if "status" not in node_dict:
+        return node_dict
+    cleaned = dict(node_dict)
+    cleaned.pop("status", None)
+    return cleaned
+
+
 def filter_node_props(node_type: str, data: dict) -> dict:
     allowed = NODE_TYPE_PROPS.get(node_type, set())
-    return {k: v for k, v in data.items() if k in allowed}
+    # Always preserve base node properties
+    base_props = {"node_id", "node_type"}
+    allowed_with_base = allowed | base_props
+    filtered = {k: v for k, v in data.items() if k in allowed_with_base}
+    return strip_disallowed_status(filtered)
 
 
 def filter_edge_props(edge_type: str, data: dict) -> dict:
     allowed = EDGE_TYPE_PROPS.get(edge_type, set())
-    return {k: v for k, v in data.items() if k in allowed}
+    # Always preserve base edge properties
+    base_props = {"edge_type", "source", "target"}
+    allowed_with_base = allowed | base_props
+    return {k: v for k, v in data.items() if k in allowed_with_base}

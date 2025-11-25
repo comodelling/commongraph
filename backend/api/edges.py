@@ -35,6 +35,7 @@ from backend.models.fixed import (
     UserRead,
     EntityType,
 )
+from backend.config import edge_type_allows_property, filter_edge_props
 
 
 logger = logging.getLogger(__name__)
@@ -180,8 +181,12 @@ def create_edge(
     Model = EdgeTypeModels.get(et)
     if not Model:
         raise HTTPException(400, f"Unknown edge_type {et!r}")
+
+    # Filter payload to only include allowed properties for this edge type
+    filtered_payload = filter_edge_props(et, payload)
+
     # TODO: validate payload further, within graph, against Graph Schema
-    edge = Model(**payload)
+    edge = Model(**filtered_payload)
 
     # Check if edge already exists (identified by source and target node IDs)
     try:
@@ -264,8 +269,11 @@ def update_edge(
                 detail="Non-admin users cannot revert to 'draft' status when the edge has a non-draft status",
             )
 
+    # Filter payload to only include allowed properties for this edge type
+    filtered_payload = filter_edge_props(et, payload)
+
     # TODO: validate payload further, within graph, against Graph Schema
-    edge = Model(**payload)
+    edge = Model(**filtered_payload)
     out_edge = db_history.update_edge(edge, username=user.username)
     if db_graph is not None:
         db_graph.update_edge(edge)
@@ -381,9 +389,11 @@ def log_edge_rating(
     # Get the edge to check its status
     edge = db_history.get_edge(source_id, target_id)
     edge_status = getattr(edge, "status", None) or "live"
+    edge_type = getattr(edge, "edge_type", None)
+    status_allowed = edge_type_allows_property(edge_type, "status")
 
     # Check if user can rate based on edge status
-    if not can_rate_element(user, edge_status):
+    if not can_rate_element(user, edge_status, status_allowed=status_allowed):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Cannot rate edges with 'draft' status",

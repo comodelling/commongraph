@@ -106,6 +106,19 @@ def test_read_main(client):
     assert "message" in data or "platform_name" in data
 
 
+def test_config_includes_property_options(client):
+    """Ensure /config exposes property option metadata."""
+    response = client.get("/config")
+    assert response.status_code == 200
+    config = response.json()
+    for node_type in config["node_types"].values():
+        assert "property_options" in node_type
+        assert isinstance(node_type["property_options"], dict)
+    for edge_type in config["edge_types"].values():
+        assert "property_options" in edge_type
+        assert isinstance(edge_type["property_options"], dict)
+
+
 def test_api_docs_available(client):
     """Test that API documentation is available."""
     response = client.get("/docs")

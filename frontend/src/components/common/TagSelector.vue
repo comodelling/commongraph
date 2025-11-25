@@ -455,7 +455,7 @@ export default {
 .tag-chip {
   background: var(--tag-chip-bg, #edf2ff);
   color: var(--tag-chip-text, #273445);
-  border-radius: 999px;
+  border-radius: 6px;
   padding: 3px 6px;
   display: inline-flex;
   align-items: center;

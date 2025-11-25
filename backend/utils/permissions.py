@@ -114,7 +114,12 @@ def can_edit_field_when_non_draft(
     return True
 
 
-def can_rate_element(user: Optional[UserRead] = None, status: str = None) -> bool:
+def can_rate_element(
+    user: Optional[UserRead] = None,
+    status: str = None,
+    *,
+    status_allowed: bool = True,
+) -> bool:
     """
     Check if user can rate an element based on its status.
 
@@ -129,7 +134,7 @@ def can_rate_element(user: Optional[UserRead] = None, status: str = None) -> boo
     Returns:
         bool: True if user is allowed to rate the element
     """
-    if status == "draft":
+    if status_allowed and status == "draft":
         return False
 
     return can_rate(user)

@@ -42,6 +42,11 @@ from backend.models.dynamic import (
 )
 from backend.properties import NodeStatus
 from backend.api.scopes import get_or_create_scope
+from backend.config import (
+    filter_node_props,
+    node_type_allows_property,
+    strip_disallowed_status,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -99,6 +104,10 @@ def search_nodes(
         )
         # merge node → NodeSearchResult
         payload = node.model_dump()
+        # Filter to only include allowed properties for this node type
+        node_type_value = payload.get("node_type")
+        if node_type_value:
+            payload = filter_node_props(node_type_value, payload)
         payload["last_modified"] = last_ts
         out.append(NodeSearchResult(**payload))
 
@@ -194,8 +203,12 @@ def get_random_node(
         )
 
     if isinstance(db, JanusGraphDB):
-        return db.get_random_node(node_type)
-    return db_history.get_random_node(node_type)
+        node = db.get_random_node(node_type)
+    else:
+        node = db_history.get_random_node(node_type)
+
+    node_dict = node.model_dump() if hasattr(node, "model_dump") else dict(node)
+    return strip_disallowed_status(node_dict)
 
 
 @router.get("/{node_id}")
@@ -212,7 +225,9 @@ def get_node(
             detail="You must be logged in to view content",
         )
 
-    return db_history.get_node(node_id)
+    node = db_history.get_node(node_id)
+    node_dict = node.model_dump() if hasattr(node, "model_dump") else dict(node)
+    return strip_disallowed_status(node_dict)
 
 
 @router.post("", status_code=status.HTTP_201_CREATED)
@@ -246,8 +261,11 @@ def create_node(
             session.rollback()
             raise HTTPException(500, f"Failed to create scope: {str(e)}")
 
+    # Filter payload to only include allowed properties for this node type
+    filtered_payload = filter_node_props(nt, payload)
+
     # TODO: validate payload further, within graph, against Graph Schema
-    node = Model(**payload)
+    node = Model(**filtered_payload)
 
     if db_graph is not None:
         node = db_graph.create_node(node)
@@ -348,8 +366,11 @@ def update_node(
             session.rollback()
             raise HTTPException(500, f"Failed to create scope: {str(e)}")
 
+    # Filter payload to only include allowed properties for this node type
+    filtered_payload = filter_node_props(nt, payload)
+
     # TODO: validate payload further, within graph, against Graph Schema
-    node = Model(**payload)
+    node = Model(**filtered_payload)
     node_out = db_history.update_node(node, username=user.username)
     if db_graph is not None:
         db_graph.update_node(node)
@@ -456,9 +477,11 @@ def log_node_rating(
     # Get the node to check its status
     node = db_history.get_node(node_id)
     node_status = getattr(node, "status", None) or "live"
+    node_type = getattr(node, "node_type", None)
+    status_allowed = node_type_allows_property(node_type, "status")
 
     # Check if user can rate based on node status
-    if not can_rate_element(user, node_status):
+    if not can_rate_element(user, node_status, status_allowed=status_allowed):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Cannot rate nodes with 'draft' status",

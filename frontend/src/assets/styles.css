@@ -44,6 +44,7 @@ body,
   height: 100%;
   margin: 0;
   padding: 0;
+  overflow: hidden;
   --tag-surface-bg: #ffffff;
   --tag-surface-border: #ccc;
   --tag-disabled-bg: #f5f5f5;
@@ -71,7 +72,20 @@ body,
 }
 
 .main-content {
-  /* Tag selector palette overrides */
+  /* Tag selector palette overrides for dark mode only */
+  flex: 1;
+  /* margin: 2px auto; */
+  /* padding: 3px; */
+  /* border: 1px solid var(--border-color); */
+  background-color: var(--background-color);
+  border-radius: 5px;
+  /* max-height: 90%; */
+  /* overflow-y: auto; */
+  /* padding-right: 150px; */
+  justify-content: center;
+}
+
+body.dark .main-content {
   --tag-surface-bg: #1b1f2a;
   --tag-surface-border: #3a4256;
   --tag-disabled-bg: #232838;
@@ -88,16 +102,6 @@ body,
   --tag-dropdown-hover-bg: #273149;
   --tag-error-bg: #3f2324;
   --tag-error-border: #b76b6d;
-  flex: 1;
-  /* margin: 2px auto; */
-  /* padding: 3px; */
-  /* border: 1px solid var(--border-color); */
-  background-color: var(--background-color);
-  border-radius: 5px;
-  /* max-height: 90%; */
-  /* overflow-y: auto; */
-  /* padding-right: 150px; */
-  justify-content: center;
 }
 
 /* anchors */
@@ -179,6 +183,65 @@ button:focus-visible {
   /* background-color: lightgray; */
 }
 
+/* Ensure handles are placed outside node edges to avoid appearing inside the node */
+.vue-flow__node-special .vue-flow__handle-top {
+  top: -6px !important;
+}
+.vue-flow__node-special .vue-flow__handle-bottom {
+  bottom: -6px !important;
+}
+.vue-flow__node-special .vue-flow__handle-left {
+  left: -6px !important;
+}
+.vue-flow__node-special .vue-flow__handle-right {
+  right: -6px !important;
+}
+
+/* Slightly raise the left/right handles so they sit at the visual edge if padding is present */
+.vue-flow__node-special .vue-flow__handle-left,
+.tab-button {
+  padding: 6px 8px;
+  background-color: var(--background-color);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  min-width: 32px;
+  min-height: 32px;
+}
+
+.tab-button svg {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+
+.tab-button.active {
+  font-weight: 600;
+  border-color: var(--text-color);
+  background-color: var(--border-color);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+/* Dark theme overrides */
+body.dark .tab-button {
+  background-color: #333;
+  color: #fff;
+  border-color: #555;
+}
+body.dark .tab-button.active {
+  background-color: #444;
+  border-color: #888;
+}
+.vue-flow__node-special .vue-flow__handle-right {
+  transform: translateY(-50%) !important;
+}
+
 .vue-flow__node-special {
   /* border: 1px solid var(--border-color); */
   padding: 10px;
@@ -187,7 +250,7 @@ button:focus-visible {
   /* border: red; */
   background-color: var(--node-color);
   /* border-color: var(--border-color); */
-  color: black;
+  color: var(--text-color);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -198,6 +261,15 @@ button:focus-visible {
   /* min-height: 30px; */
 }
 
+/* Ensure control buttons and icons are always visible (svg takes color) */
+.vue-flow__controls button {
+  color: var(--text-color) !important;
+  background-color: transparent !important;
+  border-color: var(--border-color) !important;
+}
+.vue-flow__controls button svg {
+  color: inherit !important;
+}
 /* body.dark .vue-flow__node-special { */
 /* color: black; Desired font color for dark mode */
 /* } */
@@ -452,7 +524,7 @@ body.dark .invalid-reference .reference-input {
 
 .tag {
   background-color: #e0e0e0;
-  border-radius: 12px;
+  border-radius: 6px;
   padding: 3px 8px 3px 8px;
   font-size: 11px;
   cursor: pointer;
@@ -489,7 +561,7 @@ body.dark .tag {
 .tag-input {
   padding: 3px 6px;
   font-size: 11px;
-  border-radius: 12px;
+  border-radius: 6px;
   border: 1px solid #007bff;
   background-color: white;
   min-width: 50px;

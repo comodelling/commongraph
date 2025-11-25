@@ -114,7 +114,6 @@
           tabindex="0"
         >
           <span
-            v-if="editedEdge.tags.length"
             v-for="(tag, index) in editedEdge.tags"
             :key="`${tag}-${index}`"
             class="tag"
@@ -125,7 +124,17 @@
           >
             {{ tag }}
           </span>
-          <span v-else class="tag-placeholder">Click to add tags</span>
+          <button
+            class="add-button add-tag-button"
+            @click.stop="canEditField('tags') && startEditing('tags')"
+            :disabled="!canEditField('tags')"
+            title="Add a tag"
+          >
+            +
+          </button>
+          <span v-if="editedEdge.tags.length === 0" class="tag-placeholder"
+            >Click to add tags</span
+          >
         </div>
         <TagSelector
           v-else
@@ -138,6 +147,38 @@
         />
       </div>
     </div>
+
+    <!-- Custom option-based properties -->
+    <template
+      v-for="customProp in customPropertyEntries"
+      :key="`edge-custom-${customProp.name}`"
+    >
+      <div class="field" v-if="isAllowed(customProp.name)">
+        <strong
+          :title="customProp.config.question || capitalise(customProp.name)"
+        >
+          {{ capitalise(customProp.name) }}:
+        </strong>
+        <div class="field-content">
+          <select
+            v-model="editedEdge[customProp.name]"
+            :disabled="!canEditField(customProp.name)"
+            :ref="`${customProp.name}Input`"
+          >
+            <option value="" disabled>
+              {{ customProp.config.placeholder || "Select an option" }}
+            </option>
+            <option
+              v-for="(label, value) in customProp.config.options"
+              :key="`${customProp.name}-${value}`"
+              :value="value"
+            >
+              {{ label }}
+            </option>
+          </select>
+        </div>
+      </div>
+    </template>
     <button
       class="submit-button"
       @click="submit"
@@ -185,7 +226,7 @@ export default {
     sourceType: { type: String, required: false, default: null },
     targetType: { type: String, required: false, default: null },
   },
-  emits: ["publish-edge", "edge-exists"],
+  emits: ["publish-edge", "edge-exists", "preview-edge-update"],
   setup() {
     const { edgeTypes, load, license, getLicenseUrl } = useConfig();
     onMounted(load);
@@ -223,6 +264,20 @@ export default {
         return Object.keys(this.editedEdge);
       }
       return this.edgeTypes[this.editedEdge.edge_type].properties || [];
+    },
+    customPropertyEntries() {
+      if (!this.edgeTypes || !this.editedEdge.edge_type) {
+        return [];
+      }
+      const typeDef = this.edgeTypes[this.editedEdge.edge_type] || {};
+      const propertyOptions = typeDef.property_options || {};
+      return Object.entries(propertyOptions)
+        .filter(([name, config]) => {
+          const hasOptions =
+            config && config.options && Object.keys(config.options).length > 0;
+          return hasOptions && this.allowedFields.includes(name);
+        })
+        .map(([name, config]) => ({ name, config }));
     },
     computedEdgeTypeOptions() {
       // If both ends are known, only return allowed; else return all
@@ -340,12 +395,17 @@ export default {
     capitalise(str) {
       return str.charAt(0).toUpperCase() + str.slice(1);
     },
+    // formatCustomPropertyLabel removed: label now always uses property name
     getFieldOrder() {
       // Define the logical order of fields for keyboard navigation
       const baseFields = ["type", "description", "tags"];
-      return baseFields.filter(
+      const allowedBase = baseFields.filter(
         (field) => field === "type" || this.isAllowed(field),
       );
+      const customFields = this.customPropertyEntries
+        .map((prop) => prop.name)
+        .filter((name) => this.isAllowed(name));
+      return [...allowedBase, ...customFields];
     },
     moveToNextField(currentField) {
       this.stopEditing(currentField);
@@ -601,11 +661,11 @@ select:disabled {
   flex-wrap: wrap;
   gap: 4px;
   align-items: center;
-  min-height: 20px;
+  min-height: 24px;
   padding: 4px 6px;
-  border: 1px solid var(--tag-surface-border, #ccc);
-  border-radius: 4px;
-  background: var(--tag-surface-bg, #fff);
+  border: 1px solid var(--border-color);
+  border-radius: 2px;
+  background: var(--background-color);
   cursor: text;
 }
 
@@ -615,14 +675,50 @@ select:disabled {
 
 .tags-preview .tag {
   flex-shrink: 0;
-  min-height: 24px;
+  min-height: auto;
+  height: auto;
   display: inline-flex !important;
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: var(--tag-chip-bg, #edf2ff);
-  border: 1px solid var(--tag-chip-border, #cfd8f3);
-  color: var(--tag-chip-text, #273445);
-  font-size: 0.85rem;
+  padding: 2px 6px;
+  border-radius: 2px;
+  background: #e0e0e0;
+  border: 1px solid #ccc;
+  color: #333;
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+body.dark .tags-preview .tag {
+  background: #404040;
+  border-color: #555;
+  color: #f0f0f0;
+}
+
+.add-tag-button {
+  margin: 0 !important;
+  padding: 2px 6px !important;
+  font-size: 12px !important;
+  height: auto !important;
+  min-height: auto !important;
+  background-color: #6c757d !important;
+  color: white !important;
+}
+
+body.dark .add-tag-button {
+  background-color: #5a6268 !important;
+}
+
+.add-tag-button:hover:not(:disabled) {
+  opacity: 1 !important;
+  background-color: #5a6268 !important;
+}
+
+body.dark .add-tag-button:hover:not(:disabled) {
+  background-color: #505050 !important;
+}
+
+.add-tag-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .tag-placeholder {

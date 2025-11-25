@@ -21,7 +21,9 @@ from backend.config import (
     PLATFORM_DESCRIPTION,
     PLATFORM_NAME,
     NODE_TYPE_PROPS,
+    NODE_PROPERTY_OPTIONS,
     EDGE_TYPE_PROPS,
+    EDGE_PROPERTY_OPTIONS,
     EDGE_TYPE_BETWEEN,
     NODE_TYPE_STYLE,
     EDGE_TYPE_STYLE,
@@ -114,6 +116,7 @@ def get_config(current_user: UserRead = Depends(get_current_user)):
     node_types = {
         nt: {
             "properties": list(props),
+            "property_options": NODE_PROPERTY_OPTIONS.get(nt, {}),
             "polls": NODE_TYPE_POLLS.get(nt, {}),
             "style": NODE_TYPE_STYLE.get(nt, {}),
         }
@@ -123,6 +126,7 @@ def get_config(current_user: UserRead = Depends(get_current_user)):
         et: {
             "properties": list(props),
             "between": EDGE_TYPE_BETWEEN.get(et, None),
+            "property_options": EDGE_PROPERTY_OPTIONS.get(et, {}),
             "polls": EDGE_TYPE_POLLS.get(et, {}),
             "style": EDGE_TYPE_STYLE.get(et, {}),
         }

@@ -67,9 +67,13 @@
               :key="`node-${pollLabel}-${node.node_id}`"
             >
               <ElementPollPane
-                :element="{ node_id: node.node_id }"
+                :element="{
+                  node_id: node.node_id,
+                  status: nodeStatusAllowed(node) ? node.status : undefined,
+                }"
                 :poll-label="pollLabel"
                 :poll-config="pollConfig"
+                :status-allowed="nodeStatusAllowed(node)"
               />
             </div>
           </template>
@@ -82,10 +86,15 @@
             >
               <ElementPollPane
                 :element="{
-                  edge: { source: edge.source, target: edge.target },
+                  edge: {
+                    source: edge.source,
+                    target: edge.target,
+                    status: edgeStatusAllowed(edge) ? edge.status : undefined,
+                  },
                 }"
                 :poll-label="pollLabel"
                 :poll-config="pollConfig"
+                :status-allowed="edgeStatusAllowed(edge)"
               />
             </div>
           </template>
@@ -148,8 +157,13 @@ export default {
   },
   setup() {
     // Load config for the demo
-    const { load: loadConfig, polls } = useConfig();
-    return { loadConfig, polls };
+    const {
+      load: loadConfig,
+      polls,
+      nodeAllowsProperty,
+      edgeAllowsProperty,
+    } = useConfig();
+    return { loadConfig, polls, nodeAllowsProperty, edgeAllowsProperty };
   },
   data() {
     // Logging system
@@ -219,6 +233,18 @@ export default {
     },
   },
   methods: {
+    nodeStatusAllowed(node) {
+      if (!node || !this.nodeAllowsProperty) {
+        return false;
+      }
+      return this.nodeAllowsProperty(node.node_type, "status");
+    },
+    edgeStatusAllowed(edge) {
+      if (!edge || !this.edgeAllowsProperty) {
+        return false;
+      }
+      return this.edgeAllowsProperty(edge.edge_type, "status");
+    },
     async loadDemo() {
       try {
         this.debugLog("Loading demo:", this.demoId);

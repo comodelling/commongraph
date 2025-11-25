@@ -21,65 +21,220 @@
     </div>
     <div class="control-separator"></div>
     <div class="control-group">
-      <label for="color-control" title="Choose how to color the nodes"
-        >Color:</label
+      <label for="node-color-control" title="Choose how to color nodes"
+        >Node colour:</label
       >
       <select
-        id="color-control"
-        v-model="localColorBy"
-        @change="onColorByChange"
-        title="Choose how to color the nodes"
+        id="node-color-control"
+        v-model="localNodeColorBy"
+        @change="onNodeColorChange"
+        title="Choose how to color nodes"
       >
-        <option value="type">Type</option>
-        <option value="rating">Rating</option>
+        <option
+          v-for="option in nodeColorOptions"
+          :key="`node-color-${option.value}`"
+          :value="option.value"
+        >
+          {{ option.label }}
+        </option>
       </select>
     </div>
+    <div class="control-separator"></div>
+    <div class="control-group">
+      <label for="edge-color-control" title="Choose how to color edges"
+        >Edge colour:</label
+      >
+      <select
+        id="edge-color-control"
+        v-model="localEdgeColorBy"
+        @change="onEdgeColorChange"
+        title="Choose how to color edges"
+      >
+        <option
+          v-for="option in edgeColorOptions"
+          :key="`edge-color-${option.value}`"
+          :value="option.value"
+        >
+          {{ option.label }}
+        </option>
+      </select>
+    </div>
+    <template v-if="showInfoButton">
+      <div class="control-separator"></div>
+      <button
+        :class="['info-button', { active: infoMode }]"
+        @click="onInfoToggle"
+        title="Toggle type labels"
+      >
+        <Icon name="info" />
+      </button>
+    </template>
   </div>
 </template>
 
 <script>
+import { computed, ref, watch } from "vue";
+import { useConfig } from "../../composables/useConfig";
+import Icon from "../common/Icon.vue";
+import {
+  COLOR_MODE_TYPE,
+  humanizeLabel,
+  toPollColorValue,
+  toPropertyColorValue,
+} from "../../utils/graphColoring";
+
 export default {
   name: "GraphControls",
+  components: {
+    Icon,
+  },
   props: {
     depth: {
       type: Number,
       default: 1,
     },
-    colorBy: {
+    nodeColorBy: {
       type: String,
-      default: "type",
-      validator: (value) => ["type", "rating"].includes(value),
+      default: COLOR_MODE_TYPE,
+    },
+    edgeColorBy: {
+      type: String,
+      default: COLOR_MODE_TYPE,
+    },
+    showInfoButton: {
+      type: Boolean,
+      default: false,
+    },
+    infoMode: {
+      type: Boolean,
+      default: false,
     },
   },
-  emits: ["update:depth", "update:colorBy"],
-  data() {
+  emits: [
+    "update:depth",
+    "update:nodeColorBy",
+    "update:edgeColorBy",
+    "update:infoMode",
+  ],
+  setup(props, { emit }) {
+    const { nodeTypes, edgeTypes, nodePollTypes, edgePollTypes, load } =
+      useConfig();
+    load();
+
+    const localDepth = ref(props.depth);
+    const localNodeColorBy = ref(props.nodeColorBy);
+    const localEdgeColorBy = ref(props.edgeColorBy);
+
+    const nodeColorOptions = computed(() =>
+      buildColorOptions(nodePollTypes.value, nodeTypes.value),
+    );
+    const edgeColorOptions = computed(() =>
+      buildColorOptions(edgePollTypes.value, edgeTypes.value),
+    );
+
+    watch(
+      () => props.depth,
+      (newDepth) => {
+        localDepth.value = newDepth;
+      },
+    );
+    watch(
+      () => props.nodeColorBy,
+      (newVal) => {
+        localNodeColorBy.value = newVal;
+      },
+    );
+    watch(
+      () => props.edgeColorBy,
+      (newVal) => {
+        localEdgeColorBy.value = newVal;
+      },
+    );
+
+    const onDepthChange = () => {
+      emit("update:depth", Number(localDepth.value));
+    };
+
+    const onNodeColorChange = () => {
+      const normalized = ensureSelectionIsSupported(
+        localNodeColorBy.value,
+        nodeColorOptions.value,
+      );
+      localNodeColorBy.value = normalized;
+      emit("update:nodeColorBy", normalized);
+    };
+
+    const onEdgeColorChange = () => {
+      const normalized = ensureSelectionIsSupported(
+        localEdgeColorBy.value,
+        edgeColorOptions.value,
+      );
+      localEdgeColorBy.value = normalized;
+      emit("update:edgeColorBy", normalized);
+    };
+
+    const onInfoToggle = () => {
+      emit("update:infoMode", !props.infoMode);
+    };
+
     return {
-      localDepth: this.depth,
-      localColorBy: this.colorBy,
+      localDepth,
+      localNodeColorBy,
+      localEdgeColorBy,
+      nodeColorOptions,
+      edgeColorOptions,
+      onDepthChange,
+      onNodeColorChange,
+      onEdgeColorChange,
+      onInfoToggle,
     };
   },
-  watch: {
-    depth(newVal) {
-      this.localDepth = newVal;
-    },
-    colorBy(newVal) {
-      this.localColorBy = newVal;
-    },
-  },
-  methods: {
-    onDepthChange() {
-      this.$emit("update:depth", Number(this.localDepth));
-    },
-    onColorByChange() {
-      this.$emit("update:colorBy", this.localColorBy);
-    },
-  },
 };
+
+function ensureSelectionIsSupported(value, options) {
+  const allowedValues = options.map((option) => option.value);
+  return allowedValues.includes(value) ? value : COLOR_MODE_TYPE;
+}
+
+function buildColorOptions(pollSource = {}, typeSource = {}) {
+  const pollOptions = Object.entries(pollSource || {})
+    .map(([pollLabel, pollConfig]) => ({
+      value: toPollColorValue(pollLabel),
+      label: humanizeLabel(pollLabel),
+    }))
+    .sort((a, b) => a.label.localeCompare(b.label));
+
+  const seenProperties = new Map();
+  Object.values(typeSource || {}).forEach((typeDef = {}) => {
+    const propertyOptions = typeDef.property_options || {};
+    Object.entries(propertyOptions).forEach(([propertyName, config]) => {
+      const optionKeys = Object.keys(config?.options || {});
+      if (!optionKeys.length || seenProperties.has(propertyName)) {
+        return;
+      }
+      seenProperties.set(propertyName, config);
+    });
+  });
+
+  const propertyOptions = Array.from(seenProperties.entries())
+    .map(([propertyName, config]) => ({
+      value: toPropertyColorValue(propertyName),
+      label: humanizeLabel(propertyName),
+    }))
+    .sort((a, b) => a.label.localeCompare(b.label));
+
+  return [
+    { value: COLOR_MODE_TYPE, label: "Type" },
+    ...pollOptions,
+    ...propertyOptions,
+  ];
+}
 </script>
 
 <style scoped>
 .graph-controls {
   display: flex;
+  flex-wrap: nowrap;
   gap: 8px;
   align-items: center;
   padding: 0;
@@ -108,7 +263,7 @@ export default {
 }
 
 .control-group select {
-  padding: 4px 6px;
+  padding: 3px 5px;
   font-size: 11px;
   background-color: var(--background-color);
   color: var(--text-color);
@@ -117,6 +272,7 @@ export default {
   cursor: pointer;
   transition: all 0.2s;
   min-width: 20px;
+  height: 24px;
 }
 
 .control-group select:hover {
@@ -137,5 +293,45 @@ export default {
 
 :global(body.dark) .control-group select:hover {
   border-color: #777;
+}
+
+.info-button {
+  padding: 3px 6px;
+  background-color: var(--background-color);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+  border-radius: 3px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  min-width: 24px;
+  min-height: 24px;
+}
+
+.info-button:hover {
+  border-color: var(--text-color);
+}
+
+.info-button.active {
+  font-weight: 600;
+  border-color: var(--text-color);
+  background-color: var(--border-color);
+}
+
+:global(body.dark) .info-button {
+  background-color: #2a2a2a;
+  color: #fff;
+  border-color: #555;
+}
+
+:global(body.dark) .info-button:hover {
+  border-color: #777;
+}
+
+:global(body.dark) .info-button.active {
+  background-color: #444;
+  border-color: #888;
 }
 </style>

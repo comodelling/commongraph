@@ -43,6 +43,25 @@
         <span v-for="tag in edge.tags" :key="tag" class="tag">{{ tag }}</span>
       </div>
     </div>
+    <!-- Custom option-based properties -->
+    <template
+      v-for="customProp in customPropertyEntries"
+      :key="customProp.name"
+    >
+      <div class="field-row" v-if="hasCustomValue(customProp.name)">
+        <strong :title="customProp.config.question || customProp.name">
+          {{ capitalise(customProp.name) }}:
+        </strong>
+        <span class="field-value">
+          {{
+            getCustomPropertyDisplay(
+              customProp.config,
+              getCustomValue(customProp.name),
+            )
+          }}
+        </span>
+      </div>
+    </template>
     <!-- License Notice -->
     <p class="license-notice" v-if="shouldShowLicenseNotice">
       Edge descriptions are available under the
@@ -62,6 +81,11 @@
 import { defineComponent, computed, onMounted } from "vue";
 import { useConfig } from "../../composables/useConfig";
 import tooltips from "../../assets/tooltips.json";
+
+type CustomPropertyEntry = {
+  name: string;
+  config: Record<string, any>;
+};
 
 export default defineComponent({
   name: "EdgeInfoView",
@@ -113,12 +137,67 @@ export default defineComponent({
       );
     });
 
+    const customPropertyEntries = computed<CustomPropertyEntry[]>(() => {
+      if (!edgeTypes.value || !props.edge.edge_type) return [];
+      const typeDef = edgeTypes.value[props.edge.edge_type] || {};
+      const propertyOptions: Record<string, any> =
+        typeDef.property_options || {};
+      return Object.entries(propertyOptions)
+        .filter(([name, config]) => {
+          const optionMap = (config as Record<string, any>)?.options || {};
+          return (
+            allowed.value.includes(name) && Object.keys(optionMap).length > 0
+          );
+        })
+        .map(([name, config]) => ({
+          name,
+          config: config as Record<string, any>,
+        }));
+    });
+
+    // formatCustomPropertyLabel removed: label now always uses property name
+
+    function getCustomValue(propName: string): any {
+      return (props.edge as Record<string, any>)[propName];
+    }
+
+    function hasCustomValue(propName: string): boolean {
+      const value = getCustomValue(propName);
+      if (value === undefined || value === null) {
+        return false;
+      }
+      if (typeof value === "string") {
+        return value.trim().length > 0;
+      }
+      return true;
+    }
+
+    function getCustomPropertyDisplay(
+      config: Record<string, any>,
+      value: any,
+    ): string {
+      if (value === undefined || value === null) {
+        return "";
+      }
+      const options = config?.options || {};
+      const key = typeof value === "string" ? value : String(value);
+      return options[key] ?? String(value);
+    }
+
+    function capitalise(str: string) {
+      return str.charAt(0).toUpperCase() + str.slice(1);
+    }
     return {
       isAllowed,
       edgeTypeTooltip,
       license,
       getLicenseUrl,
       shouldShowLicenseNotice,
+      customPropertyEntries,
+      getCustomPropertyDisplay,
+      getCustomValue,
+      hasCustomValue,
+      capitalise,
     };
   },
   data() {

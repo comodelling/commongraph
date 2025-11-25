@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2025 CommonGraph contributors: https://github.com/comodelling/commongraph/CONTRIBUTORS.md
+//
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
 export const COLOR_MODE_TYPE = "type";
 export const COLOR_PREFIXES = Object.freeze({
   POLL: "poll:",

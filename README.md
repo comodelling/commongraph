@@ -1,6 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2025 CommonGraph contributors: https://github.com/comodelling/commongraph/CONTRIBUTORS.md
+SPDX-License-Identifier: AGPL-3.0-or-later
+-->
 
-
-# <img src="./docs/CG_logo_and_title.png" alt="CommonGraph logo" width="400" />
+# <img src="./assets/CG_logo_and_title.png" alt="CommonGraph logo" width="400" />
 
 **Free and open source platform builder for graph-based knowledge co-production and collaboration.**
 

@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2025 CommonGraph contributors: https://github.com/comodelling/commongraph/CONTRIBUTORS.md
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 """add is_super_admin to user
 
 Revision ID: f9a8b1c2d3e4

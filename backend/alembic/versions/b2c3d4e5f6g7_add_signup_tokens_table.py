@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2025 CommonGraph contributors: https://github.com/comodelling/commongraph/CONTRIBUTORS.md
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 """add signup_tokens table
 
 Revision ID: b2c3d4e5f6g7

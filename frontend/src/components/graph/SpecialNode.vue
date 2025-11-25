@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: 2025 CommonGraph contributors: https://github.com/comodelling/commongraph/CONTRIBUTORS.md
+
+SPDX-License-Identifier: AGPL-3.0-or-later
+-->
 <script setup>
 import { Handle, Position, useVueFlow } from "@vue-flow/core";
 import { computed, ref, inject } from "vue";

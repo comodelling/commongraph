@@ -1,0 +1,17 @@
+version = 1
+
+
+[[annotations]]
+path = ["VERSION", "backend/requirements-dev.txt", "backend/requirements.txt",
+        "frontend/package.json", "frontend/package-lock.json",
+        "frontend/src/assets/tooltips.json"]
+precedence = "override"
+SPDX-FileCopyrightText = "2025 CommonGraph contributors: https://github.com/comodelling/commongraph/CONTRIBUTORS.md"
+SPDX-License-Identifier = "AGPL-3.0-or-later"
+
+[[annotations]]
+path = ["docs/CG_logo.png", "docs/CG_logo_and_title.png",
+        "frontend/public/CG_logo.png", "frontend/public/favicon.ico"]
+precedence = "override"
+SPDX-FileCopyrightText = "2025 CommonGraph contributors: https://github.com/comodelling/commongraph/CONTRIBUTORS.md"
+SPDX-License-Identifier = "CC-BY-SA-4.0"

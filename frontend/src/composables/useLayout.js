@@ -1,4 +1,8 @@
-// adapted from https://vueflow.dev/examples/layout/simple.html
+// SPDX-FileCopyrightText: 2025 CommonGraph contributors: https://github.com/comodelling/commongraph/CONTRIBUTORS.md
+//
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
+// adapted from https://vueflow.dev/examples/layout/simple.html available under MIT license
 import dagre from "@dagrejs/dagre";
 import { Position, useVueFlow } from "@vue-flow/core";
 import { ref } from "vue";

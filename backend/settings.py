@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2025 CommonGraph contributors: https://github.com/comodelling/commongraph/CONTRIBUTORS.md
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 import os
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import List
@@ -28,13 +32,14 @@ class Settings(BaseSettings):
     # Pydantic v2 configuration using model_config
     model_config = SettingsConfigDict(
         # Allow extra fields from .env that aren't defined in Settings
-        extra='ignore',
+        extra="ignore",
         # base_dir is two levels up from this file
         env_file=[
             Path(__file__).parent.parent / ".env",
-            Path(__file__).parent.parent / f".env.{os.getenv('APP_ENV', 'development')}"
+            Path(__file__).parent.parent
+            / f".env.{os.getenv('APP_ENV', 'development')}",
         ],
-        env_file_encoding='utf-8',
+        env_file_encoding="utf-8",
     )
 
 

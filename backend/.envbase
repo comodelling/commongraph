@@ -1,4 +1,0 @@
-POSTGRES_DB_URL=postgresql://postgres:postgres@postgres:5432/commongraph_db
-ALLOWED_ORIGINS_RAW=http://localhost:5173
-ENABLE_GRAPH_DB=false
-QUOTES_FILE=

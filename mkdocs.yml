@@ -1,0 +1,88 @@
+# SPDX-FileCopyrightText: 2025 CommonGraph contributors: https://github.com/comodelling/commongraph/CONTRIBUTORS.md
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+site_name: CommonGraph
+site_description: A software project for knowledge co-production and better-informed decisions
+site_author: CommonGraph contributors
+site_url: https://commongraph.org
+repo_url: https://github.com/comodelling/commongraph
+repo_name: commongraph
+docs_dir: docs
+
+theme:
+  name: material
+  # logo: ../frontend/public/CG_logo.png
+  # favicon: assets/favicon.png
+  palette:
+    # Light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: darkgreen
+      accent: darkgreen
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    # Dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: darkgreen
+      accent: darkgreen
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.instant
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - toc.integrate
+    - search.suggest
+    - content.code.copy
+
+plugins:
+  - search
+  - offline
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.tabbed:
+      alternate_style: true
+  - tables
+  - toc:
+      permalink: true
+
+nav:
+  - Home: index.md
+  - Getting Started:
+    - Overview: getting-started/index.md
+    - Quick Start: getting-started/quick-start.md
+    - Basic Concepts: getting-started/concepts.md
+  - User Guide:
+    - Platform Setup: user-guide/setup.md
+    - Configuration: user-guide/configuration.md
+    - Managing Content: user-guide/content.md
+    - Users & Permissions: user-guide/permissions.md
+  - Deployment:
+    - Introduction: deployment/index.md
+    - Development Setup: deployment/development.md
+    - Production Deployment: deployment/production.md
+    - Docker Compose: deployment/docker-compose.md
+  - API:
+    - Overview: api/index.md
+    - Endpoints: api/endpoints.md
+    - Authentication: api/auth.md
+  - Architecture:
+    - System Overview: architecture/overview.md
+    - Data Model: architecture/data-model.md
+  - Contributing:
+    - Guidelines: contributing/index.md
+    - Development: contributing/development.md
+
+copyright: Copyright © CommonGraph contributors — licensed under CC BY-SA 4.0

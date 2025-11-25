@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2025 CommonGraph contributors: https://github.com/comodelling/commongraph/CONTRIBUTORS.md
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 """
 Pytest configuration for backend tests.
 
@@ -17,7 +21,9 @@ if "CONFIG_FILE" not in os.environ:
 
 # Set test database URL if not already set
 if "POSTGRES_TEST_DB_URL" not in os.environ:
-    os.environ["POSTGRES_TEST_DB_URL"] = "postgresql://postgres:postgres@localhost/testdb"
+    os.environ[
+        "POSTGRES_TEST_DB_URL"
+    ] = "postgresql://postgres:postgres@localhost/testdb"
 
 # Set secret key for tests
 if "SECRET_KEY" not in os.environ:

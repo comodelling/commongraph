@@ -192,8 +192,7 @@ const triangleRotation = computed(() => {
 .triangle-handle {
   background: transparent !important;
   border: none !important;
-  width: 14px !important;
-  height: 14px !important;
+  /* Size is now controlled by styles.css for consistency across all triangle handles */
   display: flex;
   align-items: center;
   justify-content: center;

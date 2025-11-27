@@ -201,6 +201,20 @@ button:focus-visible {
   right: -6px !important;
 }
 
+/* Adjust positioning for larger triangle handles - center the 32px handle on the edge */
+.vue-flow__node-special .vue-flow__handle-left.triangle-handle {
+  left: -1px !important;
+}
+.vue-flow__node-special .vue-flow__handle-right.triangle-handle {
+  right: -10px !important;
+}
+.vue-flow__node-special .vue-flow__handle-top.triangle-handle {
+  top: -3px !important;
+}
+.vue-flow__node-special .vue-flow__handle-bottom.triangle-handle {
+  bottom: -2px !important;
+}
+
 /* Slightly raise the left/right handles so they sit at the visual edge if padding is present */
 .vue-flow__node-special .vue-flow__handle-left,
 .tab-button {
@@ -217,6 +231,24 @@ button:focus-visible {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   min-width: 32px;
   min-height: 32px;
+}
+
+/* Remove box-shadow and tab-like styling for "triangle" handles which
+   should be small, transparent indicators (e.g. in SpecialNode.vue).
+   Keep .tab-button unaffected. */
+.vue-flow__node-special .vue-flow__handle-left.triangle-handle,
+.vue-flow__node-special .vue-flow__handle-right.triangle-handle,
+.vue-flow__node-special .vue-flow__handle-top.triangle-handle,
+.vue-flow__node-special .vue-flow__handle-bottom.triangle-handle {
+  box-shadow: none !important;
+  border: none !important;
+  background: transparent !important;
+  padding: 0 !important;
+  /* Ensure all triangle handles have the same clickable zone size */
+  width: 14px !important;
+  height: 14px !important;
+  min-width: 14px !important;
+  min-height: 14px !important;
 }
 
 .tab-button svg {

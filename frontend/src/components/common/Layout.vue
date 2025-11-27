@@ -100,7 +100,12 @@ export default {
   background-color: var(--background-color);
   border-radius: 5px;
   margin: 0 0 2px 2px;
-  overflow: hidden;
+  /* Allow page content to scroll inside the main content area. This
+     * prevents child pages like AdminTokens from being clipped by the
+     * fixed header and sidebar. */
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-bottom: 20px; /* extra bottom padding so content isn't flush */
 }
 
 .full-width {

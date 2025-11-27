@@ -113,6 +113,13 @@ export default {
       try {
         const { data } = await api.get("/config");
         signupRequiresToken.value = data.signup_requires_token || false;
+
+        // Auto-populate token from URL query parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        const tokenParam = urlParams.get("token");
+        if (tokenParam) {
+          signupToken.value = tokenParam;
+        }
       } catch (err) {
         console.error("Error loading config:", err);
       }

@@ -32,6 +32,9 @@ SPDX-License-Identifier: AGPL-3.0-or-later
       <router-link v-if="isAdmin" to="/admin/users"
         >Manage Users<br
       /></router-link>
+      <router-link v-if="isAdmin" to="/admin/tokens"
+        >Manage Tokens<br
+      /></router-link>
       <a href="#" @click="logout">Log out</a>
     </div>
   </div>

@@ -18,6 +18,7 @@ import UpdateSecurityQuestion from "../views/UpdateSecurityQuestion.vue";
 import UpdatePassword from "../views/UpdatePassword.vue";
 import Schema from "../views/Schema.vue";
 import AdminUsers from "../views/AdminUsers.vue";
+import AdminTokens from "../views/AdminTokens.vue";
 import PrivacyPolicy from "../views/PrivacyPolicy.vue";
 import DemoViewer from "../views/DemoViewer.vue";
 import BetaNotice from "../views/BetaNotice.vue";
@@ -144,6 +145,12 @@ const routes = [
         path: "/admin/users",
         name: "AdminUsers",
         component: AdminUsers,
+        meta: { requiresAdmin: true },
+      },
+      {
+        path: "/admin/tokens",
+        name: "AdminTokens",
+        component: AdminTokens,
         meta: { requiresAdmin: true },
       },
     ],

@@ -8,35 +8,42 @@ SPDX-License-Identifier: AGPL-3.0-or-later
     <div class="form-wrapper">
       <h2>Sign Up</h2>
       <form @submit.prevent="signup">
-        <label>
-          Username:
+        <label title="Public username associated with your edits.">
+          Username<span class="required">*</span>:
           <input
             v-model="username"
             placeholder="Enter your username"
             required
           />
+          <br /><small class="field-note"
+            >Your public username shown with your contributions.</small
+          >
         </label>
-        <label>
-          Password:
+        <label title="Your secure password to log in">
+          Password<span class="required">*</span>:
           <input
             type="password"
             v-model="password"
             placeholder="Enter your password"
             required
           />
+          <br /><small class="field-note">Minimum 8 characters required.</small>
         </label>
-        <label>
-          Confirm Password:
+        <label title="Re-enter your password for confirmation">
+          Confirm Password<span class="required">*</span>:
           <input
             type="password"
             v-model="confirmPassword"
             placeholder="Confirm your password"
             required
           />
+          <br /><small class="field-note"
+            >Re-enter the same password above.</small
+          >
         </label>
-        <label title="Recommended for password reset">
+        <label title="Used for password reset">
           Security Question:
-          <select v-model="securityQuestion" required>
+          <select v-model="securityQuestion">
             <option value="">Please select a security question</option>
             <option value="What is your mother's maiden name?">
               What is your mother's maiden name?
@@ -59,18 +66,25 @@ SPDX-License-Identifier: AGPL-3.0-or-later
             v-model="securityAnswer"
             type="password"
             placeholder="Enter your answer"
-            required
           />
+          <br /><small class="field-note"
+            >Only way to reset your password if you forget it.</small
+          >
         </label>
-        <label v-if="signupRequiresToken">
-          Access Token (required):
+        <label
+          v-if="signupRequiresToken"
+          title="Token provided by an administrator"
+        >
+          Access Token<span class="required">*</span>:
           <input
             v-model="signupToken"
             type="text"
             placeholder="Enter your access token"
             required
           />
-          <small style="color: #666">Token provided by an administrator</small>
+          <br /><small class="field-note"
+            >Token provided by an administrator</small
+          >
         </label>
         <label class="checkbox-label">
           <input type="checkbox" v-model="acceptPrivacyPolicy" required />
@@ -241,5 +255,16 @@ label {
 
 .checkbox-label a:hover {
   color: var(--color-link-hover, #2a7edf);
+}
+
+.field-note {
+  color: #666;
+  font-size: 0.85rem;
+}
+
+.required {
+  color: #c12;
+  font-weight: 600;
+  margin-left: 0.05em;
 }
 </style>

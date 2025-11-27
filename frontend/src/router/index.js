@@ -234,17 +234,41 @@ router.beforeEach(async (to, from, next) => {
     return;
   }
 
+  // Prevent access to the BetaNotice page when the platform is not in beta mode.
+  // Load config if necessary so we can read `betaMode`.
+  try {
+    const { configLoaded, load, betaMode } = useConfig();
+    if (!configLoaded.value) {
+      await load();
+    }
+    if (to.name === "BetaNotice" && !betaMode.value) {
+      console.log("Beta page disabled in config; redirecting to main page");
+      next({ name: "MainPage" });
+      return;
+    }
+  } catch (err) {
+    // If config fails to load for some reason, allow normal routing to continue
+    console.warn("Could not validate betaMode before routing:", err);
+  }
+
   // Check if signup is enabled for routes that require it
   const requiresSignupEnabled = to.matched.some(
     (record) => record.meta?.requiresSignupEnabled,
   );
   if (requiresSignupEnabled) {
-    const { allowSignup, configLoaded } = useConfig();
+    const { allowSignup, configLoaded, load, betaMode } = useConfig();
 
-    // If config isn't loaded yet, load it
+    // If config isn't loaded yet, load it (we need betaMode available for guards)
     if (!configLoaded.value) {
-      const { load } = useConfig();
       await load();
+    }
+
+    // If someone tries to navigate directly to the beta notice while the
+    // platform is not in beta mode, redirect them to the main page.
+    if (to.name === "BetaNotice" && !betaMode.value) {
+      console.log("Beta view disabled - redirecting to main page");
+      next({ name: "MainPage" });
+      return;
     }
 
     // Check if signup is enabled

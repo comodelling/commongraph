@@ -18,6 +18,8 @@ const nodePollsByType = ref<Record<string, Record<string, any>>>({});
 const edgePollsByType = ref<Record<string, Record<string, any>>>({});
 const permissions = ref<Record<string, boolean>>({});
 const allowSignup = ref<boolean>(true);
+const betaMode = ref<boolean>(false);
+const signupRequiresAdminApproval = ref<boolean>(false);
 const license = ref<string>("");
 
 function toStringArray(value: unknown): string[] {
@@ -123,6 +125,9 @@ async function load(forceReload = false) {
     platformDescription.value = data.platform_description;
     permissions.value = data.permissions || {};
     allowSignup.value = data.allow_signup !== false;
+    betaMode.value = data.beta_mode === true;
+    signupRequiresAdminApproval.value =
+      data.signup_requires_admin_approval === true;
     license.value = data.license ?? "";
     configLoaded.value = true;
     console.log("Config loaded", forceReload ? "(forced reload)" : "");
@@ -230,6 +235,8 @@ export function useConfig() {
     canDelete,
     canRate,
     allowSignup,
+    betaMode,
+    signupRequiresAdminApproval,
     license,
     getLicenseUrl,
   };

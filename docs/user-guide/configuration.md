@@ -118,6 +118,14 @@ permissions:
   rate: all
 ```
 
+### Beta mdoe
+
+To activate redirection to a beta testing notice:
+
+```yaml
+beta_mode: true
+```
+
 ### Licensing
 
 Specify content licence:

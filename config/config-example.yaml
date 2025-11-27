@@ -6,6 +6,11 @@
 platform_name: CommonGraph-example
 platform_tagline: This is an example tagline
 platform_description: This is an example description which should support html formatting.
+
+# Beta mode: when true, users without read permission are redirected to /beta page
+# When false, they are redirected to /login page instead
+beta_mode: false
+
 node_types:
   example_node_type:
     properties:

@@ -272,6 +272,7 @@ class AppConfig(BaseModel):
     )
     platform_description: str = ""
     license: str | None = None
+    beta_mode: bool = False
     node_types: Dict[str, NodeTypeConfig]
     edge_types: Dict[str, EdgeTypeConfig]
     polls: Dict[str, PollConfig] = Field(default_factory=dict)
@@ -403,6 +404,7 @@ AUTH_CFG = _CONFIG["auth"]
 ALLOW_SIGNUP = _CONFIG_MODEL.auth.allow_signup
 SIGNUP_REQUIRES_ADMIN_APPROVAL = _CONFIG_MODEL.auth.signup_requires_admin_approval
 SIGNUP_REQUIRES_TOKEN = _CONFIG_MODEL.auth.signup_requires_token
+BETA_MODE = _CONFIG_MODEL.beta_mode
 
 # 7. Permissions configuration
 PERMISSIONS_CFG = _CONFIG["permissions"]

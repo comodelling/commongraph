@@ -42,7 +42,7 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 </template>
 
 <script>
-import { onMounted } from "vue";
+import { onMounted, computed } from "vue";
 import { useConfig } from "../composables/useConfig";
 
 export default {
@@ -50,15 +50,24 @@ export default {
   setup() {
     const contactEmail =
       import.meta.env.VITE_ADMIN_EMAIL || "contact@example.com";
-    const { allowSignup, load } = useConfig();
+    const { allowSignup, betaMode, signupRequiresAdminApproval, load } =
+      useConfig();
 
     onMounted(async () => {
       await load();
     });
 
+    // Hide signup button when in beta mode
+    // (admins send invite tokens or users contact directly)
+    const showSignupButton = computed(() => {
+      if (!allowSignup.value) return false;
+      if (betaMode.value) return false;
+      return true;
+    });
+
     return {
       contactEmail,
-      signupEnabled: allowSignup,
+      signupEnabled: showSignupButton,
     };
   },
 };
@@ -110,10 +119,10 @@ h1 {
 }
 
 .cta-section {
-  background: var(--node-color);
+  /* background: var(--node-color); */
   border: 1px solid var(--border-color);
   border-radius: 8px;
-  padding: 20px;
+  padding-bottom: 20px;
   margin-bottom: 30px;
 }
 

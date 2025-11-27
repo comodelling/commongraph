@@ -3,7 +3,7 @@ SPDX-FileCopyrightText: 2025 CommonGraph contributors: https://github.com/comode
 SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 
-# <img src="./assets/CG_logo_and_title.png" alt="CommonGraph logo" width="400" />
+# <img src="./docs/CG_logo_and_title.png" alt="CommonGraph logo" width="400" />
 
 **Free and open source platform builder for graph-based knowledge co-production and collaboration.**
 
@@ -49,8 +49,8 @@ See [Contributing Guide](https://docs.commongraph.org/contributing/) for develop
 
 ## License
 
-Code: GNU Affero General Public License v3.0 or later — see [LICENSES/AGPL-3.0-or-later.txt](LICENSES/AGPL-3.0-or-later.txt) for details.
-Docs: CC BY-SA 4.0, see [docs/LICENSE](docs/LICENSE) for details
+*Code*: GNU Affero General Public License v3.0 or later — see [LICENSES/AGPL-3.0-or-later.txt](LICENSES/AGPL-3.0-or-later.txt) for details.<br>
+*Doc*: CC BY-SA 4.0, see [LICENSES/CC-BY-SA-4.0.txt](LICENSES/CC-BY-SA-4.0.txt) for details
 
 ## Credits
 

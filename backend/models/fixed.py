@@ -42,10 +42,10 @@ class User(SQLModel, table=True):
         description="User's personal preferences",
     )
     security_question: str | None = Field(
-        ..., description="Security question for password reset"
+        default=None, description="Security question for password reset"
     )
     security_answer: str | None = Field(
-        ..., description="Answer to the security question"
+        default=None, description="Answer to the security question"
     )
     is_active: bool = Field(
         default=not SIGNUP_REQUIRES_ADMIN_APPROVAL,
@@ -71,10 +71,10 @@ class UserCreate(SQLModel):
     password: str = Field(..., min_length=6)
     preferences: Dict[str, Any] | None = Field(default_factory=dict)
     security_question: str | None = Field(
-        ..., description="Security question for password reset"
+        default=None, description="Security question for password reset"
     )
     security_answer: str | None = Field(
-        ..., description="Answer to the security question"
+        default=None, description="Answer to the security question"
     )
     is_active: bool = Field(
         default=not SIGNUP_REQUIRES_ADMIN_APPROVAL,

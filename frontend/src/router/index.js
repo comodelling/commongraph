@@ -18,6 +18,7 @@ import UpdateSecurityQuestion from "../views/UpdateSecurityQuestion.vue";
 import UpdatePassword from "../views/UpdatePassword.vue";
 import Schema from "../views/Schema.vue";
 import AdminUsers from "../views/AdminUsers.vue";
+import AdminTokens from "../views/AdminTokens.vue";
 import PrivacyPolicy from "../views/PrivacyPolicy.vue";
 import DemoViewer from "../views/DemoViewer.vue";
 import BetaNotice from "../views/BetaNotice.vue";
@@ -146,6 +147,12 @@ const routes = [
         component: AdminUsers,
         meta: { requiresAdmin: true },
       },
+      {
+        path: "/admin/tokens",
+        name: "AdminTokens",
+        component: AdminTokens,
+        meta: { requiresAdmin: true },
+      },
     ],
   },
 ];
@@ -227,17 +234,41 @@ router.beforeEach(async (to, from, next) => {
     return;
   }
 
+  // Prevent access to the BetaNotice page when the platform is not in beta mode.
+  // Load config if necessary so we can read `betaMode`.
+  try {
+    const { configLoaded, load, betaMode } = useConfig();
+    if (!configLoaded.value) {
+      await load();
+    }
+    if (to.name === "BetaNotice" && !betaMode.value) {
+      console.log("Beta page disabled in config; redirecting to main page");
+      next({ name: "MainPage" });
+      return;
+    }
+  } catch (err) {
+    // If config fails to load for some reason, allow normal routing to continue
+    console.warn("Could not validate betaMode before routing:", err);
+  }
+
   // Check if signup is enabled for routes that require it
   const requiresSignupEnabled = to.matched.some(
     (record) => record.meta?.requiresSignupEnabled,
   );
   if (requiresSignupEnabled) {
-    const { allowSignup, configLoaded } = useConfig();
+    const { allowSignup, configLoaded, load, betaMode } = useConfig();
 
-    // If config isn't loaded yet, load it
+    // If config isn't loaded yet, load it (we need betaMode available for guards)
     if (!configLoaded.value) {
-      const { load } = useConfig();
       await load();
+    }
+
+    // If someone tries to navigate directly to the beta notice while the
+    // platform is not in beta mode, redirect them to the main page.
+    if (to.name === "BetaNotice" && !betaMode.value) {
+      console.log("Beta view disabled - redirecting to main page");
+      next({ name: "MainPage" });
+      return;
     }
 
     // Check if signup is enabled
@@ -252,7 +283,7 @@ router.beforeEach(async (to, from, next) => {
   const requiresRead = to.matched.some((record) => record.meta?.requiresRead);
   if (requiresRead) {
     const { isLoggedIn } = useAuth();
-    const { permissions } = useConfig();
+    const { permissions, betaMode } = useConfig();
 
     // If permissions aren't loaded yet, load them
     if (!permissions.value) {
@@ -262,9 +293,17 @@ router.beforeEach(async (to, from, next) => {
 
     // Check if user has read permission
     if (permissions.value && !permissions.value.read) {
-      // User doesn't have read permission, redirect to beta notice
-      console.log("User lacks read permission, redirecting to beta notice");
-      next({ name: "BetaNotice" });
+      // If beta_mode is enabled, redirect to beta notice page
+      // Otherwise, redirect to login page for authentication
+      if (betaMode.value) {
+        console.log(
+          "User lacks read permission in beta mode, redirecting to beta notice",
+        );
+        next({ name: "BetaNotice" });
+      } else {
+        console.log("User lacks read permission, redirecting to login");
+        next({ name: "Login" });
+      }
       return;
     }
   }

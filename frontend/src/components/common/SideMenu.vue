@@ -32,6 +32,9 @@ SPDX-License-Identifier: AGPL-3.0-or-later
       <router-link v-if="isAdmin" to="/admin/users"
         >Manage Users<br
       /></router-link>
+      <router-link v-if="isAdmin" to="/admin/tokens"
+        >Manage Tokens<br
+      /></router-link>
       <a href="#" @click="logout">Log out</a>
     </div>
   </div>
@@ -41,13 +44,27 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 import { useRouter } from "vue-router";
 import { useAuth } from "../../composables/useAuth";
 import { useConfig } from "../../composables/useConfig";
+import { computed } from "vue";
 import api from "../../api/axios";
 
 export default {
   setup() {
     const router = useRouter();
     const { isLoggedIn, isAdmin, clearTokens } = useAuth();
-    const { canRead, canCreate, allowSignup } = useConfig();
+    const {
+      canRead,
+      canCreate,
+      allowSignup,
+      betaMode,
+      signupRequiresAdminApproval,
+    } = useConfig();
+
+    // Hide signup link when in beta mode
+    const showSignup = computed(() => {
+      if (!allowSignup.value) return false;
+      if (betaMode.value) return false;
+      return true;
+    });
 
     const fetchRandomNode = async () => {
       try {
@@ -103,7 +120,7 @@ export default {
       isAdmin,
       canRead,
       canCreate,
-      allowSignup,
+      allowSignup: showSignup,
     };
   },
 };

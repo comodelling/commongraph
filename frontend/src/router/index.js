@@ -259,7 +259,7 @@ router.beforeEach(async (to, from, next) => {
   const requiresRead = to.matched.some((record) => record.meta?.requiresRead);
   if (requiresRead) {
     const { isLoggedIn } = useAuth();
-    const { permissions } = useConfig();
+    const { permissions, betaMode } = useConfig();
 
     // If permissions aren't loaded yet, load them
     if (!permissions.value) {
@@ -269,9 +269,17 @@ router.beforeEach(async (to, from, next) => {
 
     // Check if user has read permission
     if (permissions.value && !permissions.value.read) {
-      // User doesn't have read permission, redirect to beta notice
-      console.log("User lacks read permission, redirecting to beta notice");
-      next({ name: "BetaNotice" });
+      // If beta_mode is enabled, redirect to beta notice page
+      // Otherwise, redirect to login page for authentication
+      if (betaMode.value) {
+        console.log(
+          "User lacks read permission in beta mode, redirecting to beta notice",
+        );
+        next({ name: "BetaNotice" });
+      } else {
+        console.log("User lacks read permission, redirecting to login");
+        next({ name: "Login" });
+      }
       return;
     }
   }

@@ -136,7 +136,12 @@ def get_config(current_user: UserRead = Depends(get_current_user)):
         }
         for et, props in EDGE_TYPE_PROPS.items()
     }
-    from backend.config import ALLOW_SIGNUP, SIGNUP_REQUIRES_TOKEN
+    from backend.config import (
+        ALLOW_SIGNUP,
+        SIGNUP_REQUIRES_TOKEN,
+        BETA_MODE,
+        SIGNUP_REQUIRES_ADMIN_APPROVAL,
+    )
 
     return {
         "platform_name": PLATFORM_NAME,
@@ -147,7 +152,10 @@ def get_config(current_user: UserRead = Depends(get_current_user)):
         "schema_version": get_current_config_version(),
         "schema_hash": get_current_config_hash(),
         "permissions": get_permission_summary(current_user),
+        "beta_mode": BETA_MODE,
         "allow_signup": ALLOW_SIGNUP,
+        "allow_signup": ALLOW_SIGNUP,
+        "signup_requires_admin_approval": SIGNUP_REQUIRES_ADMIN_APPROVAL,
         "signup_requires_token": SIGNUP_REQUIRES_TOKEN,
         "license": LICENSE,
     }

@@ -267,6 +267,46 @@ def test_update_node_missing_id(client):
     assert response.status_code == 400
 
 
+def test_non_admin_update_node_title_without_status(client):
+    """Non-admin user should be able to edit title for node types without 'status'."""
+    # Ensure we override the current user to a regular (non-admin) user for this test
+    from backend.main import app
+
+    original_override = app.dependency_overrides.get(get_current_user)
+    app.dependency_overrides[get_current_user] = lambda: UserRead(
+        username="regularuser",
+        preferences={},
+        is_active=True,
+        is_admin=False,
+        is_super_admin=False,
+    )
+    try:
+        node_type = list(valid_node_types())[0]
+        create_response = client.post("/nodes", json={"node_type": node_type})
+        assert create_response.status_code == 201
+        node = create_response.json()
+        node_id = node["node_id"]
+
+        # Attempt to update title and node_type – should succeed since test node types
+        # do not define 'status' property in config-test
+        update_payload = {
+            "node_id": node_id,
+            "node_type": node_type,
+            "title": "Non-admin Updated Title",
+        }
+        update_response = client.put("/nodes", json=update_payload)
+        assert update_response.status_code == 200, update_response.json()
+
+        updated_node = update_response.json()
+        assert updated_node["title"] == "Non-admin Updated Title"
+    finally:
+        # Restore previous override
+        if original_override is not None:
+            app.dependency_overrides[get_current_user] = original_override
+        else:
+            app.dependency_overrides.pop(get_current_user, None)
+
+
 def test_delete_node(client):
     """Test deleting a node."""
     # Create a node

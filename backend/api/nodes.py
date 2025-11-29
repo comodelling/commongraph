@@ -328,22 +328,40 @@ def update_node(
         raise HTTPException(400, "node_id is required for updates")
 
     current_node = db_history.get_node(node_id)
-    current_status = getattr(current_node, "status", None) or "live"
+    # Determine whether this node type supports 'status' as a property
+    status_allowed = node_type_allows_property(
+        getattr(current_node, "node_type", None), "status"
+    )
+
+    # Only evaluate and apply non-draft-level restrictions if the node type
+    # actually supports 'status'. Avoid defaulting to 'live' for node types
+    # where 'status' is not configured, so we don't apply admin-only field
+    # restrictions incorrectly.
+    current_status = None
+    if status_allowed:
+        current_status = getattr(current_node, "status", None) or "live"
 
     # Check field-level permissions based on status
-    # If current status is non-draft, enforce restrictions for non-admins on field changes
-    if current_status != "draft":
-        restricted_fields = {"title", "node_type", "scope"}
+    # If current status is non-draft and status is a valid concept for this
+    # node type, enforce restrictions for non-admins on field changes
+    if status_allowed and current_status != "draft":
+        restricted_fields = {"title", "type", "scope"}
 
         for field in restricted_fields:
             # Check if field was actually modified
-            current_value = getattr(current_node, field, None)
+            # Current field names used by our internal models differ from
+            # how they're exposed via the API ("type" vs "node_type").
             payload_field = "node_type" if field == "type" else field
+            current_value = getattr(current_node, payload_field, None)
             payload_value = payload.get(payload_field)
 
             if payload_field in payload and payload_value != current_value:
                 # Field is being changed, check permissions
-                if not can_edit_field_when_non_draft(user, field):
+                # The permission helper expects field names such as
+                # "type" rather than "node_type". We pass the original
+                # field name to the permission checker.
+                perm_field = field
+                if not can_edit_field_when_non_draft(user, perm_field):
                     raise HTTPException(
                         status_code=status.HTTP_403_FORBIDDEN,
                         detail=f"Non-admin users cannot modify '{field}' when the node has a non-draft status",

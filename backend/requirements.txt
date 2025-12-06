@@ -186,8 +186,10 @@ typing-extensions==4.12.2
     #   typing-inspection
 typing-inspection==0.4.1
     # via pydantic-settings
-urllib3==2.5.0
-    # via sentry-sdk
+urllib3==2.6.0
+    # via
+    #   -r backend/requirements.in
+    #   sentry-sdk
 uvicorn[standard]==0.35.0
     # via
     #   fastapi

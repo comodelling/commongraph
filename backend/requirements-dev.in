@@ -7,3 +7,6 @@ pip-tools
 pre-commit
 pytest
 reuse
+
+# security
+filelock>=3.20.1

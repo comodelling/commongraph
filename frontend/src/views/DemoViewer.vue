@@ -110,6 +110,8 @@ SPDX-License-Identifier: AGPL-3.0-or-later
             style="width: 100%; height: 100%"
             :data="subgraphData"
             :read-only="true"
+            :node-color-by="'type'"
+            :edge-color-by="'type'"
             @nodeClick="updateNodeFromBackend"
             @edgeClick="updateEdgeFromBackend"
             @newNodeCreated="openNewlyCreatedNode"
@@ -146,6 +148,7 @@ import {
   formatFlowEdgeProps,
   formatFlowNodeProps,
 } from "../composables/formatFlowComponents";
+import { COLOR_MODE_TYPE } from "../utils/graphColoring";
 
 export default {
   components: {
@@ -268,10 +271,10 @@ export default {
 
         // Format nodes and edges for FlowEditor
         const formattedNodes = this.demoData.nodes.map((node) =>
-          formatFlowNodeProps(node),
+          formatFlowNodeProps(node, COLOR_MODE_TYPE),
         );
         const formattedEdges = this.demoData.edges.map((edge) =>
-          formatFlowEdgeProps(edge),
+          formatFlowEdgeProps(edge, COLOR_MODE_TYPE),
         );
 
         this.debugLog(

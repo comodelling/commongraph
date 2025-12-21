@@ -232,6 +232,8 @@ SPDX-License-Identifier: AGPL-3.0-or-later
             v-else-if="activeTab === 'flow'"
             :data="flowSubgraphData"
             :info-control-visible="false"
+            :node-color-by="nodeColorBy"
+            :edge-color-by="edgeColorBy"
             :read-only="!(canCreate || canEdit || canDelete)"
             :highlighted-node-id="hoveredNodeId"
             :fit-trigger="flowFitTick"

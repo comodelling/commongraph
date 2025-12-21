@@ -88,6 +88,8 @@ SPDX-License-Identifier: AGPL-3.0-or-later
       <SubgraphRenderer
         :data="subgraphData"
         :info-control-visible="false"
+        :node-color-by="nodeColorBy"
+        :edge-color-by="edgeColorBy"
         @nodeClick="updateNodeFromBackend"
         @edgeClick="updateEdgeFromBackend"
         @newNodeCreated="openNewlyCreatedNode"
@@ -887,11 +889,14 @@ export default {
       edges.forEach((edge) => {
         const pollLabel = this.resolveEdgePollLabel(edge);
         edge.ratingLabel = pollLabel;
-        edge.causal_strength = null;
-
+        // Only reset causal_strength if we're planning to fetch a poll-based rating for this edge
+        // Preserve existing property-backed causal_strength values from the server otherwise
         if (!pollLabel) {
+          // leave edge.causal_strength as-is
           return;
         }
+
+        edge.causal_strength = null;
 
         if (!groupedByPoll.has(pollLabel)) {
           groupedByPoll.set(pollLabel, []);

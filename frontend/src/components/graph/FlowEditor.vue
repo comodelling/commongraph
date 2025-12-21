@@ -37,6 +37,7 @@ import {
   formatFlowEdgeProps,
   formatFlowNodeProps,
 } from "../../composables/formatFlowComponents.js";
+import { COLOR_MODE_TYPE } from "../../utils/graphColoring.js";
 import { useUnsaved } from "../../composables/useUnsaved.js";
 import { useConfig } from "../../composables/useConfig.js";
 import {
@@ -108,6 +109,8 @@ const props = defineProps({
   },
   updatedNode: Object,
   updatedEdge: Object,
+  nodeColorBy: { type: String, default: COLOR_MODE_TYPE },
+  edgeColorBy: { type: String, default: COLOR_MODE_TYPE },
   readOnly: {
     type: Boolean,
     default: false,
@@ -257,6 +260,45 @@ watch(
   { immediate: false },
 );
 
+// Re-apply coloring when the color mode changes from parent controls
+watch(
+  () => props.edgeColorBy,
+  (newVal) => {
+    if (!isInstanceReady.value) return;
+    setEdges((prevEdges) =>
+      prevEdges.map((e) => {
+        try {
+          const formatted = formatFlowEdgeProps(e.data || e, newVal);
+          // Preserve runtime placement/selection while updating style/data
+          return { ...e, ...formatted, position: e.position };
+        } catch (err) {
+          debugLog("Failed to reformat edge for new color mode", err);
+          return e;
+        }
+      }),
+    );
+  },
+);
+
+watch(
+  () => props.nodeColorBy,
+  (newVal) => {
+    if (!isInstanceReady.value) return;
+    setNodes((prevNodes) =>
+      prevNodes.map((n) => {
+        try {
+          const formatted = formatFlowNodeProps(n.data || n, newVal);
+          // Preserve position and selection
+          return { ...n, ...formatted, position: n.position };
+        } catch (err) {
+          debugLog("Failed to reformat node for new color mode", err);
+          return n;
+        }
+      }),
+    );
+  },
+);
+
 watch(
   () => props.updatedNode,
   (newUpdatedNode) => {
@@ -279,7 +321,7 @@ watch(
       if (!nodeToUpdate) return;
 
       debugLog("Processing debounced node update:", nodeToUpdate);
-      let formattedNode = formatFlowNodeProps(nodeToUpdate);
+      let formattedNode = formatFlowNodeProps(nodeToUpdate, props.nodeColorBy);
 
       // case of a new node (with possibly new connection too)
       if (nodeToUpdate.new) {
@@ -371,7 +413,10 @@ watch(
         edgeToUpdate.causal_strength = oldEdge.data.causal_strength;
       }
 
-      const formattedEdge = formatFlowEdgeProps(edgeToUpdate);
+      const formattedEdge = formatFlowEdgeProps(
+        edgeToUpdate,
+        props.edgeColorBy,
+      );
       setEdges((prevEdges) =>
         prevEdges.map((e) => (e.id === formattedEdge.id ? formattedEdge : e)),
       );
@@ -1008,11 +1053,14 @@ function createEdgeOnConnection(targetId) {
     return null;
   }
   const chosenType = allowed[0];
-  const newEdgeData = formatFlowEdgeProps({
-    source: source,
-    target: target,
-    edge_type: chosenType,
-  });
+  const newEdgeData = formatFlowEdgeProps(
+    {
+      source: source,
+      target: target,
+      edge_type: chosenType,
+    },
+    props.edgeColorBy,
+  );
   newEdgeData.data.sourceNodeType = sourceType;
   newEdgeData.data.targetNodeType = targetType;
   debugLog("New edge data (direct connection):", newEdgeData);

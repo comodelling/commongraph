@@ -108,23 +108,35 @@ function getCustomPropertyColor(scope, typeName, propertyName, optionValue) {
 
   const propertyConfig = lookupPropertyConfig(scope, typeName, propertyName);
   const optionMap = propertyConfig?.options || {};
-  const optionKeys = Object.keys(optionMap);
+  let optionKeys = Object.keys(optionMap || {});
   if (!optionKeys.length) {
     return null;
   }
 
+  // Sort keys to make palettes deterministic: numeric keys sorted numerically, otherwise lexicographic
+  const allNumeric = optionKeys.every((k) => !Number.isNaN(Number(k)));
+  optionKeys = optionKeys.sort((a, b) => {
+    if (allNumeric) return Number(a) - Number(b);
+    return String(a).localeCompare(String(b));
+  });
+
   const cache =
     scope === "node" ? nodePropertyPaletteCache : edgePropertyPaletteCache;
-  if (!cache.has(propertyName)) {
+  // Use per-type cache key so different types with the same property name don't collide
+  const cacheKey = `${typeName}:${propertyName}`;
+
+  if (!cache.has(cacheKey)) {
     const palette = new Map();
     const colors = generateBluePurpleScale(optionKeys.length);
     optionKeys.forEach((key, index) => {
-      palette.set(key, colors[index]);
+      palette.set(String(key), colors[index]);
     });
-    cache.set(propertyName, palette);
+    cache.set(cacheKey, palette);
+    // Debug: show palette mapping for this property/type
+    console.debug("Built property palette", { cacheKey, optionKeys, colors });
   }
 
-  return cache.get(propertyName).get(normalizedValue) || null;
+  return cache.get(cacheKey).get(String(normalizedValue)) || null;
 }
 
 function getNodePollValue(nodeData, pollLabel) {
@@ -203,24 +215,100 @@ export function formatFlowEdgeProps(data, colorBy = COLOR_MODE_TYPE) {
         ? getRatingColor(pollValue) || defaultThemeEdgeColor
         : defaultThemeEdgeColor;
   } else if (colorMode.mode === "property") {
+    // Try to obtain the property value from multiple sources if missing in the base edge data
+    let propValue = getPropertyValue(data, colorMode.key);
+
+    // If not present, check pollRatings map (some systems store aggregated answers here)
+    if (
+      propValue == null &&
+      data?.pollRatings &&
+      data.pollRatings[colorMode.key] != null
+    ) {
+      propValue = data.pollRatings[colorMode.key];
+    }
+
+    // If still missing, and the edge has a rating stored as causal_strength with ratingLabel matching the property
+    if (
+      propValue == null &&
+      data?.ratingLabel === colorMode.key &&
+      data?.causal_strength != null
+    ) {
+      propValue = data.causal_strength;
+    }
+
+    // As a last resort for commonly named properties like causal_strength, try that field explicitly
+    if (
+      propValue == null &&
+      colorMode.key &&
+      typeof colorMode.key === "string" &&
+      colorMode.key.endsWith("_strength") &&
+      data?.causal_strength != null
+    ) {
+      propValue = data.causal_strength;
+    }
+
     const propertyColor = getCustomPropertyColor(
       "edge",
       edge_type,
       colorMode.key,
-      getPropertyValue(data, colorMode.key),
+      propValue,
     );
+
+    const typePropertyOptions =
+      edgeTypes.value[edge_type]?.property_options || {};
+    // Detailed debug information to help understand why colouring fails
+    if (!propertyColor) {
+      console.debug("Edge property colour resolution", {
+        edge_type,
+        property: colorMode.key,
+        resolvedValue: propValue,
+        propertyOptions: typePropertyOptions,
+        optionKeys: Object.keys(
+          typePropertyOptions[colorMode.key]?.options || {},
+        ),
+        edgeDataKeys: Object.keys(data || {}),
+        dataPreview: data,
+      });
+    } else {
+      console.debug("Edge property colour found", {
+        edge_type,
+        property: colorMode.key,
+        value: propValue,
+        color: propertyColor,
+      });
+    }
+
     strokeColor = propertyColor || conf.stroke || defaultThemeEdgeColor;
   } else {
     strokeColor = conf.stroke || defaultThemeEdgeColor;
   }
 
   const strokeWidth = conf.strokeWidth ?? 1.5;
-  const markerEndConf = conf.markerEnd || {
-    type: "arrow",
-    height: 15,
-    width: 15,
+
+  // Ensure marker color follows stroke color (style can be overridden by config.markerEnd but we still want consistent colouring)
+  const markerEndConf = {
+    ...(conf.markerEnd || { type: "arrow", height: 15, width: 15 }),
     color: strokeColor,
   };
+
+  // Debugging: log when a property colour was requested but not available
+  if (colorMode.mode === "property") {
+    const prop = colorMode.key;
+    const propertyColor = getCustomPropertyColor(
+      "edge",
+      edge_type,
+      prop,
+      getPropertyValue(data, prop),
+    );
+    if (!propertyColor) {
+      console.debug("Edge property colour not found", {
+        edge_type,
+        property: prop,
+        value: getPropertyValue(data, prop),
+        available: edgeTypes.value[edge_type]?.property_options || {},
+      });
+    }
+  }
 
   return {
     // Ensure source/target ids are safe strings (preview nodes may not have node_id yet)

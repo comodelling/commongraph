@@ -77,6 +77,72 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         </button>
       </div>
     </div>
+    <!-- Wikidata ID Field -->
+    <div class="field" v-if="isAllowed('wikidata_id')">
+      <strong :title="tooltips.edge.wikidata_id">Wikidata:</strong>
+      <div class="field-content">
+        <span
+          v-if="editingField !== 'wikidata_id'"
+          @click="startEditing('wikidata_id')"
+          @dblclick="startEditing('wikidata_id')"
+          @keydown.enter="startEditing('wikidata_id')"
+          tabindex="0"
+        >
+          {{ editedEdge.wikidata_id || "Click to add Wikidata ID" }}
+        </span>
+        <input
+          v-else
+          v-model="editedEdge.wikidata_id"
+          @blur="stopEditing('wikidata_id')"
+          @keydown.enter="moveToNextField('wikidata_id')"
+          @keydown.escape="cancelEditing('wikidata_id')"
+          ref="wikidata_idInput"
+          placeholder="e.g. Q42"
+        />
+      </div>
+    </div>
+    <!-- Same As Field -->
+    <div class="field" v-if="isAllowed('same_as')">
+      <strong :title="tooltips.edge.same_as">Same As:</strong>
+      <div class="field-content">
+        <div class="references-container">
+          <div
+            v-for="(link, index) in editedEdge.same_as"
+            :key="index"
+            class="reference-item"
+            :class="{ 'invalid-reference': !link.trim() }"
+          >
+            <span
+              v-if="editingField !== `same_as-${index}`"
+              @click="startEditing(`same_as-${index}`)"
+              class="reference-text"
+            >
+              {{ link || "Click to add link" }}
+            </span>
+            <input
+              v-else
+              v-model="editedEdge.same_as[index]"
+              @blur="stopEditing(`same_as-${index}`)"
+              @keyup.enter="stopEditing(`same_as-${index}`)"
+              @keyup.escape="cancelSameAsEdit(index)"
+              :ref="`same_as-${index}Input`"
+              class="reference-input"
+              placeholder="Enter URL..."
+            />
+            <button
+              class="delete-reference-button"
+              @click="deleteSameAs(index)"
+              title="Delete link"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+        <button class="add-button add-reference-button" @click="addSameAs">
+          + Same As
+        </button>
+      </div>
+    </div>
     <div class="field" v-if="isAllowed('description')">
       <strong :title="tooltips.edge.description">Description:</strong>
       <div class="field-content">
@@ -247,6 +313,9 @@ export default {
     if (!Array.isArray(editedEdge.tags)) {
       editedEdge.tags = [];
     }
+    if (!Array.isArray(editedEdge.same_as)) {
+      editedEdge.same_as = [];
+    }
     return {
       editingField: null,
       editedEdge,
@@ -403,7 +472,7 @@ export default {
     // formatCustomPropertyLabel removed: label now always uses property name
     getFieldOrder() {
       // Define the logical order of fields for keyboard navigation
-      const baseFields = ["type", "description", "tags"];
+      const baseFields = ["type", "wikidata_id", "description", "tags"];
       const allowedBase = baseFields.filter(
         (field) => field === "type" || this.isAllowed(field),
       );
@@ -532,6 +601,27 @@ export default {
       }
       this.editingField = null;
     },
+    addSameAs() {
+      if (
+        this.editingField === null ||
+        !this.editingField.startsWith("same_as-")
+      ) {
+        this.editedEdge.same_as.push("");
+        this.$nextTick(() => {
+          this.startEditing(`same_as-${this.editedEdge.same_as.length - 1}`);
+        });
+      }
+    },
+    deleteSameAs(index) {
+      this.editedEdge.same_as.splice(index, 1);
+    },
+    cancelSameAsEdit(index) {
+      // If it's an empty link, remove it
+      if (!this.editedEdge.same_as[index].trim()) {
+        this.deleteSameAs(index);
+      }
+      this.editingField = null;
+    },
     addDescription() {
       this.editedEdge.description = "";
       this.$nextTick(() => {
@@ -544,6 +634,11 @@ export default {
       if (this.isAllowed("references")) {
         this.editedEdge.references = this.editedEdge.references.map((ref) =>
           ref.trim(),
+        );
+      }
+      if (this.isAllowed("same_as")) {
+        this.editedEdge.same_as = this.editedEdge.same_as.map((link) =>
+          link.trim(),
         );
       }
       if (this.isAllowed("tags")) {

@@ -16,6 +16,8 @@ node_types:
     properties:
       - title
       - tags
+      - wikidata_id
+      - same_as
 
 edge_types:
   example_edge_type:

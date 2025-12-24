@@ -36,6 +36,8 @@ class PredefinedProperties(SQLModel):
     description: str | None = None
     tags: list[str] | None = Field(default_factory=list)
     references: list[str] | None = Field(default_factory=list)
+    wikidata_id: str | None = None
+    same_as: list[str] | None = Field(default_factory=list)
 
 
 Proba = Annotated[float, Query(title="conditional proba", ge=0, le=1)]

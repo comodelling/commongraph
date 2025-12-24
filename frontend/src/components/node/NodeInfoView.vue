@@ -38,7 +38,47 @@ SPDX-License-Identifier: AGPL-3.0-or-later
             v-for="reference in node.references.filter((ref) => ref.trim())"
             :key="reference"
           >
-            {{ reference.trim() }}
+            <a
+              v-if="isUrl(reference)"
+              :href="reference.trim()"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {{ reference.trim() }}
+            </a>
+            <span v-else>{{ reference.trim() }}</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+    <!-- Wikidata ID -->
+    <div class="field-row" v-if="isAllowed('wikidata_id') && node.wikidata_id">
+      <strong :title="tooltips.node.wikidata_id">Wikidata:</strong>
+      <span class="field-value">
+        <a
+          :href="'https://www.wikidata.org/wiki/' + node.wikidata_id"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {{ node.wikidata_id }}
+        </a>
+      </span>
+    </div>
+    <!-- Same As -->
+    <div class="field-row" v-if="isAllowed('same_as') && node.same_as?.length">
+      <strong :title="tooltips.node.same_as">Same As:</strong>
+      <div class="field-value">
+        <ul class="references-list">
+          <li v-for="link in node.same_as.filter((l) => l.trim())" :key="link">
+            <a
+              v-if="isUrl(link)"
+              :href="link.trim()"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {{ link.trim() }}
+            </a>
+            <span v-else>{{ link.trim() }}</span>
           </li>
         </ul>
       </div>
@@ -105,6 +145,8 @@ interface Node {
   description?: string;
   tags?: string[];
   references?: string[];
+  wikidata_id?: string;
+  same_as?: string[];
 }
 
 const props = defineProps<{
@@ -168,6 +210,15 @@ function formatStatus(status?: string): string {
 
 function capitalise(str: string): string {
   return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+function isUrl(str: string): boolean {
+  try {
+    new URL(str.trim());
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 const nodeTypeTooltip = computed(() => {

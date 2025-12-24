@@ -184,6 +184,72 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         </button>
       </div>
     </div>
+    <!-- Wikidata ID Field -->
+    <div class="field" v-if="isAllowed('wikidata_id')">
+      <strong :title="tooltips.node.wikidata_id">Wikidata:</strong>
+      <div class="field-content">
+        <span
+          v-if="editingField !== 'wikidata_id'"
+          @click="startEditing('wikidata_id')"
+          @dblclick="startEditing('wikidata_id')"
+          @keydown.enter="startEditing('wikidata_id')"
+          tabindex="0"
+        >
+          {{ editedNode.wikidata_id || "Click to add Wikidata ID" }}
+        </span>
+        <input
+          v-else
+          v-model="editedNode.wikidata_id"
+          @blur="stopEditing('wikidata_id')"
+          @keydown.enter="moveToNextField('wikidata_id')"
+          @keydown.escape="cancelEditing('wikidata_id')"
+          ref="wikidata_idInput"
+          placeholder="e.g. Q42"
+        />
+      </div>
+    </div>
+    <!-- Same As Field -->
+    <div class="field" v-if="isAllowed('same_as')">
+      <strong :title="tooltips.node.same_as">Same As:</strong>
+      <div class="field-content">
+        <div class="references-container">
+          <div
+            v-for="(link, index) in editedNode.same_as"
+            :key="index"
+            class="reference-item"
+            :class="{ 'invalid-reference': !link.trim() }"
+          >
+            <span
+              v-if="editingField !== `same_as-${index}`"
+              @click="startEditing(`same_as-${index}`)"
+              class="reference-text"
+            >
+              {{ link || "Click to add link" }}
+            </span>
+            <input
+              v-else
+              v-model="editedNode.same_as[index]"
+              @blur="stopEditing(`same_as-${index}`)"
+              @keyup.enter="stopEditing(`same_as-${index}`)"
+              @keyup.escape="cancelSameAsEdit(index)"
+              :ref="`same_as-${index}Input`"
+              class="reference-input"
+              placeholder="Enter URL..."
+            />
+            <button
+              class="delete-reference-button"
+              @click="deleteSameAs(index)"
+              title="Delete link"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+        <button class="add-button add-reference-button" @click="addSameAs">
+          + Same As
+        </button>
+      </div>
+    </div>
     <!-- Description Field -->
     <div class="field" v-if="isAllowed('description')">
       <strong :title="tooltips.node.description">Description:</strong>
@@ -361,6 +427,9 @@ export default {
     if (!Array.isArray(editedNode.tags)) {
       editedNode.tags = [];
     }
+    if (!Array.isArray(editedNode.same_as)) {
+      editedNode.same_as = [];
+    }
     return {
       editingField: null,
       editedNode: editedNode,
@@ -492,6 +561,7 @@ export default {
         "type",
         "scope",
         "status",
+        "wikidata_id",
         "description",
         "tags",
       ];
@@ -608,6 +678,22 @@ export default {
       }
       this.editingField = null;
     },
+    addSameAs() {
+      this.editedNode.same_as.push("");
+      this.$nextTick(() => {
+        this.startEditing(`same_as-${this.editedNode.same_as.length - 1}`);
+      });
+    },
+    deleteSameAs(index) {
+      this.editedNode.same_as.splice(index, 1);
+    },
+    cancelSameAsEdit(index) {
+      // If it's an empty link, remove it
+      if (!this.editedNode.same_as[index].trim()) {
+        this.deleteSameAs(index);
+      }
+      this.editingField = null;
+    },
     addDescription() {
       this.editedNode.description = "";
       this.$nextTick(() => {
@@ -661,6 +747,11 @@ export default {
       if (this.isAllowed("references")) {
         this.editedNode.references = this.editedNode.references.filter(
           (ref) => ref.trim() !== "",
+        );
+      }
+      if (this.isAllowed("same_as")) {
+        this.editedNode.same_as = this.editedNode.same_as.filter(
+          (link) => link.trim() !== "",
         );
       }
       if (this.isAllowed("tags")) {

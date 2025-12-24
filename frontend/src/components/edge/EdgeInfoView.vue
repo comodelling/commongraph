@@ -28,7 +28,15 @@ SPDX-License-Identifier: AGPL-3.0-or-later
             )"
             :key="reference"
           >
-            {{ reference.trim() }}
+            <a
+              v-if="isUrl(reference)"
+              :href="reference.trim()"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {{ reference.trim() }}
+            </a>
+            <span v-else>{{ reference.trim() }}</span>
           </li>
         </ul>
       </div>
@@ -192,6 +200,16 @@ export default defineComponent({
     function capitalise(str: string) {
       return str.charAt(0).toUpperCase() + str.slice(1);
     }
+
+    function isUrl(str: string): boolean {
+      try {
+        new URL(str.trim());
+        return true;
+      } catch {
+        return false;
+      }
+    }
+
     return {
       isAllowed,
       edgeTypeTooltip,
@@ -203,6 +221,7 @@ export default defineComponent({
       getCustomValue,
       hasCustomValue,
       capitalise,
+      isUrl,
     };
   },
   data() {

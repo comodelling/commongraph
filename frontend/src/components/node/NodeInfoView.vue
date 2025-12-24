@@ -38,7 +38,15 @@ SPDX-License-Identifier: AGPL-3.0-or-later
             v-for="reference in node.references.filter((ref) => ref.trim())"
             :key="reference"
           >
-            {{ reference.trim() }}
+            <a
+              v-if="isUrl(reference)"
+              :href="reference.trim()"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {{ reference.trim() }}
+            </a>
+            <span v-else>{{ reference.trim() }}</span>
           </li>
         </ul>
       </div>
@@ -168,6 +176,15 @@ function formatStatus(status?: string): string {
 
 function capitalise(str: string): string {
   return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+function isUrl(str: string): boolean {
+  try {
+    new URL(str.trim());
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 const nodeTypeTooltip = computed(() => {

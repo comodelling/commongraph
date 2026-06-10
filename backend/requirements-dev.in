@@ -2,11 +2,12 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # basic software development tools
-black
+black>=26.3.1
 pip-tools
 pre-commit
-pytest
+pytest>=9.0.3
 reuse
 
 # security
 filelock>=3.20.1
+wheel>=0.46.2
